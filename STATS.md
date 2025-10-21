@@ -12,9 +12,9 @@ A Rust-based Universal G-Code Sender for CNC machines with support for GRBL, Tin
 
 ### Version 0.3.0-alpha - Core Implementation Phase (Current)
 - **Released**: 2024-10-21
-- **Status**: ✓ Core Foundation In Progress (60% complete)
-- **Tasks Completed**: 12 of 150
-- **Completion**: 8.0%
+- **Status**: ✓ Core Foundation In Progress (65% complete)
+- **Tasks Completed**: 13 of 150
+- **Completion**: 8.7%
 
 ### Planned Releases
 
@@ -27,7 +27,7 @@ A Rust-based Universal G-Code Sender for CNC machines with support for GRBL, Tin
 
 ## Implementation Roadmap
 
-### Phase 1: Core Foundation (Tasks 1-20) - 60% Complete
+### Phase 1: Core Foundation (Tasks 1-20) - 65% Complete
 - ✓ Task 1: Project Initialization
 - ✓ Task 2: Data Models - Position and Coordinates
 - ✓ Task 3: Data Models - Controller State
@@ -40,7 +40,8 @@ A Rust-based Universal G-Code Sender for CNC machines with support for GRBL, Tin
 - ✓ Task 10: Serial Communication - Buffered Communication
 - ✓ Task 11: G-Code Parser - Core
 - ✓ Task 12: G-Code Parser - State Machine
-- ○ Tasks 13-20: Parser Framework, GRBL Protocol, Event System, etc.
+- ✓ Task 13: G-Code Preprocessors - Framework
+- ○ Tasks 14-20: Basic/Advanced Preprocessors, Stream Management, etc.
 
 ### Phase 2: GRBL Controller (Tasks 21-35) - 0% Complete
 - ○ Task 21-35: GRBL protocol, parsing, controller implementation
@@ -56,8 +57,8 @@ A Rust-based Universal G-Code Sender for CNC machines with support for GRBL, Tin
 ## Test Coverage
 
 ### Current Test Results
-- **Total Tests**: 98
-- **Passed**: 98 (100%)
+- **Total Tests**: 122
+- **Passed**: 122 (100%)
 - **Failed**: 0
 - **Coverage**: All core modules with comprehensive integration tests
 
@@ -65,6 +66,7 @@ A Rust-based Universal G-Code Sender for CNC machines with support for GRBL, Tin
 - Communication: 21 tests (Serial, TCP, Communicator interface)
 - Buffered Communication: 23 tests (Queue, flow control, acknowledgment)
 - G-Code Parser: 43 tests (Command lifecycle, parsing, state tracking)
+- G-Code Preprocessors: 24 tests (Framework, pipeline, registry) ✓ NEW
 - Core: 2 tests (Controller, state transitions)
 - Data Models: 1 test (Machine status)
 - Firmware: 3 tests (Controller capabilities)
@@ -81,11 +83,20 @@ A Rust-based Universal G-Code Sender for CNC machines with support for GRBL, Tin
   * Serialization support (2 tests)
   * Edge cases and thread safety (11 tests)
 
+- G-Code Preprocessors tests (24 new tests):
+  * Configuration creation and management (3 tests)
+  * Pipeline registration and processing (6 tests)
+  * Command expansion and filtering (3 tests)
+  * Disabled processor handling (1 test)
+  * Batch processing and state updates (2 tests)
+  * Registry management and creation (4 tests)
+  * Advanced chaining scenarios (5 tests)
+
 ## Code Quality Metrics
 
 - **Clippy Warnings**: 0
 - **Build Status**: ✓ Passing
-- **Test Status**: ✓ All 98 tests passing
+- **Test Status**: ✓ All 122 tests passing
 - **Code Style**: Rust guidelines (4-space, 100-char width)
 - **Documentation**: All public APIs documented with docblocks
 - **Test Organization**: All tests in tests/ folder hierarchy ✓
@@ -110,6 +121,8 @@ A Rust-based Universal G-Code Sender for CNC machines with support for GRBL, Tin
 9. Task 9: Serial Communication - TCP/Network ✓
 10. Task 10: Serial Communication - Buffered Communication ✓
 11. Task 11: G-Code Parser - Core ✓
+12. Task 12: G-Code Parser - State Machine ✓
+13. Task 13: G-Code Preprocessors - Framework ✓
    
 3. **Milestone 3: Feature Complete (v0.4.0)** - Due: 2025-06-30
    - Tasks: 84-90, 95-100, 108-121, 126-137
@@ -207,17 +220,20 @@ tests/
 8. ✓ Implement Task 7: Connection management
 9. ✓ Implement Task 8: Serial communication
 10. ✓ Implement Task 9: TCP communication
-11. ✓ Implement Task 10: Buffered communication ← CURRENT
-12. → Implement Task 11: G-Code parser - Core
+11. ✓ Implement Task 10: Buffered communication
+12. ✓ Implement Task 11: G-Code parser - Core
+13. ✓ Implement Task 12: G-Code parser - State Machine
+14. ✓ Implement Task 13: G-Code preprocessors - Framework ← COMPLETE
+15. → Implement Task 14: G-Code preprocessors - Basic
 
 ## Contribution Statistics
 
-- **Total Lines of Code (Core)**: 4,013 lines
-- **Test Lines**: 774 lines
+- **Total Lines of Code (Core)**: 4,300+ lines
+- **Test Lines**: 1,000+ lines
 - **Documentation Lines**: 2,500+
 - **Module Count**: 8 core + 1 new (buffered communication)
-- **Public API Items**: 65+
-- **Test Files**: 9 (55 total tests)
+- **Public API Items**: 75+
+- **Test Files**: 10 (122 total tests)
 
 ## External Resources
 
