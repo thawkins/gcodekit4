@@ -37,6 +37,7 @@ pub mod error;
 pub mod firmware;
 pub mod gcode;
 pub mod processing;
+pub mod testing;
 pub mod ui;
 pub mod utils;
 pub mod visualizer;
