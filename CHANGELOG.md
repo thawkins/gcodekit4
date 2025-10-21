@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.3.0-alpha] - 2024-10-21
 
+### Added
+
+#### Task 14: G-Code Preprocessors - Basic (COMPLETED)
+- Implemented `WhitespaceProcessor`
+  - Removes leading and trailing whitespace from G-code commands
+  - Skips empty commands after trimming
+  - Always enabled, no configuration
+- Implemented `CommentProcessor`
+  - Removes parenthesized comments: `(this is a comment)`
+  - Removes semicolon-style comments: `G01 X10 ; move to X10`
+  - Handles unmatched parentheses gracefully
+- Implemented `EmptyLineRemoverProcessor`
+  - Removes empty lines after comment and whitespace processing
+  - Used as final filter in preprocessing pipeline
+- Implemented `CommandLengthProcessor`
+  - Validates G-code command length against configurable limit
+  - Default maximum: 128 characters (GRBL compatible)
+  - Configurable via `with_max_length()` method
+  - Returns error if command exceeds limit
+- Implemented `DecimalProcessor`
+  - Rounds decimal numbers in G-code to specified precision
+  - Default precision: 5 decimal places
+  - Configurable via `with_precision()` method
+  - Handles negative numbers and decimal points correctly
+- **Tests**: Existing preprocessor framework tests verify implementations
+- **Exports**: All five processors exported from main library (`gcodekit4::*`)
+- **Documentation**: Comprehensive docblocks for all processors
+
 ### Fixed
 
 #### Test Organization - Compliance with AGENTS.md
