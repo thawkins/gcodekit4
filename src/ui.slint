@@ -3,11 +3,25 @@
 
 import { Button, ComboBox, LineEdit, TextEdit, VerticalBox, HorizontalBox, ScrollView, SpinBox } from "std-widgets.slint";
 
+export struct PortInfo {
+    port: string,
+    description: string,
+}
+
 export component MainWindow inherits Window {
     width: 1200px;
     height: 800px;
     
     title: "GCodeKit4 - Universal G-Code Sender";
+    
+    // Dynamic properties exposed to Rust
+    in property <[string]> available-ports: [];
+    out property <string> selected-port: "";
+    in property <bool> is-connected: false;
+    
+    callback refresh-ports();
+    callback connect(string, int);
+    callback disconnect();
     
     VerticalBox {
         spacing: 0px;
@@ -52,7 +66,8 @@ export component MainWindow inherits Window {
                         HorizontalBox {
                             Text { text: "Port:"; width: 50px; }
                             ComboBox {
-                                model: ["COM1", "COM2", "COM3"];
+                                model: root.available-ports;
+                                current-value: root.selected-port;
                             }
                         }
                         
@@ -66,12 +81,20 @@ export component MainWindow inherits Window {
                         HorizontalBox {
                             spacing: 5px;
                             Button {
-                                text: "Connect";
+                                text: root.is-connected ? "Disconnect" : "Connect";
                                 width: 50%;
+                                clicked => {
+                                    if (root.is-connected) {
+                                        root.disconnect();
+                                    } else {
+                                        root.connect(root.selected-port, 115200);
+                                    }
+                                }
                             }
                             Button {
-                                text: "Disconnect";
+                                text: "Refresh";
                                 width: 50%;
+                                clicked => { root.refresh-ports(); }
                             }
                         }
                     }
