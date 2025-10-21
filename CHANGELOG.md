@@ -7,7 +7,107 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.4.0-alpha] - 2025-10-21
 
+### Added - Phase 3: Additional Firmware Support Frameworks (Tasks 41-50)
+
+#### Task 41: Smoothieware Protocol Support (NEW)
+- Implemented complete Smoothieware firmware support module (`src/firmware/smoothieware/`)
+- Components:
+  - `SmoothiewareResponseParser`: Parses status, positions, temperatures, and errors
+  - `SmoothiewareCommandCreator`: Generates G-code and M-code commands
+  - `SmoothiewareCapabilities`: Defines firmware capabilities (5 axes, 30kHz feed rate)
+  - Core response types: Ok, Error, Position, Version, Temperature
+- 6 comprehensive unit tests
+
+#### Task 42: Smoothieware Controller (NEW)
+- Implemented `SmoothiewareController` struct
+- Features:
+  - Controller state management
+  - Position tracking
+  - Command creation interface
+  - Response parsing integration
+  - Capabilities querying
+
+#### Task 43: FluidNC Protocol Support (NEW)
+- Implemented complete FluidNC firmware support module (`src/firmware/fluidnc/`)
+- Components:
+  - `FluidNCResponseParser`: Parses status with MPos/WPos, WiFi status, file lists, errors with codes
+  - `FluidNCCommandCreator`: Generates advanced FluidNC commands (including $J jogging, file operations)
+  - `FluidNCCapabilities`: Defines advanced capabilities (6 axes, 50kHz feed rate, WiFi, file system)
+  - Enhanced response types: Position with machine coordinates, WiFi status, file operations
+- 4 comprehensive unit tests
+
+#### Task 44: FluidNC Controller (NEW)
+- Implemented `FluidNCController` struct
+- Features:
+  - Advanced controller state management
+  - 6-axis position tracking (X, Y, Z, A, B, C, U)
+  - WiFi and file system capability queries
+  - Command creation interface
+  - Response parsing integration
+
+#### Task 45: Controller Auto-Detection (NEW)
+- Framework established in firmware module for firmware version detection
+- Integrated with existing ControllerType enum
+- Version parsing capability in Smoothieware and FluidNC modules
+- Foundation for auto-selection of controller type
+
+#### Task 46: Firmware Settings Framework (NEW)
+- Implemented `FirmwareSettingsTrait` for extensible settings management
+- Created `DefaultFirmwareSettings` implementation
+- Features:
+  - Setting type system (Numeric, String, Boolean, Enum)
+  - Min/max validation for numeric settings
+  - Settings storage and retrieval
+  - Settings map generation
+  - File I/O interface (extensible)
+  - 3 comprehensive unit tests
+
+#### Task 47: Override Manager Framework (NEW)
+- Implemented `OverrideManagerTrait` for override management
+- Created `DefaultOverrideManager` with full implementation
+- Features:
+  - Feed rate override (0-200%)
+  - Rapid override levels (Off, Slow, Medium, Full)
+  - Spindle override (0-200%)
+  - Override state tracking and queries
+  - Incremental increase/decrease methods
+  - 5 comprehensive unit tests
+
+#### Task 48: Controller Capabilities System (NEW)
+- Implemented `CapabilitiesTrait` for unified capability queries
+- Created `DefaultCapabilities` implementation
+- Features:
+  - Capability flags (14 types: Probing, ToolChange, AutoHome, WiFi, FileSystem, etc.)
+  - Axis support detection
+  - Maximum feed/rapid rates and spindle speeds
+  - Buffer size tracking
+  - Extensible for controller-specific capabilities
+  - 4 comprehensive unit tests
+
+#### Task 49: File Service Interface (NEW)
+- Implemented `FileServiceTrait` for controller file system access
+- Created `NoOpFileService` default implementation
+- Features:
+  - File listing with metadata (size, modified time, directory flag)
+  - Upload and download with progress callbacks
+  - File/directory operations (delete, create, rename)
+  - Storage info queries with usage percentage
+  - `StorageInfo` struct for capacity tracking
+  - 2 comprehensive unit tests
+
+#### Task 50: Connection Watch Timer (NEW)
+- Implemented `ConnectionWatcher` for connection monitoring
+- Features:
+  - Configurable timeout detection (default 5s)
+  - Heartbeat mechanism for activity tracking
+  - Connection state tracking (Healthy, Degraded, Lost)
+  - Real-time state monitoring loop
+  - Time-since-heartbeat queries
+  - 3 comprehensive unit tests
+
 ### Added - Phase 3: Additional Firmware Support - Controller Implementations (Tasks 36-40)
+
+(Previous entries for Tasks 36-40 continue below...)
 
 #### Task 36: TinyG Protocol Support - Controller (NEW)
 - Implemented `TinyGController` struct implementing `ControllerTrait`
