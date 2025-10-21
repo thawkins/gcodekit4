@@ -7,6 +7,9 @@
 //! - Preprocessor framework
 //! - Command lifecycle management
 //! - Command listener framework
+//! - Stream management (reading from files or strings)
+
+pub mod stream;
 
 use lazy_static::lazy_static;
 use regex::Regex;

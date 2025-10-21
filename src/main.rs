@@ -1,4 +1,4 @@
-use gcodekit4::core::Controller;
+use gcodekit4::SimpleController;
 use gcodekit4::data::Position;
 use gcodekit4::firmware::FirmwareCapabilities;
 use gcodekit4::gcode::GcodeParser;
@@ -18,8 +18,8 @@ async fn main() -> anyhow::Result<()> {
     // Initialize core components
     debug!("Initializing core components...");
 
-    let controller = Controller::new();
-    debug!("✓ Controller initialized: {:?}", controller.get_state());
+    let _controller = SimpleController::new("GRBL");
+    debug!("✓ Controller initialized");
 
     let mut parser = GcodeParser::new();
     debug!("✓ G-Code parser initialized");

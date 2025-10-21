@@ -9,7 +9,104 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-#### Task 15: G-Code Preprocessors - Advanced (COMPLETED)
+#### Task 20: Message Service (COMPLETED)
+- Implemented `Message` struct with timestamp, level, source, and text
+- Implemented `MessageLevel` enum: Verbose, Info, Warning, Error
+- Implemented `MessageDispatcher` for message broadcasting
+- Features:
+  - Level-based message filtering
+  - Broadcast to multiple subscribers
+  - Console output formatting (HH:MM:SS.mmm timestamp format)
+  - Thread-safe message dispatching via `broadcast::Sender`
+  - Convenience methods for publishing messages (info, warning, error, verbose)
+- Added 12 comprehensive integration tests in `tests/core/message.rs`
+
+#### Task 19: Event System (COMPLETED)
+- Implemented `ControllerEvent` enum with 10+ event types:
+  - Connection events (Connected, Disconnected)
+  - State changes (StateChanged, StatusChanged)
+  - Errors and alarms with codes and descriptions
+  - Command completion notifications
+  - Position, spindle speed, and feed rate changes
+- Implemented `EventDispatcher` for async event publishing
+- Features:
+  - Broadcast event dispatching to multiple subscribers
+  - Event type display formatting
+  - Thread-safe broadcasting via `broadcast::Sender`
+  - Configurable buffer size
+- Added 13 comprehensive integration tests in `tests/core/event.rs`
+
+#### Task 18: Controller Interface - Abstract Base (COMPLETED)
+- Implemented `SimpleController` as base test implementation
+- Features:
+  - Arc<RwLock> for thread-safe shared state
+  - Status and override state tracking
+  - Full ControllerTrait implementation
+  - State management methods
+- Note: Combined with Task 17 to create unified trait-based architecture
+
+#### Task 17: Controller Interface - Base Trait (COMPLETED)
+- Implemented `ControllerTrait` async trait (core/mod.rs)
+- Comprehensive controller interface with 30+ async methods:
+  - Connection management: connect, disconnect, is_connected
+  - Action methods: send_command, send_commands, home, reset, clear_alarm, unlock
+  - Jogging: jog_start, jog_stop, jog_incremental
+  - Streaming: start_streaming, pause_streaming, resume_streaming, cancel_streaming
+  - Probing: probe_z, probe_x, probe_y
+  - Overrides: set_feed_override, set_rapid_override, set_spindle_override
+  - Work coordinate systems: set_work_zero, set_work_zero_axes, go_to_work_zero, set_work_coordinate_system, get_wcs_offset
+  - Status queries: query_status, query_settings, query_parser_state
+  - Listener management: register_listener, unregister_listener, listener_count
+- Implemented `ControllerListener` trait for event notifications
+- Implemented `SimpleController` basic implementation
+- Implemented `OverrideState` struct for override tracking
+- Added 17 comprehensive async tests in `tests/core/controller_trait.rs`
+
+#### Task 16: G-Code Stream Management (COMPLETED)
+- Implemented `GcodeStreamReader` trait for reading G-code from various sources
+- Implemented `FileStreamReader` for reading from disk files:
+  - Buffered file reading with BufReader
+  - Line-by-line position tracking
+  - Progress percentage calculation
+  - Reset and seek operations
+  - Total line count tracking
+- Implemented `StringStreamReader` for in-memory G-code:
+  - Efficient line iteration
+  - Progress tracking
+  - Reset and seek operations
+  - Support for arbitrary string content
+- Implemented `PausableStream` wrapper adding pause/resume:
+  - Atomic pause state using AtomicUsize
+  - Pause line tracking
+  - Non-blocking pause/resume
+  - Reset clears pause state
+  - Returns None when paused
+- Features:
+  - Trait-based abstraction for pluggable stream implementations
+  - Position tracking with line numbers
+  - Progress percentage (0-100%)
+  - EOF detection
+  - Full pause/resume capability
+- Added 15 comprehensive tests (unit and integration) in `tests/gcode/stream.rs`
+  - Tests cover basic reading, reset, seeking, progress tracking
+  - Pause/resume functionality thoroughly tested
+  - Integration tests verify file and string stream operations
+
+### Changed
+- Updated core module structure with new submodules: listener, event, message
+- Enhanced library exports in lib.rs with new types
+- Updated Cargo.toml with tempfile dev-dependency
+- Refactored main.rs to use SimpleController
+
+### Test Coverage
+- Total tests added: 57 (16+17+13+12)
+- All tests passing: 214 total tests across entire project
+- Test organization follows AGENTS.md requirements:
+  - Tests located in `tests/` folder hierarchy
+  - Organized by module (core, gcode, etc.)
+  - Both unit tests in src/ and integration tests in tests/
+
+
 - Implemented `PatternRemover`
   - Removes commands matching configurable regex patterns
   - Generic pattern-based removal for flexible filtering

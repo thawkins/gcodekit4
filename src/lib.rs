@@ -51,7 +51,9 @@ pub use config::{
     Config, ConnectionSettings, ConnectionType, FileProcessingSettings, FirmwareSettings,
     MachineSettings, SettingsManager, UiSettings,
 };
-pub use core::Controller;
+pub use core::{ControllerTrait, ControllerListener, ControllerListenerHandle, SimpleController, OverrideState,
+              event::{ControllerEvent, EventDispatcher},
+              message::{Message, MessageLevel, MessageDispatcher}};
 pub use data::{
     CNCPoint, CommunicatorState, ControllerState, ControllerStatus, MachineStatus,
     MachineStatusSnapshot, PartialPosition, Position, Units,
@@ -63,6 +65,7 @@ pub use gcode::{
     CommandResponse, CommandState, CommentProcessor, CommandLengthProcessor, DecimalProcessor,
     EmptyLineRemoverProcessor, GcodeCommand, GcodeParser, GcodeState, ModalState, ProcessorConfig,
     ProcessorHandle, ProcessorPipeline, ProcessorRegistry, WhitespaceProcessor,
+    stream::{FileStreamReader, GcodeStreamReader, PausableStream, StringStreamReader},
 };
 
 /// Library version

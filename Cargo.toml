@@ -55,4 +55,5 @@ toml = "0.9.8"
 tokio-test = "0.4"
 mockall = "0.13.1"
 criterion = "0.7.0"
+tempfile = "3.8"
 
