@@ -21,13 +21,3 @@ impl Default for UserInterface {
         Self::new()
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_ui_creation() {
-        let _ui = UserInterface::new();
-    }
-}

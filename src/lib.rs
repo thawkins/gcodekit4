@@ -60,7 +60,8 @@ pub use error::{ConnectionError, ControllerError, Error, FirmwareError, GcodeErr
 pub use firmware::ControllerType;
 pub use gcode::{
     CommandId, CommandListener, CommandListenerHandle, CommandNumberGenerator, CommandResponse,
-    CommandState, GcodeCommand, GcodeParser, GcodeState, ModalState,
+    CommandState, CommandProcessor, ProcessorConfig, ProcessorHandle, ProcessorPipeline,
+    ProcessorRegistry, GcodeCommand, GcodeParser, GcodeState, ModalState,
 };
 
 /// Library version

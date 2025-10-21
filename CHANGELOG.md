@@ -9,6 +9,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Task 13: G-Code Preprocessors - Framework (COMPLETED)
+- Implemented `CommandProcessor` trait with extensible architecture
+  - `name()` - Processor identification and naming
+  - `description()` - Human-readable processor descriptions
+  - `process()` - Core transformation logic (supports 1→n expansion)
+  - `is_enabled()` - Enable/disable flag support
+  - `config()` - Configuration access pattern
+- Implemented `ProcessorConfig` for flexible processor configuration
+  - Enable/disable flags
+  - Key-value option storage
+  - JSON-like data support
+  - Configuration builder pattern
+- Implemented `ProcessorPipeline` for command processing chains
+  - Sequential processor composition
+  - Single command processing with state tracking
+  - Batch command processing with modal state updates
+  - Support for command expansion (1→many)
+  - Support for command skipping (→0)
+  - Automatic modal state updates during processing
+  - Processor listing and lookup by name
+- Implemented `ProcessorRegistry` for processor factory management
+  - Dynamic processor registration
+  - Factory-based processor creation
+  - Pipeline creation from processor names
+  - Processor listing and discovery
+- Created `ProcessorHandle` type alias for Arc-wrapped processors
+- **Tests**: 24 comprehensive unit tests covering all components
+  - Configuration creation and options
+  - Pipeline registration and management
+  - Single and batch command processing
+  - Processor chaining and state tracking
+  - Command expansion and skipping
+  - Disabled processor handling
+  - Registry creation and management
+- **Documentation**: Comprehensive docblocks for all public APIs
+- **Code Quality**: Zero warnings, thread-safe with Arc/Sync design
+
 #### Task 12: G-Code Parser - State Machine (COMPLETED)
 - Implemented comprehensive `GcodeState` struct with full modal group tracking
 - Added motion group tracking (G00, G01, G02, G03)

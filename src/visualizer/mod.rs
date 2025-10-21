@@ -21,13 +21,3 @@ impl Default for Visualizer {
         Self::new()
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_visualizer_creation() {
-        let _vis = Visualizer::new();
-    }
-}

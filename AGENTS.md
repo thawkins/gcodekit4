@@ -36,7 +36,7 @@ All tests **MUST** be located in the `tests/` folder organized by module hierarc
 - use "gh" to access all github repositories. 
 - when asked to "push to remote", update the SPEC.md, README.md, STATS.md and CHANGELOG.md files with all recent activity and spec changes, construct a suitable commit message based on recent activity, commit all changes and push the changes to the remote repository.
 - when asked to "push release to remote", update the release number, and then follow the "push to remote" process
-- When initialising a new repo add BUG, FEATURE and CHANGE issue templates. 
+- When initialising a new repo add BUG, FEATURE, TASK and CHANGE issue templates only do this once. 
 
 ## Changelog Management
 - **CHANGELOG.md**: Maintain a changelog in the root directory documenting all changes before each push to remote.
@@ -57,8 +57,7 @@ All tests **MUST** be located in the `tests/` folder organized by module hierarc
 - **Imports**: Group std, external crates, then local modules; reorder automatically
 - **Error Handling**: Use `Result<T, E>` with `?`, `anyhow::Result` for main, `thiserror` for custom errors
 - **Types**: Prefer explicit types, use type aliases for complex types
-- **Async**: Use `tokio` runtime, `async-trait` for trait methods
-- **Logging**: Use `tracing` with structured logging, avoid `println!` in production
+-  **Logging**: Use `tracing` with structured logging, avoid `println!` in production
 - **Documentation**: `//!` for crate docs, `///` for public APIs, `//` for internal comments
 - **Linting**: No wildcard imports, cognitive complexity ≤30, warn on missing docs
 - **Best Practices**: Read the best practices at https://www.djamware.com/post/68b2c7c451ce620c6f5efc56/rust-project-structure-and-best-practices-for-clean-scalable-code and apply to the project.
@@ -83,7 +82,8 @@ When dealing with issues in the remote repository:
 1. create a directory called "target" in the project root
 2. create a directory called "temp" in the target folder
 3. Ensure that the target/temp folder is in the .gitignore file
-4. Use target/temp for all tempoary files, scripts and other ephemeral items. 
+4. Use target/temp for all tempoary files, scripts and other ephemeral items that are normally placed in /tmp
+. 
 
 
 

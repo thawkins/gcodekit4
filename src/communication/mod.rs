@@ -1,51 +1,423 @@
 //! Communication layer for serial, TCP, and WebSocket protocols
 //!
-//! This module provides:
-//! - Trait-based communication interface
+//! Provides trait-based communication interface for different connection types.
+//!
+//! # Features
+//! - Pluggable communication backends
 //! - Serial (USB) communication
-//! - TCP/IP network communication
-//! - WebSocket support
+//! - TCP/IP network communication  
+//! - WebSocket communication
+//! - Event callbacks for connection state changes
+//! - Configurable connection parameters
 
-use anyhow::Result;
-use async_trait::async_trait;
+pub mod buffered;
+pub mod serial;
+pub mod tcp;
+
+use serde::{Deserialize, Serialize};
+use std::fmt;
+use std::sync::Arc;
+
+pub use buffered::{
+    BufferedCommand, BufferedCommunicatorConfig, BufferedCommunicatorWrapper, CommandStatus,
+};
+pub use serial::{list_ports, SerialPortInfo};
+pub use tcp::TcpConnectionInfo;
+
+/// Connection driver type
+///
+/// Specifies the underlying protocol for communication with the CNC controller.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ConnectionDriver {
+    /// Serial port (USB/RS-232)
+    Serial,
+    /// TCP/IP network connection
+    Tcp,
+    /// WebSocket connection
+    WebSocket,
+}
+
+impl fmt::Display for ConnectionDriver {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Serial => write!(f, "serial"),
+            Self::Tcp => write!(f, "tcp"),
+            Self::WebSocket => write!(f, "websocket"),
+        }
+    }
+}
+
+/// Connection parameters for establishing communication
+///
+/// Contains all information needed to establish a connection with a CNC controller.
+/// The required fields depend on the connection driver type.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ConnectionParams {
+    /// Connection driver type
+    pub driver: ConnectionDriver,
+
+    /// Port name (e.g., "/dev/ttyUSB0" for serial, "192.168.1.100" for TCP)
+    pub port: String,
+
+    /// Port number (used for TCP/WebSocket connections, typically 8888 for g2core, 23 for GRBL)
+    pub network_port: u16,
+
+    /// Baud rate for serial connections (115200 typical for GRBL)
+    pub baud_rate: u32,
+
+    /// Connection timeout in milliseconds
+    pub timeout_ms: u64,
+
+    /// Whether to use RTS/CTS flow control (serial only)
+    pub flow_control: bool,
+
+    /// Number of data bits (serial only, typically 8)
+    pub data_bits: u8,
+
+    /// Number of stop bits (serial only, typically 1)
+    pub stop_bits: u8,
+
+    /// Parity setting (serial only)
+    pub parity: SerialParity,
+
+    /// Whether to enable automatic reconnection on disconnect
+    pub auto_reconnect: bool,
+
+    /// Maximum number of reconnection attempts before giving up
+    pub max_retries: u32,
+}
+
+/// Serial port parity setting
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum SerialParity {
+    /// No parity bit
+    None,
+    /// Even parity
+    Even,
+    /// Odd parity
+    Odd,
+}
+
+impl Default for ConnectionParams {
+    fn default() -> Self {
+        Self {
+            driver: ConnectionDriver::Serial,
+            port: "/dev/ttyUSB0".to_string(),
+            network_port: 8888,
+            baud_rate: 115200,
+            timeout_ms: 5000,
+            flow_control: false,
+            data_bits: 8,
+            stop_bits: 1,
+            parity: SerialParity::None,
+            auto_reconnect: true,
+            max_retries: 3,
+        }
+    }
+}
+
+impl ConnectionParams {
+    /// Create connection parameters for serial communication
+    pub fn serial(port: &str, baud_rate: u32) -> Self {
+        Self {
+            driver: ConnectionDriver::Serial,
+            port: port.to_string(),
+            baud_rate,
+            ..Default::default()
+        }
+    }
+
+    /// Create connection parameters for TCP communication
+    pub fn tcp(host: &str, port: u16) -> Self {
+        Self {
+            driver: ConnectionDriver::Tcp,
+            port: host.to_string(),
+            network_port: port,
+            ..Default::default()
+        }
+    }
+
+    /// Create connection parameters for WebSocket communication
+    pub fn websocket(host: &str, port: u16) -> Self {
+        Self {
+            driver: ConnectionDriver::WebSocket,
+            port: host.to_string(),
+            network_port: port,
+            ..Default::default()
+        }
+    }
+
+    /// Validate the connection parameters
+    pub fn validate(&self) -> crate::Result<()> {
+        match self.driver {
+            ConnectionDriver::Serial => {
+                if self.port.is_empty() {
+                    return Err(crate::Error::other("Serial port name cannot be empty"));
+                }
+                if self.baud_rate == 0 {
+                    return Err(crate::Error::other("Baud rate must be > 0"));
+                }
+                if self.data_bits == 0 || self.data_bits > 8 {
+                    return Err(crate::Error::other("Data bits must be 5-8"));
+                }
+            }
+            ConnectionDriver::Tcp | ConnectionDriver::WebSocket => {
+                if self.port.is_empty() {
+                    return Err(crate::Error::other("Host/address cannot be empty"));
+                }
+                if self.network_port == 0 {
+                    return Err(crate::Error::other("Network port must be > 0"));
+                }
+            }
+        }
+
+        if self.timeout_ms == 0 {
+            return Err(crate::Error::other("Timeout must be > 0"));
+        }
+
+        Ok(())
+    }
+}
+
+/// Communicator events for connection state changes
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CommunicatorEvent {
+    /// Connection established successfully
+    Connected,
+    /// Connection lost or disconnected
+    Disconnected,
+    /// Connection error occurred
+    Error,
+    /// Data received from device
+    DataReceived,
+    /// Data sent to device
+    DataSent,
+    /// Connection timeout
+    Timeout,
+}
+
+impl fmt::Display for CommunicatorEvent {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Connected => write!(f, "Connected"),
+            Self::Disconnected => write!(f, "Disconnected"),
+            Self::Error => write!(f, "Error"),
+            Self::DataReceived => write!(f, "DataReceived"),
+            Self::DataSent => write!(f, "DataSent"),
+            Self::Timeout => write!(f, "Timeout"),
+        }
+    }
+}
+
+/// Callback for communicator events
+pub type CommunicatorCallback = Box<dyn Fn(CommunicatorEvent, &str) + Send + Sync>;
+
+/// Trait for objects that listen to communicator events
+pub trait CommunicatorListener: Send + Sync {
+    /// Called when connection is established
+    fn on_connected(&self);
+
+    /// Called when connection is lost
+    fn on_disconnected(&self);
+
+    /// Called when a connection error occurs
+    fn on_error(&self, error: &str);
+
+    /// Called when data is received from the device
+    fn on_data_received(&self, data: &[u8]);
+
+    /// Called when data is sent to the device
+    fn on_data_sent(&self, data: &[u8]);
+
+    /// Called when a timeout occurs
+    fn on_timeout(&self);
+}
+
+/// Arc-wrapped communicator listener for thread-safe sharing
+pub type CommunicatorListenerHandle = Arc<dyn CommunicatorListener>;
 
 /// Abstract communicator trait for pluggable communication backends
-#[async_trait]
+///
+/// Provides a unified interface for different communication protocols
+/// (Serial, TCP, WebSocket). Implementations handle protocol-specific
+/// connection and data transmission details.
 pub trait Communicator: Send + Sync {
-    /// Connect to the device/server
-    async fn connect(&mut self) -> Result<()>;
+    /// Connect to the device/server using the provided parameters
+    fn connect(&mut self, params: &ConnectionParams) -> crate::Result<()>;
 
     /// Disconnect from the device/server
-    async fn disconnect(&mut self) -> Result<()>;
+    fn disconnect(&mut self) -> crate::Result<()>;
 
-    /// Check if connected
+    /// Check if currently connected
     fn is_connected(&self) -> bool;
 
-    /// Send data to the device/server
-    async fn send(&mut self, data: &[u8]) -> Result<usize>;
+    /// Send raw data to the device
+    ///
+    /// Returns the number of bytes sent
+    fn send(&mut self, data: &[u8]) -> crate::Result<usize>;
 
-    /// Receive data from the device/server
-    async fn receive(&mut self) -> Result<Vec<u8>>;
+    /// Receive data from the device
+    ///
+    /// Returns a vector of received bytes. May return empty vector if no data available.
+    fn receive(&mut self) -> crate::Result<Vec<u8>>;
 
-    /// Send a string command
-    async fn send_command(&mut self, command: &str) -> Result<()> {
-        self.send(command.as_bytes()).await?;
-        self.send(b"\n").await?;
+    /// Send a text command with newline termination
+    ///
+    /// Convenience method that sends a command string followed by newline.
+    fn send_command(&mut self, command: &str) -> crate::Result<()> {
+        self.send(command.as_bytes())?;
+        self.send(b"\n")?;
+        Ok(())
+    }
+
+    /// Send a command and receive response
+    ///
+    /// Sends a command and attempts to receive a response.
+    fn send_command_and_receive(&mut self, command: &str) -> crate::Result<Vec<u8>> {
+        self.send_command(command)?;
+        self.receive()
+    }
+
+    /// Add a listener for communicator events
+    fn add_listener(&mut self, listener: CommunicatorListenerHandle);
+
+    /// Remove a listener for communicator events
+    fn remove_listener(&mut self, listener: &CommunicatorListenerHandle);
+
+    /// Get connection parameters
+    fn connection_params(&self) -> Option<&ConnectionParams>;
+
+    /// Set connection parameters (without connecting)
+    fn set_connection_params(&mut self, params: ConnectionParams) -> crate::Result<()>;
+
+    /// Get the connection driver type
+    fn driver_type(&self) -> ConnectionDriver {
+        self.connection_params()
+            .map(|p| p.driver)
+            .unwrap_or(ConnectionDriver::Serial)
+    }
+
+    /// Get the port name for this connection
+    fn port_name(&self) -> String {
+        self.connection_params()
+            .map(|p| p.port.clone())
+            .unwrap_or_else(|| "unknown".to_string())
+    }
+}
+
+/// No-op communicator for testing
+pub struct NoOpCommunicator {
+    connected: bool,
+    params: Option<ConnectionParams>,
+}
+
+impl NoOpCommunicator {
+    /// Create a new no-op communicator
+    pub fn new() -> Self {
+        Self {
+            connected: false,
+            params: None,
+        }
+    }
+}
+
+impl Default for NoOpCommunicator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Communicator for NoOpCommunicator {
+    fn connect(&mut self, params: &ConnectionParams) -> crate::Result<()> {
+        params.validate()?;
+        tracing::info!("NoOp communicator connecting to {}", params.port);
+        self.params = Some(params.clone());
+        self.connected = true;
+        Ok(())
+    }
+
+    fn disconnect(&mut self) -> crate::Result<()> {
+        tracing::info!("NoOp communicator disconnecting");
+        self.connected = false;
+        Ok(())
+    }
+
+    fn is_connected(&self) -> bool {
+        self.connected
+    }
+
+    fn send(&mut self, data: &[u8]) -> crate::Result<usize> {
+        if !self.connected {
+            return Err(crate::Error::other("Not connected"));
+        }
+        tracing::trace!("NoOp send: {} bytes", data.len());
+        Ok(data.len())
+    }
+
+    fn receive(&mut self) -> crate::Result<Vec<u8>> {
+        if !self.connected {
+            return Err(crate::Error::other("Not connected"));
+        }
+        tracing::trace!("NoOp receive");
+        Ok(vec![])
+    }
+
+    fn add_listener(&mut self, _listener: CommunicatorListenerHandle) {}
+
+    fn remove_listener(&mut self, _listener: &CommunicatorListenerHandle) {}
+
+    fn connection_params(&self) -> Option<&ConnectionParams> {
+        self.params.as_ref()
+    }
+
+    fn set_connection_params(&mut self, params: ConnectionParams) -> crate::Result<()> {
+        params.validate()?;
+        self.params = Some(params);
         Ok(())
     }
 }
 
 /// Serial/USB communicator for direct hardware connection
+///
+/// Provides full serial port communication using the serialport crate.
+/// Supports configurable baud rates, parity, stop bits, and flow control.
 pub struct SerialCommunicator {
-    // Note: SerialPort implementation details are handled internally
-    // We use a placeholder here since serialport crate types may not be Send+Sync
-    connected: bool,
+    port: Option<Box<dyn serial::SerialPort>>,
+    params: Option<ConnectionParams>,
+    listeners: Vec<CommunicatorListenerHandle>,
 }
 
 impl SerialCommunicator {
     /// Create a new serial communicator
     pub fn new() -> Self {
-        Self { connected: false }
+        Self {
+            port: None,
+            params: None,
+            listeners: Vec::new(),
+        }
+    }
+
+    /// Create a new serial communicator with mock port (for testing and integration tests)
+    pub fn with_mock_port(port_name: &str) -> Self {
+        let mut comm = Self::new();
+        comm.port = Some(Box::new(serial::MockSerialPort::new(port_name)));
+        comm
+    }
+
+    /// Notify listeners of an event
+    fn notify_listeners(&self, event: CommunicatorEvent, message: &str) {
+        for listener in &self.listeners {
+            match event {
+                CommunicatorEvent::Connected => listener.on_connected(),
+                CommunicatorEvent::Disconnected => listener.on_disconnected(),
+                CommunicatorEvent::Error => listener.on_error(message),
+                CommunicatorEvent::DataReceived => listener.on_data_received(message.as_bytes()),
+                CommunicatorEvent::DataSent => listener.on_data_sent(message.as_bytes()),
+                CommunicatorEvent::Timeout => listener.on_timeout(),
+            }
+        }
     }
 }
 
@@ -55,57 +427,334 @@ impl Default for SerialCommunicator {
     }
 }
 
-#[async_trait]
 impl Communicator for SerialCommunicator {
-    async fn connect(&mut self) -> Result<()> {
-        tracing::info!("Serial communicator connect requested");
-        self.connected = true;
-        Ok(())
+    fn connect(&mut self, params: &ConnectionParams) -> crate::Result<()> {
+        params.validate()?;
+        if params.driver != ConnectionDriver::Serial {
+            return Err(crate::Error::other(
+                "SerialCommunicator requires Serial driver type",
+            ));
+        }
+
+        // If we already have a port (from with_mock_port), use it
+        if self.port.is_some() {
+            tracing::info!("Serial communicator using existing port connection");
+            self.params = Some(params.clone());
+            self.notify_listeners(CommunicatorEvent::Connected, "Connected to serial port");
+            return Ok(());
+        }
+
+        // Try to open the port
+        match serial::RealSerialPort::open(params) {
+            Ok(port) => {
+                tracing::info!(
+                    "Serial communicator connected to {} at {} baud",
+                    params.port,
+                    params.baud_rate
+                );
+                self.port = Some(Box::new(port));
+                self.params = Some(params.clone());
+                self.notify_listeners(CommunicatorEvent::Connected, "Connected to serial port");
+                Ok(())
+            }
+            Err(e) => {
+                let msg = format!("Failed to connect: {}", e);
+                tracing::error!("{}", msg);
+                self.notify_listeners(CommunicatorEvent::Error, &msg);
+                Err(e)
+            }
+        }
     }
 
-    async fn disconnect(&mut self) -> Result<()> {
-        tracing::info!("Serial communicator disconnect requested");
-        self.connected = false;
-        Ok(())
+    fn disconnect(&mut self) -> crate::Result<()> {
+        if let Some(mut port) = self.port.take() {
+            match port.close() {
+                Ok(()) => {
+                    tracing::info!("Serial communicator disconnected");
+                    self.notify_listeners(
+                        CommunicatorEvent::Disconnected,
+                        "Disconnected from serial port",
+                    );
+                    Ok(())
+                }
+                Err(e) => {
+                    let msg = format!("Error closing port: {}", e);
+                    tracing::error!("{}", msg);
+                    self.notify_listeners(CommunicatorEvent::Error, &msg);
+                    Err(crate::Error::other(msg))
+                }
+            }
+        } else {
+            Ok(())
+        }
     }
 
     fn is_connected(&self) -> bool {
-        self.connected
+        self.port.is_some()
     }
 
-    async fn send(&mut self, data: &[u8]) -> Result<usize> {
-        if !self.connected {
-            anyhow::bail!("Not connected to serial port");
+    fn send(&mut self, data: &[u8]) -> crate::Result<usize> {
+        if let Some(port) = &mut self.port {
+            match port.write(data) {
+                Ok(n) => {
+                    tracing::trace!("Serial sent {} bytes", n);
+                    self.notify_listeners(CommunicatorEvent::DataSent, &format!("{} bytes", n));
+                    Ok(n)
+                }
+                Err(e) => {
+                    let msg = format!("Send error: {}", e);
+                    tracing::error!("{}", msg);
+                    self.notify_listeners(CommunicatorEvent::Error, &msg);
+                    Err(crate::Error::other(msg))
+                }
+            }
+        } else {
+            Err(crate::Error::other("Not connected to serial port"))
         }
-        tracing::trace!("Serial send: {} bytes", data.len());
-        Ok(data.len())
     }
 
-    async fn receive(&mut self) -> Result<Vec<u8>> {
-        if !self.connected {
-            anyhow::bail!("Not connected to serial port");
+    fn receive(&mut self) -> crate::Result<Vec<u8>> {
+        if let Some(port) = &mut self.port {
+            let mut buf = [0u8; 4096];
+            match port.read(&mut buf) {
+                Ok(n) => {
+                    let data = buf[..n].to_vec();
+                    if n > 0 {
+                        tracing::trace!("Serial received {} bytes", n);
+                        self.notify_listeners(
+                            CommunicatorEvent::DataReceived,
+                            &format!("{} bytes", n),
+                        );
+                    }
+                    Ok(data)
+                }
+                Err(e) => {
+                    // Check if it's a timeout (no data) which is normal
+                    if e.kind() == std::io::ErrorKind::WouldBlock
+                        || e.kind() == std::io::ErrorKind::TimedOut
+                    {
+                        tracing::trace!("Serial receive timeout (no data)");
+                        Ok(vec![])
+                    } else {
+                        let msg = format!("Receive error: {}", e);
+                        tracing::error!("{}", msg);
+                        self.notify_listeners(CommunicatorEvent::Error, &msg);
+                        Err(crate::Error::other(msg))
+                    }
+                }
+            }
+        } else {
+            Err(crate::Error::other("Not connected to serial port"))
         }
-        tracing::trace!("Serial receive");
-        Ok(vec![])
+    }
+
+    fn add_listener(&mut self, listener: CommunicatorListenerHandle) {
+        self.listeners.push(listener);
+        tracing::debug!("Added listener, total: {}", self.listeners.len());
+    }
+
+    fn remove_listener(&mut self, listener: &CommunicatorListenerHandle) {
+        self.listeners.retain(|l| !Arc::ptr_eq(l, listener));
+        tracing::debug!("Removed listener, total: {}", self.listeners.len());
+    }
+
+    fn connection_params(&self) -> Option<&ConnectionParams> {
+        self.params.as_ref()
+    }
+
+    fn set_connection_params(&mut self, params: ConnectionParams) -> crate::Result<()> {
+        params.validate()?;
+        self.params = Some(params);
+        Ok(())
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+/// TCP/Network communicator for remote controller connections
+///
+/// Provides network-based communication using TCP/IP for connecting to
+/// CNC controllers over Ethernet or other network connections.
+pub struct TcpCommunicator {
+    port: Option<Box<dyn tcp::TcpPort>>,
+    params: Option<ConnectionParams>,
+    listeners: Vec<CommunicatorListenerHandle>,
+}
 
-    #[tokio::test]
-    async fn test_serial_communicator_creation() {
-        let comm = SerialCommunicator::new();
-        assert!(!comm.is_connected());
+impl TcpCommunicator {
+    /// Create a new TCP communicator
+    pub fn new() -> Self {
+        Self {
+            port: None,
+            params: None,
+            listeners: Vec::new(),
+        }
     }
 
-    #[tokio::test]
-    async fn test_serial_connect_disconnect() {
-        let mut comm = SerialCommunicator::new();
-        assert!(comm.connect().await.is_ok());
-        assert!(comm.is_connected());
-        assert!(comm.disconnect().await.is_ok());
-        assert!(!comm.is_connected());
+    /// Create a new TCP communicator with mock port (for testing and integration tests)
+    pub fn with_mock_port(peer_addr: &str) -> Self {
+        let mut comm = Self::new();
+        comm.port = Some(Box::new(tcp::MockTcpPort::new(peer_addr)));
+        comm
+    }
+
+    /// Notify listeners of an event
+    fn notify_listeners(&self, event: CommunicatorEvent, message: &str) {
+        for listener in &self.listeners {
+            match event {
+                CommunicatorEvent::Connected => listener.on_connected(),
+                CommunicatorEvent::Disconnected => listener.on_disconnected(),
+                CommunicatorEvent::Error => listener.on_error(message),
+                CommunicatorEvent::DataReceived => listener.on_data_received(message.as_bytes()),
+                CommunicatorEvent::DataSent => listener.on_data_sent(message.as_bytes()),
+                CommunicatorEvent::Timeout => listener.on_timeout(),
+            }
+        }
+    }
+}
+
+impl Default for TcpCommunicator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Communicator for TcpCommunicator {
+    fn connect(&mut self, params: &ConnectionParams) -> crate::Result<()> {
+        params.validate()?;
+        if params.driver != ConnectionDriver::Tcp {
+            return Err(crate::Error::other(
+                "TcpCommunicator requires Tcp driver type",
+            ));
+        }
+
+        // If we already have a port (from with_mock_port), use it
+        if self.port.is_some() {
+            tracing::info!("TCP communicator using existing port connection");
+            self.params = Some(params.clone());
+            self.notify_listeners(CommunicatorEvent::Connected, "Connected to TCP server");
+            return Ok(());
+        }
+
+        // Try to open the connection
+        match tcp::RealTcpPort::open(params) {
+            Ok(port) => {
+                tracing::info!(
+                    "TCP communicator connected to {}:{}",
+                    params.port,
+                    params.network_port
+                );
+                self.port = Some(Box::new(port));
+                self.params = Some(params.clone());
+                self.notify_listeners(CommunicatorEvent::Connected, "Connected to TCP server");
+                Ok(())
+            }
+            Err(e) => {
+                let msg = format!("Failed to connect: {}", e);
+                tracing::error!("{}", msg);
+                self.notify_listeners(CommunicatorEvent::Error, &msg);
+                Err(e)
+            }
+        }
+    }
+
+    fn disconnect(&mut self) -> crate::Result<()> {
+        if let Some(mut port) = self.port.take() {
+            match port.close() {
+                Ok(()) => {
+                    tracing::info!("TCP communicator disconnected");
+                    self.notify_listeners(
+                        CommunicatorEvent::Disconnected,
+                        "Disconnected from TCP server",
+                    );
+                    Ok(())
+                }
+                Err(e) => {
+                    let msg = format!("Error closing port: {}", e);
+                    tracing::error!("{}", msg);
+                    self.notify_listeners(CommunicatorEvent::Error, &msg);
+                    Err(crate::Error::other(msg))
+                }
+            }
+        } else {
+            Ok(())
+        }
+    }
+
+    fn is_connected(&self) -> bool {
+        self.port.is_some()
+    }
+
+    fn send(&mut self, data: &[u8]) -> crate::Result<usize> {
+        if let Some(port) = &mut self.port {
+            match port.write(data) {
+                Ok(n) => {
+                    tracing::trace!("TCP sent {} bytes", n);
+                    self.notify_listeners(CommunicatorEvent::DataSent, &format!("{} bytes", n));
+                    Ok(n)
+                }
+                Err(e) => {
+                    let msg = format!("Send error: {}", e);
+                    tracing::error!("{}", msg);
+                    self.notify_listeners(CommunicatorEvent::Error, &msg);
+                    Err(crate::Error::other(msg))
+                }
+            }
+        } else {
+            Err(crate::Error::other("Not connected to TCP server"))
+        }
+    }
+
+    fn receive(&mut self) -> crate::Result<Vec<u8>> {
+        if let Some(port) = &mut self.port {
+            let mut buf = [0u8; 4096];
+            match port.read(&mut buf) {
+                Ok(n) => {
+                    let data = buf[..n].to_vec();
+                    if n > 0 {
+                        tracing::trace!("TCP received {} bytes", n);
+                        self.notify_listeners(
+                            CommunicatorEvent::DataReceived,
+                            &format!("{} bytes", n),
+                        );
+                    }
+                    Ok(data)
+                }
+                Err(e) => {
+                    // Check if it's a timeout (no data) which is normal
+                    if e.kind() == std::io::ErrorKind::WouldBlock
+                        || e.kind() == std::io::ErrorKind::TimedOut
+                    {
+                        tracing::trace!("TCP receive timeout (no data)");
+                        Ok(vec![])
+                    } else {
+                        let msg = format!("Receive error: {}", e);
+                        tracing::error!("{}", msg);
+                        self.notify_listeners(CommunicatorEvent::Error, &msg);
+                        Err(crate::Error::other(msg))
+                    }
+                }
+            }
+        } else {
+            Err(crate::Error::other("Not connected to TCP server"))
+        }
+    }
+
+    fn add_listener(&mut self, listener: CommunicatorListenerHandle) {
+        self.listeners.push(listener);
+        tracing::debug!("Added listener, total: {}", self.listeners.len());
+    }
+
+    fn remove_listener(&mut self, listener: &CommunicatorListenerHandle) {
+        self.listeners.retain(|l| !Arc::ptr_eq(l, listener));
+        tracing::debug!("Removed listener, total: {}", self.listeners.len());
+    }
+
+    fn connection_params(&self) -> Option<&ConnectionParams> {
+        self.params.as_ref()
+    }
+
+    fn set_connection_params(&mut self, params: ConnectionParams) -> crate::Result<()> {
+        params.validate()?;
+        self.params = Some(params);
+        Ok(())
     }
 }

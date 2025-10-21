@@ -89,16 +89,16 @@ impl CNCPoint {
     }
 
     /// Create a CNC point with specified 6-axis coordinates
-    pub fn with_axes(
-        x: f64,
-        y: f64,
-        z: f64,
-        a: f64,
-        b: f64,
-        c: f64,
-        unit: Units,
-    ) -> Self {
-        Self { x, y, z, a, b, c, unit }
+    pub fn with_axes(x: f64, y: f64, z: f64, a: f64, b: f64, c: f64, unit: Units) -> Self {
+        Self {
+            x,
+            y,
+            z,
+            a,
+            b,
+            c,
+            unit,
+        }
     }
 
     /// Get all axes as a tuple
@@ -381,7 +381,120 @@ impl PartialPosition {
     }
 }
 
-/// Current status of the controller
+/// Machine/Controller state machine states
+///
+/// Represents the operational state of the CNC controller.
+/// This enum tracks the full lifecycle of controller operation from
+/// initial connection through execution and error states.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ControllerState {
+    /// Not connected to any controller
+    Disconnected,
+    /// In the process of connecting to controller
+    Connecting,
+    /// Connected and idle, ready for commands
+    Idle,
+    /// Executing a G-code program
+    Run,
+    /// Program paused, awaiting resume
+    Hold,
+    /// Manual jog/movement mode
+    Jog,
+    /// Machine alarm state (requires manual intervention)
+    Alarm,
+    /// Check mode (dry-run without machine movement)
+    Check,
+    /// Safety door interlock triggered
+    Door,
+    /// Homing/homing cycle in progress
+    Home,
+    /// Low-power sleep/idle state
+    Sleep,
+}
+
+impl ControllerState {
+    /// Check if this state indicates the controller is connected
+    pub fn is_connected(&self) -> bool {
+        !matches!(
+            self,
+            ControllerState::Disconnected | ControllerState::Connecting
+        )
+    }
+
+    /// Check if this state indicates the controller is ready for commands
+    pub fn is_ready(&self) -> bool {
+        matches!(
+            self,
+            ControllerState::Idle | ControllerState::Jog | ControllerState::Sleep
+        )
+    }
+
+    /// Check if this state indicates an error condition
+    pub fn is_error(&self) -> bool {
+        matches!(self, ControllerState::Alarm)
+    }
+
+    /// Check if this state indicates active motion
+    pub fn is_moving(&self) -> bool {
+        matches!(
+            self,
+            ControllerState::Run | ControllerState::Jog | ControllerState::Home
+        )
+    }
+}
+
+impl fmt::Display for ControllerState {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Disconnected => write!(f, "Disconnected"),
+            Self::Connecting => write!(f, "Connecting"),
+            Self::Idle => write!(f, "Idle"),
+            Self::Run => write!(f, "Run"),
+            Self::Hold => write!(f, "Hold"),
+            Self::Jog => write!(f, "Jog"),
+            Self::Alarm => write!(f, "Alarm"),
+            Self::Check => write!(f, "Check"),
+            Self::Door => write!(f, "Door"),
+            Self::Home => write!(f, "Home"),
+            Self::Sleep => write!(f, "Sleep"),
+        }
+    }
+}
+
+/// State of the communication layer
+///
+/// Tracks the connection state between the application and the physical controller.
+/// Separate from ControllerState as it represents the communication layer specifically.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum CommunicatorState {
+    /// Connection not established or closed
+    Disconnected,
+    /// Attempting to establish connection
+    Connecting,
+    /// Connection active and ready for communication
+    Connected,
+    /// Connection exists but communication is stalled (no response)
+    Stalled,
+    /// Connection in error state
+    Error,
+}
+
+impl fmt::Display for CommunicatorState {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Disconnected => write!(f, "Disconnected"),
+            Self::Connecting => write!(f, "Connecting"),
+            Self::Connected => write!(f, "Connected"),
+            Self::Stalled => write!(f, "Stalled"),
+            Self::Error => write!(f, "Error"),
+        }
+    }
+}
+
+/// Current status indicator of the controller
+///
+/// Simple enum representing immediate operational status.
+/// Used for UI display and basic state tracking.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ControllerStatus {
     /// Idle and ready for commands
@@ -408,258 +521,138 @@ impl std::fmt::Display for ControllerStatus {
     }
 }
 
-/// Real-time status from the controller
+/// Complete machine state snapshot
+///
+/// Comprehensive representation of the machine's current operational state,
+/// including positions, status, feed/spindle information, and work coordinate system.
+/// Supports builder pattern for flexible construction.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MachineStatus {
+pub struct MachineStatusSnapshot {
     /// Current position (machine coordinates)
     pub position: Position,
     /// Current position (work coordinates)
     pub work_position: Position,
-    /// Current status
+    /// Current controller state machine state
+    pub controller_state: ControllerState,
+    /// Current controller operational status
     pub status: ControllerStatus,
     /// Current spindle speed (RPM)
     pub spindle_speed: f64,
     /// Current feed rate (units per minute)
     pub feed_rate: f64,
+    /// Active work coordinate system (1-6 for G54-G59)
+    pub active_wcs: u8,
+    /// Buffer state: (used, total)
+    pub buffer_state: (u16, u16),
+    /// Work coordinate offsets (if available)
+    pub work_offset: Option<Position>,
+    /// Timestamp of this snapshot (optional)
+    pub timestamp: Option<u64>,
 }
 
-impl Default for MachineStatus {
-    fn default() -> Self {
+impl MachineStatusSnapshot {
+    /// Create a new machine status snapshot with default values
+    pub fn new() -> Self {
         Self {
             position: Position::default(),
             work_position: Position::default(),
+            controller_state: ControllerState::Disconnected,
             status: ControllerStatus::Idle,
             spindle_speed: 0.0,
             feed_rate: 0.0,
+            active_wcs: 1,
+            buffer_state: (0, 128),
+            work_offset: None,
+            timestamp: None,
         }
     }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    // Unit conversion tests
-    #[test]
-    fn test_unit_display() {
-        assert_eq!(Units::MM.to_string(), "mm");
-        assert_eq!(Units::INCH.to_string(), "in");
-        assert_eq!(Units::Unknown.to_string(), "unknown");
+    /// Builder method to set machine position
+    pub fn with_position(mut self, position: Position) -> Self {
+        self.position = position;
+        self
     }
 
-    #[test]
-    fn test_unit_conversion_mm_to_inch() {
-        let result = Units::convert(25.4, Units::MM, Units::INCH);
-        assert!((result - 1.0).abs() < 0.0001);
+    /// Builder method to set work position
+    pub fn with_work_position(mut self, work_position: Position) -> Self {
+        self.work_position = work_position;
+        self
     }
 
-    #[test]
-    fn test_unit_conversion_inch_to_mm() {
-        let result = Units::convert(1.0, Units::INCH, Units::MM);
-        assert!((result - 25.4).abs() < 0.0001);
+    /// Builder method to set controller state
+    pub fn with_controller_state(mut self, state: ControllerState) -> Self {
+        self.controller_state = state;
+        self
     }
 
-    #[test]
-    fn test_unit_conversion_same_unit() {
-        let result = Units::convert(100.0, Units::MM, Units::MM);
-        assert_eq!(result, 100.0);
+    /// Builder method to set status
+    pub fn with_status(mut self, status: ControllerStatus) -> Self {
+        self.status = status;
+        self
     }
 
-    // CNCPoint tests
-    #[test]
-    fn test_cncpoint_new() {
-        let point = CNCPoint::new(Units::MM);
-        assert_eq!(point.x, 0.0);
-        assert_eq!(point.y, 0.0);
-        assert_eq!(point.z, 0.0);
-        assert_eq!(point.a, 0.0);
-        assert_eq!(point.b, 0.0);
-        assert_eq!(point.c, 0.0);
-        assert_eq!(point.unit, Units::MM);
+    /// Builder method to set spindle speed
+    pub fn with_spindle_speed(mut self, speed: f64) -> Self {
+        self.spindle_speed = speed;
+        self
     }
 
-    #[test]
-    fn test_cncpoint_with_axes() {
-        let point = CNCPoint::with_axes(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, Units::INCH);
-        assert_eq!(point.x, 1.0);
-        assert_eq!(point.y, 2.0);
-        assert_eq!(point.z, 3.0);
-        assert_eq!(point.a, 4.0);
-        assert_eq!(point.b, 5.0);
-        assert_eq!(point.c, 6.0);
-        assert_eq!(point.unit, Units::INCH);
+    /// Builder method to set feed rate
+    pub fn with_feed_rate(mut self, rate: f64) -> Self {
+        self.feed_rate = rate;
+        self
     }
 
-    #[test]
-    fn test_cncpoint_get_axes() {
-        let point = CNCPoint::with_axes(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, Units::MM);
-        let axes = point.get_axes();
-        assert_eq!(axes, (1.0, 2.0, 3.0, 4.0, 5.0, 6.0));
+    /// Builder method to set active WCS
+    pub fn with_active_wcs(mut self, wcs: u8) -> Self {
+        self.active_wcs = wcs.max(1).min(6);
+        self
     }
 
-    #[test]
-    fn test_cncpoint_set_axes() {
-        let mut point = CNCPoint::new(Units::MM);
-        point.set_axes(1.0, 2.0, 3.0, 4.0, 5.0, 6.0);
-        assert_eq!(point.x, 1.0);
-        assert_eq!(point.y, 2.0);
-        assert_eq!(point.z, 3.0);
-        assert_eq!(point.a, 4.0);
-        assert_eq!(point.b, 5.0);
-        assert_eq!(point.c, 6.0);
+    /// Builder method to set buffer state
+    pub fn with_buffer_state(mut self, used: u16, total: u16) -> Self {
+        self.buffer_state = (used, total);
+        self
     }
 
-    #[test]
-    fn test_cncpoint_convert_mm_to_inch() {
-        let point_mm = CNCPoint::with_axes(25.4, 50.8, 0.0, 0.0, 0.0, 0.0, Units::MM);
-        let point_inch = point_mm.convert_to(Units::INCH);
-        assert!((point_inch.x - 1.0).abs() < 0.0001);
-        assert!((point_inch.y - 2.0).abs() < 0.0001);
-        assert_eq!(point_inch.unit, Units::INCH);
+    /// Builder method to set work offset
+    pub fn with_work_offset(mut self, offset: Position) -> Self {
+        self.work_offset = Some(offset);
+        self
     }
 
-    #[test]
-    fn test_cncpoint_convert_inch_to_mm() {
-        let point_inch = CNCPoint::with_axes(1.0, 2.0, 3.0, 0.0, 0.0, 0.0, Units::INCH);
-        let point_mm = point_inch.convert_to(Units::MM);
-        assert!((point_mm.x - 25.4).abs() < 0.0001);
-        assert!((point_mm.y - 50.8).abs() < 0.0001);
-        assert!((point_mm.z - 76.2).abs() < 0.0001);
-        assert_eq!(point_mm.unit, Units::MM);
+    /// Builder method to set timestamp
+    pub fn with_timestamp(mut self, timestamp: u64) -> Self {
+        self.timestamp = Some(timestamp);
+        self
     }
 
-    // Position tests
-    #[test]
-    fn test_position_creation() {
-        let pos = Position::new(10.5, 20.3, 5.0);
-        assert_eq!(pos.x, 10.5);
-        assert_eq!(pos.y, 20.3);
-        assert_eq!(pos.z, 5.0);
-        assert_eq!(pos.a, None);
+    /// Get buffer usage as a percentage (0-100)
+    pub fn buffer_percentage(&self) -> f64 {
+        if self.buffer_state.1 == 0 {
+            0.0
+        } else {
+            (self.buffer_state.0 as f64 / self.buffer_state.1 as f64) * 100.0
+        }
     }
 
-    #[test]
-    fn test_position_with_a() {
-        let pos = Position::with_a(10.5, 20.3, 5.0, 45.0);
-        assert_eq!(pos.a, Some(45.0));
+    /// Check if buffer is nearly full (>80%)
+    pub fn is_buffer_full(&self) -> bool {
+        self.buffer_percentage() > 80.0
     }
 
-    #[test]
-    fn test_position_distance() {
-        let pos1 = Position::new(0.0, 0.0, 0.0);
-        let pos2 = Position::new(3.0, 4.0, 0.0);
-        let distance = pos1.distance_to(&pos2);
-        assert!((distance - 5.0).abs() < 0.001);
-    }
-
-    #[test]
-    fn test_position_add() {
-        let pos1 = Position::new(1.0, 2.0, 3.0);
-        let pos2 = Position::new(4.0, 5.0, 6.0);
-        let result = pos1.add(&pos2);
-        assert_eq!(result.x, 5.0);
-        assert_eq!(result.y, 7.0);
-        assert_eq!(result.z, 9.0);
-    }
-
-    #[test]
-    fn test_position_subtract() {
-        let pos1 = Position::new(10.0, 20.0, 30.0);
-        let pos2 = Position::new(1.0, 2.0, 3.0);
-        let result = pos1.subtract(&pos2);
-        assert_eq!(result.x, 9.0);
-        assert_eq!(result.y, 18.0);
-        assert_eq!(result.z, 27.0);
-    }
-
-    #[test]
-    fn test_position_abs() {
-        let pos = Position::new(-10.5, -20.3, 5.0);
-        let abs_pos = pos.abs();
-        assert_eq!(abs_pos.x, 10.5);
-        assert_eq!(abs_pos.y, 20.3);
-        assert_eq!(abs_pos.z, 5.0);
-    }
-
-    #[test]
-    fn test_position_from_cnc_point() {
-        let point = CNCPoint::with_axes(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, Units::MM);
-        let pos = Position::from_cnc_point(&point);
-        assert_eq!(pos.x, 1.0);
-        assert_eq!(pos.y, 2.0);
-        assert_eq!(pos.z, 3.0);
-        assert_eq!(pos.a, Some(4.0));
-    }
-
-    #[test]
-    fn test_position_to_cnc_point() {
-        let pos = Position::with_a(1.0, 2.0, 3.0, 4.0);
-        let point = pos.to_cnc_point(Units::INCH);
-        assert_eq!(point.x, 1.0);
-        assert_eq!(point.y, 2.0);
-        assert_eq!(point.z, 3.0);
-        assert_eq!(point.a, 4.0);
-        assert_eq!(point.unit, Units::INCH);
-    }
-
-    // PartialPosition tests
-    #[test]
-    fn test_partial_position_new() {
-        let pp = PartialPosition::new();
-        assert!(pp.is_empty());
-    }
-
-    #[test]
-    fn test_partial_position_x_only() {
-        let pp = PartialPosition::x_only(5.0);
-        assert_eq!(pp.x, Some(5.0));
-        assert_eq!(pp.y, None);
-        assert_eq!(pp.axis_count(), 1);
-    }
-
-    #[test]
-    fn test_partial_position_xyz() {
-        let pp = PartialPosition::xyz(1.0, 2.0, 3.0);
-        assert_eq!(pp.x, Some(1.0));
-        assert_eq!(pp.y, Some(2.0));
-        assert_eq!(pp.z, Some(3.0));
-        assert_eq!(pp.axis_count(), 3);
-    }
-
-    #[test]
-    fn test_partial_position_apply_to() {
-        let pos = Position::new(10.0, 20.0, 30.0);
-        let pp = PartialPosition::x_only(5.0);
-        let result = pp.apply_to(&pos);
-        assert_eq!(result.x, 5.0);
-        assert_eq!(result.y, 20.0);
-        assert_eq!(result.z, 30.0);
-    }
-
-    #[test]
-    fn test_partial_position_apply_to_cnc_point() {
-        let point = CNCPoint::with_axes(10.0, 20.0, 30.0, 40.0, 50.0, 60.0, Units::MM);
-        let pp = PartialPosition {
-            x: Some(1.0),
-            y: None,
-            z: Some(3.0),
-            a: None,
-            b: Some(5.0),
-            c: None,
-        };
-        let result = pp.apply_to_cnc_point(&point);
-        assert_eq!(result.x, 1.0);
-        assert_eq!(result.y, 20.0);
-        assert_eq!(result.z, 3.0);
-        assert_eq!(result.a, 40.0);
-        assert_eq!(result.b, 5.0);
-        assert_eq!(result.c, 60.0);
-    }
-
-    #[test]
-    fn test_machine_status_default() {
-        let status = MachineStatus::default();
-        assert_eq!(status.status, ControllerStatus::Idle);
-        assert_eq!(status.spindle_speed, 0.0);
+    /// Get available buffer space
+    pub fn available_buffer(&self) -> u16 {
+        self.buffer_state.1.saturating_sub(self.buffer_state.0)
     }
 }
+
+impl Default for MachineStatusSnapshot {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Legacy alias for backward compatibility
+/// Use `MachineStatusSnapshot` for new code
+pub type MachineStatus = MachineStatusSnapshot;
