@@ -40,7 +40,9 @@ pub mod visualizer;
 
 pub use communication::{Communicator, SerialCommunicator};
 pub use core::Controller;
-pub use data::{ControllerStatus, Position};
+pub use data::{
+    CNCPoint, ControllerStatus, MachineStatus, PartialPosition, Position, Units,
+};
 pub use firmware::ControllerType;
 pub use gcode::GcodeParser;
 
