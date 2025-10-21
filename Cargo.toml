@@ -1,0 +1,57 @@
+[package]
+name = "gcodekit4"
+version = "0.2.0"
+edition = "2021"
+description = "A Rust-based Universal G-Code Sender for CNC machines with support for GRBL, TinyG, g2core, Smoothieware, and FluidNC controllers"
+license = "MIT OR Apache-2.0"
+authors = ["GCodeKit Contributors"]
+repository = "https://github.com/thawkins/gcodekit4"
+readme = "README.md"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+
+[profile.dev]
+opt-level = 1
+
+# Core dependencies
+[dependencies]
+tokio = { version = "1.35", features = ["full"] }
+async-trait = "0.1"
+anyhow = "1.0"
+thiserror = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json"] }
+
+# Serial communication
+serialport = "4.3"
+tokio-serial = "5.1"
+
+# TCP/Network communication
+tokio-tungstenite = "0.21"
+hyper = { version = "0.14", features = ["full"] }
+http = "0.2"
+
+# Utilities
+uuid = { version = "1.6", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+regex = "1.10"
+lazy_static = "1.4"
+parking_lot = "0.12"
+futures = "0.3"
+crossbeam-channel = "0.5"
+num = "0.4"
+
+# Configuration
+config = "0.13"
+toml = "0.8"
+
+# Testing utilities
+[dev-dependencies]
+tokio-test = "0.4"
+mockall = "0.12"
+criterion = "0.5"
