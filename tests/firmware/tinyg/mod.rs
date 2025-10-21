@@ -3,3 +3,4 @@
 //! Re-export all TinyG test modules for integration testing.
 
 mod protocol;
+mod controller;

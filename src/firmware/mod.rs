@@ -12,8 +12,8 @@ pub mod tinyg;
 pub mod g2core;
 
 pub use grbl::GrblCapabilities;
-pub use tinyg::{TinyGCapabilities, TinyGVersion as TinyGVer};
-pub use g2core::{G2CoreCapabilities, G2CoreVersion as G2CoreVer};
+pub use tinyg::{TinyGCapabilities, TinyGVersion as TinyGVer, TinyGController};
+pub use g2core::{G2CoreCapabilities, G2CoreVersion as G2CoreVer, G2CoreController};
 
 /// Supported CNC controller types
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

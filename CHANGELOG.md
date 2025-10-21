@@ -7,6 +7,85 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.4.0-alpha] - 2025-10-21
 
+### Added - Phase 3: Additional Firmware Support - Controller Implementations (Tasks 36-40)
+
+#### Task 36: TinyG Protocol Support - Controller (NEW)
+- Implemented `TinyGController` struct implementing `ControllerTrait`
+- Core features:
+  - Asynchronous connection management
+  - Command sending interface
+  - Status polling with configurable rate (default 200ms)
+  - State machine for controller lifecycle
+  - Buffer level tracking
+  - Version detection and storage
+- All 30 ControllerTrait methods fully implemented:
+  - Connection/disconnection
+  - Command execution
+  - Homing and reset operations
+  - Jogging (start, stop, incremental)
+  - Streaming (start, pause, resume, cancel)
+  - Probing (Z, X, Y, corner)
+  - Work coordinate system management
+  - Override management (feed, rapid, spindle)
+  - Listener registration framework
+  - Status and settings queries
+- 3 comprehensive integration tests
+
+#### Task 37: TinyG Controller - Extended Features (NEW)
+- All ControllerTrait methods implemented with proper error handling
+- Features:
+  - Feed hold and cycle start/resume
+  - Alarm clearing with unlock command
+  - Work zero setting with axis selection
+  - Work coordinate system selection (G54-G59)
+  - WCS offset queries
+  - Settings and parser state queries
+  - Listener registration for event notifications
+- Proper async/await patterns throughout
+- Full integration with TinyG protocol utilities
+
+#### Task 38: TinyG Utilities - Controller Integration (NEW)
+- Integration with `TinyGResponseParser` for status updates
+- Polling mechanism for real-time status
+- Position tracking (machine and work coordinates)
+- Buffer management for streaming operations
+- State synchronization with GRBL/g2core patterns
+
+#### Task 39: g2core Protocol Support - Controller (NEW)
+- Implemented `G2CoreController` struct implementing `ControllerTrait`
+- Extended features over TinyG:
+  - 6-axis position tracking (X, Y, Z, A, B, C)
+  - Kinematics mode management (Cartesian, Forward, Inverse)
+  - Active axes configuration (4-6 axes)
+  - Enhanced polling rate (default 150ms for faster response)
+  - Version detection specific to g2core (100.x format)
+- All 30 ControllerTrait methods implemented with g2core specifics
+- 5 comprehensive integration tests including:
+  - Axes management
+  - Kinematics mode operations
+  - Full controller lifecycle
+
+#### Task 40: g2core Controller - Advanced Features (NEW)
+- Full ControllerTrait implementation with advanced capabilities
+- Features:
+  - 6-axis jogging support
+  - Advanced probing with all 6 axes possible
+  - Enhanced work coordinate systems (support for all 6 axes)
+  - Kinematics mode switching via command interface
+  - Feed, rapid, and spindle override (100-200% typical range)
+  - Advanced streaming with larger buffer (256 vs 64)
+- Proper state management for complex operations
+- Full integration with g2core protocol parser
+
+### Test Organization Compliance (AGENTS.md Mandate - Phase 3)
+- Created `tests/firmware/tinyg/controller.rs` for TinyG controller tests
+- Created `tests/firmware/g2core/controller.rs` for g2core controller tests
+- Updated `tests/firmware/tinyg/mod.rs` to include controller module
+- Updated `tests/firmware/g2core/mod.rs` to include controller module
+- Removed all inline tests from source files (controller.rs)
+- All 8 integration tests properly organized and passing
+- Full ControllerTrait imports for trait method testing
+
 ### Added - Phase 3: Additional Firmware Support (Tasks 36-40 COMPLETED)
 
 #### Tasks 36-40: TinyG and g2core Protocol Support (NEW)

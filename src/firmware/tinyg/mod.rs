@@ -8,8 +8,10 @@ pub mod capabilities;
 pub mod response_parser;
 pub mod utils;
 pub mod command_creator;
+pub mod controller;
 
 pub use capabilities::{TinyGCapabilities, TinyGVersion, VersionComparison};
 pub use response_parser::{TinyGResponse, TinyGResponseType, TinyGResponseParser, TinyGStatus};
 pub use command_creator::{CommandCreator, RealTimeCommand, MotionType};
+pub use controller::TinyGController;
 pub use constants::*;
