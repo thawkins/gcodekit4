@@ -1,6 +1,8 @@
 //! firmware module integration tests
 
 pub mod grbl;
+pub mod grbl_communicator;
+pub mod grbl_controller;
 
 use gcodekit4::firmware::*;
 

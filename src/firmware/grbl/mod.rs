@@ -9,9 +9,13 @@ pub mod response_parser;
 pub mod status_parser;
 pub mod utils;
 pub mod command_creator;
+pub mod communicator;
+pub mod controller;
 
 pub use capabilities::{GrblCapabilities, GrblVersion, GrblFeatureSet, VersionComparison, GrblFeature};
 pub use response_parser::{GrblResponse, GrblResponseParser, StatusReport, BufferState};
 pub use status_parser::{StatusParser, MachinePosition, WorkPosition, WorkCoordinateOffset, BufferRxState, FeedSpindleState, FullStatus};
 pub use command_creator::{CommandCreator, RealTimeCommand, SystemCommand, JogCommand, ProbeCommand, ProbeType, JogMode};
+pub use communicator::{GrblCommunicator, GrblCommunicatorConfig};
+pub use controller::GrblController;
 pub use constants::*;
