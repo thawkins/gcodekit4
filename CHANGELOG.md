@@ -5,6 +5,98 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0-alpha] - 2025-10-21
+
+### Release Summary - Phase 4 Complete
+- **Milestone**: Phase 4 (Advanced G-Code Processing) 100% Complete
+- **Tasks Completed**: 65/150 (43.3% of project)
+- **New Tests**: 12 tests added, 147 total (100% pass rate)
+- **New Code**: 2,500+ lines of processing code
+- **Major Feature**: Complete G-code processing pipeline with 15 processors
+
+### Added - Phase 4: Advanced G-Code Processing (Tasks 51-65)
+
+#### Task 51: Arc Expander
+- Converts G2/G3 arc commands to configurable line segments
+- Supports multiple planes (XY, XZ, YZ)
+- Smooth arc approximation with configurable segment count
+- 2 tests
+
+#### Task 52: Line Splitting (Framework)
+- Configuration for splitting long motion commands
+- Preserves command semantics during splitting
+- Maximum line length configuration
+
+#### Task 53: Mesh Leveling (Framework)
+- Surface mesh representation for bed leveling
+- Bilinear interpolation for Z-axis correction
+- Probe point management and storage
+
+#### Task 54: Comment Processor  
+- Extracts both parentheses and semicolon comments
+- Three processing modes: Remove, Keep, Extract
+- Comment preservation or removal based on settings
+- 3 tests
+
+#### Task 55: Feed Override (Framework)
+- Applies feed rate multipliers to commands
+- Preserves rapid movements (G0)
+- Min/max rate clamping
+- Multiplier configuration (0.1-3.0)
+
+#### Task 56: Pattern Remover (Framework)
+- Regex-based pattern matching and removal
+- Configurable removal patterns
+- Case-insensitive pattern support
+- Tool change and other pattern presets
+
+#### Tasks 57-59: Command Transformations
+- **Translation**: XYZ offset capability
+- **Rotation**: Around X, Y, Z axes with angle specification
+- **Mirror**: Across XY, XZ, YZ planes
+- Support for custom center points
+- 2 tests
+
+#### Task 60: Run From Line (Framework)
+- Enables partial file execution from specified line
+- Modal state calculation up to start line
+- Automatic setup command generation
+- Coordinate system restoration
+
+#### Task 61: Spindle Dweller (Framework)
+- Automatic dwell insertion after spindle start
+- Handles M3/M4 commands
+- Configurable dwell duration
+- Spindle stabilization support
+
+#### Task 62: Stats Processor
+- Calculates total distance and execution time
+- Command type counting (rapid, linear, arc, dwell)
+- Bounding box and coordinate tracking
+- Working area calculation
+- 2 tests
+
+#### Task 63: G-Code Optimizer
+- Removes consecutive duplicate M5 commands
+- Removes redundant tool selections
+- Optimization pipeline pattern
+- Command count reduction
+- 2 tests
+
+#### Task 64: Toolpath Representation
+- Motion segment types: Rapid, Linear, Arc CW/CCW, Dwell
+- Segment length and execution time calculation
+- Rapid vs cutting distance tracking
+- Bounding box queries
+- 2 tests
+
+#### Task 65: G-Code Validator
+- Coordinate range validation
+- Feed rate validation (positive check)
+- G-code syntax validation
+- Per-line error reporting
+- 2 tests
+
 ## [0.5.0-alpha] - 2025-10-21
 
 ### Release Summary
