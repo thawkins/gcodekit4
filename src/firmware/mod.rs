@@ -8,8 +8,12 @@
 //! - FluidNC: Powerful open-source CNC control
 
 pub mod grbl;
+pub mod tinyg;
+pub mod g2core;
 
 pub use grbl::GrblCapabilities;
+pub use tinyg::{TinyGCapabilities, TinyGVersion as TinyGVer};
+pub use g2core::{G2CoreCapabilities, G2CoreVersion as G2CoreVer};
 
 /// Supported CNC controller types
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
