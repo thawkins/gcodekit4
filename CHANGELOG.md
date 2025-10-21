@@ -97,6 +97,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced library exports in lib.rs with new types
 - Updated Cargo.toml with tempfile dev-dependency
 - Refactored main.rs to use SimpleController
+- **Test Organization Refactoring**: Moved all inline tests from source files to tests/ directory hierarchy
+  - Removed inline #[test] modules from `src/core/message.rs`
+  - Removed inline #[test] modules from `src/core/event.rs`
+  - Removed inline #[test] modules from `src/gcode/stream.rs`
+  - All tests now organized in proper `tests/` hierarchy per AGENTS.md compliance
+  - Consolidated duplicate test definitions, preserving comprehensive test coverage
+  - Maintained 214 passing tests with improved organization
+
+### Fixed
+- Removed unused `std::sync::Arc` import from `src/core/event.rs`
 
 ### Test Coverage
 - Total tests added: 57 (16+17+13+12)

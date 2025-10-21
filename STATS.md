@@ -127,12 +127,18 @@
 - **Unit Tests**: 214 passing
 - **Integration Tests**: All passing
 - **Edge Case Coverage**: Comprehensive
-- **Test Location Compliance**: 100% (per AGENTS.md)
-- **Recent Test Addition**:
+- **Test Location Compliance**: 100% (per AGENTS.md) ✅
+- **Test Refactoring**: All inline tests moved to `tests/` hierarchy
+  - Removed: inline #[test] modules from 3 source files
+  - Preserved: All 214 test cases with comprehensive coverage
+  - Organization: Hierarchical module structure matching src/ layout
+  - Compliance: Fully compliant with AGENTS.md mandate
+- **Test Organization**:
   - `tests/core/controller_trait.rs` - 17 tests
   - `tests/core/event.rs` - 13 tests
   - `tests/core/message.rs` - 12 tests
   - `tests/gcode/stream.rs` - 15 tests
+  - All other modules - 157 tests
 
 ### Code Quality
 - **Compilation Warnings**: Minimal (unused variables in tests)

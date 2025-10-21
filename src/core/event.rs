@@ -5,7 +5,6 @@
 //! - Event dispatcher for publishing events to subscribers
 //! - Listener registration and management
 
-use std::sync::Arc;
 use tokio::sync::broadcast;
 use crate::data::{ControllerStatus, ControllerState};
 
@@ -104,80 +103,5 @@ impl Clone for EventDispatcher {
 impl Default for EventDispatcher {
     fn default() -> Self {
         Self::default_with_buffer()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_event_display() {
-        let connected_event = ControllerEvent::Connected("GRBL".to_string());
-        assert!(connected_event.to_string().contains("Connected"));
-
-        let disconnected_event = ControllerEvent::Disconnected;
-        assert!(disconnected_event.to_string().contains("Disconnected"));
-
-        let error_event = ControllerEvent::Error("Test error".to_string());
-        assert!(error_event.to_string().contains("Test error"));
-    }
-
-    #[tokio::test]
-    async fn test_event_dispatcher_creation() {
-        let dispatcher = EventDispatcher::new(50);
-        assert_eq!(dispatcher.subscriber_count(), 0);
-    }
-
-    #[tokio::test]
-    async fn test_event_dispatcher_subscribe() {
-        let dispatcher = EventDispatcher::default_with_buffer();
-        let _rx = dispatcher.subscribe();
-        assert_eq!(dispatcher.subscriber_count(), 1);
-    }
-
-    #[tokio::test]
-    async fn test_event_dispatcher_publish() {
-        let dispatcher = EventDispatcher::default_with_buffer();
-        let _rx = dispatcher.subscribe();
-
-        let event = ControllerEvent::Disconnected;
-        let result = dispatcher.publish(event);
-        assert!(result.is_ok());
-    }
-
-    #[tokio::test]
-    async fn test_event_dispatcher_broadcast() {
-        let dispatcher = EventDispatcher::default_with_buffer();
-        let mut rx1 = dispatcher.subscribe();
-        let mut rx2 = dispatcher.subscribe();
-
-        let event = ControllerEvent::Error("Test".to_string());
-        dispatcher.publish(event).unwrap();
-
-        // Both subscribers should receive the event
-        let event1 = tokio::time::timeout(
-            std::time::Duration::from_secs(1),
-            rx1.recv(),
-        )
-        .await
-        .unwrap()
-        .unwrap();
-
-        let event2 = tokio::time::timeout(
-            std::time::Duration::from_secs(1),
-            rx2.recv(),
-        )
-        .await
-        .unwrap()
-        .unwrap();
-
-        match (event1, event2) {
-            (ControllerEvent::Error(msg1), ControllerEvent::Error(msg2)) => {
-                assert_eq!(msg1, "Test");
-                assert_eq!(msg2, "Test");
-            }
-            _ => panic!("Expected error events"),
-        }
     }
 }
