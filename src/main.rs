@@ -29,6 +29,13 @@ fn main() -> anyhow::Result<()> {
         main_window.set_selected_port(first_port);
     }
     
+    // Initialize status panel
+    main_window.set_device_version(slint::SharedString::from("Not Connected"));
+    main_window.set_machine_state(slint::SharedString::from("DISCONNECTED"));
+    main_window.set_position_x(0.0);
+    main_window.set_position_y(0.0);
+    main_window.set_position_z(0.0);
+    
     // Shared state for communicator
     let communicator = Rc::new(RefCell::new(SerialCommunicator::new()));
     
@@ -70,13 +77,17 @@ fn main() -> anyhow::Result<()> {
                 if let Some(window) = window_weak.upgrade() {
                     window.set_connected(true);
                     window.set_connection_status(slint::SharedString::from("Connected"));
+                    window.set_device_version(slint::SharedString::from("Detecting..."));
+                    window.set_machine_state(slint::SharedString::from("CONNECTING"));
                 }
             }
             Err(e) => {
                 info!("Failed to connect: {}", e);
                 if let Some(window) = window_weak.upgrade() {
                     window.set_connected(false);
-                    window.set_connection_status(slint::SharedString::from(format!("Connection failed: {}", e)));
+                    window.set_connection_status(slint::SharedString::from(format!("Failed: {}", e)));
+                    window.set_device_version(slint::SharedString::from("Not Connected"));
+                    window.set_machine_state(slint::SharedString::from("DISCONNECTED"));
                 }
             }
         }
@@ -94,6 +105,11 @@ fn main() -> anyhow::Result<()> {
                 if let Some(window) = window_weak.upgrade() {
                     window.set_connected(false);
                     window.set_connection_status(slint::SharedString::from("Disconnected"));
+                    window.set_device_version(slint::SharedString::from("Not Connected"));
+                    window.set_machine_state(slint::SharedString::from("DISCONNECTED"));
+                    window.set_position_x(0.0);
+                    window.set_position_y(0.0);
+                    window.set_position_z(0.0);
                 }
             }
             Err(e) => {

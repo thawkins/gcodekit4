@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.3-alpha] - 2025-10-21
+
+### Added - Status Panel at Application Bottom
+- **New Feature**: Added comprehensive status panel at the bottom of the UI displaying:
+  - Connection status with color-coded indicator (green when connected, red when disconnected)
+  - Device version information (shows "Detecting..." during connection, "Unknown" when disconnected)
+  - Machine state display (DISCONNECTED, CONNECTING, IDLE, RUN, HOLD, ALARM, etc.)
+  - Real-time position display with X, Y, Z coordinates in millimeters
+  - Color-coded axis indicators (Blue for X, Green for Y, Orange for Z)
+  - Live/Offline indicator showing connection health
+- **UI Enhancement**: Status panel expands from 25px to 80px height for better readability
+- **Properties Added to UI**:
+  - `device-version`: Shows detected firmware version
+  - `position-x`, `position-y`, `position-z`: Real-time machine coordinates
+  - `machine-state`: Current operational state of the controller
+
+### Changed
+- Updated window height from 800px to 850px to accommodate the new status panel
+- Refactored status display to show comprehensive connection and position information
+- Enhanced visual feedback with color-coded status indicators
+
 ## [0.8.2-alpha] - 2025-10-21
 
 ### Fixed - UI Connection Panel and Button Feedback

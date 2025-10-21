@@ -10,7 +10,7 @@ export struct PortInfo {
 
 export component MainWindow inherits Window {
     width: 1200px;
-    height: 800px;
+    height: 850px;
     
     title: "GCodeKit4 - Universal G-Code Sender";
     
@@ -19,6 +19,11 @@ export component MainWindow inherits Window {
     in-out property <string> selected-port: "";
     in property <bool> connected: false;
     in property <string> connection-status: "Disconnected";
+    in property <string> device-version: "Unknown";
+    in property <float> position-x: 0.0;
+    in property <float> position-y: 0.0;
+    in property <float> position-z: 0.0;
+    in property <string> machine-state: "DISCONNECTED";
     out property <int> selected-baud: 115200;
     
     callback refresh-ports();
@@ -306,23 +311,100 @@ export component MainWindow inherits Window {
             }
         }
         
-        // Status bar
+        // Status Panel
         Rectangle {
-            height: 25px;
-            background: #34495e;
+            height: 80px;
+            background: #2c3e50;
             
             HorizontalBox {
-                padding: 5px;
-                Text {
-                    text: "Status: Ready | Connected: " + (root.connected ? "Yes" : "No");
-                    color: white;
-                    font-size: 12px;
+                padding: 10px;
+                spacing: 20px;
+                
+                // Connection Status
+                VerticalBox {
+                    width: 200px;
+                    spacing: 3px;
+                    Text {
+                        text: "Connection";
+                        color: white;
+                        font-weight: 700;
+                        font-size: 12px;
+                    }
+                    Text {
+                        text: root.connection-status;
+                        color: root.connected ? #2ecc71 : #e74c3c;
+                        font-size: 13px;
+                        font-weight: 600;
+                    }
+                    Text {
+                        text: root.selected-port;
+                        color: #bdc3c7;
+                        font-size: 11px;
+                    }
                 }
-                Text {
-                    text: root.connection-status;
-                    color: root.connected ? #2ecc71 : #e74c3c;
-                    font-size: 12px;
+                
+                // Device Version
+                VerticalBox {
+                    width: 200px;
+                    spacing: 3px;
+                    Text {
+                        text: "Device Version";
+                        color: white;
+                        font-weight: 700;
+                        font-size: 12px;
+                    }
+                    Text {
+                        text: root.device-version;
+                        color: root.device-version == "Unknown" ? #e74c3c : #2ecc71;
+                        font-size: 13px;
+                        font-weight: 600;
+                    }
+                    Text {
+                        text: root.machine-state;
+                        color: #bdc3c7;
+                        font-size: 11px;
+                    }
                 }
+                
+                // Position (X, Y, Z)
+                VerticalBox {
+                    width: 300px;
+                    spacing: 3px;
+                    Text {
+                        text: "Position (mm)";
+                        color: white;
+                        font-weight: 700;
+                        font-size: 12px;
+                    }
+                    HorizontalBox {
+                        spacing: 15px;
+                        Text {
+                            text: "X: " + round(root.position-x * 1000.0) / 1000.0;
+                            color: #3498db;
+                            font-size: 12px;
+                            font-family: "Monospace";
+                        }
+                        Text {
+                            text: "Y: " + round(root.position-y * 1000.0) / 1000.0;
+                            color: #2ecc71;
+                            font-size: 12px;
+                            font-family: "Monospace";
+                        }
+                        Text {
+                            text: "Z: " + round(root.position-z * 1000.0) / 1000.0;
+                            color: #f39c12;
+                            font-size: 12px;
+                            font-family: "Monospace";
+                        }
+                    }
+                    Text {
+                        text: root.connected ? "Live" : "Offline";
+                        color: root.connected ? #2ecc71 : #95a5a6;
+                        font-size: 11px;
+                    }
+                }
+                
+                Rectangle { }  // Spacer
             }
         }
     }
