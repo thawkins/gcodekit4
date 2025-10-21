@@ -1,8 +1,8 @@
 # GCodeKit4 Development Statistics
 
 **Last Updated**: 2025-10-21  
-**Version**: 0.8.3-alpha (Status Panel + GRBL 1.2 Confirmed)  
-**Status**: Status Panel COMPLETE ✅ + GRBL 1.2 Support CONFIRMED ✅ - Phase 5 Tasks 66-76 COMPLETE
+**Version**: 0.8.5-alpha (Tasks 77-82 Complete: Advanced UI Components & 3D Visualizer Foundation)  
+**Status**: Tasks 77-82 COMPLETE ✅ - Macros Panel, Settings, Firmware Settings, 3D Visualizer Setup - Phase 5 Tasks 66-82 COMPLETE
 
 ## Project Overview
 
@@ -31,30 +31,30 @@ GCodeKit4 is a Rust implementation of Universal G-Code Sender with support for m
 - Implementation: Arc expansion, line splitting, mesh leveling, comment processing, feed override, pattern removal, transformations, run-from-line, spindle dweller, stats, optimization, toolpath, validation
 
 ### Phase 5: UI Implementation - Slint (Tasks 66-90)
-- Status: ⏳ **IN PROGRESS** - Status Panel + Tasks 66-76 COMPLETE ✅
-- Tasks: 12/25 completed (48%)
-- Current: Status Panel w/ Device Version & Position + Tasks 66-76 - Architecture/Main Window/Panels/Feedback
-- Next: Tasks 77-82 - Advanced Features
+- Status: ⏳ **IN PROGRESS** - Tasks 66-82 COMPLETE ✅
+- Tasks: 17/25 completed (68%)
+- Current: Tasks 66-76 (Panels) + Tasks 77-82 (Advanced UI & 3D) - COMPLETE
+- Next: Tasks 83-90 - Progress Indicators, Status Notifications, Keyboard Shortcuts, Themes, i18n, Responsive Layout, Help
 
 ## Code Metrics
 
 | Metric | Value |
 |--------|-------|
-| Total Lines of Code | 30,200+ |
-| Source Files | 90+ |
+| Total Lines of Code | 34,700+ |
+| Source Files | 95+ |
 | Test Files | 15+ |
-| Total Tests | 436 |
+| Total Tests | 464 |
 | Test Pass Rate | 100% |
 | Compilation Errors | 0 |
 | Compilation Warnings | 14 (minor) |
-| UI Components | 8 major panels + Status Panel |
+| UI Components | 8 major panels + Status Panel + Advanced Panels |
 
 ## Test Summary
 
 ### Current Test Results
 ```
-running 436 tests
-test result: ok. 436 passed; 0 failed
+running 464 tests
+test result: ok. 464 passed; 0 failed
 ```
 
 ### Test Breakdown by Module
@@ -73,7 +73,75 @@ test result: ok. 436 passed; 0 failed
 - Integration tests for all major components
 - Comprehensive coverage of protocols and utilities
 
-## Recent Implementation (0.8.3-alpha)
+## Recent Implementation (0.8.5-alpha - Tasks 77-82)
+
+### Task 77: Macros Panel ✅
+- **File**: `src/ui/macros_panel.rs`
+- **Features**:
+  - Macro button grid with customizable layout
+  - Macro editor for G-code content
+  - Variable substitution (${variable_name} syntax)
+  - Import/export in JSON format
+  - Button color customization
+  - Full macro management (CRUD operations)
+- **Tests**: 5 tests covering all major operations
+
+### Task 78: Settings/Preferences Dialog ✅
+- **File**: `src/ui/settings_dialog.rs`
+- **Features**:
+  - Settings organized by category
+  - Multiple value types (string, int, float, bool, enum)
+  - Keyboard shortcut configuration
+  - Settings import/export
+  - Change tracking with reset
+- **Tests**: 5 tests for settings operations
+
+### Task 79: Firmware Settings Panel ✅
+- **File**: `src/ui/firmware_settings_panel.rs`
+- **Features**:
+  - Firmware parameter display and editing
+  - Full validation (range, type, allowed values)
+  - Parameter descriptions and units
+  - Backup and restore functionality
+  - Device parameter import/export
+  - Read-only parameter support
+- **Tests**: 6 tests covering validation and persistence
+
+### Task 80: 3D Visualizer - Setup ✅
+- **File**: `src/visualizer/setup.rs`
+- **Features**:
+  - Vector3 math library with full operations
+  - Color system with predefined colors
+  - Camera system (orthographic/perspective)
+  - Light system (directional/point/spot)
+  - Scene management with default lighting
+  - Renderer context with resizing
+- **Tests**: 6 tests for vector math and camera setup
+
+### Task 81: 3D Visualizer - Toolpath Rendering ✅
+- **File**: `src/visualizer/toolpath_rendering.rs`
+- **Features**:
+  - Line segment rendering with color-coding
+  - Arc segment support with line approximation
+  - Toolpath statistics calculation
+  - Bounding box for auto-framing
+  - Current position tracking
+  - Movement type classification (rapid/feed/arc)
+- **Tests**: 5 tests for segments and toolpath operations
+
+### Task 82: 3D Visualizer - Controls ✅
+- **File**: `src/visualizer/controls.rs`
+- **Features**:
+  - Mouse drag camera rotation
+  - Mouse wheel zoom with limits
+  - Middle mouse pan support
+  - 7 view presets (Top/Bottom/Front/Back/Right/Left/Isometric)
+  - Fit-all functionality
+  - Configurable sensitivities
+  - Display toggles and transparency
+- **Tests**: 6 tests for camera controls and presets
+
+## Previous Implementation (0.8.4-alpha)
 
 ### Status Panel Feature ✅
 - **File**: `src/ui.slint`, `src/main.rs`
@@ -240,10 +308,10 @@ src/firmware/
 ## Version Information
 
 ### Current Release
-- **Version**: 0.8.2-alpha
+- **Version**: 0.8.5-alpha
 - **Release Date**: 2025-10-21
-- **Phases Complete**: Phase 1 (100%), Phase 2 (100%), Phase 3 (100%), Phase 4 (100%), Phase 5 (50%)
-- **Tasks Complete**: 76/150 (50.7%)
+- **Phases Complete**: Phase 1 (100%), Phase 2 (100%), Phase 3 (100%), Phase 4 (100%), Phase 5 (68%)
+- **Tasks Complete**: 82/150 (54.7%)
 
 ### Previous Releases
 - v0.4.0-alpha: Phase 3 Frameworks (Tasks 41-50)

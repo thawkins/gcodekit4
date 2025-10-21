@@ -8,7 +8,10 @@
 //! - State management
 //! - Event handling
 //! - 11 major UI panels (Tasks 67-76)
-//! - Additional UI features (Tasks 77-90)
+//! - Macros Panel (Task 77)
+//! - Settings/Preferences Dialog (Task 78)
+//! - Firmware Settings Panel (Task 79)
+//! - Additional UI features (Tasks 80-90)
 
 pub mod architecture;
 pub mod components;
@@ -24,6 +27,9 @@ pub mod console_panel;
 pub mod control_buttons;
 pub mod overrides_panel;
 pub mod coordinate_system;
+pub mod macros_panel;
+pub mod settings_dialog;
+pub mod firmware_settings_panel;
 
 pub use architecture::UiArchitecture;
 pub use state::UiState;
@@ -38,3 +44,6 @@ pub use console_panel::ConsolePanel;
 pub use control_buttons::ControlButtonsPanel;
 pub use overrides_panel::OverridesPanel;
 pub use coordinate_system::CoordinateSystemPanel;
+pub use macros_panel::{MacrosPanel, GcodeMacro, MacroVariable};
+pub use settings_dialog::{SettingsDialog, Setting, SettingValue, SettingsCategory, KeyboardShortcut};
+pub use firmware_settings_panel::{FirmwareSettingsPanel, FirmwareParameter, ParameterType};
