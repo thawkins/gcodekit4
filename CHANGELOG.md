@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0-alpha] - 2025-10-21
+
+### Fixed - UI Application Window
+
+#### UI Implementation (Main Fix)
+- **Issue**: Application window was not displayed when running `cargo run`
+- **Root Cause**: Slint UI framework was not integrated with main application
+- **Solution**:
+  - Added slint dependency to Cargo.toml (version 1.5)
+  - Created slint build integration (build.rs with slint-build)
+  - Implemented initial UI layout with all major panels:
+    - Connection panel (port, baud rate, connect/disconnect buttons)
+    - DRO panel (digital readout for machine position)
+    - Control buttons (Start, Pause, Stop, Reset)
+    - File operations panel
+    - G-Code viewer/editor
+    - Console/output panel
+    - Jog controller with directional buttons
+    - Overrides panel (feed rate, spindle speed)
+  - Updated main.rs to initialize and run UI window
+  - Window title: "GCodeKit4 - Universal G-Code Sender"
+  - Default window size: 1200x800px
+- **Result**: Application now displays a fully functional UI window when run
+
 ## [0.9.0-alpha] - 2025-10-21
 
 ### Release Summary - Phase 5 Tasks 71-76 Complete

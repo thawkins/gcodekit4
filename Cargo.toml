@@ -50,6 +50,13 @@ num = "0.4"
 config = "0.15.18"
 toml = "0.9.8"
 
+# UI Framework
+slint = "1.5"
+
+# Build dependencies
+[build-dependencies]
+slint-build = "1.5"
+
 # Testing utilities
 [dev-dependencies]
 tokio-test = "0.4"

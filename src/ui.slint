@@ -1,0 +1,279 @@
+// GCodeKit4 Main UI
+// Universal G-Code Sender for CNC Machines
+
+import { Button, ComboBox, LineEdit, TextEdit, VerticalBox, HorizontalBox, ScrollView, SpinBox } from "std-widgets.slint";
+
+export component MainWindow inherits Window {
+    width: 1200px;
+    height: 800px;
+    
+    title: "GCodeKit4 - Universal G-Code Sender";
+    
+    VerticalBox {
+        spacing: 0px;
+        
+        // Menu bar placeholder
+        HorizontalBox {
+            height: 40px;
+            padding: 5px;
+            Rectangle {
+                background: #2c3e50;
+            }
+            Text {
+                text: "GCodeKit4 v0.7.0-alpha";
+                color: white;
+                font-weight: 700;
+            }
+        }
+        
+        // Main content area
+        HorizontalBox {
+            spacing: 10px;
+            padding: 10px;
+            
+            // Left panel - Connection and Control
+            VerticalBox {
+                width: 300px;
+                spacing: 10px;
+                
+                // Connection Panel
+                Rectangle {
+                    background: #ecf0f1;
+                    VerticalBox {
+                        padding: 10px;
+                        spacing: 8px;
+                        
+                        Text {
+                            text: "Connection";
+                            font-weight: 700;
+                            font-size: 14px;
+                        }
+                        
+                        HorizontalBox {
+                            Text { text: "Port:"; width: 50px; }
+                            ComboBox {
+                                model: ["COM1", "COM2", "COM3"];
+                            }
+                        }
+                        
+                        HorizontalBox {
+                            Text { text: "Baud:"; width: 50px; }
+                            ComboBox {
+                                model: ["9600", "19200", "38400", "115200"];
+                            }
+                        }
+                        
+                        HorizontalBox {
+                            spacing: 5px;
+                            Button {
+                                text: "Connect";
+                                width: 50%;
+                            }
+                            Button {
+                                text: "Disconnect";
+                                width: 50%;
+                            }
+                        }
+                    }
+                }
+                
+                // DRO Panel (Display Readout)
+                Rectangle {
+                    background: #ecf0f1;
+                    VerticalBox {
+                        padding: 10px;
+                        spacing: 8px;
+                        
+                        Text {
+                            text: "Position (Work)";
+                            font-weight: 700;
+                            font-size: 14px;
+                        }
+                        
+                        HorizontalBox {
+                            Text { text: "X:"; width: 30px; }
+                            LineEdit {
+                                read-only: true;
+                                text: "0.000";
+                            }
+                        }
+                        
+                        HorizontalBox {
+                            Text { text: "Y:"; width: 30px; }
+                            LineEdit {
+                                read-only: true;
+                                text: "0.000";
+                            }
+                        }
+                        
+                        HorizontalBox {
+                            Text { text: "Z:"; width: 30px; }
+                            LineEdit {
+                                read-only: true;
+                                text: "0.000";
+                            }
+                        }
+                    }
+                }
+                
+                // Control Buttons
+                Rectangle {
+                    background: #ecf0f1;
+                    VerticalBox {
+                        padding: 10px;
+                        spacing: 8px;
+                        
+                        Button {
+                            text: "Start";
+                        }
+                        Button {
+                            text: "Pause";
+                        }
+                        Button {
+                            text: "Stop";
+                        }
+                        Button {
+                            text: "Reset";
+                        }
+                    }
+                }
+            }
+            
+            // Center panel - File and Viewer
+            VerticalBox {
+                spacing: 10px;
+                
+                // File Operations
+                Rectangle {
+                    background: #ecf0f1;
+                    height: 50px;
+                    
+                    HorizontalBox {
+                        padding: 10px;
+                        spacing: 5px;
+                        
+                        Button {
+                            text: "Open File";
+                        }
+                        Button {
+                            text: "Save";
+                        }
+                        Text {
+                            text: "Ready";
+                            color: green;
+                        }
+                    }
+                }
+                
+                // G-Code Viewer
+                Rectangle {
+                    background: white;
+                    ScrollView {
+                        TextEdit {
+                            read-only: true;
+                            text: "; G-Code viewer\nG00 X10 Y10\nG01 Z-5 F100\nG00 Z5\n";
+                        }
+                    }
+                }
+                
+                // Console Output
+                Rectangle {
+                    background: #2c3e50;
+                    height: 100px;
+                    
+                    ScrollView {
+                        TextEdit {
+                            read-only: true;
+                            text: "[INFO] GCodeKit4 initialized\n[INFO] Ready for operation\n";
+                        }
+                    }
+                }
+            }
+            
+            // Right panel - Jog and Overrides
+            VerticalBox {
+                width: 250px;
+                spacing: 10px;
+                
+                // Jog Controller
+                Rectangle {
+                    background: #ecf0f1;
+                    VerticalBox {
+                        padding: 10px;
+                        spacing: 5px;
+                        
+                        Text {
+                            text: "Jog";
+                            font-weight: 700;
+                            font-size: 14px;
+                        }
+                        
+                        HorizontalBox {
+                            Button { text: "←"; width: 25%; }
+                            Button { text: "↑"; width: 25%; }
+                            Button { text: "→"; width: 25%; }
+                            Button { text: "↓"; width: 25%; }
+                        }
+                        
+                        HorizontalBox {
+                            Text { text: "Step:"; width: 50px; }
+                            LineEdit {
+                                text: "1.00";
+                            }
+                        }
+                    }
+                }
+                
+                // Overrides
+                Rectangle {
+                    background: #ecf0f1;
+                    VerticalBox {
+                        padding: 10px;
+                        spacing: 8px;
+                        
+                        Text {
+                            text: "Overrides";
+                            font-weight: 700;
+                            font-size: 14px;
+                        }
+                        
+                        HorizontalBox {
+                            Text { text: "Feed:"; width: 50px; }
+                            SpinBox {
+                                value: 100;
+                                minimum: 0;
+                                maximum: 200;
+                            }
+                            Text { text: "%"; }
+                        }
+                        
+                        HorizontalBox {
+                            Text { text: "Spindle:"; width: 50px; }
+                            SpinBox {
+                                value: 100;
+                                minimum: 0;
+                                maximum: 200;
+                            }
+                            Text { text: "%"; }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Status bar
+        Rectangle {
+            height: 25px;
+            background: #34495e;
+            
+            HorizontalBox {
+                padding: 5px;
+                Text {
+                    text: "Status: Ready | Connected: No";
+                    color: white;
+                    font-size: 12px;
+                }
+            }
+        }
+    }
+}

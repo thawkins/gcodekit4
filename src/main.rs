@@ -1,12 +1,9 @@
-use gcodekit4::SimpleController;
-use gcodekit4::data::Position;
-use gcodekit4::firmware::FirmwareCapabilities;
-use gcodekit4::gcode::GcodeParser;
-use gcodekit4::{init_logging, VERSION};
-use tracing::{debug, info};
+slint::include_modules!();
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
+use gcodekit4::{init_logging, VERSION};
+use tracing::info;
+
+fn main() -> anyhow::Result<()> {
     // Initialize logging
     init_logging()?;
 
@@ -15,44 +12,8 @@ async fn main() -> anyhow::Result<()> {
     info!("Universal G-Code Sender for CNC Machines");
     info!("═══════════════════════════════════════════════════════════");
 
-    // Initialize core components
-    debug!("Initializing core components...");
-
-    let _controller = SimpleController::new("GRBL");
-    debug!("✓ Controller initialized");
-
-    let mut parser = GcodeParser::new();
-    debug!("✓ G-Code parser initialized");
-
-    // Display firmware capabilities
-    debug!("Loading firmware capabilities...");
-    let grbl_caps = FirmwareCapabilities::grbl();
-    info!("GRBL Capabilities:");
-    info!("  • Max Axes: {}", grbl_caps.max_axes);
-    info!("  • Max Feed Rate: {} mm/min", grbl_caps.max_feed_rate);
-    info!("  • Max Rapid Rate: {} mm/min", grbl_caps.max_rapid_rate);
-    info!("  • Supports Probing: {}", grbl_caps.supports_probing);
-    info!("  • Buffer Size: {}", grbl_caps.buffer_size);
-
-    // Test G-Code parsing
-    debug!("Testing G-Code parser...");
-    match parser.parse("G00 X10.5 Y20.3 Z5.0 ; Rapid move") {
-        Ok(cmd) => info!("✓ Parsed G-Code: {}", cmd.command),
-        Err(e) => info!("✗ Parse error: {}", e),
-    }
-
-    // Test position calculations
-    let pos1 = Position::new(0.0, 0.0, 0.0);
-    let pos2 = Position::new(3.0, 4.0, 0.0);
-    let distance = pos1.distance_to(&pos2);
-    info!("Distance calculation test:");
-    info!("  From: {}", pos1);
-    info!("  To: {}", pos2);
-    info!("  Distance: {:.3}", distance);
-
-    info!("═══════════════════════════════════════════════════════════");
-    info!("Initialization complete. Ready for development.");
-    info!("═══════════════════════════════════════════════════════════");
+    let main_window = MainWindow::new().map_err(|e| anyhow::anyhow!("UI Error: {}", e))?;
+    main_window.run().map_err(|e| anyhow::anyhow!("UI Runtime Error: {}", e))?;
 
     Ok(())
 }
