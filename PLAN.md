@@ -1,7 +1,7 @@
 # GCodeKit4 - Universal G-Code Sender Rust Implementation Plan
 
-**Current Status**: Phase 5 Tasks 71-76 + UI Window Fixes COMPLETE - 67/150 Tasks (45%)  
-**Version**: 0.8.0-alpha  
+**Current Status**: Phase 5 Task 76 COMPLETE (Status Panel + GRBL 1.2 Confirmed) - 68/150 Tasks (45%)  
+**Version**: 0.8.3-alpha  
 **Last Updated**: 2025-10-21
 
 ## Completion Summary
