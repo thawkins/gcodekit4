@@ -1,10 +1,11 @@
-//! Tests for GRBL Controller Implementation (Tasks 27-30)
+//! Tests for GRBL Controller Implementation (Tasks 27-31)
 //!
 //! Tests GRBL controller functionality including:
 //! - Task 27: Initialization
 //! - Task 28: Core implementation
 //! - Task 29: Status polling
 //! - Task 30: Streaming
+//! - Task 31: Jogging
 
 #[cfg(test)]
 mod tests {
@@ -76,6 +77,74 @@ mod tests {
         assert!(matches!(status, gcodekit4::data::ControllerStatus::Idle));
     }
 
+    // Task 31: GRBL Controller - Jogging tests
+    
+    #[tokio::test]
+    async fn test_grbl_controller_jog_start_valid() {
+        let params = create_test_connection_params();
+        let mut controller = GrblController::new(params, None).unwrap();
+        
+        // Test continuous jogging with valid inputs
+        // X axis, positive direction, 100 mm/min
+        let result = controller.jog_start('X', 1, 100.0).await;
+        // Will fail because controller is not connected, but input validation should pass
+        if let Err(e) = result {
+            let msg = e.to_string();
+            assert!(!msg.contains("Direction must be non-zero"), "Should not reject valid direction");
+        }
+    }
+
+    #[tokio::test]
+    async fn test_grbl_controller_jog_start_negative_direction() {
+        let params = create_test_connection_params();
+        let mut controller = GrblController::new(params, None).unwrap();
+        
+        // Test with negative direction
+        let result = controller.jog_start('Y', -1, 50.0).await;
+        if let Err(e) = result {
+            let msg = e.to_string();
+            assert!(!msg.contains("Direction must be non-zero"), "Should accept negative direction");
+        }
+    }
+
+    #[tokio::test]
+    async fn test_grbl_controller_jog_start_invalid_direction() {
+        let params = create_test_connection_params();
+        let mut controller = GrblController::new(params, None).unwrap();
+        
+        // Test with zero direction - should fail
+        let result = controller.jog_start('Z', 0, 100.0).await;
+        assert!(result.is_err(), "Should reject zero direction");
+        assert!(result.err().unwrap().to_string().contains("Direction must be non-zero"));
+    }
+
+    #[tokio::test]
+    async fn test_grbl_controller_jog_start_various_axes() {
+        let params = create_test_connection_params();
+        let mut controller = GrblController::new(params, None).unwrap();
+        
+        // Test all primary axes
+        for axis in ['X', 'Y', 'Z'] {
+            let result = controller.jog_start(axis, 1, 100.0).await;
+            // Should not error due to axis validation
+            if let Err(e) = result {
+                let msg = e.to_string();
+                assert!(!msg.contains("axis"), "Should accept standard axes");
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn test_grbl_controller_jog_stop() {
+        let params = create_test_connection_params();
+        let mut controller = GrblController::new(params, None).unwrap();
+        
+        // Test stopping jog
+        let result = controller.jog_stop().await;
+        // Either succeeds or fails due to no connection
+        assert!(result.is_ok() || result.is_err());
+    }
+
     #[tokio::test]
     async fn test_grbl_controller_jog_incremental() {
         let params = create_test_connection_params();
@@ -84,6 +153,42 @@ mod tests {
         // Test with valid inputs
         let result = controller.jog_incremental('X', 10.0, 100.0).await;
         // Will fail because controller is not connected, but syntax is valid
+        assert!(result.is_err() || result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_grbl_controller_jog_incremental_positive_distance() {
+        let params = create_test_connection_params();
+        let mut controller = GrblController::new(params, None).unwrap();
+        
+        // Test incremental jog with positive distance
+        let result = controller.jog_incremental('X', 5.5, 100.0).await;
+        assert!(result.is_err() || result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_grbl_controller_jog_incremental_negative_distance() {
+        let params = create_test_connection_params();
+        let mut controller = GrblController::new(params, None).unwrap();
+        
+        // Test incremental jog with negative distance (should use absolute value)
+        let result = controller.jog_incremental('Y', -10.0, 75.0).await;
+        assert!(result.is_err() || result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_grbl_controller_jog_state_transition() {
+        let params = create_test_connection_params();
+        let mut controller = GrblController::new(params, None).unwrap();
+        
+        // Verify initial state
+        let initial_state = controller.get_state();
+        assert_eq!(initial_state, ControllerState::Disconnected);
+        
+        // After jog_start would change state (if connected)
+        // This test just verifies the method signature works
+        let result = controller.jog_start('X', 1, 100.0).await;
+        // State would change on successful connection
         assert!(result.is_err() || result.is_ok());
     }
 

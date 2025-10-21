@@ -3,6 +3,8 @@
 pub mod grbl;
 pub mod grbl_communicator;
 pub mod grbl_controller;
+pub mod grbl_settings;
+pub mod grbl_override_manager;
 
 use gcodekit4::firmware::*;
 

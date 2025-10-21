@@ -1,0 +1,531 @@
+//! GRBL Override Manager
+//!
+//! Provides real-time override management for GRBL firmware,
+//! including feed rate, rapid, and spindle speed overrides.
+
+use tracing::{debug, info, trace};
+
+/// GRBL real-time override commands
+/// According to GRBL protocol specification
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RealTimeOverrideCommand {
+    /// Feed hold (0x21 = !)
+    FeedHold = 0x21,
+    /// Cycle start/resume (0x7E = ~)
+    CycleStart = 0x7E,
+    /// Reset (0x18 = Ctrl+X)
+    Reset = 0x18,
+    /// Feed rate: 10% decrease (0x91)
+    FeedDecrease10 = 0x91,
+    /// Feed rate: 1% decrease (0x92)
+    FeedDecrease1 = 0x92,
+    /// Feed rate: 1% increase (0x93)
+    FeedIncrease1 = 0x93,
+    /// Feed rate: 10% increase (0x94)
+    FeedIncrease10 = 0x94,
+    /// Rapid: 25% (0x95)
+    RapidOv25 = 0x95,
+    /// Rapid: 50% (0x96)
+    RapidOv50 = 0x96,
+    /// Rapid: 100% (0x97)
+    RapidOv100 = 0x97,
+    /// Spindle: 10% decrease (0x99)
+    SpindleDecrease10 = 0x99,
+    /// Spindle: 1% decrease (0x9A)
+    SpindleDecrease1 = 0x9A,
+    /// Spindle: 1% increase (0x9B)
+    SpindleIncrease1 = 0x9B,
+    /// Spindle: 10% increase (0x9C)
+    SpindleIncrease10 = 0x9C,
+    /// Spindle: Stop (0x9D)
+    SpindleStop = 0x9D,
+}
+
+impl RealTimeOverrideCommand {
+    /// Get the real-time byte value for this command
+    pub fn as_byte(&self) -> u8 {
+        *self as u8
+    }
+}
+
+/// GRBL Override Manager
+///
+/// Manages real-time overrides for GRBL including feed rate, rapid, and spindle speed.
+#[derive(Debug, Clone)]
+pub struct OverrideManager {
+    /// Current feed rate override (0-200%)
+    feed_override: u16,
+    /// Current rapid override (25, 50, 100)
+    rapid_override: u8,
+    /// Current spindle override (0-200%)
+    spindle_override: u16,
+    /// Track previous feed override for increment/decrement
+    previous_feed: u16,
+    /// Track previous spindle override for increment/decrement
+    previous_spindle: u16,
+}
+
+impl OverrideManager {
+    /// Create a new override manager with default values
+    pub fn new() -> Self {
+        Self {
+            feed_override: 100,
+            rapid_override: 100,
+            spindle_override: 100,
+            previous_feed: 100,
+            previous_spindle: 100,
+        }
+    }
+
+    /// Get the current feed rate override percentage
+    pub fn get_feed_override(&self) -> u16 {
+        self.feed_override
+    }
+
+    /// Get the current rapid override percentage
+    pub fn get_rapid_override(&self) -> u8 {
+        self.rapid_override
+    }
+
+    /// Get the current spindle override percentage
+    pub fn get_spindle_override(&self) -> u16 {
+        self.spindle_override
+    }
+
+    /// Set feed rate override
+    ///
+    /// # Arguments
+    /// * `percentage` - Feed rate override percentage (0-200%)
+    ///
+    /// # Errors
+    /// Returns error if percentage is outside valid range
+    pub fn set_feed_override(&mut self, percentage: u16) -> anyhow::Result<()> {
+        if percentage > 200 {
+            return Err(anyhow::anyhow!(
+                "Feed override must be 0-200%, got {}",
+                percentage
+            ));
+        }
+
+        debug!("Setting feed override to {}%", percentage);
+        self.previous_feed = self.feed_override;
+        self.feed_override = percentage;
+
+        Ok(())
+    }
+
+    /// Increase feed rate override by 1%
+    pub fn increase_feed_1(&mut self) -> anyhow::Result<()> {
+        let new_value = std::cmp::min(self.feed_override + 1, 200);
+        self.set_feed_override(new_value)?;
+        debug!("Feed override increased to {}%", new_value);
+        Ok(())
+    }
+
+    /// Decrease feed rate override by 1%
+    pub fn decrease_feed_1(&mut self) -> anyhow::Result<()> {
+        let new_value = if self.feed_override > 0 {
+            self.feed_override - 1
+        } else {
+            0
+        };
+        self.set_feed_override(new_value)?;
+        debug!("Feed override decreased to {}%", new_value);
+        Ok(())
+    }
+
+    /// Increase feed rate override by 10%
+    pub fn increase_feed_10(&mut self) -> anyhow::Result<()> {
+        let new_value = std::cmp::min(self.feed_override + 10, 200);
+        self.set_feed_override(new_value)?;
+        debug!("Feed override increased by 10% to {}%", new_value);
+        Ok(())
+    }
+
+    /// Decrease feed rate override by 10%
+    pub fn decrease_feed_10(&mut self) -> anyhow::Result<()> {
+        let new_value = if self.feed_override > 10 {
+            self.feed_override - 10
+        } else {
+            0
+        };
+        self.set_feed_override(new_value)?;
+        debug!("Feed override decreased by 10% to {}%", new_value);
+        Ok(())
+    }
+
+    /// Set rapid override
+    ///
+    /// # Arguments
+    /// * `percentage` - Rapid override percentage (must be 25, 50, or 100)
+    ///
+    /// # Errors
+    /// Returns error if percentage is not one of the valid options
+    pub fn set_rapid_override(&mut self, percentage: u8) -> anyhow::Result<()> {
+        if ![25, 50, 100].contains(&percentage) {
+            return Err(anyhow::anyhow!(
+                "Rapid override must be 25, 50, or 100%, got {}",
+                percentage
+            ));
+        }
+
+        debug!("Setting rapid override to {}%", percentage);
+        self.rapid_override = percentage;
+
+        Ok(())
+    }
+
+    /// Get the real-time command for the current rapid override
+    pub fn get_rapid_override_command(&self) -> RealTimeOverrideCommand {
+        match self.rapid_override {
+            25 => RealTimeOverrideCommand::RapidOv25,
+            50 => RealTimeOverrideCommand::RapidOv50,
+            _ => RealTimeOverrideCommand::RapidOv100,
+        }
+    }
+
+    /// Set spindle override
+    ///
+    /// # Arguments
+    /// * `percentage` - Spindle override percentage (0-200%)
+    ///
+    /// # Errors
+    /// Returns error if percentage is outside valid range
+    pub fn set_spindle_override(&mut self, percentage: u16) -> anyhow::Result<()> {
+        if percentage > 200 {
+            return Err(anyhow::anyhow!(
+                "Spindle override must be 0-200%, got {}",
+                percentage
+            ));
+        }
+
+        debug!("Setting spindle override to {}%", percentage);
+        self.previous_spindle = self.spindle_override;
+        self.spindle_override = percentage;
+
+        Ok(())
+    }
+
+    /// Increase spindle override by 1%
+    pub fn increase_spindle_1(&mut self) -> anyhow::Result<()> {
+        let new_value = std::cmp::min(self.spindle_override + 1, 200);
+        self.set_spindle_override(new_value)?;
+        debug!("Spindle override increased to {}%", new_value);
+        Ok(())
+    }
+
+    /// Decrease spindle override by 1%
+    pub fn decrease_spindle_1(&mut self) -> anyhow::Result<()> {
+        let new_value = if self.spindle_override > 0 {
+            self.spindle_override - 1
+        } else {
+            0
+        };
+        self.set_spindle_override(new_value)?;
+        debug!("Spindle override decreased to {}%", new_value);
+        Ok(())
+    }
+
+    /// Increase spindle override by 10%
+    pub fn increase_spindle_10(&mut self) -> anyhow::Result<()> {
+        let new_value = std::cmp::min(self.spindle_override + 10, 200);
+        self.set_spindle_override(new_value)?;
+        debug!("Spindle override increased by 10% to {}%", new_value);
+        Ok(())
+    }
+
+    /// Decrease spindle override by 10%
+    pub fn decrease_spindle_10(&mut self) -> anyhow::Result<()> {
+        let new_value = if self.spindle_override > 10 {
+            self.spindle_override - 10
+        } else {
+            0
+        };
+        self.set_spindle_override(new_value)?;
+        debug!("Spindle override decreased by 10% to {}%", new_value);
+        Ok(())
+    }
+
+    /// Stop spindle
+    pub fn stop_spindle(&mut self) -> anyhow::Result<()> {
+        debug!("Stopping spindle");
+        self.previous_spindle = self.spindle_override;
+        self.spindle_override = 0;
+        Ok(())
+    }
+
+    /// Reset all overrides to 100%
+    pub fn reset_all(&mut self) {
+        debug!("Resetting all overrides to 100%");
+        self.feed_override = 100;
+        self.rapid_override = 100;
+        self.spindle_override = 100;
+    }
+
+    /// Check if any override is different from default (100%)
+    pub fn is_overridden(&self) -> bool {
+        self.feed_override != 100 || self.rapid_override != 100 || self.spindle_override != 100
+    }
+
+    /// Get the real-time command to apply the current feed override
+    /// Returns the command that would take us to the current override level
+    pub fn get_feed_override_command(&self) -> Option<RealTimeOverrideCommand> {
+        if self.feed_override == self.previous_feed {
+            return None;
+        }
+
+        if self.feed_override > self.previous_feed {
+            // Determine if it's a 1% or 10% increase
+            let diff = self.feed_override - self.previous_feed;
+            if diff >= 10 {
+                Some(RealTimeOverrideCommand::FeedIncrease10)
+            } else {
+                Some(RealTimeOverrideCommand::FeedIncrease1)
+            }
+        } else {
+            // Determine if it's a 1% or 10% decrease
+            let diff = self.previous_feed - self.feed_override;
+            if diff >= 10 {
+                Some(RealTimeOverrideCommand::FeedDecrease10)
+            } else {
+                Some(RealTimeOverrideCommand::FeedDecrease1)
+            }
+        }
+    }
+
+    /// Get the real-time command to apply the current spindle override
+    pub fn get_spindle_override_command(&self) -> Option<RealTimeOverrideCommand> {
+        if self.spindle_override == self.previous_spindle {
+            return None;
+        }
+
+        if self.spindle_override == 0 {
+            return Some(RealTimeOverrideCommand::SpindleStop);
+        }
+
+        if self.spindle_override > self.previous_spindle {
+            let diff = self.spindle_override - self.previous_spindle;
+            if diff >= 10 {
+                Some(RealTimeOverrideCommand::SpindleIncrease10)
+            } else {
+                Some(RealTimeOverrideCommand::SpindleIncrease1)
+            }
+        } else {
+            let diff = self.previous_spindle - self.spindle_override;
+            if diff >= 10 {
+                Some(RealTimeOverrideCommand::SpindleDecrease10)
+            } else {
+                Some(RealTimeOverrideCommand::SpindleDecrease1)
+            }
+        }
+    }
+}
+
+impl Default for OverrideManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_override_manager_creation() {
+        let manager = OverrideManager::new();
+        assert_eq!(manager.get_feed_override(), 100);
+        assert_eq!(manager.get_rapid_override(), 100);
+        assert_eq!(manager.get_spindle_override(), 100);
+    }
+
+    #[test]
+    fn test_set_feed_override_valid() {
+        let mut manager = OverrideManager::new();
+        assert!(manager.set_feed_override(50).is_ok());
+        assert_eq!(manager.get_feed_override(), 50);
+
+        assert!(manager.set_feed_override(200).is_ok());
+        assert_eq!(manager.get_feed_override(), 200);
+
+        assert!(manager.set_feed_override(0).is_ok());
+        assert_eq!(manager.get_feed_override(), 0);
+    }
+
+    #[test]
+    fn test_set_feed_override_invalid() {
+        let mut manager = OverrideManager::new();
+        assert!(manager.set_feed_override(250).is_err());
+        assert_eq!(manager.get_feed_override(), 100); // unchanged
+    }
+
+    #[test]
+    fn test_increase_feed_1() {
+        let mut manager = OverrideManager::new();
+        assert!(manager.increase_feed_1().is_ok());
+        assert_eq!(manager.get_feed_override(), 101);
+    }
+
+    #[test]
+    fn test_decrease_feed_1() {
+        let mut manager = OverrideManager::new();
+        manager.set_feed_override(50).ok();
+        assert!(manager.decrease_feed_1().is_ok());
+        assert_eq!(manager.get_feed_override(), 49);
+    }
+
+    #[test]
+    fn test_increase_feed_10() {
+        let mut manager = OverrideManager::new();
+        assert!(manager.increase_feed_10().is_ok());
+        assert_eq!(manager.get_feed_override(), 110);
+    }
+
+    #[test]
+    fn test_decrease_feed_10() {
+        let mut manager = OverrideManager::new();
+        manager.set_feed_override(50).ok();
+        assert!(manager.decrease_feed_10().is_ok());
+        assert_eq!(manager.get_feed_override(), 40);
+    }
+
+    #[test]
+    fn test_feed_override_clipping() {
+        let mut manager = OverrideManager::new();
+        manager.set_feed_override(199).ok();
+        assert!(manager.increase_feed_10().is_ok());
+        assert_eq!(manager.get_feed_override(), 200); // clamped
+
+        let mut manager = OverrideManager::new();
+        manager.set_feed_override(5).ok();
+        assert!(manager.decrease_feed_10().is_ok());
+        assert_eq!(manager.get_feed_override(), 0); // clamped
+    }
+
+    #[test]
+    fn test_set_rapid_override_valid() {
+        let mut manager = OverrideManager::new();
+        assert!(manager.set_rapid_override(25).is_ok());
+        assert_eq!(manager.get_rapid_override(), 25);
+
+        assert!(manager.set_rapid_override(50).is_ok());
+        assert_eq!(manager.get_rapid_override(), 50);
+
+        assert!(manager.set_rapid_override(100).is_ok());
+        assert_eq!(manager.get_rapid_override(), 100);
+    }
+
+    #[test]
+    fn test_set_rapid_override_invalid() {
+        let mut manager = OverrideManager::new();
+        assert!(manager.set_rapid_override(75).is_err());
+        assert_eq!(manager.get_rapid_override(), 100); // unchanged
+    }
+
+    #[test]
+    fn test_rapid_override_command() {
+        let mut manager = OverrideManager::new();
+        manager.set_rapid_override(25).ok();
+        assert_eq!(
+            manager.get_rapid_override_command(),
+            RealTimeOverrideCommand::RapidOv25
+        );
+
+        manager.set_rapid_override(50).ok();
+        assert_eq!(
+            manager.get_rapid_override_command(),
+            RealTimeOverrideCommand::RapidOv50
+        );
+
+        manager.set_rapid_override(100).ok();
+        assert_eq!(
+            manager.get_rapid_override_command(),
+            RealTimeOverrideCommand::RapidOv100
+        );
+    }
+
+    #[test]
+    fn test_set_spindle_override_valid() {
+        let mut manager = OverrideManager::new();
+        assert!(manager.set_spindle_override(50).is_ok());
+        assert_eq!(manager.get_spindle_override(), 50);
+
+        assert!(manager.set_spindle_override(200).is_ok());
+        assert_eq!(manager.get_spindle_override(), 200);
+    }
+
+    #[test]
+    fn test_set_spindle_override_invalid() {
+        let mut manager = OverrideManager::new();
+        assert!(manager.set_spindle_override(250).is_err());
+        assert_eq!(manager.get_spindle_override(), 100); // unchanged
+    }
+
+    #[test]
+    fn test_spindle_override_increment_decrement() {
+        let mut manager = OverrideManager::new();
+        manager.set_spindle_override(100).ok();
+
+        assert!(manager.increase_spindle_1().is_ok());
+        assert_eq!(manager.get_spindle_override(), 101);
+
+        assert!(manager.decrease_spindle_1().is_ok());
+        assert_eq!(manager.get_spindle_override(), 100);
+    }
+
+    #[test]
+    fn test_stop_spindle() {
+        let mut manager = OverrideManager::new();
+        manager.set_spindle_override(100).ok();
+        assert!(manager.stop_spindle().is_ok());
+        assert_eq!(manager.get_spindle_override(), 0);
+    }
+
+    #[test]
+    fn test_reset_all() {
+        let mut manager = OverrideManager::new();
+        manager.set_feed_override(50).ok();
+        manager.set_rapid_override(25).ok();
+        manager.set_spindle_override(150).ok();
+
+        manager.reset_all();
+
+        assert_eq!(manager.get_feed_override(), 100);
+        assert_eq!(manager.get_rapid_override(), 100);
+        assert_eq!(manager.get_spindle_override(), 100);
+    }
+
+    #[test]
+    fn test_is_overridden() {
+        let mut manager = OverrideManager::new();
+        assert!(!manager.is_overridden());
+
+        manager.set_feed_override(50).ok();
+        assert!(manager.is_overridden());
+
+        manager.reset_all();
+        assert!(!manager.is_overridden());
+
+        manager.set_rapid_override(50).ok();
+        assert!(manager.is_overridden());
+    }
+
+    #[test]
+    fn test_real_time_override_command_values() {
+        assert_eq!(RealTimeOverrideCommand::FeedHold.as_byte(), 0x21);
+        assert_eq!(RealTimeOverrideCommand::CycleStart.as_byte(), 0x7E);
+        assert_eq!(RealTimeOverrideCommand::RapidOv100.as_byte(), 0x97);
+        assert_eq!(RealTimeOverrideCommand::SpindleStop.as_byte(), 0x9D);
+    }
+
+    #[test]
+    fn test_feed_override_command_detection() {
+        let mut manager = OverrideManager::new();
+        manager.set_feed_override(100).ok();
+        assert!(manager.get_feed_override_command().is_none());
+
+        manager.increase_feed_10().ok();
+        let cmd = manager.get_feed_override_command();
+        assert!(cmd.is_some());
+    }
+}
