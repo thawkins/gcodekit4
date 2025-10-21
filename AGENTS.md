@@ -51,7 +51,6 @@ All tests **MUST** be located in the `tests/` folder organized by module hierarc
 -  Do not create explainer documents or other .md files unless specificaly asked to.
 -  **Test Organization**: All tests **MUST** be located in the `tests/` folder organized by module hierarchy, mirroring the `src/` directory structure, NOT inline in source files.
 
-
 ## Code Style Guidelines
 - **Formatting**: 4 spaces, max 100 width, reorder_imports=true, Unix newlines
 - **Naming**: snake_case for functions/variables, PascalCase for types/structs/enums
@@ -78,4 +77,13 @@ When dealing with issues in the remote repository:
 ## Versioning
 
 1. During development the release number will have "-alpha" appended to the end as per semantic versioning standards. 
+
+## Tempoary files
+
+1. create a directory called "target" in the project root
+2. create a directory called "temp" in the target folder
+3. Ensure that the target/temp folder is in the .gitignore file
+4. Use target/temp for all tempoary files, scripts and other ephemeral items. 
+
+
 
