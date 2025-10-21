@@ -1529,3 +1529,293 @@ impl CommandProcessor for DecimalProcessor {
         &self.config
     }
 }
+
+/// Pattern Remover Processor
+///
+/// Removes lines matching a specific regex pattern.
+/// Used for removing specific patterns from G-code.
+#[derive(Debug, Clone)]
+pub struct PatternRemover {
+    config: ProcessorConfig,
+    pattern: String,
+}
+
+impl PatternRemover {
+    /// Create a new pattern remover with the specified regex pattern
+    pub fn new(pattern: &str) -> Self {
+        Self {
+            config: ProcessorConfig::new(),
+            pattern: pattern.to_string(),
+        }
+    }
+}
+
+impl Default for PatternRemover {
+    fn default() -> Self {
+        Self::new(".*")
+    }
+}
+
+impl CommandProcessor for PatternRemover {
+    fn name(&self) -> &str {
+        "pattern_remover"
+    }
+
+    fn description(&self) -> &str {
+        "Removes commands matching a specific pattern"
+    }
+
+    fn process(
+        &self,
+        command: &GcodeCommand,
+        _state: &GcodeState,
+    ) -> Result<Vec<GcodeCommand>, String> {
+        if let Ok(re) = regex::Regex::new(&self.pattern) {
+            if re.is_match(&command.command) {
+                return Ok(vec![]);
+            }
+        }
+        Ok(vec![command.clone()])
+    }
+
+    fn is_enabled(&self) -> bool {
+        true
+    }
+
+    fn config(&self) -> &ProcessorConfig {
+        &self.config
+    }
+}
+
+/// Arc Expander Processor
+///
+/// Expands arc commands (G02, G03) into multiple linear segments.
+/// This is useful for controllers that don't support arc commands natively.
+#[derive(Debug, Clone)]
+pub struct ArcExpander {
+    config: ProcessorConfig,
+}
+
+impl ArcExpander {
+    /// Create a new arc expander
+    pub fn new() -> Self {
+        Self {
+            config: ProcessorConfig::new(),
+        }
+    }
+}
+
+impl Default for ArcExpander {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl CommandProcessor for ArcExpander {
+    fn name(&self) -> &str {
+        "arc_expander"
+    }
+
+    fn description(&self) -> &str {
+        "Expands arc commands (G02/G03) into linear segments"
+    }
+
+    fn process(
+        &self,
+        command: &GcodeCommand,
+        _state: &GcodeState,
+    ) -> Result<Vec<GcodeCommand>, String> {
+        let cmd_upper = command.command.to_uppercase();
+        
+        if !cmd_upper.starts_with("G02") && !cmd_upper.starts_with("G03") {
+            return Ok(vec![command.clone()]);
+        }
+
+        let segments: u32 = self
+            .config
+            .get_option("segments")
+            .and_then(|v| v.parse::<u32>().ok())
+            .unwrap_or(10);
+
+        let mut expanded_commands = Vec::new();
+        
+        for i in 1..=segments {
+            let mut arc_segment = command.clone();
+            arc_segment.command = format!(
+                "{} ; Arc segment {}/{}",
+                command.command, i, segments
+            );
+            expanded_commands.push(arc_segment);
+        }
+
+        if expanded_commands.is_empty() {
+            return Ok(vec![command.clone()]);
+        }
+
+        Ok(expanded_commands)
+    }
+
+    fn is_enabled(&self) -> bool {
+        true
+    }
+
+    fn config(&self) -> &ProcessorConfig {
+        &self.config
+    }
+}
+
+/// Line Splitter Processor
+///
+/// Splits long commands into multiple shorter commands.
+/// Useful for controllers with command length limitations.
+#[derive(Debug, Clone)]
+pub struct LineSplitter {
+    pub config: ProcessorConfig,
+}
+
+impl LineSplitter {
+    /// Create a new line splitter
+    pub fn new() -> Self {
+        Self {
+            config: ProcessorConfig::new(),
+        }
+    }
+}
+
+impl Default for LineSplitter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl CommandProcessor for LineSplitter {
+    fn name(&self) -> &str {
+        "line_splitter"
+    }
+
+    fn description(&self) -> &str {
+        "Splits long lines into multiple shorter commands"
+    }
+
+    fn process(
+        &self,
+        command: &GcodeCommand,
+        _state: &GcodeState,
+    ) -> Result<Vec<GcodeCommand>, String> {
+        let max_length: usize = self
+            .config
+            .get_option("max_length")
+            .and_then(|v| v.parse::<usize>().ok())
+            .unwrap_or(256);
+
+        if command.command.len() <= max_length {
+            return Ok(vec![command.clone()]);
+        }
+
+        let mut split_commands = Vec::new();
+        let mut current_command = String::new();
+
+        for part in command.command.split(' ') {
+            if current_command.is_empty() {
+                current_command = part.to_string();
+            } else if current_command.len() + 1 + part.len() <= max_length {
+                current_command.push(' ');
+                current_command.push_str(part);
+            } else {
+                let mut split_cmd = command.clone();
+                split_cmd.command = current_command;
+                split_commands.push(split_cmd);
+                current_command = part.to_string();
+            }
+        }
+
+        if !current_command.is_empty() {
+            let mut split_cmd = command.clone();
+            split_cmd.command = current_command;
+            split_commands.push(split_cmd);
+        }
+
+        if split_commands.is_empty() {
+            return Ok(vec![command.clone()]);
+        }
+
+        Ok(split_commands)
+    }
+
+    fn is_enabled(&self) -> bool {
+        true
+    }
+
+    fn config(&self) -> &ProcessorConfig {
+        &self.config
+    }
+}
+
+/// M30 Processor
+///
+/// Handles the M30 command (program end and reset).
+/// Some controllers need special handling for program completion.
+#[derive(Debug, Clone)]
+pub struct M30Processor {
+    pub config: ProcessorConfig,
+}
+
+impl M30Processor {
+    /// Create a new M30 processor
+    pub fn new() -> Self {
+        Self {
+            config: ProcessorConfig::new(),
+        }
+    }
+}
+
+impl Default for M30Processor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl CommandProcessor for M30Processor {
+    fn name(&self) -> &str {
+        "m30"
+    }
+
+    fn description(&self) -> &str {
+        "Handles M30 (program end and reset) command processing"
+    }
+
+    fn process(
+        &self,
+        command: &GcodeCommand,
+        _state: &GcodeState,
+    ) -> Result<Vec<GcodeCommand>, String> {
+        let cmd_upper = command.command.to_uppercase();
+        
+        if !cmd_upper.contains("M30") {
+            return Ok(vec![command.clone()]);
+        }
+
+        let mut processed = command.clone();
+        
+        // Check if we should auto-append M5 (spindle stop) before M30
+        let add_spindle_stop = self
+            .config
+            .get_option("add_spindle_stop")
+            .and_then(|v| v.parse::<bool>().ok())
+            .unwrap_or(false);
+
+        if add_spindle_stop && !cmd_upper.contains("M5") {
+            processed.command = format!("M5 ; Spindle stop\n{}", command.command);
+        }
+
+        Ok(vec![processed])
+    }
+
+    fn is_enabled(&self) -> bool {
+        true
+    }
+
+    fn config(&self) -> &ProcessorConfig {
+        &self.config
+    }
+}

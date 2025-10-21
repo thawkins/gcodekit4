@@ -9,7 +9,7 @@ use super::common;
 use gcodekit4::communication::{
     serial::{MockSerialPort, SerialPort, SerialPortError, SerialPortInfo},
     tcp::{MockTcpPort, TcpConnectionInfo, TcpPort},
-    Communicator, CommunicatorEvent, CommunicatorListener, CommunicatorListenerHandle,
+    Communicator, CommunicatorListenerHandle,
     ConnectionDriver, ConnectionParams, NoOpCommunicator, SerialCommunicator, TcpCommunicator,
 };
 use std::sync::Arc;

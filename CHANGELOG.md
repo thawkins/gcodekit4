@@ -9,6 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Task 15: G-Code Preprocessors - Advanced (COMPLETED)
+- Implemented `PatternRemover`
+  - Removes commands matching configurable regex patterns
+  - Generic pattern-based removal for flexible filtering
+  - Empty result vector for matched patterns
+- Implemented `ArcExpander`
+  - Expands arc commands (G02/G03) into linear segments
+  - Configurable segment count (default: 10)
+  - Useful for controllers without native arc support
+- Implemented `LineSplitter`
+  - Splits long G-code commands into shorter segments
+  - Configurable maximum line length (default: 256 characters)
+  - Maintains command structure and semantics
+  - Useful for controllers with command length limitations
+- Implemented `M30Processor`
+  - Special handling for M30 (program end/reset) commands
+  - Optional automatic M5 (spindle stop) insertion before M30
+  - Configurable via `add_spindle_stop` option
+- Added comprehensive tests for all advanced preprocessors
+  - 11 new test cases covering basic and edge cases
+  - Tests verify pattern matching, command expansion, and line splitting
+  - All tests located in `tests/gcode/preprocessor.rs`
+
 #### Task 14: G-Code Preprocessors - Basic (COMPLETED)
 - Implemented `WhitespaceProcessor`
   - Removes leading and trailing whitespace from G-code commands

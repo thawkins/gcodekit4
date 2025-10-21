@@ -453,3 +453,162 @@ fn test_processor_chain_with_expansion() {
     assert_eq!(processed[0].command, "G00_p1_part1_p3");
     assert_eq!(processed[1].command, "G00_p1_part2_p3");
 }
+
+// Task 15 Tests: Advanced Preprocessors
+
+use gcodekit4::gcode::{PatternRemover, M30Processor};
+
+#[test]
+fn test_arc_expander_basic() {
+    use gcodekit4::gcode::ArcExpander;
+    let arc_exp = ArcExpander::new();
+    let state = GcodeState::new();
+    let command = GcodeCommand::new("G02 X10 Y10 R5");
+
+    let result = arc_exp.process(&command, &state);
+    assert!(result.is_ok());
+
+    let expanded = result.unwrap();
+    assert!(expanded.len() > 0);
+    assert_eq!(arc_exp.name(), "arc_expander");
+}
+
+#[test]
+fn test_arc_expander_non_arc_passthrough() {
+    use gcodekit4::gcode::ArcExpander;
+    let arc_exp = ArcExpander::new();
+    let state = GcodeState::new();
+    let command = GcodeCommand::new("G01 X10 Y10");
+
+    let result = arc_exp.process(&command, &state);
+    assert!(result.is_ok());
+
+    let processed = result.unwrap();
+    assert_eq!(processed.len(), 1);
+    assert_eq!(processed[0].command, command.command);
+}
+
+#[test]
+fn test_line_splitter_long_line() {
+    use gcodekit4::gcode::LineSplitter;
+    let mut splitter = LineSplitter::new();
+    splitter.config.options.insert("max_length".to_string(), "20".to_string());
+
+    let state = GcodeState::new();
+    let long_command = GcodeCommand::new("G01 X100 Y200 Z50 F1000");
+
+    let result = splitter.process(&long_command, &state);
+    assert!(result.is_ok());
+
+    let split = result.unwrap();
+    assert!(split.len() >= 1);
+    assert_eq!(splitter.name(), "line_splitter");
+}
+
+#[test]
+fn test_line_splitter_short_line() {
+    use gcodekit4::gcode::LineSplitter;
+    let splitter = LineSplitter::new();
+    let state = GcodeState::new();
+    let short_command = GcodeCommand::new("G01 X10");
+
+    let result = splitter.process(&short_command, &state);
+    assert!(result.is_ok());
+
+    let processed = result.unwrap();
+    assert_eq!(processed.len(), 1);
+    assert_eq!(processed[0].command, short_command.command);
+}
+
+#[test]
+fn test_pattern_remover_match() {
+    let remover = PatternRemover::new(".*M05.*");
+    let state = GcodeState::new();
+    let command = GcodeCommand::new("M05");
+
+    let result = remover.process(&command, &state);
+    assert!(result.is_ok());
+
+    let processed = result.unwrap();
+    assert_eq!(processed.len(), 0); // Matched pattern, removed
+    assert_eq!(remover.name(), "pattern_remover");
+}
+
+#[test]
+fn test_pattern_remover_no_match() {
+    let remover = PatternRemover::new(".*M05.*");
+    let state = GcodeState::new();
+    let command = GcodeCommand::new("G01 X10 Y20");
+
+    let result = remover.process(&command, &state);
+    assert!(result.is_ok());
+
+    let processed = result.unwrap();
+    assert_eq!(processed.len(), 1);
+    assert_eq!(processed[0].command, command.command);
+}
+
+#[test]
+fn test_m30_processor_passthrough() {
+    let m30 = M30Processor::new();
+    let state = GcodeState::new();
+    let command = GcodeCommand::new("G01 X10");
+
+    let result = m30.process(&command, &state);
+    assert!(result.is_ok());
+
+    let processed = result.unwrap();
+    assert_eq!(processed.len(), 1);
+    assert_eq!(m30.name(), "m30");
+}
+
+#[test]
+fn test_m30_processor_without_spindle_stop() {
+    let m30 = M30Processor::new();
+    let state = GcodeState::new();
+    let command = GcodeCommand::new("M30");
+
+    let result = m30.process(&command, &state);
+    assert!(result.is_ok());
+
+    let processed = result.unwrap();
+    assert_eq!(processed.len(), 1);
+    assert!(processed[0].command.contains("M30"));
+}
+
+#[test]
+fn test_m30_processor_with_spindle_stop_enabled() {
+    let mut m30 = M30Processor::new();
+    m30.config.options.insert("add_spindle_stop".to_string(), "true".to_string());
+
+    let state = GcodeState::new();
+    let command = GcodeCommand::new("M30");
+
+    let result = m30.process(&command, &state);
+    assert!(result.is_ok());
+
+    let processed = result.unwrap();
+    assert_eq!(processed.len(), 1);
+    assert!(processed[0].command.contains("M5"));
+}
+
+#[test]
+fn test_advanced_processors_in_pipeline() {
+    use gcodekit4::gcode::ArcExpander;
+
+    let mut pipeline = ProcessorPipeline::new();
+    pipeline.register(Arc::new(ArcExpander::new()));
+    pipeline.register(Arc::new(M30Processor::new()));
+
+    let mut state = GcodeState::new();
+    let commands = vec![
+        GcodeCommand::new("G02 X10 Y10 R5"),
+        GcodeCommand::new("M30"),
+    ];
+
+    let result = pipeline.process_commands(&commands, &mut state);
+    assert!(result.is_ok());
+
+    let processed = result.unwrap();
+    assert!(processed.len() >= 2);
+}
