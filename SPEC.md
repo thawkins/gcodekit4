@@ -1,8 +1,8 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.8.0-alpha  
+**Version**: 0.8.1-alpha  
 **Last Updated**: 2025-10-21  
-**Status**: In Development (Phase 5 - UI Implementation 44% complete)
+**Status**: In Development (Phase 5 - UI Implementation 45% complete - UI Window Fixed)
 
 ## 1. Executive Summary
 

@@ -1,8 +1,8 @@
 # GCodeKit4 Development Statistics
 
 **Last Updated**: 2025-10-21  
-**Version**: 0.8.0-alpha (UI Integration)  
-**Status**: UI Window + Dynamic Port Detection COMPLETE ✅ - Phase 5 Tasks 71-76 COMPLETE
+**Version**: 0.8.1-alpha (UI Window Display Fixed)  
+**Status**: UI Window Display + Dynamic Serial Port Detection COMPLETE ✅ - Phase 5 Tasks 71-76 COMPLETE
 
 ## Project Overview
 

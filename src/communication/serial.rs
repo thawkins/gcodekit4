@@ -98,8 +98,10 @@ impl SerialPortInfo {
 /// List available serial ports on the system
 ///
 /// Returns a list of available COM ports with information about each port.
-/// On Linux, this lists /dev/tty* devices. On Windows, it lists COM ports.
-/// On macOS, it lists /dev/tty.* and /dev/cu.* devices.
+/// Filters ports to include only CNC controller patterns:
+/// - Windows: COM* (e.g., COM1, COM3)
+/// - Linux: /dev/ttyUSB*, /dev/ttyACM*
+/// - macOS: /dev/cu.usbserial-*, /dev/cu.usbmodem*
 pub fn list_ports() -> Result<Vec<SerialPortInfo>> {
     tracing::debug!("Listing available serial ports");
 
@@ -107,6 +109,7 @@ pub fn list_ports() -> Result<Vec<SerialPortInfo>> {
         Ok(ports) => {
             let port_infos: Vec<SerialPortInfo> = ports
                 .iter()
+                .filter(|port| is_valid_cnc_port(&port.port_name))
                 .map(|port| {
                     let info = SerialPortInfo::new(&port.port_name, get_port_description(&port));
 
@@ -128,7 +131,7 @@ pub fn list_ports() -> Result<Vec<SerialPortInfo>> {
                 })
                 .collect();
 
-            tracing::info!("Found {} serial ports", port_infos.len());
+            tracing::info!("Found {} valid CNC serial ports", port_infos.len());
             Ok(port_infos)
         }
         Err(e) => {
@@ -136,6 +139,31 @@ pub fn list_ports() -> Result<Vec<SerialPortInfo>> {
             Err(Error::other(format!("Failed to enumerate ports: {}", e)))
         }
     }
+}
+
+/// Check if a port name matches CNC controller patterns
+///
+/// Valid patterns:
+/// - Windows: COM* (COM1, COM2, etc.)
+/// - Linux: /dev/ttyUSB*, /dev/ttyACM*
+/// - macOS: /dev/cu.usbserial-*, /dev/cu.usbmodem*
+fn is_valid_cnc_port(port_name: &str) -> bool {
+    // Windows COM ports
+    if port_name.starts_with("COM") && port_name[3..].chars().all(|c| c.is_ascii_digit()) {
+        return true;
+    }
+
+    // Linux USB and ACM devices
+    if port_name.starts_with("/dev/ttyUSB") || port_name.starts_with("/dev/ttyACM") {
+        return true;
+    }
+
+    // macOS serial and modem devices
+    if port_name.starts_with("/dev/cu.usbserial-") || port_name.starts_with("/dev/cu.usbmodem") {
+        return true;
+    }
+
+    false
 }
 
 /// Get a user-friendly description for a port

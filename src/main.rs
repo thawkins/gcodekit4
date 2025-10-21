@@ -40,6 +40,7 @@ fn main() -> anyhow::Result<()> {
         info!("Disconnect requested");
     });
     
+    main_window.show().map_err(|e| anyhow::anyhow!("UI Show Error: {}", e))?;
     main_window.run().map_err(|e| anyhow::anyhow!("UI Runtime Error: {}", e))?;
 
     info!("Application closed");

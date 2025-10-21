@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.1-alpha] - 2025-10-21
+
+### Fixed - UI Application Window Display and Serial Port Detection
+
+#### Issue: Application Window Not Displayed
+- **Problem**: Running `cargo run` did not show any UI window
+- **Root Cause**: Window was created but not explicitly shown
+- **Solution**: Added explicit `main_window.show()` call before `main_window.run()`
+- **Result**: UI window now displays on application startup
+
+#### Issue: Static Serial Port Listing
+- **Problem**: Connection manager only showed hardcoded port options instead of real available ports
+- **Root Cause**: Port enumeration was not integrated with OS-level detection
+- **Solution**: 
+  - Modified `list_ports()` function to filter ports by CNC controller patterns
+  - Added support for dynamic port detection on all platforms
+  - Implemented pattern filtering: COM* (Windows), /dev/ttyUSB*, /dev/ttyACM* (Linux), /dev/cu.usbserial-*, /dev/cu.usbmodem* (macOS)
+- **Result**: Connection panel now retrieves and displays only valid CNC serial ports from the operating system
+
+### Changed
+- `src/main.rs`: Added explicit window show call
+- `src/communication/serial.rs`: Implemented port filtering with platform-specific patterns
+
 ## [0.8.0-alpha] - 2025-10-21
 
 ### Fixed - UI Application Window and Dynamic Serial Port Detection
