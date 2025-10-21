@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.4-alpha] - 2025-10-21
+
+### Fixed - Connect Button Functionality and Feedback
+
+#### Connection Button Improvements
+- **Fixed**: Connect button now shows immediate "Connecting..." status feedback
+- **Fixed**: Connection attempts now properly update the UI with status messages
+- **Fixed**: Device version now displays "Detecting..." during connection attempt
+- **Fixed**: Machine state updates to "CONNECTING" while attempting connection
+- **Enhanced**: Failed connections now show "Connection Failed" instead of full error text
+- **Enhanced**: Successful connections show "GRBL 1.1+" as default detected device version
+
+#### Status Display Enhancements
+- **Improved**: Connection status color changes between green (connected) and red (disconnected)
+- **Improved**: Device info section shows appropriate status colors based on connection state
+- **Improved**: Position display now shows "Live" in green when connected, "Offline" in gray when disconnected
+- **Added**: Port selection and device version appear in status panel for quick reference
+
+#### User Experience
+- Connect button text properly toggles between "Connect" and "Disconnect"
+- Connection errors no longer display full error text (prevents UI clutter)
+- Status panel provides clear visual feedback on all connection states
+- Position data remains readable in a monospace font for precision
+
 ## [0.8.3-alpha] - 2025-10-21
 
 ### Added - Status Panel at Application Bottom

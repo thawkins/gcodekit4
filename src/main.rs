@@ -30,6 +30,8 @@ fn main() -> anyhow::Result<()> {
     }
     
     // Initialize status panel
+    main_window.set_connected(false);
+    main_window.set_connection_status(slint::SharedString::from("Disconnected"));
     main_window.set_device_version(slint::SharedString::from("Not Connected"));
     main_window.set_machine_state(slint::SharedString::from("DISCONNECTED"));
     main_window.set_position_x(0.0);
@@ -54,6 +56,13 @@ fn main() -> anyhow::Result<()> {
         let port_str = port.to_string();
         info!("Connect requested for port: {} at {} baud", port_str, baud);
         
+        // Update UI with connecting status immediately
+        if let Some(window) = window_weak.upgrade() {
+            window.set_connection_status(slint::SharedString::from("Connecting..."));
+            window.set_device_version(slint::SharedString::from("Detecting..."));
+            window.set_machine_state(slint::SharedString::from("CONNECTING"));
+        }
+        
         // Create connection parameters
         let params = ConnectionParams {
             driver: ConnectionDriver::Serial,
@@ -77,15 +86,16 @@ fn main() -> anyhow::Result<()> {
                 if let Some(window) = window_weak.upgrade() {
                     window.set_connected(true);
                     window.set_connection_status(slint::SharedString::from("Connected"));
-                    window.set_device_version(slint::SharedString::from("Detecting..."));
-                    window.set_machine_state(slint::SharedString::from("CONNECTING"));
+                    window.set_device_version(slint::SharedString::from("GRBL 1.1+"));
+                    window.set_machine_state(slint::SharedString::from("IDLE"));
                 }
             }
             Err(e) => {
-                info!("Failed to connect: {}", e);
+                let error_msg = format!("{}", e);
+                info!("Failed to connect: {}", error_msg);
                 if let Some(window) = window_weak.upgrade() {
                     window.set_connected(false);
-                    window.set_connection_status(slint::SharedString::from(format!("Failed: {}", e)));
+                    window.set_connection_status(slint::SharedString::from(format!("Connection Failed")));
                     window.set_device_version(slint::SharedString::from("Not Connected"));
                     window.set_machine_state(slint::SharedString::from("DISCONNECTED"));
                 }
@@ -115,7 +125,7 @@ fn main() -> anyhow::Result<()> {
             Err(e) => {
                 info!("Failed to disconnect: {}", e);
                 if let Some(window) = window_weak.upgrade() {
-                    window.set_connection_status(slint::SharedString::from(format!("Disconnect error: {}", e)));
+                    window.set_connection_status(slint::SharedString::from("Disconnect error"));
                 }
             }
         }

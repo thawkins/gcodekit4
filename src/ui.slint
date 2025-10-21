@@ -348,20 +348,20 @@ export component MainWindow inherits Window {
                     width: 200px;
                     spacing: 3px;
                     Text {
-                        text: "Device Version";
+                        text: "Device";
                         color: white;
                         font-weight: 700;
                         font-size: 12px;
                     }
                     Text {
                         text: root.device-version;
-                        color: root.device-version == "Unknown" ? #e74c3c : #2ecc71;
+                        color: root.connected ? #2ecc71 : #95a5a6;
                         font-size: 13px;
                         font-weight: 600;
                     }
                     Text {
                         text: root.machine-state;
-                        color: #bdc3c7;
+                        color: root.connected ? #3498db : #bdc3c7;
                         font-size: 11px;
                     }
                 }
