@@ -5,6 +5,86 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0-alpha] - 2025-10-21
+
+### Release Summary - Phase 5 Task 66 Complete
+- **Milestone**: Phase 5 (UI Implementation - Slint) Task 66 Complete
+- **Task**: UI Architecture Setup (Task 66/25)
+- **New Tests**: 19 tests added, 166 total (100% pass rate)
+- **New Code**: 1,800+ lines of UI architecture code
+- **Major Feature**: Complete Slint UI architecture foundation
+
+### Added - Phase 5: UI Implementation (Task 66)
+
+#### Task 66: UI Architecture Setup
+- Slint component hierarchy definition
+- Main window layout foundation
+- Component communication patterns
+- UI state management system
+- Event bus for inter-component communication
+- 19 tests
+
+##### Included Components:
+1. **UiArchitecture**
+   - Component type enumeration (11 main panels)
+   - Component hierarchy initialization
+   - Communication channel registration
+   - Layout configuration
+   - Theme support (Dark, Light, HighContrast)
+
+2. **UiComponent**
+   - Visibility and enabled state management
+   - Child component tracking
+   - Component lifecycle
+
+3. **Component Library** (architecture.rs)
+   - Base component definitions
+   - Button, TextInput, Dropdown components
+   - Label, Toggle, Slider components
+   - Gauge and Status indicators
+
+4. **UiState** (state.rs)
+   - ConnectionState management
+   - ControllerState (DRO - Digital Readout)
+   - FileState tracking
+   - MachineState management
+   - Settings storage
+   - State update methods
+
+5. **UiEventBus** (events.rs)
+   - Event publishing system
+   - Event subscriptions
+   - Inter-component communication
+   - 18 event types
+
+##### 11 Main UI Panels Defined:
+1. MainWindow (root)
+2. ConnectionPanel
+3. ControllerStatePanel (DRO)
+4. JogControlPanel
+5. FileOperationsPanel
+6. GCodeViewerPanel
+7. MachineMonitorPanel
+8. SettingsPanel
+9. MacroPanel
+10. SimulationPanel
+11. VisualizerPanel
+
+##### Test Coverage (19 tests):
+- Architecture creation and initialization
+- Component visibility and enable/disable
+- Channel registration
+- Layout configuration
+- Button, TextInput, Dropdown components
+- Slider and gauge components
+- Connection state management
+- Position updates
+- File loading and tracking
+- Settings storage
+- Event bus operations
+- Event subscriptions
+- Event publishing
+
 ## [0.6.0-alpha] - 2025-10-21
 
 ### Release Summary - Phase 4 Complete
