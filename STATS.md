@@ -57,19 +57,19 @@ A Rust-based Universal G-Code Sender for CNC machines with support for GRBL, Tin
 ## Test Coverage
 
 ### Current Test Results
-- **Total Tests**: 122
-- **Passed**: 122 (100%)
+- **Total Tests**: 151
+- **Passed**: 151 (100%)
 - **Failed**: 0
 - **Coverage**: All core modules with comprehensive integration tests
 
 ### Test Breakdown by Module
-- Communication: 21 tests (Serial, TCP, Communicator interface)
 - Buffered Communication: 23 tests (Queue, flow control, acknowledgment)
-- G-Code Parser: 43 tests (Command lifecycle, parsing, state tracking)
-- G-Code Preprocessors: 24 tests (Framework, pipeline, registry) ✓ NEW
+- Communication: 21 tests (Serial, TCP, Communicator interface)
 - Core: 2 tests (Controller, state transitions)
 - Data Models: 1 test (Machine status)
 - Firmware: 3 tests (Controller capabilities)
+- G-Code Parser: 72 tests (Command lifecycle, parsing, state tracking)
+- G-Code Preprocessors: 24 tests (Framework, pipeline, registry) ✓ NEW
 - Utils: 3 tests (Math conversions)
 - UI: 1 test (Creation)
 - Visualizer: 1 test (Creation)
@@ -94,9 +94,9 @@ A Rust-based Universal G-Code Sender for CNC machines with support for GRBL, Tin
 
 ## Code Quality Metrics
 
-- **Clippy Warnings**: 0
+- **Clippy Warnings**: 0 (2 unused imports in test files, non-critical)
 - **Build Status**: ✓ Passing
-- **Test Status**: ✓ All 122 tests passing
+- **Test Status**: ✓ All 151 tests passing
 - **Code Style**: Rust guidelines (4-space, 100-char width)
 - **Documentation**: All public APIs documented with docblocks
 - **Test Organization**: All tests in tests/ folder hierarchy ✓
