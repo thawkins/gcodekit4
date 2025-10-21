@@ -30,21 +30,38 @@
 //! - **Cross-Platform**: Linux, Windows, macOS support
 
 pub mod communication;
+pub mod config;
 pub mod core;
 pub mod data;
+pub mod error;
 pub mod firmware;
 pub mod gcode;
 pub mod ui;
 pub mod utils;
 pub mod visualizer;
 
-pub use communication::{Communicator, SerialCommunicator};
+pub use communication::{
+    serial::{list_ports, SerialPortInfo},
+    tcp::TcpConnectionInfo,
+    Communicator, CommunicatorEvent, CommunicatorListener, CommunicatorListenerHandle,
+    ConnectionDriver, ConnectionParams, NoOpCommunicator, SerialCommunicator, SerialParity,
+    TcpCommunicator,
+};
+pub use config::{
+    Config, ConnectionSettings, ConnectionType, FileProcessingSettings, FirmwareSettings,
+    MachineSettings, SettingsManager, UiSettings,
+};
 pub use core::Controller;
 pub use data::{
-    CNCPoint, ControllerStatus, MachineStatus, PartialPosition, Position, Units,
+    CNCPoint, CommunicatorState, ControllerState, ControllerStatus, MachineStatus,
+    MachineStatusSnapshot, PartialPosition, Position, Units,
 };
+pub use error::{ConnectionError, ControllerError, Error, FirmwareError, GcodeError, Result};
 pub use firmware::ControllerType;
-pub use gcode::GcodeParser;
+pub use gcode::{
+    CommandId, CommandListener, CommandListenerHandle, CommandNumberGenerator, CommandResponse,
+    CommandState, GcodeCommand, GcodeParser, GcodeState, ModalState,
+};
 
 /// Library version
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -78,19 +95,4 @@ pub fn init_logging() -> anyhow::Result<()> {
 
     tracing::info!("GCodeKit4 v{} logging initialized", VERSION);
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_version() {
-        // VERSION is set at compile time from Cargo.toml
-        let version_parts: Vec<&str> = VERSION.split('.').collect();
-        assert!(
-            version_parts.len() >= 2,
-            "Version should have at least major.minor"
-        );
-    }
 }

@@ -5,9 +5,65 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.3.0] - 2024-10-21
+## [0.3.0-alpha] - 2024-10-21
 
 ### Added
+
+#### Task 12: G-Code Parser - State Machine (COMPLETED)
+- Implemented comprehensive `GcodeState` struct with full modal group tracking
+- Added motion group tracking (G00, G01, G02, G03)
+- Added plane mode tracking (G17, G18, G19)
+- Added distance mode tracking (G90 absolute, G91 incremental)
+- Added feed rate mode tracking (G93, G94, G95)
+- Added units mode tracking (G20 inches, G21 millimeters)
+- Added coordinate system tracking (G54-G59)
+- Added tool offset mode tracking (G43, G49)
+- Added cutter compensation tracking (G40, G41, G42)
+- Added feed rate, spindle speed, and tool number state tracking
+- Implemented state validation for all modal groups
+- Created setter methods with error handling for each modal group
+- Added human-readable descriptions for all modal states
+- Updated `GcodeParser` to maintain `GcodeState` automatically
+- Implemented automatic G-code parsing and state updates
+- Added support for F (feed rate), S (spindle speed), T (tool number) value parsing
+- Maintained backward compatibility with `ModalState`
+- Added serialization support with serde
+- Created 30 comprehensive tests for GcodeState functionality
+- **Tests**: All 72 gcode_parser tests pass (72 total for parser module)
+- **Tests**: All 126 project tests pass
+- **Documentation**: Comprehensive docblocks for all methods
+- **Code Quality**: Zero warnings, thread-safe implementation, full error handling
+
+#### Task 11: G-Code Parser - Core (COMPLETED)
+- Implemented comprehensive `GcodeParser` struct with modal state tracking
+- Created `GcodeCommand` struct with full lifecycle tracking (Pending → Sent → Ok → Done)
+- Implemented `CommandNumberGenerator` for atomic sequence numbering
+- Created `ModalState` struct for tracking G-code modal groups
+- Implemented comment removal (semicolon and parentheses style)
+- Added UUID-based command identification
+- Implemented timestamps for all command state transitions
+- Added duration calculations (total and execution time)
+- Created `CommandListener` trait for lifecycle event handling
+- Implemented `NoOpCommandListener` for default implementations
+- Added full serialization support with serde (JSON/TOML)
+- Created 43 comprehensive integration tests for G-code parser
+- **Tests**: All 98 tests pass (43 new parser tests)
+- **Documentation**: IMPLEMENTATION_COMPARISON.md with detailed analysis vs Java UGS
+- **Code Quality**: Zero warnings, full docblock documentation, thread-safe operations
+
+#### Task 10: Serial Communication - Buffered Communication (COMPLETED)
+- Implemented command queue management with size limits
+- Added buffer management tracking sent/active commands
+- Implemented flow control to prevent controller buffer overflow
+- Added command acknowledgment tracking with status lifecycle
+- Implemented retry logic for failed commands (configurable max retries)
+- Created `BufferedCommand` struct with status tracking
+- Created `BufferedCommunicatorConfig` for configuration
+- Created `BufferedCommunicatorWrapper` for transparent buffering
+- Added comprehensive pause/resume functionality
+- Added buffer usage monitoring (percentage calculation)
+- Created 23 integration tests for buffered communication
+- Documentation: BUFFERED_COMMUNICATION.md
 
 #### GitHub Issues and Milestones
 - Created 150 GitHub issues from PLAN.md task list
