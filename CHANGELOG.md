@@ -7,6 +7,126 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.4.0-alpha] - 2025-10-21
 
+### Added - Phase 2: GRBL Controller Implementation (Tasks 21-25 COMPLETED)
+
+#### Task 21: GRBL Protocol - Constants and Capabilities (COMPLETED)
+- Implemented complete GRBL constants module
+- Features:
+  - GRBL version patterns and minimum version support
+  - Default buffer sizes and baud rates (115200, alternative: 9600-57600)
+  - Real-time commands (?, !, ~, Ctrl+X)
+  - Status codes (Idle, Run, Hold, Jog, Alarm, Check, Door, Sleep)
+  - System settings ($110-$128, $160-$162)
+  - GRBL error codes (1-24) with descriptions
+  - GRBL alarm codes (1-9) with descriptions
+  - Coordinate systems (G54-G59, G59.1-G59.3)
+  - G-code group constants
+  - Feature flags for capability detection
+- Implemented `GrblVersion` struct with:
+  - Version parsing from startup strings ("Grbl 1.1h")
+  - Version comparison and ordering
+  - Minimum version checking
+  - Build string support
+- Implemented `GrblCapabilities` struct with:
+  - Version-based feature determination
+  - Feature set detection (GRBL 0.9 vs 1.1)
+  - Maximum speeds and spindle capabilities
+  - Baud rate support listing
+- Implemented `GrblFeatureSet` with features:
+  - Status reports, real-time commands, comments
+  - Coordinate systems, probing, spindle/coolant control
+  - Safety door, homing, soft limits
+  - Jog command, character counting, build info
+- Added 24 comprehensive tests
+
+#### Task 22: GRBL Protocol - Response Parser (COMPLETED)
+- Implemented `GrblResponse` enum for all response types
+- Implemented `StatusReport` struct with:
+  - Machine position (MPos) parsing
+  - Work position (WPos) parsing
+  - Multi-axis support (X,Y,Z,A,B,C)
+  - Buffer state tracking
+  - Feed rate and spindle speed
+  - Work coordinate offset (WCO)
+- Implemented `GrblResponseParser` with:
+  - OK/error/alarm response parsing
+  - Status report parsing (angle bracket format)
+  - Setting response parsing ($n=value)
+  - Version string detection
+  - Build info detection
+  - Error and alarm description lookups
+- Added 15 comprehensive tests covering:
+  - Multi-axis positions
+  - Buffer state parsing
+  - Feed/spindle parsing
+  - Various response types
+
+#### Task 23: GRBL Protocol - Status Parsing (COMPLETED)
+- Implemented `MachinePosition` struct for machine coordinates
+- Implemented `WorkPosition` struct for work coordinates
+- Implemented `WorkCoordinateOffset` struct with CNCPoint conversion
+- Implemented `BufferRxState` with plan:rx parsing
+- Implemented `FeedSpindleState` for combined F and S values
+- Implemented `StatusParser` with field extraction methods:
+  - `parse_mpos` - Extract machine position
+  - `parse_wpos` - Extract work position
+  - `parse_wco` - Extract work coordinate offset
+  - `parse_buffer` - Extract buffer state
+  - `parse_feed_rate` - Extract feed rate
+  - `parse_spindle_speed` - Extract spindle speed
+  - `parse_feed_spindle` - Combined parsing
+  - `parse_full` - Complete status parsing
+- Added 20 comprehensive tests including edge cases
+
+#### Task 24: GRBL Protocol - Utils (COMPLETED)
+- Implemented response validation (`is_valid_response`)
+- Implemented command formatting (`format_command`)
+- Implemented state lookup functions:
+  - `get_state_name` - Human-readable state names
+  - `is_error_state`, `is_running_state`, `is_idle_state`, `is_held_state`
+- Implemented error and alarm code lookup maps
+- Implemented setting name mapping
+- Implemented position formatting helpers:
+  - `format_position` - Format single position with 3 decimal places
+  - `format_positions` - Format XYZ triplet
+- Implemented setting response parsing
+- Implemented buffer state formatting
+- Implemented command acceptance/error checking
+- Added 22 comprehensive tests
+
+#### Task 25: GRBL Command Creator (COMPLETED)
+- Implemented `RealTimeCommand` enum:
+  - QueryStatus (?), FeedHold (!), CycleStart (~), SoftReset (Ctrl+X)
+- Implemented `SystemCommand` enum:
+  - HomeAll ($H), KillAlarmLock ($X), CheckMode ($C)
+  - QueryParserState ($G), QueryBuildInfo ($I)
+  - ResetEeprom ($RST=$), ResetAll ($RST=*), Sleep ($SLP)
+- Implemented `JogCommand` struct with plane support:
+  - XY plane, XZ plane, YZ plane jogging
+  - Relative motion with $J=G91 format
+- Implemented `ProbeCommand` struct with 4 probe types:
+  - Touching (G38.2), TouchingRequired (G38.3)
+  - Backing (G38.4), BackingRequired (G38.5)
+- Implemented `CommandCreator` factory with methods:
+  - Real-time commands (soft_reset, query_status, feed_hold, cycle_start)
+  - System commands (home_all, kill_alarm_lock)
+  - Jog commands (incremental/absolute)
+  - Probe commands
+  - Spindle/coolant control
+  - Tool change commands
+  - Rapid and linear moves
+  - Dwell and program control
+  - Work offset setting
+- Added 31 comprehensive tests
+
+### Statistics
+- Total tests: 326 (up from 214)
+- GRBL tests: 112 (new module with comprehensive coverage)
+- Code lines added: ~3500+ across all GRBL modules
+- Files created: 5 (constants.rs, capabilities.rs, response_parser.rs, status_parser.rs, utils.rs, command_creator.rs)
+
+## [0.4.0-alpha] - 2025-10-21 (Previous changes)
+
 ### Added
 
 #### Task 20: Message Service (COMPLETED)

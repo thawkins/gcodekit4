@@ -1,5 +1,7 @@
 //! firmware module integration tests
 
+pub mod grbl;
+
 use gcodekit4::firmware::*;
 
 #[test]

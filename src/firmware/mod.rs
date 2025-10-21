@@ -7,6 +7,10 @@
 //! - Smoothieware: CNC control software
 //! - FluidNC: Powerful open-source CNC control
 
+pub mod grbl;
+
+pub use grbl::GrblCapabilities;
+
 /// Supported CNC controller types
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ControllerType {
