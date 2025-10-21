@@ -1,7 +1,7 @@
 # GCodeKit4 Implementation Statistics
 
-**Last Updated**: 2024-10-21 (UTC)
-**Version**: 0.3.0
+**Last Updated**: 2025-10-21 (UTC)
+**Version**: 0.4.0-alpha
 **Development Status**: Phase 1 - Core Foundation (In Progress)
 
 ## Project Summary
@@ -12,9 +12,9 @@ A Rust-based Universal G-Code Sender for CNC machines with support for GRBL, Tin
 
 ### Version 0.3.0-alpha - Core Implementation Phase (Current)
 - **Released**: 2024-10-21
-- **Status**: ✓ Core Foundation In Progress (65% complete)
-- **Tasks Completed**: 13 of 150
-- **Completion**: 8.7%
+- **Status**: ✓ Core Foundation In Progress (70% complete)
+- **Tasks Completed**: 14 of 150
+- **Completion**: 9.3%
 
 ### Planned Releases
 
@@ -27,7 +27,7 @@ A Rust-based Universal G-Code Sender for CNC machines with support for GRBL, Tin
 
 ## Implementation Roadmap
 
-### Phase 1: Core Foundation (Tasks 1-20) - 65% Complete
+### Phase 1: Core Foundation (Tasks 1-20) - 70% Complete
 - ✓ Task 1: Project Initialization
 - ✓ Task 2: Data Models - Position and Coordinates
 - ✓ Task 3: Data Models - Controller State
@@ -41,7 +41,8 @@ A Rust-based Universal G-Code Sender for CNC machines with support for GRBL, Tin
 - ✓ Task 11: G-Code Parser - Core
 - ✓ Task 12: G-Code Parser - State Machine
 - ✓ Task 13: G-Code Preprocessors - Framework
-- ○ Tasks 14-20: Basic/Advanced Preprocessors, Stream Management, etc.
+- ✓ Task 14: G-Code Preprocessors - Basic
+- ○ Tasks 15-20: Advanced Preprocessors, Stream Management, etc.
 
 ### Phase 2: GRBL Controller (Tasks 21-35) - 0% Complete
 - ○ Task 21-35: GRBL protocol, parsing, controller implementation
@@ -109,8 +110,8 @@ A Rust-based Universal G-Code Sender for CNC machines with support for GRBL, Tin
 
 ### Issues Status
 - **Total Issues**: 150
-- **Closed Issues**: 11 (Tasks 1-11)
-- **Open Issues**: 139
+- **Closed Issues**: 14 (Tasks 1-14)
+- **Open Issues**: 136
 - **Organization**: By phase (8 phases, 20 tasks per phase)
 
 ### Closed Tasks
@@ -127,6 +128,7 @@ A Rust-based Universal G-Code Sender for CNC machines with support for GRBL, Tin
 11. Task 11: G-Code Parser - Core ✓
 12. Task 12: G-Code Parser - State Machine ✓
 13. Task 13: G-Code Preprocessors - Framework ✓
+14. Task 14: G-Code Preprocessors - Basic ✓
    
 3. **Milestone 3: Feature Complete (v0.4.0)** - Due: 2025-06-30
    - Tasks: 84-90, 95-100, 108-121, 126-137
@@ -243,8 +245,9 @@ tests/
 11. ✓ Implement Task 10: Buffered communication
 12. ✓ Implement Task 11: G-Code parser - Core
 13. ✓ Implement Task 12: G-Code parser - State Machine
-14. ✓ Implement Task 13: G-Code preprocessors - Framework ← COMPLETE
-15. → Implement Task 14: G-Code preprocessors - Basic
+14. ✓ Implement Task 13: G-Code preprocessors - Framework
+15. ✓ Implement Task 14: G-Code preprocessors - Basic ← COMPLETE
+16. → Implement Task 15: G-Code preprocessors - Advanced
 
 ## Contribution Statistics
 

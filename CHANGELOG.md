@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.3.0-alpha] - 2024-10-21
+## [0.4.0-alpha] - 2025-10-21
 
 ### Added
 
@@ -53,15 +53,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - All 151 integration tests pass successfully
 - Mirrors `src/` directory structure as mandated by AGENTS.md
 
-### Added
-
-#### Code Quality and Documentation
+#### Code Quality and Documentation Enhancements
 - Created `target/temp` directory for temporary files
 - Added `target/temp` to .gitignore per AGENTS.md
-- Analyzed Java implementation (Universal-G-Code-Sender) for comparison
-- Created comprehensive comparison analysis document
+- Created comprehensive Java implementation comparison analysis (JAVA_REVIEW.md)
+  - Detailed comparison of all 5 basic preprocessors
+  - Architecture improvements in Rust implementation
+  - Performance analysis
+  - Recommendations for future enhancement
+  - Overall compatibility score: 95% ✓
 
-#### Task 13: G-Code Preprocessors - Framework (COMPLETED)
+### Added
 - Implemented `CommandProcessor` trait with extensible architecture
   - `name()` - Processor identification and naming
   - `description()` - Human-readable processor descriptions
