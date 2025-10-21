@@ -229,7 +229,7 @@ cargo clippy
 
 ## Development Status
 
-**Current Version**: 0.1.0 (Specification Phase)
+**Current Version**: 0.3.0 (Planning & Setup Phase)
 
 ### Implemented
 - ✓ Complete system specification (SPEC.md)

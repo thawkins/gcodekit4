@@ -5,6 +5,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2024-10-21
+
+### Added
+
+#### GitHub Issues and Milestones
+- Created 150 GitHub issues from PLAN.md task list
+  * Phase 1: Core Foundation (Issues 1-20)
+  * Phase 2: GRBL Controller (Issues 21-35)
+  * Phase 3: Additional Firmware (Issues 36-50)
+  * Phase 4: G-Code Processing (Issues 51-65)
+  * Phase 5: UI Implementation (Issues 66-90)
+  * Phase 6: File Management (Issues 91-100)
+  * Phase 7: Advanced Features (Issues 101-125)
+  * Phase 8: Testing & Documentation (Issues 126-150)
+
+- Created 4 milestone definitions:
+  * Milestone 1: MVP (v0.2.0) - Due: Dec 31, 2024
+  * Milestone 2: Functional Release (v0.3.0) - Due: Mar 31, 2025
+  * Milestone 3: Feature Complete (v0.4.0) - Due: Jun 30, 2025
+  * Milestone 4: Production Ready (v1.0.0) - Due: Sep 30, 2025
+
+#### Core Implementation Started
+- Task 1: Project Initialization
+  * Completed Rust project structure setup
+  * Configured dependencies in Cargo.toml
+  * Set up logging infrastructure (tracing)
+  * Created initial module structure
+
+- Task 2: Data Models - Position and Coordinates
+  * Implemented Position struct (X, Y, Z, A, B, C coordinates)
+  * Implemented PartialPosition for partial axis updates
+  * Implemented CNCPoint base structure
+  * Added unit support (MM, INCH, UNKNOWN)
+  * Created unit conversion utilities
+
+### Changed
+- Updated version to 0.3.0
+- Updated SPEC.md to version 0.3.0
+- Updated README.md development status
+
+### Documentation
+- PLAN.md: 150 tasks across 8 phases (1,147 lines)
+- SPEC.md: Complete system specification (1,380 lines, v0.3.0)
+- AGENTS.md: Development guidelines with code standards
+- CHANGELOG.md: Version history documentation
+
 ## [0.1.1] - 2024-10-21
 
 ### Added
