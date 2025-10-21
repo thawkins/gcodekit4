@@ -495,89 +495,89 @@ fn test_gcode_state_new() {
 #[test]
 fn test_gcode_state_set_motion_mode() {
     let mut state = GcodeState::new();
-    
+
     assert!(state.set_motion_mode(0).is_ok());
     assert_eq!(state.motion_mode, 0);
-    
+
     assert!(state.set_motion_mode(1).is_ok());
     assert_eq!(state.motion_mode, 1);
-    
+
     assert!(state.set_motion_mode(2).is_ok());
     assert_eq!(state.motion_mode, 2);
-    
+
     assert!(state.set_motion_mode(3).is_ok());
     assert_eq!(state.motion_mode, 3);
-    
+
     assert!(state.set_motion_mode(99).is_err());
 }
 
 #[test]
 fn test_gcode_state_set_plane_mode() {
     let mut state = GcodeState::new();
-    
+
     assert!(state.set_plane_mode(17).is_ok());
     assert_eq!(state.plane_mode, 17);
-    
+
     assert!(state.set_plane_mode(18).is_ok());
     assert_eq!(state.plane_mode, 18);
-    
+
     assert!(state.set_plane_mode(19).is_ok());
     assert_eq!(state.plane_mode, 19);
-    
+
     assert!(state.set_plane_mode(20).is_err());
 }
 
 #[test]
 fn test_gcode_state_set_distance_mode() {
     let mut state = GcodeState::new();
-    
+
     assert!(state.set_distance_mode(90).is_ok());
     assert_eq!(state.distance_mode, 90);
-    
+
     assert!(state.set_distance_mode(91).is_ok());
     assert_eq!(state.distance_mode, 91);
-    
+
     assert!(state.set_distance_mode(92).is_err());
 }
 
 #[test]
 fn test_gcode_state_set_feed_rate_mode() {
     let mut state = GcodeState::new();
-    
+
     assert!(state.set_feed_rate_mode(93).is_ok());
     assert_eq!(state.feed_rate_mode, 93);
-    
+
     assert!(state.set_feed_rate_mode(94).is_ok());
     assert_eq!(state.feed_rate_mode, 94);
-    
+
     assert!(state.set_feed_rate_mode(95).is_ok());
     assert_eq!(state.feed_rate_mode, 95);
-    
+
     assert!(state.set_feed_rate_mode(96).is_err());
 }
 
 #[test]
 fn test_gcode_state_set_units_mode() {
     let mut state = GcodeState::new();
-    
+
     assert!(state.set_units_mode(20).is_ok()); // Inches
     assert_eq!(state.units_mode, 20);
-    
+
     assert!(state.set_units_mode(21).is_ok()); // Millimeters
     assert_eq!(state.units_mode, 21);
-    
+
     assert!(state.set_units_mode(22).is_err());
 }
 
 #[test]
 fn test_gcode_state_set_coordinate_system() {
     let mut state = GcodeState::new();
-    
+
     for cs in 54..=59 {
         assert!(state.set_coordinate_system(cs).is_ok());
         assert_eq!(state.coordinate_system, cs);
     }
-    
+
     assert!(state.set_coordinate_system(53).is_err());
     assert!(state.set_coordinate_system(60).is_err());
 }
@@ -585,68 +585,68 @@ fn test_gcode_state_set_coordinate_system() {
 #[test]
 fn test_gcode_state_set_tool_offset_mode() {
     let mut state = GcodeState::new();
-    
+
     assert!(state.set_tool_offset_mode(43).is_ok());
     assert_eq!(state.tool_offset_mode, 43);
-    
+
     assert!(state.set_tool_offset_mode(49).is_ok());
     assert_eq!(state.tool_offset_mode, 49);
-    
+
     assert!(state.set_tool_offset_mode(44).is_err());
 }
 
 #[test]
 fn test_gcode_state_set_compensation_mode() {
     let mut state = GcodeState::new();
-    
+
     assert!(state.set_compensation_mode(40).is_ok());
     assert_eq!(state.compensation_mode, 40);
-    
+
     assert!(state.set_compensation_mode(41).is_ok());
     assert_eq!(state.compensation_mode, 41);
-    
+
     assert!(state.set_compensation_mode(42).is_ok());
     assert_eq!(state.compensation_mode, 42);
-    
+
     assert!(state.set_compensation_mode(43).is_err());
 }
 
 #[test]
 fn test_gcode_state_set_feed_rate() {
     let mut state = GcodeState::new();
-    
+
     assert!(state.set_feed_rate(100.5).is_ok());
     assert_eq!(state.feed_rate, 100.5);
-    
+
     assert!(state.set_feed_rate(0.0).is_ok());
     assert_eq!(state.feed_rate, 0.0);
-    
+
     assert!(state.set_feed_rate(-10.0).is_err());
 }
 
 #[test]
 fn test_gcode_state_set_spindle_speed() {
     let mut state = GcodeState::new();
-    
+
     assert!(state.set_spindle_speed(5000.0).is_ok());
     assert_eq!(state.spindle_speed, 5000.0);
-    
+
     assert!(state.set_spindle_speed(0.0).is_ok());
     assert_eq!(state.spindle_speed, 0.0);
-    
+
     assert!(state.set_spindle_speed(-1000.0).is_err());
 }
 
 #[test]
 fn test_gcode_state_set_tool_number() {
     let mut state = GcodeState::new();
-    
+
     state.set_tool_number(5);
     assert_eq!(state.tool_number, 5);
-    
+
     state.set_tool_number(0);
     assert_eq!(state.tool_number, 0);
-    
+
     state.set_tool_number(999);
     assert_eq!(state.tool_number, 999);
 }
@@ -655,7 +655,7 @@ fn test_gcode_state_set_tool_number() {
 fn test_gcode_state_validate() {
     let state = GcodeState::default();
     assert!(state.validate().is_ok());
-    
+
     let mut invalid_state = state;
     invalid_state.motion_mode = 99;
     assert!(invalid_state.validate().is_err());
@@ -665,27 +665,33 @@ fn test_gcode_state_validate() {
 fn test_gcode_state_motion_mode_description() {
     let state = GcodeState::default();
     assert_eq!(state.motion_mode_description(), "Rapid positioning (G00)");
-    
+
     let mut state = state;
     state.motion_mode = 1;
-    assert_eq!(state.motion_mode_description(), "Linear interpolation (G01)");
-    
+    assert_eq!(
+        state.motion_mode_description(),
+        "Linear interpolation (G01)"
+    );
+
     state.motion_mode = 2;
     assert_eq!(state.motion_mode_description(), "Clockwise arc (G02)");
-    
+
     state.motion_mode = 3;
-    assert_eq!(state.motion_mode_description(), "Counter-clockwise arc (G03)");
+    assert_eq!(
+        state.motion_mode_description(),
+        "Counter-clockwise arc (G03)"
+    );
 }
 
 #[test]
 fn test_gcode_state_plane_description() {
     let state = GcodeState::default();
     assert_eq!(state.plane_description(), "XY plane (G17)");
-    
+
     let mut state = state;
     state.plane_mode = 18;
     assert_eq!(state.plane_description(), "XZ plane (G18)");
-    
+
     state.plane_mode = 19;
     assert_eq!(state.plane_description(), "YZ plane (G19)");
 }
@@ -697,7 +703,7 @@ fn test_gcode_state_distance_mode_description() {
         state.distance_mode_description(),
         "Absolute positioning (G90)"
     );
-    
+
     let mut state = state;
     state.distance_mode = 91;
     assert_eq!(
@@ -710,7 +716,7 @@ fn test_gcode_state_distance_mode_description() {
 fn test_gcode_state_units_description() {
     let state = GcodeState::default();
     assert_eq!(state.units_description(), "Millimeters (G21)");
-    
+
     let mut state = state;
     state.units_mode = 20;
     assert_eq!(state.units_description(), "Inches (G20)");
@@ -722,10 +728,10 @@ fn test_gcode_state_serialization() {
     state.set_motion_mode(1).unwrap();
     state.set_feed_rate(150.0).unwrap();
     state.set_spindle_speed(3000.0).unwrap();
-    
+
     let json = serde_json::to_string(&state).unwrap();
     let deserialized: GcodeState = serde_json::from_str(&json).unwrap();
-    
+
     assert_eq!(deserialized.motion_mode, 1);
     assert_eq!(deserialized.feed_rate, 150.0);
     assert_eq!(deserialized.spindle_speed, 3000.0);
@@ -734,12 +740,12 @@ fn test_gcode_state_serialization() {
 #[test]
 fn test_gcode_parser_state_tracking() {
     let mut parser = GcodeParser::new();
-    
+
     // Parse G00 (rapid)
     parser.parse("G00 X10.0").unwrap();
     let state = parser.get_state();
     assert_eq!(state.motion_mode, 0);
-    
+
     // Parse G01 (linear)
     parser.parse("G01 Y20.0 F100").unwrap();
     let state = parser.get_state();
@@ -750,15 +756,15 @@ fn test_gcode_parser_state_tracking() {
 #[test]
 fn test_gcode_parser_g_code_recognition() {
     let mut parser = GcodeParser::new();
-    
+
     parser.parse("G17").unwrap(); // XY plane
     let state = parser.get_state();
     assert_eq!(state.plane_mode, 17);
-    
+
     parser.parse("G18").unwrap(); // XZ plane
     let state = parser.get_state();
     assert_eq!(state.plane_mode, 18);
-    
+
     parser.parse("G19").unwrap(); // YZ plane
     let state = parser.get_state();
     assert_eq!(state.plane_mode, 19);
@@ -767,7 +773,7 @@ fn test_gcode_parser_g_code_recognition() {
 #[test]
 fn test_gcode_parser_coordinate_system_tracking() {
     let mut parser = GcodeParser::new();
-    
+
     for cs in 54..=59 {
         parser.parse(&format!("G{}", cs)).unwrap();
         let state = parser.get_state();
@@ -778,7 +784,7 @@ fn test_gcode_parser_coordinate_system_tracking() {
 #[test]
 fn test_gcode_parser_feed_and_spindle_parsing() {
     let mut parser = GcodeParser::new();
-    
+
     parser.parse("G01 X100 F1200 S5000").unwrap();
     let state = parser.get_state();
     assert_eq!(state.feed_rate, 1200.0);
@@ -788,7 +794,7 @@ fn test_gcode_parser_feed_and_spindle_parsing() {
 #[test]
 fn test_gcode_parser_tool_number_parsing() {
     let mut parser = GcodeParser::new();
-    
+
     parser.parse("T5 M6").unwrap();
     let state = parser.get_state();
     assert_eq!(state.tool_number, 5);
@@ -797,12 +803,12 @@ fn test_gcode_parser_tool_number_parsing() {
 #[test]
 fn test_gcode_parser_state_persistence() {
     let mut parser = GcodeParser::new();
-    
+
     // Parse G01
     parser.parse("G01").unwrap();
     let state1 = parser.get_state();
     assert_eq!(state1.motion_mode, 1);
-    
+
     // Parse without G code - should retain G01
     parser.parse("X100 Y200").unwrap();
     let state2 = parser.get_state();
@@ -812,13 +818,13 @@ fn test_gcode_parser_state_persistence() {
 #[test]
 fn test_gcode_parser_set_state() {
     let mut parser = GcodeParser::new();
-    
+
     let mut new_state = GcodeState::new();
     new_state.set_motion_mode(2).unwrap();
     new_state.set_feed_rate(500.0).unwrap();
-    
+
     parser.set_state(new_state);
-    
+
     let current_state = parser.get_state();
     assert_eq!(current_state.motion_mode, 2);
     assert_eq!(current_state.feed_rate, 500.0);
@@ -827,9 +833,9 @@ fn test_gcode_parser_set_state() {
 #[test]
 fn test_gcode_parser_modal_state_compatibility() {
     let mut parser = GcodeParser::new();
-    
+
     parser.parse("G01 G17 G90 G94").unwrap();
-    
+
     // Test backward compatibility
     let modal_state = parser.get_modal_state();
     assert_eq!(modal_state.motion_mode, 1);
@@ -841,11 +847,11 @@ fn test_gcode_parser_modal_state_compatibility() {
 #[test]
 fn test_gcode_state_complex_command() {
     let mut parser = GcodeParser::new();
-    
+
     parser
         .parse("G01 X50.5 Y100.25 Z-5.0 F500 S3000 T3")
         .unwrap();
-    
+
     let state = parser.get_state();
     assert_eq!(state.motion_mode, 1);
     assert_eq!(state.feed_rate, 500.0);
@@ -856,7 +862,7 @@ fn test_gcode_state_complex_command() {
 #[test]
 fn test_gcode_state_all_modes() {
     let mut parser = GcodeParser::new();
-    
+
     // Test a sequence that exercises all modal groups
     parser.parse("G20").unwrap(); // Inches
     parser.parse("G90").unwrap(); // Absolute
@@ -865,7 +871,7 @@ fn test_gcode_state_all_modes() {
     parser.parse("G54").unwrap(); // WCS 1
     parser.parse("G40").unwrap(); // Cutter compensation off
     parser.parse("G49").unwrap(); // Tool offset off
-    
+
     let state = parser.get_state();
     assert_eq!(state.units_mode, 20);
     assert_eq!(state.distance_mode, 90);

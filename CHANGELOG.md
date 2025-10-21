@@ -7,7 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.3.0-alpha] - 2024-10-21
 
+### Fixed
+
+#### Test Organization - Compliance with AGENTS.md
+- Reorganized all tests from flat structure to hierarchical module structure
+- **Before**: Tests at `tests/*.rs` level (flat)
+- **After**: Tests organized by module hierarchy:
+  - `tests/communication/{mod.rs, buffered.rs}`
+  - `tests/core/mod.rs`
+  - `tests/data/mod.rs`
+  - `tests/firmware/mod.rs`
+  - `tests/gcode/{mod.rs, parser.rs, preprocessor.rs}`
+  - `tests/ui/mod.rs`
+  - `tests/utils/mod.rs`
+  - `tests/visualizer/mod.rs`
+  - `tests/lib.rs` - Main test crate
+- All 151 integration tests pass successfully
+- Mirrors `src/` directory structure as mandated by AGENTS.md
+
 ### Added
+
+#### Code Quality and Documentation
+- Created `target/temp` directory for temporary files
+- Added `target/temp` to .gitignore per AGENTS.md
+- Analyzed Java implementation (Universal-G-Code-Sender) for comparison
+- Created comprehensive comparison analysis document
 
 #### Task 13: G-Code Preprocessors - Framework (COMPLETED)
 - Implemented `CommandProcessor` trait with extensible architecture

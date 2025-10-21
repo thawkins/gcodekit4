@@ -2,7 +2,9 @@
 //!
 //! Tests for serial, TCP, and communicator interface implementations.
 
-mod common;
+pub mod buffered;
+
+use super::common;
 
 use gcodekit4::communication::{
     serial::{MockSerialPort, SerialPort, SerialPortError, SerialPortInfo},

@@ -385,40 +385,40 @@ impl Default for ModalState {
 pub struct GcodeState {
     /// Motion mode - Group 1 (G00, G01, G02, G03)
     pub motion_mode: u8,
-    
+
     /// Plane selection - Group 2 (G17=XY, G18=XZ, G19=YZ)
     pub plane_mode: u8,
-    
+
     /// Distance mode - Group 3 (G90=absolute, G91=incremental)
     pub distance_mode: u8,
-    
+
     /// Feed rate mode - Group 5 (G93=inverse_time, G94=units_per_minute, G95=units_per_revolution)
     pub feed_rate_mode: u8,
-    
+
     /// Units mode - Group 6 (G20=inches, G21=millimeters)
     pub units_mode: u8,
-    
+
     /// Coordinate system - Group 12 (G54-G59)
     pub coordinate_system: u8,
-    
+
     /// Tool offset mode - Group 8 (G43=enable, G49=disable)
     pub tool_offset_mode: u8,
-    
+
     /// Cutter compensation - Group 7 (G40=off, G41=left, G42=right)
     pub compensation_mode: u8,
-    
+
     /// Spindle mode - Group 3 (G03=spindle_sync, G04=CSS, G05=SFM)
     pub spindle_mode: u8,
-    
+
     /// Path control - Group 17 (G61=exact, G61.1=exact_stop, G64=blend)
     pub path_control_mode: u8,
-    
+
     /// Current feed rate (F value)
     pub feed_rate: f64,
-    
+
     /// Current spindle speed (S value)
     pub spindle_speed: f64,
-    
+
     /// Tool number (T value)
     pub tool_number: u16,
 }
@@ -426,16 +426,16 @@ pub struct GcodeState {
 impl Default for GcodeState {
     fn default() -> Self {
         Self {
-            motion_mode: 0,           // G00 (rapid)
-            plane_mode: 17,           // G17 (XY plane)
-            distance_mode: 90,        // G90 (absolute)
-            feed_rate_mode: 94,       // G94 (units per minute)
-            units_mode: 21,           // G21 (millimeters)
-            coordinate_system: 54,    // G54 (first WCS)
-            tool_offset_mode: 49,     // G49 (offset disabled)
-            compensation_mode: 40,    // G40 (cutter compensation off)
-            spindle_mode: 0,          // No spindle mode
-            path_control_mode: 64,    // G64 (blend/continuous)
+            motion_mode: 0,        // G00 (rapid)
+            plane_mode: 17,        // G17 (XY plane)
+            distance_mode: 90,     // G90 (absolute)
+            feed_rate_mode: 94,    // G94 (units per minute)
+            units_mode: 21,        // G21 (millimeters)
+            coordinate_system: 54, // G54 (first WCS)
+            tool_offset_mode: 49,  // G49 (offset disabled)
+            compensation_mode: 40, // G40 (cutter compensation off)
+            spindle_mode: 0,       // No spindle mode
+            path_control_mode: 64, // G64 (blend/continuous)
             feed_rate: 0.0,
             spindle_speed: 0.0,
             tool_number: 0,
@@ -718,7 +718,11 @@ pub trait CommandProcessor: Send + Sync {
     /// A vector of processed commands. Most processors return a single command,
     /// but some (like arc expanders) may expand one command into many.
     /// Return an empty vector to skip the command.
-    fn process(&self, command: &GcodeCommand, state: &GcodeState) -> Result<Vec<GcodeCommand>, String>;
+    fn process(
+        &self,
+        command: &GcodeCommand,
+        state: &GcodeState,
+    ) -> Result<Vec<GcodeCommand>, String>;
 
     /// Check if this processor is enabled
     fn is_enabled(&self) -> bool {
@@ -747,7 +751,7 @@ pub type ProcessorHandle = Arc<dyn CommandProcessor>;
 /// pipeline.register(Arc::new(WhitespaceProcessor::new()));
 /// pipeline.register(Arc::new(CommentProcessor::new()));
 /// pipeline.register(Arc::new(ArcExpander::new()));
-/// 
+///
 /// let commands = pipeline.process_commands(&input_commands)?;
 /// ```
 pub struct ProcessorPipeline {
@@ -1067,9 +1071,9 @@ impl GcodeParser {
     /// Update modal state based on parsed command
     fn update_modal_state(&mut self, command: &GcodeCommand) -> Result<(), String> {
         tracing::trace!("Updating modal state for: {}", command.command);
-        
+
         let cmd_upper = command.command.to_uppercase();
-        
+
         // Parse G-codes
         if cmd_upper.contains("G00") {
             self.current_state.set_motion_mode(0)?;
@@ -1080,7 +1084,7 @@ impl GcodeParser {
         } else if cmd_upper.contains("G03") {
             self.current_state.set_motion_mode(3)?;
         }
-        
+
         // Plane selection
         if cmd_upper.contains("G17") {
             self.current_state.set_plane_mode(17)?;
@@ -1089,14 +1093,14 @@ impl GcodeParser {
         } else if cmd_upper.contains("G19") {
             self.current_state.set_plane_mode(19)?;
         }
-        
+
         // Distance mode
         if cmd_upper.contains("G90") {
             self.current_state.set_distance_mode(90)?;
         } else if cmd_upper.contains("G91") {
             self.current_state.set_distance_mode(91)?;
         }
-        
+
         // Feed rate mode
         if cmd_upper.contains("G93") {
             self.current_state.set_feed_rate_mode(93)?;
@@ -1105,14 +1109,14 @@ impl GcodeParser {
         } else if cmd_upper.contains("G95") {
             self.current_state.set_feed_rate_mode(95)?;
         }
-        
+
         // Units
         if cmd_upper.contains("G20") {
             self.current_state.set_units_mode(20)?;
         } else if cmd_upper.contains("G21") {
             self.current_state.set_units_mode(21)?;
         }
-        
+
         // Coordinate system (G54-G59)
         for cs in 54..=59 {
             if cmd_upper.contains(&format!("G{}", cs)) {
@@ -1120,14 +1124,14 @@ impl GcodeParser {
                 break;
             }
         }
-        
+
         // Tool offset
         if cmd_upper.contains("G43") {
             self.current_state.set_tool_offset_mode(43)?;
         } else if cmd_upper.contains("G49") {
             self.current_state.set_tool_offset_mode(49)?;
         }
-        
+
         // Cutter compensation
         if cmd_upper.contains("G40") {
             self.current_state.set_compensation_mode(40)?;
@@ -1136,7 +1140,7 @@ impl GcodeParser {
         } else if cmd_upper.contains("G42") {
             self.current_state.set_compensation_mode(42)?;
         }
-        
+
         // Parse F value (feed rate)
         if let Some(f_pos) = cmd_upper.find('F') {
             let remaining = &command.command[f_pos + 1..];
@@ -1146,7 +1150,7 @@ impl GcodeParser {
                 }
             }
         }
-        
+
         // Parse S value (spindle speed)
         if let Some(s_pos) = cmd_upper.find('S') {
             let remaining = &command.command[s_pos + 1..];
@@ -1156,7 +1160,7 @@ impl GcodeParser {
                 }
             }
         }
-        
+
         // Parse T value (tool number)
         if let Some(t_pos) = cmd_upper.find('T') {
             let remaining = &command.command[t_pos + 1..];
@@ -1166,7 +1170,7 @@ impl GcodeParser {
                 }
             }
         }
-        
+
         Ok(())
     }
 

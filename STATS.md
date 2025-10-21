@@ -94,12 +94,16 @@ A Rust-based Universal G-Code Sender for CNC machines with support for GRBL, Tin
 
 ## Code Quality Metrics
 
-- **Clippy Warnings**: 0 (2 unused imports in test files, non-critical)
+- **Clippy Warnings**: 3 minor (needless borrow, let-return patterns)
 - **Build Status**: ✓ Passing
 - **Test Status**: ✓ All 151 tests passing
-- **Code Style**: Rust guidelines (4-space, 100-char width)
+- **Code Style**: Rust guidelines (4-space, 100-char width) - ✓ Verified
 - **Documentation**: All public APIs documented with docblocks
-- **Test Organization**: All tests in tests/ folder hierarchy ✓
+- **Test Organization**: ✓ Reorganized to module hierarchy per AGENTS.md
+  - Tests organized in directories mirroring src/ structure
+  - tests/lib.rs consolidates all test modules
+  - No inline tests in source files
+  - Proper separation of concerns between unit and integration tests
 
 ## GitHub Setup
 
@@ -160,14 +164,30 @@ src/
   └── utils/            - Helper functions
 
 tests/
-  ├── buffered_communication.rs (23 tests, NEW)
-  ├── communication.rs  (21 tests)
-  ├── core.rs          (2 tests)
-  ├── data.rs          (1 test)
-  ├── firmware.rs      (3 tests)
-  ├── ui.rs            (1 test)
-  ├── utils.rs         (3 tests)
-  └── visualizer.rs    (1 test)
+  ├── lib.rs              - Main test crate (consolidates all modules)
+  ├── common.rs           - Shared test utilities
+  ├── communication/
+  │   ├── mod.rs          - Interface and serial/TCP tests
+  │   └── buffered.rs     - Buffered communication tests (23 tests)
+  ├── core/
+  │   └── mod.rs          - Controller tests (2 tests)
+  ├── data/
+  │   └── mod.rs          - Data model tests (1 test)
+  ├── firmware/
+  │   └── mod.rs          - Firmware tests (3 tests)
+  ├── gcode/
+  │   ├── mod.rs          - Module declarations
+  │   ├── parser.rs       - Parser and state machine tests (72 tests)
+  │   └── preprocessor.rs - Processor tests (24 tests)
+  ├── ui/
+  │   └── mod.rs          - UI tests (1 test)
+  ├── utils/
+  │   └── mod.rs          - Utility tests (3 tests)
+  └── visualizer/
+      └── mod.rs          - Visualizer tests (1 test)
+
+**Total Tests**: 151 passing (100%)
+**Organization**: Hierarchical structure mirroring src/ directory ✓
 ```
 
 ## Key Implementations

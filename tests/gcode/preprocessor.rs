@@ -1,7 +1,6 @@
 /// Tests for G-Code preprocessor framework (Task 13)
 ///
 /// Tests the CommandProcessor trait, ProcessorPipeline, and ProcessorRegistry
-
 use gcodekit4::gcode::{
     CommandProcessor, GcodeCommand, GcodeState, ProcessorConfig, ProcessorPipeline,
     ProcessorRegistry,
@@ -352,12 +351,8 @@ fn test_processor_registry_create_nonexistent() {
 fn test_processor_registry_create_pipeline() {
     let mut registry = ProcessorRegistry::new();
 
-    registry.register("proc1", || {
-        Arc::new(TestProcessor::new("proc1", "_p1"))
-    });
-    registry.register("proc2", || {
-        Arc::new(TestProcessor::new("proc2", "_p2"))
-    });
+    registry.register("proc1", || Arc::new(TestProcessor::new("proc1", "_p1")));
+    registry.register("proc2", || Arc::new(TestProcessor::new("proc2", "_p2")));
 
     let pipeline = registry.create_pipeline(&["proc1", "proc2"]);
     assert!(pipeline.is_ok());
@@ -370,9 +365,7 @@ fn test_processor_registry_create_pipeline() {
 fn test_processor_registry_pipeline_with_invalid() {
     let mut registry = ProcessorRegistry::new();
 
-    registry.register("proc1", || {
-        Arc::new(TestProcessor::new("proc1", "_p1"))
-    });
+    registry.register("proc1", || Arc::new(TestProcessor::new("proc1", "_p1")));
 
     let pipeline = registry.create_pipeline(&["proc1", "nonexistent", "proc1"]);
     assert!(pipeline.is_err());
