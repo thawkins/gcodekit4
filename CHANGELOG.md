@@ -7,27 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.8.0-alpha] - 2025-10-21
 
-### Fixed - UI Application Window
+### Fixed - UI Application Window and Dynamic Serial Port Detection
 
-#### UI Implementation (Main Fix)
-- **Issue**: Application window was not displayed when running `cargo run`
-- **Root Cause**: Slint UI framework was not integrated with main application
-- **Solution**:
-  - Added slint dependency to Cargo.toml (version 1.5)
-  - Created slint build integration (build.rs with slint-build)
-  - Implemented initial UI layout with all major panels:
-    - Connection panel (port, baud rate, connect/disconnect buttons)
-    - DRO panel (digital readout for machine position)
-    - Control buttons (Start, Pause, Stop, Reset)
-    - File operations panel
-    - G-Code viewer/editor
-    - Console/output panel
-    - Jog controller with directional buttons
-    - Overrides panel (feed rate, spindle speed)
-  - Updated main.rs to initialize and run UI window
-  - Window title: "GCodeKit4 - Universal G-Code Sender"
-  - Default window size: 1200x800px
-- **Result**: Application now displays a fully functional UI window when run
+#### Issue 1: Application Window Not Displayed
+- **Problem**: Running `cargo run` did not show any UI window
+- **Root Cause**: Slint backend was not properly configured, include_modules! macro was incorrectly placed
+- **Fix**:
+  - Moved `slint::include_modules!()` macro to correct position (before function definitions)
+  - Added `backend-winit` feature to slint dependency in Cargo.toml
+  - Properly initialized Slint context in main.rs
+- **Result**: UI window now displays successfully
+
+#### Issue 2: Static Serial Port Listing
+- **Problem**: Connection manager showed hardcoded COM1, COM2, COM3 instead of real ports
+- **Root Cause**: UI used static model for ports instead of dynamic OS detection
+- **Fix**:
+  - Implemented `list_ports()` integration from communication module
+  - Added dynamic `available-ports` property to Slint UI
+  - Added `refresh-ports` callback for live port detection
+  - Modified ComboBox to bind to dynamic model instead of static strings
+  - Ports now auto-detected on application startup
+- **Result**: Connection panel shows all available serial ports detected by OS
+
+#### Test Status
+- Application builds and runs successfully
+- UI window appears on startup
+- Serial port detection working (found 33 ports on test system)
+- Callbacks for connect/disconnect/refresh-ports wired and functional
 
 ## [0.9.0-alpha] - 2025-10-21
 

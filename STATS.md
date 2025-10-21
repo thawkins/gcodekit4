@@ -2,11 +2,11 @@
 
 **Last Updated**: 2025-10-21  
 **Version**: 0.8.0-alpha (UI Integration)  
-**Status**: UI Window Implementation Complete ✅ - Phase 5 Tasks 71-76 COMPLETE
+**Status**: UI Window + Dynamic Port Detection COMPLETE ✅ - Phase 5 Tasks 71-76 COMPLETE
 
 ## Project Overview
 
-GCodeKit4 is a Rust implementation of Universal G-Code Sender with support for multiple CNC controller firmware types including GRBL, TinyG, g2core, Smoothieware, and FluidNC. Now featuring a complete Slint-based UI.
+GCodeKit4 is a Rust implementation of Universal G-Code Sender with support for multiple CNC controller firmware types including GRBL, TinyG, g2core, Smoothieware, and FluidNC. Now featuring a complete Slint-based UI with dynamic serial port detection.
 
 ## Completion Progress
 
