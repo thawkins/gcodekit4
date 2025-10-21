@@ -30,6 +30,8 @@ pub mod coordinate_system;
 pub mod macros_panel;
 pub mod settings_dialog;
 pub mod firmware_settings_panel;
+pub mod ui_polish;
+pub mod file_management;
 
 pub use architecture::UiArchitecture;
 pub use state::UiState;
@@ -47,3 +49,5 @@ pub use coordinate_system::CoordinateSystemPanel;
 pub use macros_panel::{MacrosPanel, GcodeMacro, MacroVariable};
 pub use settings_dialog::{SettingsDialog, Setting, SettingValue, SettingsCategory, KeyboardShortcut};
 pub use firmware_settings_panel::{FirmwareSettingsPanel, FirmwareParameter, ParameterType};
+pub use ui_polish::{ProgressIndicator, NotificationManager, KeyboardShortcutManager, Theme, I18nManager};
+pub use file_management::{FileReader, RecentFilesManager, FileStatistics, TemplateLibrary};

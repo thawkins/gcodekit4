@@ -9,10 +9,12 @@
 pub mod setup;
 pub mod toolpath_rendering;
 pub mod controls;
+pub mod features;
 
 pub use setup::{Vector3, Color, Camera, CameraType, Light, LightType, Scene, Renderer};
 pub use toolpath_rendering::{MovementType, LineSegment, ArcSegment, Toolpath, ToolpathStats};
 pub use controls::{ViewPreset, CameraController, VisualizerControls};
+pub use features::{GridConfig, WorkCoordinateSystem, MachineLimits, BoundingBox, ToolMarker, SceneFeatures};
 
 /// 3D Visualizer - Task 80-82
 pub struct Visualizer {
