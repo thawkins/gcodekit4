@@ -7,7 +7,91 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.4.0-alpha] - 2025-10-21
 
-### Added - Phase 2: GRBL Controller Implementation (Tasks 21-30 COMPLETED)
+### Added - Phase 3: Additional Firmware Support (Tasks 36-40 COMPLETED)
+
+#### Tasks 36-40: TinyG and g2core Protocol Support (NEW)
+
+##### Task 36: TinyG Protocol Support (COMPLETED)
+- Implemented complete TinyG protocol support with JSON handling
+- Features:
+  - `TinyGResponseParser` for parsing JSON responses
+  - Support for status reports, errors, settings, and commands
+  - TinyG version detection and parsing (e.g., "440.20")
+  - Response type classification (OK, NACK, Status, Error)
+  - 4-axis position tracking (X, Y, Z, A)
+  - Status report parsing with feedrate and spindle speed
+  - Line number tracking
+- 3 comprehensive tests for response parsing
+
+##### Task 37-38: TinyG Utilities and Capabilities (COMPLETED)
+- Implemented `TinyGCapabilities` for feature detection
+- Features:
+  - Version comparison and compatibility checking
+  - Feature set determination based on firmware version
+  - Support flags for probing, tool change, homing, soft limits
+  - Default capabilities for v440.0+
+- Implemented TinyG utilities module:
+  - JSON parsing helpers (`parse_json_response`, `extract_status_report`)
+  - Position extraction functions (`extract_position`, `extract_machine_position`)
+  - State and feed rate extraction utilities
+  - Command creation helpers (`create_json_command`, `create_query_command`)
+  - Value formatting helpers
+  - 9 comprehensive tests for JSON operations
+
+##### Task 38: TinyG Command Creator (COMPLETED)
+- Implemented `CommandCreator` for generating TinyG commands
+- Features:
+  - G-code command generation with line numbering
+  - Real-time command support (?, !, ~, Ctrl+X)
+  - Motion commands (G0, G1, G2, G3) with 4-axis support
+  - Jog commands (G91 incremental mode)
+  - Spindle and coolant control (M3, M5, M7, M8, M9)
+  - Home command generation (G28.2)
+  - Set position commands (XPO)
+  - Probe command generation (G38.2)
+  - Tool length offset support
+  - Work coordinate system selection (G54-G59)
+  - Settings change commands
+- 8 comprehensive tests covering all command types
+
+##### Task 39: g2core Protocol Support (COMPLETED)
+- Implemented complete g2core protocol support with 6-axis capability
+- Features:
+  - `G2CoreResponseParser` for parsing enhanced JSON responses
+  - Full support for all response types with 6-axis data
+  - g2core version detection and parsing (e.g., "100.10")
+  - Rotational axis support (A, B, C axes)
+  - 6-axis position tracking and reporting
+  - Status report parsing with extended fields
+  - Advanced error handling
+  - Line number tracking
+- 3 comprehensive tests for response parsing
+
+##### Task 40: g2core Controller and Advanced Features (COMPLETED)
+- Implemented `G2CoreCapabilities` for advanced feature detection
+- Features:
+  - Extended version comparison and compatibility
+  - Support for kinematic models (Cartesian, Forward, Inverse)
+  - Support for 6-axis rotational axes
+  - Advanced motion mode detection based on version
+  - Feature flags for all g2core-specific capabilities
+  - Max axes determination (4-6 based on version)
+- Implemented `CommandCreator` for g2core with advanced features:
+  - 6-axis motion command support (X, Y, Z, A, B, C)
+  - Kinematic mode setting and switching
+  - Enhanced jog commands with axis A support
+  - All TinyG features plus advanced kinematics support
+  - 6 comprehensive tests for advanced features
+
+### Test Organization Compliance (AGENTS.md Mandate)
+- Moved all inline tests from source modules to integration tests
+- Created proper test hierarchy: `tests/firmware/tinyg/`, `tests/firmware/g2core/`
+- All 41 new tests properly organized and passing
+- Zero inline test pollution in source code
+
+### Changed - Phase 2 (Tasks 31-35 COMPLETED)
+
+(Previous Phase 2 changes as documented)
 
 #### Tasks 26-30: GRBL Communicator and Controller (NEW)
 
