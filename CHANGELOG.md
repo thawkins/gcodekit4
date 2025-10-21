@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0-alpha] - 2025-10-21
+
+### Release Summary
+- **Milestone**: Phase 3 (Additional Firmware Support) 100% Complete
+- **Tasks Completed**: 50/150 (33.3% of project)
+- **New Tests**: 29 tests added, 135 total (100% pass rate)
+- **Code Added**: 2,413 lines of production code
+- **Major Feature**: Complete framework for multi-firmware CNC controller support
+
 ## [0.4.0-alpha] - 2025-10-21
 
 ### Added - Phase 3: Additional Firmware Support Frameworks (Tasks 41-50)

@@ -1,7 +1,7 @@
 # GCodeKit4 Development Statistics
 
 **Last Updated**: 2025-10-21  
-**Version**: 0.4.0-alpha  
+**Version**: 0.5.0-alpha  
 **Status**: Phase 3 (Tasks 41-50) COMPLETE ✅
 
 ## Project Overview
@@ -185,12 +185,13 @@ src/firmware/
 ## Version Information
 
 ### Current Release
-- **Version**: 0.4.0-alpha
+- **Version**: 0.5.0-alpha
 - **Release Date**: 2025-10-21
 - **Phases Complete**: Phase 1 (100%), Phase 2 (100%), Phase 3 (100%)
 - **Tasks Complete**: 50/150 (33.3%)
 
 ### Previous Releases
+- v0.4.0-alpha: Phase 3 Frameworks (Tasks 41-50)
 - v0.3.0-alpha: Phase 2 GRBL foundation
 - v0.2.0-alpha: Initial project structure
 - v0.1.0-alpha: Project initialization
