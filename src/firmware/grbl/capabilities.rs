@@ -94,6 +94,11 @@ impl GrblVersion {
         self >= &GrblVersion::new(1, 1, 0)
     }
 
+    /// Check if this version is 1.2 or later
+    pub fn is_1_2_or_later(&self) -> bool {
+        self >= &GrblVersion::new(1, 2, 0)
+    }
+
     /// Check if this version is 0.9 or later
     pub fn is_0_9_or_later(&self) -> bool {
         self >= &GrblVersion::new(0, 9, 0)
@@ -207,9 +212,16 @@ impl GrblFeatureSet {
         }
     }
 
+    /// Create feature set for GRBL 1.2 (same capabilities as 1.1)
+    pub fn grbl_1_2() -> Self {
+        Self::grbl_1_1()
+    }
+
     /// Create feature set based on version
     pub fn for_version(version: &GrblVersion) -> Self {
-        if version.is_1_1_or_later() {
+        if version.major > 1 || (version.major == 1 && version.minor >= 2) {
+            Self::grbl_1_2()
+        } else if version.is_1_1_or_later() {
             Self::grbl_1_1()
         } else if version.is_0_9_or_later() {
             Self::grbl_0_9()
@@ -442,6 +454,25 @@ mod tests {
     }
 
     #[test]
+    fn test_grbl_version_parsing_1_2() {
+        let version = GrblVersion::parse("Grbl 1.2h ['$' for help]").unwrap();
+        assert_eq!(version.major, 1);
+        assert_eq!(version.minor, 2);
+        assert_eq!(version.build, Some("h".to_string()));
+    }
+
+    #[test]
+    fn test_grbl_is_1_2_or_later() {
+        let v1_1 = GrblVersion::new(1, 1, 0);
+        let v1_2 = GrblVersion::new(1, 2, 0);
+        let v1_3 = GrblVersion::new(1, 3, 0);
+
+        assert!(!v1_1.is_1_2_or_later());
+        assert!(v1_2.is_1_2_or_later());
+        assert!(v1_3.is_1_2_or_later());
+    }
+
+    #[test]
     fn test_grbl_version_minimum_check() {
         let v1_1 = GrblVersion::new(1, 1, 0);
         let v1_0 = GrblVersion::new(1, 0, 0);
@@ -459,10 +490,31 @@ mod tests {
     }
 
     #[test]
+    fn test_grbl_feature_set_1_2() {
+        let features = GrblFeatureSet::grbl_1_2();
+        assert!(features.jog_command);
+        assert!(features.safety_door);
+        assert!(features.coolant_control);
+        // 1.2 has same features as 1.1
+        let features_1_1 = GrblFeatureSet::grbl_1_1();
+        assert_eq!(features, features_1_1);
+    }
+
+    #[test]
     fn test_grbl_capabilities_creation() {
         let caps = GrblCapabilities::for_version(GrblVersion::new(1, 1, 0));
         assert_eq!(caps.version.major, 1);
         assert_eq!(caps.version.minor, 1);
         assert!(caps.supports(GrblFeature::JogCommand));
+    }
+
+    #[test]
+    fn test_grbl_capabilities_1_2_creation() {
+        let caps = GrblCapabilities::for_version(GrblVersion::new(1, 2, 0));
+        assert_eq!(caps.version.major, 1);
+        assert_eq!(caps.version.minor, 2);
+        assert!(caps.supports(GrblFeature::JogCommand));
+        assert!(caps.supports(GrblFeature::SafetyDoor));
+        assert!(caps.supports(GrblFeature::CoolantControl));
     }
 }

@@ -1,8 +1,8 @@
 # GCodeKit4 Development Statistics
 
 **Last Updated**: 2025-10-21  
-**Version**: 0.8.1-alpha (UI Window Display Fixed)  
-**Status**: UI Window Display + Dynamic Serial Port Detection COMPLETE ✅ - Phase 5 Tasks 71-76 COMPLETE
+**Version**: 0.8.2-alpha (Connection Panel Fixed)  
+**Status**: UI Window Display + Connect Button Feedback COMPLETE ✅ - Phase 5 Tasks 66-76 COMPLETE
 
 ## Project Overview
 
@@ -31,9 +31,9 @@ GCodeKit4 is a Rust implementation of Universal G-Code Sender with support for m
 - Implementation: Arc expansion, line splitting, mesh leveling, comment processing, feed override, pattern removal, transformations, run-from-line, spindle dweller, stats, optimization, toolpath, validation
 
 ### Phase 5: UI Implementation - Slint (Tasks 66-90)
-- Status: ⏳ **IN PROGRESS** - UI Window + Tasks 71-76 COMPLETE ✅
+- Status: ⏳ **IN PROGRESS** - UI Window + Tasks 66-76 COMPLETE ✅
 - Tasks: 12/25 completed (48%)
-- Current: Initial UI Window + Tasks 71-76 - File/G-Code/Console/Control/Overrides/Coordinates
+- Current: Initial UI Window + Tasks 66-76 - Architecture/Main Window/Panels/Feedback
 - Next: Tasks 77-82 - Advanced Features
 
 ## Code Metrics
@@ -197,10 +197,10 @@ src/firmware/
 ## Version Information
 
 ### Current Release
-- **Version**: 0.5.0-alpha
+- **Version**: 0.8.2-alpha
 - **Release Date**: 2025-10-21
-- **Phases Complete**: Phase 1 (100%), Phase 2 (100%), Phase 3 (100%)
-- **Tasks Complete**: 50/150 (33.3%)
+- **Phases Complete**: Phase 1 (100%), Phase 2 (100%), Phase 3 (100%), Phase 4 (100%), Phase 5 (50%)
+- **Tasks Complete**: 76/150 (50.7%)
 
 ### Previous Releases
 - v0.4.0-alpha: Phase 3 Frameworks (Tasks 41-50)

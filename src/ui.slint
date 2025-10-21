@@ -16,12 +16,18 @@ export component MainWindow inherits Window {
     
     // Dynamic properties exposed to Rust
     in property <[string]> available-ports: [];
-    out property <string> selected-port: "";
-    in property <bool> is-connected: false;
+    in-out property <string> selected-port: "";
+    in property <bool> connected: false;
+    in property <string> connection-status: "Disconnected";
+    out property <int> selected-baud: 115200;
     
     callback refresh-ports();
     callback connect(string, int);
     callback disconnect();
+    
+    // Internal state for UI selections
+    private property <int> port-index: 0;
+    private property <int> baud-index: 3;  // Default to 115200
     
     VerticalBox {
         spacing: 0px;
@@ -65,29 +71,45 @@ export component MainWindow inherits Window {
                         
                         HorizontalBox {
                             Text { text: "Port:"; width: 50px; }
-                            ComboBox {
+                            port-combo := ComboBox {
                                 model: root.available-ports;
-                                current-value: root.selected-port;
+                                current-index: port-index;
+                                selected => {
+                                    port-index = port-combo.current-index;
+                                    if (port-combo.current-index >= 0 && port-combo.current-index < root.available-ports.length) {
+                                        root.selected-port = root.available-ports[port-combo.current-index];
+                                    }
+                                }
                             }
                         }
                         
                         HorizontalBox {
                             Text { text: "Baud:"; width: 50px; }
-                            ComboBox {
-                                model: ["9600", "19200", "38400", "115200"];
+                            baud-combo := ComboBox {
+                                model: ["9600", "19200", "38400", "57600", "115200", "230400"];
+                                current-index: baud-index;
+                                selected => {
+                                    baud-index = baud-combo.current-index;
+                                    if (baud-combo.current-index == 0) { root.selected-baud = 9600; }
+                                    else if (baud-combo.current-index == 1) { root.selected-baud = 19200; }
+                                    else if (baud-combo.current-index == 2) { root.selected-baud = 38400; }
+                                    else if (baud-combo.current-index == 3) { root.selected-baud = 57600; }
+                                    else if (baud-combo.current-index == 4) { root.selected-baud = 115200; }
+                                    else if (baud-combo.current-index == 5) { root.selected-baud = 230400; }
+                                }
                             }
                         }
                         
                         HorizontalBox {
                             spacing: 5px;
                             Button {
-                                text: root.is-connected ? "Disconnect" : "Connect";
+                                text: root.connected ? "Disconnect" : "Connect";
                                 width: 50%;
                                 clicked => {
-                                    if (root.is-connected) {
+                                    if (root.connected) {
                                         root.disconnect();
                                     } else {
-                                        root.connect(root.selected-port, 115200);
+                                        root.connect(root.selected-port, root.selected-baud);
                                     }
                                 }
                             }
@@ -292,8 +314,13 @@ export component MainWindow inherits Window {
             HorizontalBox {
                 padding: 5px;
                 Text {
-                    text: "Status: Ready | Connected: No";
+                    text: "Status: Ready | Connected: " + (root.connected ? "Yes" : "No");
                     color: white;
+                    font-size: 12px;
+                }
+                Text {
+                    text: root.connection-status;
+                    color: root.connected ? #2ecc71 : #e74c3c;
                     font-size: 12px;
                 }
             }

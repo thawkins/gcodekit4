@@ -7,6 +7,9 @@
 /// Minimum supported GRBL version (1.1.0)
 pub const GRBL_MIN_VERSION: &str = "1.1.0";
 
+/// GRBL 1.2.x version string pattern
+pub const GRBL_VERSION_1_2: &str = "Grbl 1.2";
+
 /// GRBL 1.1.x version string pattern
 pub const GRBL_VERSION_1_1: &str = "Grbl 1.1";
 

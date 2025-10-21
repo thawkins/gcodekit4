@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.2-alpha] - 2025-10-21
+
+### Fixed - UI Connection Panel and Button Feedback
+
+#### Connection Panel Issues
+- **Fixed**: Connect button now properly initializes with the first available serial port
+- **Fixed**: Connection status feedback now properly displays in UI (green "Connected" or red with error message)
+- **Fixed**: Selected port properly initialized when ports are discovered
+- **Changed**: Made `selected-port` property `in-out` instead of `out` to allow initialization
+- **Added**: Proper baud rate selection with more common speeds (9600, 19200, 38400, 57600, 115200, 230400)
+
+#### UI Components Improved
+- Added connection state indicator in status bar showing real-time connection status
+- Connect button text now dynamically changes to "Disconnect" when connected
+- Status bar now shows connection feedback with color coding (green for success, red for error)
+
+### Fixed - Connect Button Functionality
+- **Fixed**: Connect button callback now properly attempts connection and provides feedback
+- **Fixed**: Disconnect button callback now properly handles disconnection
+- **Result**: Users can now see immediate feedback when attempting to connect/disconnect
+
 ## [0.8.1-alpha] - 2025-10-21
 
 ### Fixed - UI Application Window Display and Serial Port Detection

@@ -105,7 +105,7 @@ GCodeKit4 enables makers, engineers, and manufacturers to:
 **Purpose**: Controller-specific implementations and protocols
 
 **Supported Firmwares**:
-1. **GRBL** (v0.9, v1.0, v1.1)
+1. **GRBL** (v0.9, v1.0, v1.1, v1.2)
    - Character counting protocol
    - Real-time commands
    - Status reports
@@ -570,7 +570,7 @@ Available as real-time commands (executed immediately):
 
 ### 4.5 Firmware-Specific Features
 
-#### 4.5.1 GRBL (v0.9, v1.0, v1.1)
+#### 4.5.1 GRBL (v0.9, v1.0, v1.1, v1.2)
 **Capabilities**:
 - Character counting protocol
 - Real-time commands

@@ -1880,7 +1880,7 @@ dependencies = [
 
 [[package]]
 name = "gcodekit4"
-version = "0.7.0-alpha"
+version = "0.8.2-alpha"
 dependencies = [
  "anyhow",
  "async-trait",
