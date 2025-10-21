@@ -3,10 +3,7 @@
 //! Defines the Slint component hierarchy, main window layout,
 //! component communication patterns, and UI state management.
 
-use std::sync::Arc;
-use std::sync::Mutex;
-
-/// Main UI component types in the hierarchy
+use std::sync::mpsc::{channel, Sender, Receiver};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ComponentType {
     /// Main application window
