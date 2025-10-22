@@ -14,9 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Connection Indicator**: Colored square (green = connected, red = disconnected)
 - **Visual Separators**: 1 EM space on either side between each element
 - **Port & Device Info**: Shows port name and "Version: " label with device version when connected
-  - Format: `[indicator] [space] /dev/ttyUSB0 | Version: GRBL 1.1+ [space] X: 0.0  Y: 0.0  Z: 0.0`
+  - Format: `[indicator] [space] /dev/ttyUSB0 | Version: GRBL 1.1+ [space] Position: X: 0.0  Y: 0.0  Z: 0.0`
 - **Disconnected State**: Shows "Disconnected" in white text
-- **Position Display**: X, Y, Z coordinates appear left-aligned after version info (white text, monospace font, only when connected)
+- **Position Display**: Labeled "Position:" followed by X, Y, Z coordinates (white text, monospace font, only when connected)
 - **Layout**: All elements left-aligned on single 30px line for maximum screen real estate
 
 #### Status Bar Redesign
