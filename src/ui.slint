@@ -331,23 +331,18 @@ export component MainWindow inherits Window {
                     }
                 }
                 
-                // G-Code Viewer
-                if current-view == "gcode-editor" : Rectangle {
-                    background: white;
-                    ScrollView {
+                // View Container - maintains consistent layout
+                Rectangle {
+                    background: current-view == "gcode-editor" ? white : #2c3e50;
+                    
+                    if current-view == "gcode-editor" : ScrollView {
                         TextEdit {
                             read-only: true;
                             text: "; G-Code viewer\nG00 X10 Y10\nG01 Z-5 F100\nG00 Z5\n";
                         }
                     }
-                }
-                
-                // Console Output
-                if current-view == "device-console" : Rectangle {
-                    background: #2c3e50;
-                    height: 100px;
                     
-                    ScrollView {
+                    if current-view == "device-console" : ScrollView {
                         TextEdit {
                             read-only: true;
                             text: "[INFO] GCodeKit4 initialized\n[INFO] Ready for operation\n";
