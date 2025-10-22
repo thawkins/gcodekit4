@@ -7,7 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1] - 2025-10-22
 
-### Fixed - Menu Callbacks Now Functional
+### Fixed - Menu Callbacks Now Functional + Window Maximized on Startup
+
+#### Window Startup Behavior
+- **Maximized Window**: Application now starts maximized instead of fixed 1200x850 size
+- **Responsive Layout**: UI adapts to available screen space
+- **Better Use of Screen Real Estate**: Larger visualization area for toolpaths and controls
 
 #### Menu System Callback Wiring
 - **File > Exit**: Now properly exits application with clean disconnection from machine
