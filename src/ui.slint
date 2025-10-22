@@ -453,12 +453,29 @@ export component MainWindow inherits Window {
                     font-size: 13.2px;
                 }
                 
-                // Port and Device Info (shown only when connected)
+                // Port Display
                 Text {
-                    text: root.connected ? root.selected-port + " | Version: " + root.device-version : "Disconnected";
+                    text: root.connected ? root.selected-port : "Disconnected";
                     color: white;
                     font-size: 13.2px;
                     font-family: "Monospace";
+                }
+                
+                // Separator between Port and Version
+                Text {
+                    text: " \u{2003} | \u{2003} ";
+                    color: white;
+                    font-size: 13.2px;
+                    visible: root.connected;
+                }
+                
+                // Version Label and Device Info
+                Text {
+                    text: root.connected ? "Version: " + root.device-version : "";
+                    color: white;
+                    font-size: 13.2px;
+                    font-family: "Monospace";
+                    visible: root.connected;
                 }
                 
                 // Separator 2 - Visual separator with EM spaces
