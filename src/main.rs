@@ -18,6 +18,10 @@ fn main() -> anyhow::Result<()> {
     let main_window = MainWindow::new().map_err(|e| anyhow::anyhow!("UI Error: {}", e))?;
     info!("UI window created successfully");
     
+    // Set window to maximized state
+    let window = main_window.window();
+    window.set_maximized(true);
+    
     // Initialize about dialog properties
     main_window.set_app_version(slint::SharedString::from(VERSION));
     main_window.set_app_build_date(slint::SharedString::from(BUILD_DATE));
