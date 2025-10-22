@@ -1,4 +1,4 @@
-use gcodekit4::{init_logging, VERSION, list_ports, SerialCommunicator, ConnectionParams, ConnectionDriver, SerialParity, Communicator};
+use gcodekit4::{init_logging, VERSION, BUILD_DATE, list_ports, SerialCommunicator, ConnectionParams, ConnectionDriver, SerialParity, Communicator};
 use tracing::info;
 use slint::VecModel;
 use std::rc::Rc;
@@ -17,6 +17,10 @@ fn main() -> anyhow::Result<()> {
 
     let main_window = MainWindow::new().map_err(|e| anyhow::anyhow!("UI Error: {}", e))?;
     info!("UI window created successfully");
+    
+    // Initialize about dialog properties
+    main_window.set_app_version(slint::SharedString::from(VERSION));
+    main_window.set_app_build_date(slint::SharedString::from(BUILD_DATE));
     
     // Get initial list of ports
     let ports = get_available_ports()?;

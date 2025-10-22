@@ -73,6 +73,9 @@ pub use gcode::{
 /// Library version
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
+/// Build date
+pub const BUILD_DATE: &str = env!("BUILD_DATE");
+
 /// Initialize logging with the default configuration
 ///
 /// Sets up structured logging with:
