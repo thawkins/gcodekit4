@@ -7,23 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1] - 2025-10-22
 
-### Fixed - UI/Menu System Improvements
+### Fixed - Menu Callbacks Now Functional
 
-#### Menu System Implementation
-- **Functional Menu Bar**: Implemented File, Edit, View, Help menus with dropdown items
-- **Menu Items**:
-  - File > Open File (opens G-Code file dialog)
-  - File > Exit (gracefully closes application with disconnection)
-  - Edit > Preferences (opens settings dialog)
-  - View > Fullscreen (toggles fullscreen mode)
-  - Help > About (displays application information)
-- **Menu Features**:
+#### Menu System Callback Wiring
+- **File > Exit**: Now properly exits application with clean disconnection from machine
+- **Help > About**: Displays application version and description in status bar
+- **File > Open**: Placeholder for file dialog (future implementation)
+- **Edit > Preferences**: Placeholder for preferences dialog (future implementation)
+- **View > Fullscreen**: Placeholder for fullscreen toggle (future implementation)
+- **Implementation**: Added 5 callback handlers in main.rs wired to UI menu events
+- **Logging**: All menu interactions logged via tracing for debugging
+- **Resource Management**: Proper weak references prevent memory issues
+
+#### Menu System Features
+- **Functional Menu Bar**: File, Edit, View, Help menus with dropdown items
+- **Visual Feedback**:
   - Dropdown menus with hover effects (background color changes)
   - Menu items auto-close after selection
   - Proper z-ordering (dropdowns appear on top of content)
   - Consistent color scheme (#2c3e50 menu bar, #34495e dropdowns)
-  - Touch/click responsive controls
-- **Menu Callbacks**: Wired to Rust handlers in main.rs with logging
 - **Reference**: Implementation based on Universal G-Code Sender (Java) menu patterns
 
 #### Layout Improvements

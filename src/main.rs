@@ -131,6 +131,55 @@ fn main() -> anyhow::Result<()> {
         }
     });
     
+    // Set up menu-file-exit callback
+    main_window.on_menu_file_exit(move || {
+        info!("Menu: File > Exit selected");
+        // Disconnect if connected before exiting
+        let mut comm = communicator.borrow_mut();
+        if let Err(e) = comm.disconnect() {
+            info!("Warning: Failed to disconnect during exit: {}", e);
+        }
+        info!("Exiting application");
+        std::process::exit(0);
+    });
+    
+    // Set up menu-file-open callback
+    let window_weak = main_window.as_weak();
+    main_window.on_menu_file_open(move || {
+        info!("Menu: File > Open selected");
+        if let Some(window) = window_weak.upgrade() {
+            window.set_connection_status(slint::SharedString::from("File dialog would open here"));
+        }
+    });
+    
+    // Set up menu-edit-preferences callback
+    let window_weak = main_window.as_weak();
+    main_window.on_menu_edit_preferences(move || {
+        info!("Menu: Edit > Preferences selected");
+        if let Some(window) = window_weak.upgrade() {
+            window.set_connection_status(slint::SharedString::from("Preferences dialog would open here"));
+        }
+    });
+    
+    // Set up menu-view-fullscreen callback
+    let window_weak = main_window.as_weak();
+    main_window.on_menu_view_fullscreen(move || {
+        info!("Menu: View > Fullscreen selected");
+        if let Some(window) = window_weak.upgrade() {
+            window.set_connection_status(slint::SharedString::from("Fullscreen toggle would activate here"));
+        }
+    });
+    
+    // Set up menu-help-about callback
+    let window_weak = main_window.as_weak();
+    main_window.on_menu_help_about(move || {
+        info!("Menu: Help > About selected");
+        if let Some(window) = window_weak.upgrade() {
+            let about_msg = format!("GCodeKit4 v{}\n\nUniversal G-Code Sender for CNC Machines", VERSION);
+            window.set_connection_status(slint::SharedString::from(about_msg));
+        }
+    });
+    
     main_window.show().map_err(|e| anyhow::anyhow!("UI Show Error: {}", e))?;
     main_window.run().map_err(|e| anyhow::anyhow!("UI Runtime Error: {}", e))?;
 
