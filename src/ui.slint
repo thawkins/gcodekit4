@@ -425,104 +425,46 @@ export component MainWindow inherits Window {
             }
         }
         
-        // Status Panel
+        // Status Panel - Compact Single Line
         Rectangle {
-            height: 80px;
+            height: 30px;
             background: #2c3e50;
             
             HorizontalBox {
-                padding: 10px;
-                spacing: 20px;
+                padding-top: 4px;
+                padding-bottom: 4px;
+                padding-left: 10px;
+                padding-right: 10px;
+                spacing: 15px;
                 
-                // Connection Status
-                VerticalBox {
-                    width: 200px;
-                    spacing: 3px;
-                    Text {
-                        text: "Connection";
-                        color: white;
-                        font-weight: 700;
-                        font-size: 12px;
-                    }
-                    Text {
-                        text: root.connection-status;
-                        color: root.connected ? #2ecc71 : #e74c3c;
-                        font-size: 13px;
-                        font-weight: 600;
-                    }
-                    Text {
-                        text: root.selected-port;
-                        color: #bdc3c7;
-                        font-size: 11px;
-                    }
+                // Connection Status Indicator (colored square)
+                Rectangle {
+                    width: 16px;
+                    height: 16px;
+                    background: root.connected ? #2ecc71 : #e74c3c;
+                    border-radius: 2px;
                 }
                 
-                // Device Version
-                VerticalBox {
-                    width: 200px;
-                    spacing: 3px;
-                    Text {
-                        text: "Device";
-                        color: white;
-                        font-weight: 700;
-                        font-size: 12px;
-                    }
-                    Text {
-                        text: root.device-version;
-                        color: root.connected ? #2ecc71 : #95a5a6;
-                        font-size: 13px;
-                        font-weight: 600;
-                    }
-                    Text {
-                        text: root.machine-state;
-                        color: root.connected ? #3498db : #bdc3c7;
-                        font-size: 11px;
-                    }
+                // Port and Device Info (shown only when connected)
+                Text {
+                    text: root.connected ? root.selected-port + " | " + root.device-version : "Disconnected";
+                    color: root.connected ? #bdc3c7 : #95a5a6;
+                    font-size: 11px;
+                    font-family: "Monospace";
                 }
                 
-                // Position (X, Y, Z)
-                VerticalBox {
-                    width: 300px;
-                    spacing: 3px;
-                    Text {
-                        text: "Position (mm)";
-                        color: white;
-                        font-weight: 700;
-                        font-size: 12px;
-                    }
-                    HorizontalBox {
-                        spacing: 15px;
-                        Text {
-                            text: "X: " + round(root.position-x * 1000.0) / 1000.0;
-                            color: #3498db;
-                            font-size: 12px;
-                            font-family: "Monospace";
-                        }
-                        Text {
-                            text: "Y: " + round(root.position-y * 1000.0) / 1000.0;
-                            color: #2ecc71;
-                            font-size: 12px;
-                            font-family: "Monospace";
-                        }
-                        Text {
-                            text: "Z: " + round(root.position-z * 1000.0) / 1000.0;
-                            color: #f39c12;
-                            font-size: 12px;
-                            font-family: "Monospace";
-                        }
-                    }
-                    Text {
-                        text: root.connected ? "Live" : "Offline";
-                        color: root.connected ? #2ecc71 : #95a5a6;
-                        font-size: 11px;
-                    }
+                // Position Display (X, Y, Z) - shown only when connected
+                Text {
+                    text: root.connected ? "X: " + round(root.position-x * 1000.0) / 1000.0 + "  Y: " + round(root.position-y * 1000.0) / 1000.0 + "  Z: " + round(root.position-z * 1000.0) / 1000.0 : "";
+                    color: #3498db;
+                    font-size: 11px;
+                    font-family: "Monospace";
+                    visible: root.connected;
                 }
-                
-                Rectangle { }  // Spacer
             }
         }
-    
     }
+    
     // File Menu Dropdown
     if file-menu-open : Rectangle {
         y: 40px;

@@ -7,7 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1] - 2025-10-22
 
-### Fixed - Menu Callbacks Now Functional + Window Maximized on Startup
+### Fixed - Menu Callbacks Now Functional + Window Maximized + Compact Status Bar
+
+#### Status Bar Redesign
+- **Compact Single-Line Layout**: Reduced from 80px to 30px height
+- **Connection Indicator**: Colored square (green = connected, red = disconnected)
+- **Port & Device Info**: Shows port name and device version when connected (e.g., "/dev/ttyUSB0 | GRBL 1.1+")
+- **Position Display**: Shows X, Y, Z coordinates (only when connected) in monospace font
+- **Disconnected State**: Shows "Disconnected" when not connected
+- **Better Real Estate**: More space for main content area and visualizer
 
 #### Window Startup Behavior
 - **Maximized Window**: Application now starts maximized instead of fixed 1200x850 size
@@ -16,22 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Menu System Callback Wiring
 - **File > Exit**: Now properly exits application with clean disconnection from machine
-- **Help > About**: Displays application version and description in status bar
+- **Help > About**: Displays application version and description
 - **File > Open**: Placeholder for file dialog (future implementation)
 - **Edit > Preferences**: Placeholder for preferences dialog (future implementation)
 - **View > Fullscreen**: Placeholder for fullscreen toggle (future implementation)
 - **Implementation**: Added 5 callback handlers in main.rs wired to UI menu events
 - **Logging**: All menu interactions logged via tracing for debugging
 - **Resource Management**: Proper weak references prevent memory issues
-
-#### Menu System Features
-- **Functional Menu Bar**: File, Edit, View, Help menus with dropdown items
-- **Visual Feedback**:
-  - Dropdown menus with hover effects (background color changes)
-  - Menu items auto-close after selection
-  - Proper z-ordering (dropdowns appear on top of content)
-  - Consistent color scheme (#2c3e50 menu bar, #34495e dropdowns)
-- **Reference**: Implementation based on Universal G-Code Sender (Java) menu patterns
 
 #### Layout Improvements
 - **Status Bar Visibility**: Fixed status bar being hidden by ensuring it displays at bottom
