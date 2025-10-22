@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1] - 2025-10-22
 
+### Added - Window Maximization
+- **Maximized Startup**: Application now starts in maximized state on all platforms
+- **Implementation**: Uses Slint's window API `set_maximized(true)` for cross-platform compatibility
+- **UX Improvement**: Users get full screen real estate immediately on launch
+
 ### Changed - UI Refinements and Menu Improvements
 
 #### About Dialog
