@@ -1,4 +1,4 @@
-use gcodekit4::{init_logging, VERSION, BUILD_DATE, list_ports, SerialCommunicator, ConnectionParams, ConnectionDriver, SerialParity, Communicator, SettingsDialog, SettingsPersistence, FirmwareSettingsIntegration, SettingValue, DeviceConsoleManager, DeviceMessageType};
+use gcodekit4::{init_logging, VERSION, BUILD_DATE, list_ports, SerialCommunicator, ConnectionParams, ConnectionDriver, SerialParity, Communicator, SettingsDialog, SettingsPersistence, FirmwareSettingsIntegration, SettingValue, DeviceConsoleManager, DeviceMessageType, GcodeEditor};
 use tracing::info;
 use slint::VecModel;
 use std::rc::Rc;
@@ -81,6 +81,23 @@ fn main() -> anyhow::Result<()> {
     console_manager.add_message(DeviceMessageType::Success, "GCodeKit4 initialized");
     console_manager.add_message(DeviceMessageType::Output, "Ready for operation");
     
+    // Initialize console output in UI with initial messages
+    let console_output = console_manager.get_output();
+    main_window.set_console_output(slint::SharedString::from(console_output));
+    
+    // Initialize G-Code editor
+    let gcode_editor = Rc::new(GcodeEditor::new());
+    info!("G-Code editor initialized");
+    
+    // Load sample G-Code content for demonstration
+    let sample_gcode = "; Sample G-Code\nG00 X10 Y10\nG01 Z-5 F100\nG00 Z5\nM30\n";
+    if let Err(e) = gcode_editor.load_content(sample_gcode) {
+        info!("Warning: Could not load sample G-Code: {}", e);
+    } else {
+        let editor_content = gcode_editor.get_display_content();
+        main_window.set_gcode_content(slint::SharedString::from(editor_content));
+    }
+    
     // Load settings from config file if it exists
     {
         let mut persistence = settings_persistence.borrow_mut();
@@ -123,15 +140,21 @@ fn main() -> anyhow::Result<()> {
     // Set up connect callback
     let window_weak = main_window.as_weak();
     let communicator_clone = communicator.clone();
+    let console_manager_clone = console_manager.clone();
     main_window.on_connect(move |port: slint::SharedString, baud: i32| {
         let port_str = port.to_string();
         info!("Connect requested for port: {} at {} baud", port_str, baud);
+        
+        // Add connection attempt to console
+        console_manager_clone.add_message(DeviceMessageType::Output, format!("Connecting to {} at {} baud", port_str, baud));
         
         // Update UI with connecting status immediately
         if let Some(window) = window_weak.upgrade() {
             window.set_connection_status(slint::SharedString::from("Connecting..."));
             window.set_device_version(slint::SharedString::from("Detecting..."));
             window.set_machine_state(slint::SharedString::from("CONNECTING"));
+            let console_output = console_manager_clone.get_output();
+            window.set_console_output(slint::SharedString::from(console_output));
         }
         
         // Create connection parameters
@@ -154,21 +177,27 @@ fn main() -> anyhow::Result<()> {
         match comm.connect(&params) {
             Ok(()) => {
                 info!("Successfully connected to {}", port_str);
+                console_manager_clone.add_message(DeviceMessageType::Success, format!("Successfully connected to {} at {} baud", port_str, baud));
                 if let Some(window) = window_weak.upgrade() {
                     window.set_connected(true);
                     window.set_connection_status(slint::SharedString::from("Connected"));
                     window.set_device_version(slint::SharedString::from("GRBL 1.1+"));
                     window.set_machine_state(slint::SharedString::from("IDLE"));
+                    let console_output = console_manager_clone.get_output();
+                    window.set_console_output(slint::SharedString::from(console_output));
                 }
             }
             Err(e) => {
                 let error_msg = format!("{}", e);
                 info!("Failed to connect: {}", error_msg);
+                console_manager_clone.add_message(DeviceMessageType::Error, format!("Connection failed: {}", error_msg));
                 if let Some(window) = window_weak.upgrade() {
                     window.set_connected(false);
                     window.set_connection_status(slint::SharedString::from(format!("Connection Failed")));
                     window.set_device_version(slint::SharedString::from("Not Connected"));
                     window.set_machine_state(slint::SharedString::from("DISCONNECTED"));
+                    let console_output = console_manager_clone.get_output();
+                    window.set_console_output(slint::SharedString::from(console_output));
                 }
             }
         }
@@ -177,12 +206,15 @@ fn main() -> anyhow::Result<()> {
     // Set up disconnect callback
     let window_weak = main_window.as_weak();
     let communicator_clone = communicator.clone();
+    let console_manager_clone = console_manager.clone();
     main_window.on_disconnect(move || {
         info!("Disconnect requested");
+        console_manager_clone.add_message(DeviceMessageType::Output, "Disconnecting from device");
         let mut comm = communicator_clone.borrow_mut();
         match comm.disconnect() {
             Ok(()) => {
                 info!("Successfully disconnected");
+                console_manager_clone.add_message(DeviceMessageType::Success, "Successfully disconnected");
                 if let Some(window) = window_weak.upgrade() {
                     window.set_connected(false);
                     window.set_connection_status(slint::SharedString::from("Disconnected"));
@@ -191,12 +223,17 @@ fn main() -> anyhow::Result<()> {
                     window.set_position_x(0.0);
                     window.set_position_y(0.0);
                     window.set_position_z(0.0);
+                    let console_output = console_manager_clone.get_output();
+                    window.set_console_output(slint::SharedString::from(console_output));
                 }
             }
             Err(e) => {
                 info!("Failed to disconnect: {}", e);
+                console_manager_clone.add_message(DeviceMessageType::Error, format!("Disconnect error: {}", e));
                 if let Some(window) = window_weak.upgrade() {
                     window.set_connection_status(slint::SharedString::from("Disconnect error"));
+                    let console_output = console_manager_clone.get_output();
+                    window.set_console_output(slint::SharedString::from(console_output));
                 }
             }
         }

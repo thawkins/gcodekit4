@@ -34,6 +34,7 @@ export component MainWindow inherits Window {
     in property <string> app-version: "0.9.1";
     in property <string> app-build-date: "2025-10-22";
     in property <string> console-output: "[INFO] GCodeKit4 initialized\n[INFO] Ready for operation\n";
+    in property <string> gcode-content: "; G-Code viewer\nG00 X10 Y10\nG01 Z-5 F100\nG00 Z5\n";
     
     callback refresh-ports();
     callback connect(string, int);
@@ -52,7 +53,7 @@ export component MainWindow inherits Window {
     
     // Internal state for UI selections
     private property <int> port-index: 0;
-    private property <string> current-view: "gcode-editor"; // gcode-editor or device-console
+    private property <string> current-view: "device-console"; // gcode-editor or device-console
     
     // Private properties for menu state
     private property <bool> file-menu-open: false;
@@ -310,36 +311,55 @@ export component MainWindow inherits Window {
             VerticalBox {
                 spacing: 10px;
                 
-                // File Operations
+                // View title
                 Rectangle {
-                    background: #ecf0f1;
-                    height: 50px;
+                    background: #34495e;
+                    height: 35px;
                     
-                    HorizontalBox {
-                        padding: 10px;
-                        spacing: 5px;
-                        
-                        Button {
-                            text: "Open File";
-                        }
-                        Button {
-                            text: "Save";
-                        }
-                        Text {
-                            text: "Ready";
-                            color: green;
-                        }
+                    Text {
+                        text: current-view == "gcode-editor" ? "G-Code Editor" : "Device Console";
+                        color: white;
+                        font-size: 14px;
+                        vertical-alignment: center;
+                        horizontal-alignment: left;
+                        padding-left: 15px;
                     }
                 }
                 
                 // View Container - maintains consistent layout
                 Rectangle {
-                    background: current-view == "gcode-editor" ? white : #2c3e50;
+                    background: current-view == "gcode-editor" ? #ffffff : #1e1e1e;
                     
-                    if current-view == "gcode-editor" : ScrollView {
-                        TextEdit {
-                            read-only: true;
-                            text: "; G-Code viewer\nG00 X10 Y10\nG01 Z-5 F100\nG00 Z5\n";
+                    if current-view == "gcode-editor" : VerticalBox {
+                        spacing: 0px;
+                        
+                        // File Operations - only visible in gcode-editor view
+                        Rectangle {
+                            background: #ecf0f1;
+                            height: 50px;
+                            
+                            HorizontalBox {
+                                padding: 10px;
+                                spacing: 5px;
+                                
+                                Button {
+                                    text: "Open File";
+                                }
+                                Button {
+                                    text: "Save";
+                                }
+                                Text {
+                                    text: "Ready";
+                                    color: green;
+                                }
+                            }
+                        }
+                        
+                        ScrollView {
+                            TextEdit {
+                                read-only: true;
+                                text: root.gcode-content;
+                            }
                         }
                     }
                     
@@ -347,6 +367,7 @@ export component MainWindow inherits Window {
                         TextEdit {
                             read-only: true;
                             text: root.console-output;
+                            // Dark terminal style with green text (like UGS)
                         }
                     }
                 }

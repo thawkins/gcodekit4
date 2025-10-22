@@ -1,8 +1,8 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.9.1  
+**Version**: 0.11.0-alpha  
 **Last Updated**: 2025-10-22  
-**Status**: Production Release (Phase 5 - UI Complete with Menu System)
+**Status**: Development Release (Phase 6 - Unified G-Code Editor)
 
 ## 1. Executive Summary
 

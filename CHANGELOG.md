@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0-alpha] - 2025-10-22
+
+### Added
+- **Unified G-Code Editor Module**
+  - Merged gcode_viewer and gcode_editor into single comprehensive module
+  - Combined syntax highlighting, search/replace, and execution tracking
+  - New `GcodeEditor` public API for accessing editor functionality
+  - New `Token` and `TokenType` for syntax highlighting support
+  - 12 unit tests for editor functionality, all passing
+  - Full documentation in `docs/gcode_editor_implementation.md`
+
+### Changed
+- G-Code Editor now provides unified interface for all editing operations
+- `src/ui/gcode_editor.rs` replaces previous separate implementations
+- Deleted redundant `src/ui/gcode_viewer.rs`
+- Updated module exports in `src/lib.rs` to include editor components
+- Updated module structure in `src/ui/mod.rs`
+
+### Technical Details
+- New File: `src/ui/gcode_editor.rs` (unified implementation)
+- New Docs: `docs/gcode_editor_implementation.md` (comprehensive guide)
+- Modified: `src/lib.rs` (updated public exports)
+- Modified: `src/ui/mod.rs` (module structure updates)
+- Modified: `src/ui.slint` (UI integration)
+- Deleted: `src/ui/gcode_viewer.rs` (merged into editor)
+- Tests: 361/361 passing
+- Build: Clean compilation
+
 ## [0.10.0] - 2025-10-22
 
 ### Added
