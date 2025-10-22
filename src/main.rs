@@ -1,4 +1,4 @@
-use gcodekit4::{init_logging, VERSION, BUILD_DATE, list_ports, SerialCommunicator, ConnectionParams, ConnectionDriver, SerialParity, Communicator};
+use gcodekit4::{init_logging, VERSION, BUILD_DATE, list_ports, SerialCommunicator, ConnectionParams, ConnectionDriver, SerialParity, Communicator, SettingsDialog, SettingsPersistence, FirmwareSettingsIntegration, SettingValue, SettingsCategory};
 use tracing::info;
 use slint::VecModel;
 use std::rc::Rc;
@@ -48,6 +48,61 @@ fn main() -> anyhow::Result<()> {
     
     // Shared state for communicator
     let communicator = Rc::new(RefCell::new(SerialCommunicator::new()));
+    
+    // Shared state for settings dialog
+    let settings_dialog = Rc::new(RefCell::new(SettingsDialog::new()));
+    
+    // Shared state for settings persistence
+    let settings_persistence = Rc::new(RefCell::new(SettingsPersistence::new()));
+    
+    // Shared state for firmware settings integration
+    let firmware_integration = Rc::new(RefCell::new(FirmwareSettingsIntegration::new("GRBL", "1.1")));
+    
+    // Load firmware settings
+    {
+        let mut fw_integration = firmware_integration.borrow_mut();
+        if let Err(e) = fw_integration.load_grbl_defaults() {
+            info!("Warning: Could not load firmware settings: {}", e);
+        } else {
+            info!("Firmware settings loaded successfully");
+            
+            // Populate dialog with firmware parameters
+            let mut dialog = settings_dialog.borrow_mut();
+            fw_integration.populate_dialog(&mut dialog);
+            drop(dialog);
+        }
+    }
+    
+    // Load settings from config file if it exists
+    {
+        let mut persistence = settings_persistence.borrow_mut();
+        let config_path = match gcodekit4::config::SettingsManager::config_file_path() {
+            Ok(path) => path,
+            Err(e) => {
+                info!("Could not determine config path: {}", e);
+                std::path::PathBuf::new()
+            }
+        };
+
+        if config_path.exists() {
+            match SettingsPersistence::load_from_file(&config_path) {
+                Ok(loaded_persistence) => {
+                    *persistence = loaded_persistence;
+                    info!("Settings loaded from {:?}", config_path);
+                }
+                Err(e) => {
+                    info!("Could not load settings from {:?}: {}", config_path, e);
+                }
+            }
+        } else {
+            info!("No existing config file at {:?}", config_path);
+        }
+
+        // Populate dialog with settings
+        let mut dialog = settings_dialog.borrow_mut();
+        persistence.populate_dialog(&mut dialog);
+        drop(dialog);
+    }
     
     // Set up refresh-ports callback
     let ports_model_clone = ports_model.clone();
@@ -162,10 +217,136 @@ fn main() -> anyhow::Result<()> {
     
     // Set up menu-edit-preferences callback
     let window_weak = main_window.as_weak();
+    let settings_dialog_clone = settings_dialog.clone();
     main_window.on_menu_edit_preferences(move || {
         info!("Menu: Edit > Preferences selected");
+        
+        // Get reference to settings dialog
+        let dialog = settings_dialog_clone.borrow();
+        
+        // Build settings array for UI display - using generated SettingItem type
+        let mut settings_items = Vec::new();
+        for (_, setting) in &dialog.settings {
+            let value_type = match &setting.value {
+                SettingValue::Boolean(_) => "Boolean",
+                SettingValue::Integer(_) => "Integer",
+                SettingValue::Float(_) => "Float",
+                _ => "String",
+            };
+            
+            let category = format!("{}", setting.category);
+            
+            settings_items.push(slint_generatedMainWindow::SettingItem {
+                id: setting.id.clone().into(),
+                name: setting.name.clone().into(),
+                value: setting.value.as_str().into(),
+                value_type: value_type.into(),
+                category: category.into(),
+                description: setting.description.clone().map(|s| s.into()).unwrap_or_default(),
+            });
+        }
+        
+        info!("Settings prepared: {} items for UI display", settings_items.len());
+        
         if let Some(window) = window_weak.upgrade() {
-            window.set_connection_status(slint::SharedString::from("Preferences dialog would open here"));
+            let model = std::rc::Rc::new(slint::VecModel::from(settings_items));
+            window.set_all_settings(slint::ModelRc::new(model));
+            window.set_connection_status(slint::SharedString::from("Preferences dialog opened"));
+        }
+    });
+    
+    // Set up menu-settings-save callback
+    let window_weak = main_window.as_weak();
+    let settings_dialog_clone = settings_dialog.clone();
+    let settings_persistence_clone = settings_persistence.clone();
+    main_window.on_menu_settings_save(move || {
+        info!("Menu: Settings Save clicked");
+        
+        let dialog = settings_dialog_clone.borrow();
+        
+        // Check for unsaved changes
+        if dialog.has_changes() {
+            info!("Settings have been modified");
+            
+            // Log all changed settings
+            for setting in dialog.settings.values() {
+                if setting.is_changed() {
+                    info!("Setting changed: {} = {}", setting.name, setting.value.as_str());
+                }
+            }
+            
+            // Save to disk
+            {
+                let mut persistence = settings_persistence_clone.borrow_mut();
+                
+                // Load settings from dialog into config
+                if let Err(e) = persistence.load_from_dialog(&dialog) {
+                    info!("Error loading settings from dialog: {}", e);
+                    if let Some(window) = window_weak.upgrade() {
+                        window.set_connection_status(slint::SharedString::from(
+                            format!("Error saving settings: {}", e)
+                        ));
+                    }
+                    return;
+                }
+                
+                // Save to file
+                let config_path = match gcodekit4::config::SettingsManager::config_file_path() {
+                    Ok(path) => path,
+                    Err(e) => {
+                        info!("Could not determine config path: {}", e);
+                        if let Some(window) = window_weak.upgrade() {
+                            window.set_connection_status(slint::SharedString::from(
+                                format!("Error: Could not determine config path: {}", e)
+                            ));
+                        }
+                        return;
+                    }
+                };
+                
+                if let Err(e) = persistence.save_to_file(&config_path) {
+                    info!("Error saving settings to file: {}", e);
+                    if let Some(window) = window_weak.upgrade() {
+                        window.set_connection_status(slint::SharedString::from(
+                            format!("Error saving settings: {}", e)
+                        ));
+                    }
+                } else {
+                    info!("Settings saved to disk successfully");
+                    if let Some(window) = window_weak.upgrade() {
+                        window.set_connection_status(slint::SharedString::from("Settings saved successfully"));
+                    }
+                }
+            }
+        } else {
+            info!("No settings changes to save");
+            if let Some(window) = window_weak.upgrade() {
+                window.set_connection_status(slint::SharedString::from("No changes to save"));
+            }
+        }
+    });
+    
+    // Set up menu-settings-cancel callback
+    let window_weak = main_window.as_weak();
+    main_window.on_menu_settings_cancel(move || {
+        info!("Menu: Settings Cancel clicked");
+        if let Some(window) = window_weak.upgrade() {
+            window.set_connection_status(slint::SharedString::from("Settings changes discarded"));
+        }
+    });
+    
+    // Set up menu-settings-restore-defaults callback
+    let window_weak = main_window.as_weak();
+    let settings_dialog_clone = settings_dialog.clone();
+    main_window.on_menu_settings_restore_defaults(move || {
+        info!("Menu: Settings Restore Defaults clicked");
+        
+        let mut dialog = settings_dialog_clone.borrow_mut();
+        dialog.reset_all_to_defaults();
+        
+        info!("All settings reset to defaults");
+        if let Some(window) = window_weak.upgrade() {
+            window.set_connection_status(slint::SharedString::from("Settings restored to defaults"));
         }
     });
     

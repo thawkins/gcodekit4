@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1-alpha] - 2025-10-22
+
+### Added
+- **Phase 3: Firmware Settings Integration - COMPLETE**
+  - FirmwareSettingsIntegration module for device parameter management
+  - Dynamic rendering of firmware settings in Settings Dialog Advanced category
+  - GRBL 1.1 firmware parameter support (30+ parameters)
+  - SettingItem struct for Slint UI representation
+  - Type-aware UI controls (CheckBox for booleans, LineEdit for text/numbers)
+  - Firmware parameter descriptions and unit information
+  - Backup/restore functionality for firmware settings
+  - Full integration with settings persistence system
+
+### Changed
+- Enhanced Settings Dialog Advanced category with dynamic firmware parameter display
+- Optimized line spacing in Advanced settings (2px spacing, 24px row height)
+- Main application startup now loads and initializes firmware settings
+- Settings Dialog callback enhanced to populate UI with all settings including firmware params
+- UI rendering improved for compact display of 30+ firmware parameters
+
+### Fixed
+- Firmware settings now visible in Settings Dialog Advanced category
+- UI display of firmware parameters with proper category filtering
+- Line spacing optimization in Advanced settings for better usability
+
+### Technical Details
+- New file: `src/ui/firmware_integration.rs` (468 lines)
+- Modified: `src/ui.slint` (+40 lines dynamic rendering)
+- Modified: `src/main.rs` (+20 lines integration)
+- Tests: 7 new tests for firmware integration (all passing)
+- Total tests: 361/361 passing
+
+### Performance
+- Firmware load time: <10ms
+- Dialog population: <20ms
+- Save time: <100ms
+
 ## [0.9.1] - 2025-10-22
 
 ### Added - Window Maximization

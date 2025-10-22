@@ -69,6 +69,7 @@ pub use gcode::{
     ProcessorHandle, ProcessorPipeline, ProcessorRegistry, WhitespaceProcessor,
     stream::{FileStreamReader, GcodeStreamReader, PausableStream, StringStreamReader},
 };
+pub use ui::{SettingsDialog, Setting, SettingValue, SettingsCategory, KeyboardShortcut, SettingsPersistence, FirmwareSettingsIntegration};
 
 /// Library version
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
