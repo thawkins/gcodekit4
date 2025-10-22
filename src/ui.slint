@@ -51,6 +51,7 @@ export component MainWindow inherits Window {
     
     // Internal state for UI selections
     private property <int> port-index: 0;
+    private property <string> current-view: "gcode-editor"; // gcode-editor or device-console
     
     // Private properties for menu state
     private property <bool> file-menu-open: false;
@@ -331,7 +332,7 @@ export component MainWindow inherits Window {
                 }
                 
                 // G-Code Viewer
-                Rectangle {
+                if current-view == "gcode-editor" : Rectangle {
                     background: white;
                     ScrollView {
                         TextEdit {
@@ -342,7 +343,7 @@ export component MainWindow inherits Window {
                 }
                 
                 // Console Output
-                Rectangle {
+                if current-view == "device-console" : Rectangle {
                     background: #2c3e50;
                     height: 100px;
                     
@@ -606,7 +607,7 @@ export component MainWindow inherits Window {
     if view-menu-open : Rectangle {
         y: 40px;
         x: 156px;
-        width: 180px;
+        width: 200px;
         height: 100px;
         background: #34495e;
         z: 1001;
@@ -619,12 +620,17 @@ export component MainWindow inherits Window {
                 height: 28px;
                 background: mi-view-fullscreen-area.has-hover ? #455a64 : transparent;
                 
-                Text {
-                    text: "Fullscreen";
-                    color: white;
-                    font-size: 12px;
-                    vertical-alignment: center;
-                    padding-left: 12px;
+                HorizontalBox {
+                    alignment: start;
+                    padding-left: 8px;
+                    spacing: 8px;
+                    
+                    Text {
+                        text: "Fullscreen";
+                        color: white;
+                        font-size: 12px;
+                        vertical-alignment: center;
+                    }
                 }
                 
                 mi-view-fullscreen-area := TouchArea {
@@ -640,18 +646,24 @@ export component MainWindow inherits Window {
                 height: 28px;
                 background: mi-view-gcode-area.has-hover ? #455a64 : transparent;
                 
-                Text {
-                    text: "G-Code Editor";
-                    color: white;
-                    font-size: 12px;
-                    vertical-alignment: center;
-                    padding-left: 12px;
+                HorizontalBox {
+                    alignment: start;
+                    padding-left: 8px;
+                    spacing: 8px;
+                    
+                    Text {
+                        text: current-view == "gcode-editor" ? "✓ G-Code Editor" : "  G-Code Editor";
+                        color: white;
+                        font-size: 12px;
+                        vertical-alignment: center;
+                    }
                 }
                 
                 mi-view-gcode-area := TouchArea {
                     mouse-cursor: pointer;
                     clicked => {
                         view-menu-open = false;
+                        current-view = "gcode-editor";
                         root.menu-view-gcode-editor();
                     }
                 }
@@ -661,18 +673,24 @@ export component MainWindow inherits Window {
                 height: 28px;
                 background: mi-view-console-area.has-hover ? #455a64 : transparent;
                 
-                Text {
-                    text: "Device Console";
-                    color: white;
-                    font-size: 12px;
-                    vertical-alignment: center;
-                    padding-left: 12px;
+                HorizontalBox {
+                    alignment: start;
+                    padding-left: 8px;
+                    spacing: 8px;
+                    
+                    Text {
+                        text: current-view == "device-console" ? "✓ Device Console" : "  Device Console";
+                        color: white;
+                        font-size: 12px;
+                        vertical-alignment: center;
+                    }
                 }
                 
                 mi-view-console-area := TouchArea {
                     mouse-cursor: pointer;
                     clicked => {
                         view-menu-open = false;
+                        current-view = "device-console";
                         root.menu-view-device-console();
                     }
                 }
