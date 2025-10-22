@@ -51,11 +51,11 @@ config = "0.15.18"
 toml = "0.9.8"
 
 # UI Framework
-slint = { version = "1.5", features = ["backend-winit"] }
+slint = { version = "1.14.0", features = ["backend-winit"] }
 
 # Build dependencies
 [build-dependencies]
-slint-build = "1.5"
+slint-build = "1.14.0"
 
 # Testing utilities
 [dev-dependencies]

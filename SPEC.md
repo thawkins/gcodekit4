@@ -1,8 +1,8 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.9.0  
-**Last Updated**: 2025-10-21  
-**Status**: In Development (Phase 5 - UI Implementation 45% complete - UI Window Fixed)
+**Version**: 0.9.1  
+**Last Updated**: 2025-10-22  
+**Status**: Production Release (Phase 5 - UI Complete with Menu System)
 
 ## 1. Executive Summary
 

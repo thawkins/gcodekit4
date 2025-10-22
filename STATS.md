@@ -1,8 +1,8 @@
 # GCodeKit4 Development Statistics
 
-**Last Updated**: 2025-10-21  
-**Version**: 0.9.0 (PRODUCTION RELEASE - ALL 150 TASKS COMPLETE)  
-**Status**: ✅ **PRODUCTION READY** - All phases finished, all tests passing, released
+**Last Updated**: 2025-10-22  
+**Version**: 0.9.1 (Production Update - Menu System & UI Improvements)  
+**Status**: ✅ **PRODUCTION READY** - All features working, improved menu system and layouts
 
 ## Project Overview
 

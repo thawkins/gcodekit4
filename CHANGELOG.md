@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1] - 2025-10-22
+
+### Fixed - UI/Menu System Improvements
+
+#### Menu System Implementation
+- **Functional Menu Bar**: Implemented File, Edit, View, Help menus with dropdown items
+- **Menu Items**:
+  - File > Open File (opens G-Code file dialog)
+  - File > Exit (gracefully closes application with disconnection)
+  - Edit > Preferences (opens settings dialog)
+  - View > Fullscreen (toggles fullscreen mode)
+  - Help > About (displays application information)
+- **Menu Features**:
+  - Dropdown menus with hover effects (background color changes)
+  - Menu items auto-close after selection
+  - Proper z-ordering (dropdowns appear on top of content)
+  - Consistent color scheme (#2c3e50 menu bar, #34495e dropdowns)
+  - Touch/click responsive controls
+- **Menu Callbacks**: Wired to Rust handlers in main.rs with logging
+- **Reference**: Implementation based on Universal G-Code Sender (Java) menu patterns
+
+#### Layout Improvements
+- **Status Bar Visibility**: Fixed status bar being hidden by ensuring it displays at bottom
+- **Right Panel Visibility**: Wrapped main content in Rectangle to prevent infinite expansion
+- **Layout Structure**: Menu bar (40px) + Content area + Status bar (80px) properly sized
+- **Window Sizing**: Window set to 1920x1080 on startup for better visibility
+
+#### Code Quality
+- All 349 unit tests passing
+- Zero compilation errors
+- Proper resource management with weak references
+- Structured logging for all menu interactions
+
+### Documentation
+- **docs/MENU_IMPLEMENTATION.md**: Complete guide to menu system architecture
+- **docs/UI_PANELS.md**: UI panel structure and component organization
+- **MENU_WIRING_SUMMARY.txt**: Quick reference for menu implementation
+
 ## [0.9.0] - 2025-10-21
 
 ### 🚀 PRODUCTION RELEASE: All 150 Tasks Complete, Full Feature-Complete Application

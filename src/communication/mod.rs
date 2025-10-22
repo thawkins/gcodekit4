@@ -399,13 +399,6 @@ impl SerialCommunicator {
         }
     }
 
-    /// Create a new serial communicator with mock port (for testing and integration tests)
-    pub fn with_mock_port(port_name: &str) -> Self {
-        let mut comm = Self::new();
-        comm.port = Some(Box::new(serial::MockSerialPort::new(port_name)));
-        comm
-    }
-
     /// Notify listeners of an event
     fn notify_listeners(&self, event: CommunicatorEvent, message: &str) {
         for listener in &self.listeners {
@@ -434,14 +427,6 @@ impl Communicator for SerialCommunicator {
             return Err(crate::Error::other(
                 "SerialCommunicator requires Serial driver type",
             ));
-        }
-
-        // If we already have a port (from with_mock_port), use it
-        if self.port.is_some() {
-            tracing::info!("Serial communicator using existing port connection");
-            self.params = Some(params.clone());
-            self.notify_listeners(CommunicatorEvent::Connected, "Connected to serial port");
-            return Ok(());
         }
 
         // Try to open the port
@@ -589,13 +574,6 @@ impl TcpCommunicator {
         }
     }
 
-    /// Create a new TCP communicator with mock port (for testing and integration tests)
-    pub fn with_mock_port(peer_addr: &str) -> Self {
-        let mut comm = Self::new();
-        comm.port = Some(Box::new(tcp::MockTcpPort::new(peer_addr)));
-        comm
-    }
-
     /// Notify listeners of an event
     fn notify_listeners(&self, event: CommunicatorEvent, message: &str) {
         for listener in &self.listeners {
@@ -624,14 +602,6 @@ impl Communicator for TcpCommunicator {
             return Err(crate::Error::other(
                 "TcpCommunicator requires Tcp driver type",
             ));
-        }
-
-        // If we already have a port (from with_mock_port), use it
-        if self.port.is_some() {
-            tracing::info!("TCP communicator using existing port connection");
-            self.params = Some(params.clone());
-            self.notify_listeners(CommunicatorEvent::Connected, "Connected to TCP server");
-            return Ok(());
         }
 
         // Try to open the connection

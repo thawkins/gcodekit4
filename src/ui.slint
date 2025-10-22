@@ -29,32 +29,150 @@ export component MainWindow inherits Window {
     callback refresh-ports();
     callback connect(string, int);
     callback disconnect();
+    callback menu-file-open();
+    callback menu-file-exit();
+    callback menu-edit-preferences();
+    callback menu-view-fullscreen();
+    callback menu-help-about();
     
     // Internal state for UI selections
     private property <int> port-index: 0;
     private property <int> baud-index: 3;  // Default to 115200
     
+    // Private properties for menu state
+    private property <bool> file-menu-open: false;
+    private property <bool> edit-menu-open: false;
+    private property <bool> view-menu-open: false;
+    private property <bool> help-menu-open: false;
+    
     VerticalBox {
         spacing: 0px;
         
-        // Menu bar placeholder
-        HorizontalBox {
+        // Menu bar
+        Rectangle {
             height: 40px;
-            padding: 5px;
-            Rectangle {
-                background: #2c3e50;
-            }
-            Text {
-                text: "GCodeKit4 v0.7.0-alpha";
-                color: white;
-                font-weight: 700;
+            background: #2c3e50;
+            z: 1000;
+            
+            HorizontalBox {
+                padding: 8px;
+                spacing: 20px;
+                alignment: start;
+                height: 40px;
+                
+                // File Menu
+                Rectangle {
+                    width: 50px;
+                    height: 24px;
+                    background: file-menu-open ? #34495e : transparent;
+                    border-radius: 3px;
+                    
+                    Text {
+                        text: "File";
+                        color: white;
+                        font-size: 12px;
+                        vertical-alignment: center;
+                        horizontal-alignment: center;
+                    }
+                    
+                    TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => {
+                            file-menu-open = !file-menu-open;
+                            edit-menu-open = false;
+                            view-menu-open = false;
+                            help-menu-open = false;
+                        }
+                    }
+                }
+                
+                // Edit Menu
+                Rectangle {
+                    width: 50px;
+                    height: 24px;
+                    background: edit-menu-open ? #34495e : transparent;
+                    border-radius: 3px;
+                    
+                    Text {
+                        text: "Edit";
+                        color: white;
+                        font-size: 12px;
+                        vertical-alignment: center;
+                        horizontal-alignment: center;
+                    }
+                    
+                    TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => {
+                            edit-menu-open = !edit-menu-open;
+                            file-menu-open = false;
+                            view-menu-open = false;
+                            help-menu-open = false;
+                        }
+                    }
+                }
+                
+                // View Menu
+                Rectangle {
+                    width: 50px;
+                    height: 24px;
+                    background: view-menu-open ? #34495e : transparent;
+                    border-radius: 3px;
+                    
+                    Text {
+                        text: "View";
+                        color: white;
+                        font-size: 12px;
+                        vertical-alignment: center;
+                        horizontal-alignment: center;
+                    }
+                    
+                    TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => {
+                            view-menu-open = !view-menu-open;
+                            file-menu-open = false;
+                            edit-menu-open = false;
+                            help-menu-open = false;
+                        }
+                    }
+                }
+                
+                // Help Menu
+                Rectangle {
+                    width: 50px;
+                    height: 24px;
+                    background: help-menu-open ? #34495e : transparent;
+                    border-radius: 3px;
+                    
+                    Text {
+                        text: "Help";
+                        color: white;
+                        font-size: 12px;
+                        vertical-alignment: center;
+                        horizontal-alignment: center;
+                    }
+                    
+                    TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => {
+                            help-menu-open = !help-menu-open;
+                            file-menu-open = false;
+                            edit-menu-open = false;
+                            view-menu-open = false;
+                        }
+                    }
+                }
             }
         }
         
-        // Main content area
-        HorizontalBox {
-            spacing: 10px;
-            padding: 10px;
+        }
+        
+        // Main content area - with constrained height
+        Rectangle {
+            HorizontalBox {
+                spacing: 10px;
+                padding: 10px;
             
             // Left panel - Connection and Control
             VerticalBox {
@@ -309,6 +427,7 @@ export component MainWindow inherits Window {
                     }
                 }
             }
+            }
         }
         
         // Status Panel
@@ -405,6 +524,170 @@ export component MainWindow inherits Window {
                 }
                 
                 Rectangle { }  // Spacer
+            }
+        }
+    
+    // File Menu Dropdown
+    if file-menu-open : Rectangle {
+        y: 40px;
+        x: 8px;
+        width: 120px;
+        height: 70px;
+        background: #34495e;
+        z: 1001;
+        
+        VerticalBox {
+            padding: 4px;
+            spacing: 2px;
+            
+            Rectangle {
+                height: 28px;
+                background: mi-file-open-area.has-hover ? #455a64 : transparent;
+                
+                Text {
+                    text: "Open File";
+                    color: white;
+                    font-size: 12px;
+                    vertical-alignment: center;
+                    padding-left: 12px;
+                }
+                
+                mi-file-open-area := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        file-menu-open = false;
+                        root.menu-file-open();
+                    }
+                }
+            }
+            
+            Rectangle {
+                height: 28px;
+                background: mi-file-exit-area.has-hover ? #455a64 : transparent;
+                
+                Text {
+                    text: "Exit";
+                    color: white;
+                    font-size: 12px;
+                    vertical-alignment: center;
+                    padding-left: 12px;
+                }
+                
+                mi-file-exit-area := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        file-menu-open = false;
+                        root.menu-file-exit();
+                    }
+                }
+            }
+        }
+    }
+    
+    // Edit Menu Dropdown
+    if edit-menu-open : Rectangle {
+        y: 40px;
+        x: 78px;
+        width: 140px;
+        height: 40px;
+        background: #34495e;
+        z: 1001;
+        
+        VerticalBox {
+            padding: 4px;
+            spacing: 2px;
+            
+            Rectangle {
+                height: 28px;
+                background: mi-edit-prefs-area.has-hover ? #455a64 : transparent;
+                
+                Text {
+                    text: "Preferences";
+                    color: white;
+                    font-size: 12px;
+                    vertical-alignment: center;
+                    padding-left: 12px;
+                }
+                
+                mi-edit-prefs-area := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        edit-menu-open = false;
+                        root.menu-edit-preferences();
+                    }
+                }
+            }
+        }
+    }
+    
+    // View Menu Dropdown
+    if view-menu-open : Rectangle {
+        y: 40px;
+        x: 156px;
+        width: 140px;
+        height: 40px;
+        background: #34495e;
+        z: 1001;
+        
+        VerticalBox {
+            padding: 4px;
+            spacing: 2px;
+            
+            Rectangle {
+                height: 28px;
+                background: mi-view-fullscreen-area.has-hover ? #455a64 : transparent;
+                
+                Text {
+                    text: "Fullscreen";
+                    color: white;
+                    font-size: 12px;
+                    vertical-alignment: center;
+                    padding-left: 12px;
+                }
+                
+                mi-view-fullscreen-area := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        view-menu-open = false;
+                        root.menu-view-fullscreen();
+                    }
+                }
+            }
+        }
+    }
+    
+    // Help Menu Dropdown
+    if help-menu-open : Rectangle {
+        y: 40px;
+        x: 234px;
+        width: 120px;
+        height: 40px;
+        background: #34495e;
+        z: 1001;
+        
+        VerticalBox {
+            padding: 4px;
+            spacing: 2px;
+            
+            Rectangle {
+                height: 28px;
+                background: mi-help-about-area.has-hover ? #455a64 : transparent;
+                
+                Text {
+                    text: "About";
+                    color: white;
+                    font-size: 12px;
+                    vertical-alignment: center;
+                    padding-left: 12px;
+                }
+                
+                mi-help-about-area := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        help-menu-open = false;
+                        root.menu-help-about();
+                    }
+                }
             }
         }
     }
