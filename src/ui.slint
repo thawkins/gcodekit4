@@ -33,6 +33,7 @@ export component MainWindow inherits Window {
     in property <string> machine-state: "DISCONNECTED";
     in property <string> app-version: "0.9.1";
     in property <string> app-build-date: "2025-10-22";
+    in property <string> console-output: "[INFO] GCodeKit4 initialized\n[INFO] Ready for operation\n";
     
     callback refresh-ports();
     callback connect(string, int);
@@ -345,7 +346,7 @@ export component MainWindow inherits Window {
                     if current-view == "device-console" : ScrollView {
                         TextEdit {
                             read-only: true;
-                            text: "[INFO] GCodeKit4 initialized\n[INFO] Ready for operation\n";
+                            text: root.console-output;
                         }
                     }
                 }

@@ -1,4 +1,4 @@
-use gcodekit4::{init_logging, VERSION, BUILD_DATE, list_ports, SerialCommunicator, ConnectionParams, ConnectionDriver, SerialParity, Communicator, SettingsDialog, SettingsPersistence, FirmwareSettingsIntegration, SettingValue, SettingsCategory};
+use gcodekit4::{init_logging, VERSION, BUILD_DATE, list_ports, SerialCommunicator, ConnectionParams, ConnectionDriver, SerialParity, Communicator, SettingsDialog, SettingsPersistence, FirmwareSettingsIntegration, SettingValue, DeviceConsoleManager, DeviceMessageType};
 use tracing::info;
 use slint::VecModel;
 use std::rc::Rc;
@@ -72,6 +72,14 @@ fn main() -> anyhow::Result<()> {
             drop(dialog);
         }
     }
+    
+    // Initialize device console manager
+    let console_manager = Rc::new(DeviceConsoleManager::new());
+    info!("Device console manager initialized");
+    
+    // Add initial messages to console
+    console_manager.add_message(DeviceMessageType::Success, "GCodeKit4 initialized");
+    console_manager.add_message(DeviceMessageType::Output, "Ready for operation");
     
     // Load settings from config file if it exists
     {
@@ -370,10 +378,15 @@ fn main() -> anyhow::Result<()> {
     
     // Set up menu-view-device-console callback
     let window_weak = main_window.as_weak();
+    let console_manager_weak = Rc::downgrade(&console_manager);
     main_window.on_menu_view_device_console(move || {
         info!("Menu: View > Device Console selected");
         if let Some(window) = window_weak.upgrade() {
-            window.set_connection_status(slint::SharedString::from("Device Console activated"));
+            if let Some(console_mgr) = console_manager_weak.upgrade() {
+                let output = console_mgr.get_output();
+                window.set_console_output(slint::SharedString::from(output));
+                window.set_connection_status(slint::SharedString::from("Device Console activated"));
+            }
         }
     });
     
