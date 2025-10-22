@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Layout Improvements
 - **Status Bar Visibility**: Fixed status bar being hidden by ensuring it displays at bottom
+- **Menu Bar Positioning**: Fixed menu bar layout positioning by correcting VerticalBox structure. Menu bar now properly reserved at top with fixed 40px height, content area takes remaining space, status panel fixed at bottom with 80px height
 - **Right Panel Visibility**: Wrapped main content in Rectangle to prevent infinite expansion
 - **Layout Structure**: Menu bar (40px) + Content area + Status bar (80px) properly sized
 - **Window Sizing**: Window set to 1920x1080 on startup for better visibility
