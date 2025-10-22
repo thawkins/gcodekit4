@@ -7,9 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1] - 2025-10-22
 
-### Fixed - Menu Callbacks Now Functional + Window Maximized + Compact Status Bar
+### Changed - UI Refinements and Menu Improvements
 
-#### Status Bar Improvements (Final)
+#### About Dialog
+- **Modal About Dialog**: Help > About now displays a professional about dialog
+- **Dialog Content**: 
+  - Program name "GCodeKit4" in large triple-size text (42px, bold)
+  - Version information with "Version: " label
+  - Build date with "Built: " label
+- **Dialog Controls**: 
+  - Ok button positioned in lower right with proper padding
+  - Dismissible by clicking Ok or clicking outside the dialog
+  - Semi-transparent overlay background
+- **Build Date**: Added BUILD_DATE constant set at compile time
+
+#### Connection Panel Simplification
+- **Removed Baud Rate UI**: Removed baud rate combo box from connection panel
+- **Fixed Baud Rate**: Application now uses 115200 baud rate internally (standard for most CNC controllers)
+- **Cleaner UI**: Simplified connection panel with only port selector and Connect/Disconnect buttons
+
+### Fixed - Menu Callbacks and UI Improvements
+
+#### Status Bar Enhancements (Final)
+- **Font Size**: Increased by 20% to 13.2px for better readability
+- **Connection Indicator**: Colored square (green = connected, red = disconnected)
+- **Visual Separators**: Pipe character (|) with 1 EM space on either side between all sections
+- **Port Display**: Shows port name when connected
+- **Version Info**: "Version: " label followed by device version when connected
+- **Position Display**: "Position:" label with EM space, followed by X, Y, Z coordinates (only when connected)
+- **Full Format**: `[indicator] [space] port | Version: device | Position: X: Y: Z:`
+- **Disconnected State**: Shows "Disconnected" in white text
+- **Layout**: All elements left-aligned on single 30px line for maximum screen real estate
 - **Font Size**: Increased by 20% to 13.2px for better readability
 - **Connection Indicator**: Colored square (green = connected, red = disconnected)
 - **Visual Separators**: Pipe character (|) with 1 EM space on either side between all sections
