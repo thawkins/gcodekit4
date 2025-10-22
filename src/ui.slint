@@ -44,6 +44,8 @@ export component MainWindow inherits Window {
     callback menu-settings-cancel();
     callback menu-settings-restore-defaults();
     callback menu-view-fullscreen();
+    callback menu-view-gcode-editor();
+    callback menu-view-device-console();
     callback menu-help-about();
     callback update-setting(string, string);
     
@@ -604,8 +606,8 @@ export component MainWindow inherits Window {
     if view-menu-open : Rectangle {
         y: 40px;
         x: 156px;
-        width: 140px;
-        height: 40px;
+        width: 180px;
+        height: 100px;
         background: #34495e;
         z: 1001;
         
@@ -630,6 +632,48 @@ export component MainWindow inherits Window {
                     clicked => {
                         view-menu-open = false;
                         root.menu-view-fullscreen();
+                    }
+                }
+            }
+            
+            Rectangle {
+                height: 28px;
+                background: mi-view-gcode-area.has-hover ? #455a64 : transparent;
+                
+                Text {
+                    text: "G-Code Editor";
+                    color: white;
+                    font-size: 12px;
+                    vertical-alignment: center;
+                    padding-left: 12px;
+                }
+                
+                mi-view-gcode-area := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        view-menu-open = false;
+                        root.menu-view-gcode-editor();
+                    }
+                }
+            }
+            
+            Rectangle {
+                height: 28px;
+                background: mi-view-console-area.has-hover ? #455a64 : transparent;
+                
+                Text {
+                    text: "Device Console";
+                    color: white;
+                    font-size: 12px;
+                    vertical-alignment: center;
+                    padding-left: 12px;
+                }
+                
+                mi-view-console-area := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        view-menu-open = false;
+                        root.menu-view-device-console();
                     }
                 }
             }

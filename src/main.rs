@@ -359,6 +359,24 @@ fn main() -> anyhow::Result<()> {
         }
     });
     
+    // Set up menu-view-gcode-editor callback
+    let window_weak = main_window.as_weak();
+    main_window.on_menu_view_gcode_editor(move || {
+        info!("Menu: View > G-Code Editor selected");
+        if let Some(window) = window_weak.upgrade() {
+            window.set_connection_status(slint::SharedString::from("G-Code Editor activated"));
+        }
+    });
+    
+    // Set up menu-view-device-console callback
+    let window_weak = main_window.as_weak();
+    main_window.on_menu_view_device_console(move || {
+        info!("Menu: View > Device Console selected");
+        if let Some(window) = window_weak.upgrade() {
+            window.set_connection_status(slint::SharedString::from("Device Console activated"));
+        }
+    });
+    
     // Set up menu-help-about callback
     let window_weak = main_window.as_weak();
     main_window.on_menu_help_about(move || {
