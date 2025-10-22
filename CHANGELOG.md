@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed - Menu Callbacks Now Functional + Window Maximized + Compact Status Bar
 
+#### Status Bar Improvements (Final)
+- **Font Size**: Increased by 20% to 13.2px for better readability
+- **Connection Indicator**: Colored square (green = connected, red = disconnected)
+- **Port & Device Info**: Shows port name and "Version: " label with device version when connected
+  - Format: `/dev/ttyUSB0 | Version: GRBL 1.1+`
+- **Disconnected State**: Shows "Disconnected" in white text
+- **Position Display**: X, Y, Z coordinates appear after version info (white text, monospace font, only when connected)
+- **Layout**: All elements on single 30px line for maximum screen real estate
+
 #### Status Bar Redesign
 - **Compact Single-Line Layout**: Reduced from 80px to 30px height
 - **Connection Indicator**: Colored square (green = connected, red = disconnected)

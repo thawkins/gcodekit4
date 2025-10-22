@@ -447,17 +447,17 @@ export component MainWindow inherits Window {
                 
                 // Port and Device Info (shown only when connected)
                 Text {
-                    text: root.connected ? root.selected-port + " | " + root.device-version : "Disconnected";
-                    color: root.connected ? #bdc3c7 : #95a5a6;
-                    font-size: 11px;
+                    text: root.connected ? root.selected-port + " | Version: " + root.device-version : "Disconnected";
+                    color: white;
+                    font-size: 13.2px;
                     font-family: "Monospace";
                 }
                 
                 // Position Display (X, Y, Z) - shown only when connected
                 Text {
                     text: root.connected ? "X: " + round(root.position-x * 1000.0) / 1000.0 + "  Y: " + round(root.position-y * 1000.0) / 1000.0 + "  Z: " + round(root.position-z * 1000.0) / 1000.0 : "";
-                    color: #3498db;
-                    font-size: 11px;
+                    color: white;
+                    font-size: 13.2px;
                     font-family: "Monospace";
                     visible: root.connected;
                 }
