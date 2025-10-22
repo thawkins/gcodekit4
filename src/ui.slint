@@ -21,7 +21,6 @@ export component MainWindow inherits Window {
     in property <float> position-y: 0.0;
     in property <float> position-z: 0.0;
     in property <string> machine-state: "DISCONNECTED";
-    out property <int> selected-baud: 115200;
     
     callback refresh-ports();
     callback connect(string, int);
@@ -34,7 +33,6 @@ export component MainWindow inherits Window {
     
     // Internal state for UI selections
     private property <int> port-index: 0;
-    private property <int> baud-index: 3;  // Default to 115200
     
     // Private properties for menu state
     private property <bool> file-menu-open: false;
@@ -202,23 +200,6 @@ export component MainWindow inherits Window {
                         }
                         
                         HorizontalBox {
-                            Text { text: "Baud:"; width: 50px; }
-                            baud-combo := ComboBox {
-                                model: ["9600", "19200", "38400", "57600", "115200", "230400"];
-                                current-index: baud-index;
-                                selected => {
-                                    baud-index = baud-combo.current-index;
-                                    if (baud-combo.current-index == 0) { root.selected-baud = 9600; }
-                                    else if (baud-combo.current-index == 1) { root.selected-baud = 19200; }
-                                    else if (baud-combo.current-index == 2) { root.selected-baud = 38400; }
-                                    else if (baud-combo.current-index == 3) { root.selected-baud = 57600; }
-                                    else if (baud-combo.current-index == 4) { root.selected-baud = 115200; }
-                                    else if (baud-combo.current-index == 5) { root.selected-baud = 230400; }
-                                }
-                            }
-                        }
-                        
-                        HorizontalBox {
                             spacing: 5px;
                             Button {
                                 text: root.connected ? "Disconnect" : "Connect";
@@ -227,7 +208,7 @@ export component MainWindow inherits Window {
                                     if (root.connected) {
                                         root.disconnect();
                                     } else {
-                                        root.connect(root.selected-port, root.selected-baud);
+                                        root.connect(root.selected-port, 115200);
                                     }
                                 }
                             }
