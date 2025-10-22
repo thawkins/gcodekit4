@@ -5,32 +5,54 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.11.0-alpha] - 2025-10-22
+## [0.11.0] - 2025-10-22
 
 ### Added
-- **Unified G-Code Editor Module**
-  - Merged gcode_viewer and gcode_editor into single comprehensive module
-  - Combined syntax highlighting, search/replace, and execution tracking
-  - New `GcodeEditor` public API for accessing editor functionality
-  - New `Token` and `TokenType` for syntax highlighting support
-  - 12 unit tests for editor functionality, all passing
-  - Full documentation in `docs/gcode_editor_implementation.md`
+- **Device Console Logging System**
+  - ConsoleListener bridges communicator events to device console
+  - Automatic logging of connection/disconnection events
+  - Automatic logging of device errors and data received
+  - Timestamp formatting with HH:MM:SS
+  - Message level indicators ([OK], [INFO], [ERR], [DEBUG])
+  - 7 integration tests for console listener, all passing
+
+- **Console UI Controls**
+  - Clear button to clear console contents
+  - Copy button to copy console to clipboard using arboard crate
+  - Cross-platform clipboard support (Linux Wayland/X11, Windows, macOS)
+  - Auto-scroll to bottom when new messages arrive
+  - Scrollable console area for long outputs
+
+- **Console Configuration**
+  - Maximum lines setting (default 500, configurable)
+  - Automatic truncation of old messages when limit exceeded
+  - Verbose logging mode for debug output
+
+- **Console Display Features**
+  - Top-left alignment with 5px internal padding
+  - White background for high contrast
+  - Black text with word wrapping
+  - Proper scrolling for content exceeding window size
 
 ### Changed
-- G-Code Editor now provides unified interface for all editing operations
-- `src/ui/gcode_editor.rs` replaces previous separate implementations
-- Deleted redundant `src/ui/gcode_viewer.rs`
-- Updated module exports in `src/lib.rs` to include editor components
-- Updated module structure in `src/ui/mod.rs`
+- Console output now properly bound to UI with automatic updates
+- Changed console_manager from Rc to Arc for thread-safe sharing
+- DeviceConsoleManager uses interior mutability for callbacks
+- Console now displays on device-console view by default
+
+### Fixed
+- Console text now visible (black on white background)
+- Clipboard copy functionality working on all platforms
+- No more "clipboard dropped quickly" warnings (100ms sleep added)
 
 ### Technical Details
-- New File: `src/ui/gcode_editor.rs` (unified implementation)
-- New Docs: `docs/gcode_editor_implementation.md` (comprehensive guide)
-- Modified: `src/lib.rs` (updated public exports)
-- Modified: `src/ui/mod.rs` (module structure updates)
-- Modified: `src/ui.slint` (UI integration)
-- Deleted: `src/ui/gcode_viewer.rs` (merged into editor)
-- Tests: 361/361 passing
+- New File: `src/ui/device_console_manager.rs` (ConsoleListener)
+- Modified: `src/main.rs` (listener registration, clipboard function)
+- Modified: `src/ui.slint` (console buttons and layout)
+- Modified: `src/ui/mod.rs` (ConsoleListener export)
+- Modified: `src/lib.rs` (ConsoleListener public API)
+- New Dependency: arboard 3.4 (clipboard access)
+- Tests: 19/19 passing
 - Build: Clean compilation
 
 ## [0.10.0] - 2025-10-22

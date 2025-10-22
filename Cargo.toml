@@ -1,6 +1,6 @@
 [package]
 name = "gcodekit4"
-version = "0.10.0"
+version = "0.11.0"
 edition = "2021"
 description = "A Rust-based Universal G-Code Sender for CNC machines with support for GRBL, TinyG, g2core, Smoothieware, and FluidNC controllers"
 license = "MIT OR Apache-2.0"
@@ -45,6 +45,7 @@ parking_lot = "0.12"
 futures = "0.3"
 crossbeam-channel = "0.5"
 num = "0.4"
+arboard = "3.4"
 
 # Configuration
 config = "0.15.18"

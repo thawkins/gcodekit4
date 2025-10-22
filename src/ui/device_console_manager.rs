@@ -4,9 +4,10 @@
 //! handling command input, and maintaining console state. Inspired by UGS
 //! ConsolePanel and CommandPanel architecture.
 
-use crate::ui::console_panel::{ConsoleMessage, ConsolePanel, MessageLevel};
+use crate::ui::console_panel::{ConsolePanel, MessageLevel};
+use crate::communication::CommunicatorListener;
 use std::sync::{Arc, Mutex};
-use tracing::{debug, error, warn};
+use tracing::debug;
 
 /// Message type for device communication
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -47,8 +48,8 @@ pub struct DeviceConsoleManager {
     verbose_enabled: Arc<Mutex<bool>>,
     /// Whether auto-scroll is enabled
     auto_scroll_enabled: Arc<Mutex<bool>>,
-    /// Event callbacks
-    on_event: Vec<Box<dyn Fn(ConsoleEvent) + Send + Sync>>,
+    /// Event callbacks (with interior mutability)
+    on_event: Arc<Mutex<Vec<Box<dyn Fn(ConsoleEvent) + Send + Sync>>>>,
 }
 
 impl DeviceConsoleManager {
@@ -58,7 +59,7 @@ impl DeviceConsoleManager {
             console: Arc::new(Mutex::new(ConsolePanel::new())),
             verbose_enabled: Arc::new(Mutex::new(false)),
             auto_scroll_enabled: Arc::new(Mutex::new(true)),
-            on_event: Vec::new(),
+            on_event: Arc::new(Mutex::new(Vec::new())),
         }
     }
 
@@ -148,10 +149,20 @@ impl DeviceConsoleManager {
         *self.auto_scroll_enabled.lock().unwrap()
     }
 
-    /// Toggle verbose output
-    pub fn toggle_verbose(&self) {
-        let enabled = !self.is_verbose_enabled();
-        self.set_verbose_enabled(enabled);
+    /// Set maximum number of console lines to keep
+    pub fn set_max_lines(&self, max_lines: usize) {
+        if let Ok(mut console) = self.console.lock() {
+            console.max_messages = max_lines;
+        }
+    }
+    
+    /// Get maximum number of console lines
+    pub fn get_max_lines(&self) -> usize {
+        if let Ok(console) = self.console.lock() {
+            console.max_messages
+        } else {
+            500
+        }
     }
 
     /// Toggle auto-scroll
@@ -189,17 +200,21 @@ impl DeviceConsoleManager {
 
     /// Emit console event
     fn emit_event(&self, event: ConsoleEvent) {
-        for callback in &self.on_event {
-            callback(event.clone());
+        if let Ok(callbacks) = self.on_event.lock() {
+            for callback in callbacks.iter() {
+                callback(event.clone());
+            }
         }
     }
 
     /// Register event callback
-    pub fn on_event<F>(&mut self, callback: F)
+    pub fn on_event<F>(&self, callback: F)
     where
         F: Fn(ConsoleEvent) + Send + Sync + 'static,
     {
-        self.on_event.push(Box::new(callback));
+        if let Ok(mut callbacks) = self.on_event.lock() {
+            callbacks.push(Box::new(callback));
+        }
     }
 }
 
@@ -218,6 +233,60 @@ pub fn get_console_manager() -> Arc<DeviceConsoleManager> {
     Arc::clone(
         CONSOLE_MANAGER.get_or_init(|| Arc::new(DeviceConsoleManager::new())),
     )
+}
+
+/// Listener that connects communicator events to the device console
+pub struct ConsoleListener {
+    console_manager: Arc<DeviceConsoleManager>,
+}
+
+impl ConsoleListener {
+    /// Create new console listener connected to a console manager
+    pub fn new(console_manager: Arc<DeviceConsoleManager>) -> Arc<Self> {
+        Arc::new(Self { console_manager })
+    }
+}
+
+impl CommunicatorListener for ConsoleListener {
+    fn on_connected(&self) {
+        self.console_manager
+            .add_message(DeviceMessageType::Success, "Device connected");
+    }
+
+    fn on_disconnected(&self) {
+        self.console_manager
+            .add_message(DeviceMessageType::Output, "Device disconnected");
+    }
+
+    fn on_error(&self, error: &str) {
+        self.console_manager
+            .add_message(DeviceMessageType::Error, format!("Error: {}", error));
+    }
+
+    fn on_data_received(&self, data: &[u8]) {
+        if let Ok(text) = std::str::from_utf8(data) {
+            let trimmed = text.trim();
+            if !trimmed.is_empty() {
+                self.console_manager
+                    .add_message(DeviceMessageType::Output, trimmed);
+            }
+        }
+    }
+
+    fn on_data_sent(&self, data: &[u8]) {
+        if let Ok(text) = std::str::from_utf8(data) {
+            let trimmed = text.trim();
+            if !trimmed.is_empty() {
+                self.console_manager
+                    .add_message(DeviceMessageType::Command, trimmed);
+            }
+        }
+    }
+
+    fn on_timeout(&self) {
+        self.console_manager
+            .add_message(DeviceMessageType::Verbose, "Connection timeout");
+    }
 }
 
 #[cfg(test)]

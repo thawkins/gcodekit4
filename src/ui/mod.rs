@@ -46,7 +46,7 @@ pub use jog_controller::JogControllerPanel;
 pub use file_operations::FileOperationsPanel;
 pub use gcode_editor::{GcodeEditor, GcodeLine, Token, TokenType};
 pub use console_panel::ConsolePanel;
-pub use device_console_manager::{DeviceConsoleManager, DeviceMessageType, ConsoleEvent};
+pub use device_console_manager::{DeviceConsoleManager, DeviceMessageType, ConsoleEvent, ConsoleListener};
 pub use control_buttons::ControlButtonsPanel;
 pub use overrides_panel::OverridesPanel;
 pub use coordinate_system::CoordinateSystemPanel;

@@ -35,6 +35,7 @@ export component MainWindow inherits Window {
     in property <string> app-build-date: "2025-10-22";
     in property <string> console-output: "[INFO] GCodeKit4 initialized\n[INFO] Ready for operation\n";
     in property <string> gcode-content: "; G-Code viewer\nG00 X10 Y10\nG01 Z-5 F100\nG00 Z5\n";
+    in property <int> console-scroll-trigger: 0;
     
     callback refresh-ports();
     callback connect(string, int);
@@ -50,10 +51,13 @@ export component MainWindow inherits Window {
     callback menu-view-device-console();
     callback menu-help-about();
     callback update-setting(string, string);
+    callback console-clear-clicked();
+    callback console-copy-clicked();
     
     // Internal state for UI selections
     private property <int> port-index: 0;
     private property <string> current-view: "device-console"; // gcode-editor or device-console
+    private property <int> console-scroll-ref: 0;
     
     // Private properties for menu state
     private property <bool> file-menu-open: false;
@@ -328,7 +332,7 @@ export component MainWindow inherits Window {
                 
                 // View Container - maintains consistent layout
                 Rectangle {
-                    background: current-view == "gcode-editor" ? #ffffff : #1e1e1e;
+                    background: #ffffff;
                     
                     if current-view == "gcode-editor" : VerticalBox {
                         spacing: 0px;
@@ -363,11 +367,44 @@ export component MainWindow inherits Window {
                         }
                     }
                     
-                    if current-view == "device-console" : ScrollView {
-                        TextEdit {
-                            read-only: true;
-                            text: root.console-output;
-                            // Dark terminal style with green text (like UGS)
+                    if current-view == "device-console" : VerticalBox {
+                        spacing: 5px;
+                        padding: 10px;
+                        
+                        HorizontalBox {
+                            spacing: 5px;
+                            
+                            Button {
+                                text: "Clear";
+                                clicked => {
+                                    root.console-clear-clicked();
+                                }
+                            }
+                            
+                            Button {
+                                text: "Copy";
+                                clicked => {
+                                    root.console-copy-clicked();
+                                }
+                            }
+                        }
+                        
+                        Rectangle {
+                            background: #ffffff;
+                            padding: 10px;
+                            
+                            console-scroll := ScrollView {
+                                VerticalBox {
+                                    padding: 5px;
+                                    alignment: start;
+                                    
+                                    Text {
+                                        text: root.console-output;
+                                        color: #000000;
+                                        wrap: word-wrap;
+                                    }
+                                }
+                            }
                         }
                     }
                 }

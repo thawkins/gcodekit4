@@ -1,26 +1,28 @@
 # GCodeKit4 Project Statistics
 
 ## Overall Project Status
-- **Version**: 0.10.0
+- **Version**: 0.11.0
 - **Status**: Production Ready
 - **Build Date**: 2025-10-22
+- **Last Updated**: 2025-10-22 06:33 UTC
 
 ## Code Metrics
 
 ### Total Lines of Code
 ```
-Rust Implementation:  ~2,500+ lines
-  - UI Module:        ~1,318 lines (settings dialog + firmware integration)
-  - Main App:         ~372 lines (integration & callbacks)
-  - Library:          ~810+ lines (core functionality)
+Rust Implementation:  ~2,800+ lines
+  - UI Module:        ~1,600 lines (console manager, device console, settings)
+  - Main App:         ~500 lines (integration, callbacks, clipboard)
+  - Library:          ~700+ lines (core functionality)
 
-Slint UI:             ~1,200+ lines
-  - Main UI:          ~1,160 lines
+Slint UI:             ~1,300+ lines
+  - Main UI:          ~1,260 lines (console buttons, clear/copy)
   - Settings Dialog:  ~200+ lines
 
-Tests:                ~2,000+ lines
-  - Unit tests:       361 total (100% pass rate)
+Tests:                ~2,100+ lines
+  - Unit tests:       371 total (100% pass rate)
   - Test coverage:    All major modules covered
+  - Console tests:    19 tests (listener + output)
 ```
 
 ## Settings Dialog Implementation (3 Phases)

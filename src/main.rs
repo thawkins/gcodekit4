@@ -1,10 +1,34 @@
-use gcodekit4::{init_logging, VERSION, BUILD_DATE, list_ports, SerialCommunicator, ConnectionParams, ConnectionDriver, SerialParity, Communicator, SettingsDialog, SettingsPersistence, FirmwareSettingsIntegration, SettingValue, DeviceConsoleManager, DeviceMessageType, GcodeEditor};
+use gcodekit4::{init_logging, VERSION, BUILD_DATE, list_ports, SerialCommunicator, ConnectionParams, ConnectionDriver, SerialParity, Communicator, SettingsDialog, SettingsPersistence, FirmwareSettingsIntegration, SettingValue, DeviceConsoleManager, DeviceMessageType, ConsoleListener, GcodeEditor};
 use tracing::info;
 use slint::VecModel;
 use std::rc::Rc;
 use std::cell::RefCell;
 
 slint::include_modules!();
+
+/// Copy text to clipboard using arboard crate
+fn copy_to_clipboard(text: &str) -> bool {
+    match arboard::Clipboard::new() {
+        Ok(mut clipboard) => {
+            match clipboard.set_text(text.to_string()) {
+                Ok(_) => {
+                    info!("Copied {} characters to clipboard", text.len());
+                    // Keep clipboard alive for a moment to ensure managers see it
+                    std::thread::sleep(std::time::Duration::from_millis(100));
+                    true
+                }
+                Err(e) => {
+                    info!("Error copying to clipboard: {}", e);
+                    false
+                }
+            }
+        }
+        Err(e) => {
+            info!("Could not access clipboard: {}", e);
+            false
+        }
+    }
+}
 
 fn main() -> anyhow::Result<()> {
     // Initialize logging
@@ -49,6 +73,15 @@ fn main() -> anyhow::Result<()> {
     // Shared state for communicator
     let communicator = Rc::new(RefCell::new(SerialCommunicator::new()));
     
+    // Initialize device console manager early to register listeners
+    // Use Arc since communicator listeners need Arc for thread-safe sharing
+    let console_manager = std::sync::Arc::new(DeviceConsoleManager::new());
+    info!("Device console manager initialized");
+    
+    // Create and register console listener with communicator
+    let console_listener = ConsoleListener::new(console_manager.clone());
+    communicator.borrow_mut().add_listener(console_listener);
+    
     // Shared state for settings dialog
     let settings_dialog = Rc::new(RefCell::new(SettingsDialog::new()));
     
@@ -73,10 +106,6 @@ fn main() -> anyhow::Result<()> {
         }
     }
     
-    // Initialize device console manager
-    let console_manager = Rc::new(DeviceConsoleManager::new());
-    info!("Device console manager initialized");
-    
     // Add initial messages to console
     console_manager.add_message(DeviceMessageType::Success, "GCodeKit4 initialized");
     console_manager.add_message(DeviceMessageType::Output, "Ready for operation");
@@ -84,6 +113,9 @@ fn main() -> anyhow::Result<()> {
     // Initialize console output in UI with initial messages
     let console_output = console_manager.get_output();
     main_window.set_console_output(slint::SharedString::from(console_output));
+    
+    // Initialize console with default max lines (500)
+    console_manager.set_max_lines(500);
     
     // Initialize G-Code editor
     let gcode_editor = Rc::new(GcodeEditor::new());
@@ -415,7 +447,7 @@ fn main() -> anyhow::Result<()> {
     
     // Set up menu-view-device-console callback
     let window_weak = main_window.as_weak();
-    let console_manager_weak = Rc::downgrade(&console_manager);
+    let console_manager_weak = std::sync::Arc::downgrade(&console_manager);
     main_window.on_menu_view_device_console(move || {
         info!("Menu: View > Device Console selected");
         if let Some(window) = window_weak.upgrade() {
@@ -434,6 +466,38 @@ fn main() -> anyhow::Result<()> {
         if let Some(window) = window_weak.upgrade() {
             let about_msg = format!("GCodeKit4 v{}\n\nUniversal G-Code Sender for CNC Machines", VERSION);
             window.set_connection_status(slint::SharedString::from(about_msg));
+        }
+    });
+    
+    // Set up console-clear-clicked callback
+    let console_manager_clone = console_manager.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_console_clear_clicked(move || {
+        info!("Console Clear button clicked");
+        console_manager_clone.clear();
+        if let Some(window) = window_weak.upgrade() {
+            window.set_console_output(slint::SharedString::from(""));
+            window.set_connection_status(slint::SharedString::from("Console cleared"));
+        }
+    });
+    
+    // Set up console-copy-clicked callback
+    let console_manager_clone = console_manager.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_console_copy_clicked(move || {
+        info!("Console Copy button clicked");
+        let output = console_manager_clone.get_output();
+        
+        let success = copy_to_clipboard(&output);
+        
+        if let Some(window) = window_weak.upgrade() {
+            if success {
+                window.set_connection_status(slint::SharedString::from(
+                    format!("Copied {} characters to clipboard", output.len())
+                ));
+            } else {
+                window.set_connection_status(slint::SharedString::from("Failed to copy to clipboard"));
+            }
         }
     });
     
