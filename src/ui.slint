@@ -435,7 +435,8 @@ export component MainWindow inherits Window {
                 padding-bottom: 4px;
                 padding-left: 10px;
                 padding-right: 10px;
-                spacing: 15px;
+                spacing: 0px;
+                alignment: start;
                 
                 // Connection Status Indicator (colored square)
                 Rectangle {
@@ -443,6 +444,13 @@ export component MainWindow inherits Window {
                     height: 16px;
                     background: root.connected ? #2ecc71 : #e74c3c;
                     border-radius: 2px;
+                }
+                
+                // Separator 1
+                Text {
+                    text: " \u{2003} ";
+                    color: white;
+                    font-size: 13.2px;
                 }
                 
                 // Port and Device Info (shown only when connected)
@@ -453,13 +461,20 @@ export component MainWindow inherits Window {
                     font-family: "Monospace";
                 }
                 
+                // Separator 2
+                Text {
+                    text: " \u{2003} ";
+                    color: white;
+                    font-size: 13.2px;
+                    visible: root.connected;
+                }
+                
                 // Position Display (X, Y, Z) - shown only when connected
                 Text {
                     text: root.connected ? "X: " + round(root.position-x * 1000.0) / 1000.0 + "  Y: " + round(root.position-y * 1000.0) / 1000.0 + "  Z: " + round(root.position-z * 1000.0) / 1000.0 : "";
                     color: white;
                     font-size: 13.2px;
                     font-family: "Monospace";
-                    visible: root.connected;
                 }
             }
         }
