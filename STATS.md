@@ -1,7 +1,7 @@
 # GCodeKit4 Project Statistics
 
 ## Overall Project Status
-- **Version**: 0.9.1-alpha
+- **Version**: 0.10.0
 - **Status**: Production Ready
 - **Build Date**: 2025-10-22
 
@@ -271,12 +271,14 @@ Cross-Platform:         ✅ Linux, macOS, Windows
 
 ## Summary
 
-GCodeKit4 now features a comprehensive Settings Dialog system with:
+GCodeKit4 v0.10.0 now features:
 
-1. **Professional UI** - Dark theme, 5 categories, responsive layout
+1. **Professional UI** - Dark theme, 5 categories, responsive layout, view switching
 2. **Full Persistence** - Config files, bidirectional sync, all platforms
 3. **Firmware Integration** - 30+ GRBL parameters, dynamic rendering, compact display
-4. **Production Ready** - 361 tests passing, zero compilation errors, complete documentation
+4. **View Management** - G-Code Editor and Device Console views with menu switching
+5. **Stable Layout** - Perfect panel alignment, no visual jarring during transitions
+6. **Production Ready** - 361 tests passing, zero compilation errors, complete documentation
 
 **Status: ✅ READY FOR PRODUCTION**
 

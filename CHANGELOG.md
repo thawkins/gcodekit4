@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2025-10-22
+
+### Added
+- **View Menu Enhancement**
+  - Added G-Code Editor option to View menu
+  - Added Device Console option to View menu
+  - Implemented view switching mechanism with current-view property
+  - Checkmarks (✓) display for currently active view in menu
+  - Menu separator line after Fullscreen item for visual organization
+  - Professional menu styling with left-aligned entries
+
+### Changed
+- View menu structure improved with visual separators
+- Central content area now conditionally renders G-Code Editor or Device Console
+- Menu items display checkmarks to indicate active view
+- All View menu entries left-aligned for consistency
+
+### Fixed
+- **Panel Layout Stability**: Fixed line spacing changes when switching views
+  - Resolved panel shifting and resizing issues during view transitions
+  - Implemented single container architecture for stable layout
+  - Views now switch seamlessly without layout recalculation
+  - Left and right panels maintain perfect alignment
+
+### Technical Details
+- Modified: `src/ui.slint` (+80 lines for view switching, menu separators, checkmarks)
+- Modified: `src/main.rs` (no changes needed, handlers already in place)
+- Implementation: Single Rectangle wrapper for both views maintains stable layout
+- Tests: 361/361 passing
+- Build: Clean compilation
+
+### User Experience
+- ✅ Views switch instantly
+- ✅ Layout remains perfectly stable
+- ✅ Checkmarks show active view
+- ✅ Professional menu organization
+
 ## [0.9.1-alpha] - 2025-10-22
 
 ### Added
