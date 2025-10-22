@@ -497,7 +497,7 @@ export component MainWindow inherits Window {
                 
                 // Position Display (X, Y, Z) - shown only when connected
                 Text {
-                    text: root.connected ? "X: " + round(root.position-x * 1000.0) / 1000.0 + "  Y: " + round(root.position-y * 1000.0) / 1000.0 + "  Z: " + round(root.position-z * 1000.0) / 1000.0 : "";
+                    text: root.connected ? "\u{2003}X: " + round(root.position-x * 1000.0) / 1000.0 + "  Y: " + round(root.position-y * 1000.0) / 1000.0 + "  Z: " + round(root.position-z * 1000.0) / 1000.0 : "";
                     color: white;
                     font-size: 13.2px;
                     font-family: "Monospace";
