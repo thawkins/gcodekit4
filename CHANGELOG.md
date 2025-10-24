@@ -24,6 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Fixed toolbar alignment issues
   - Fixed "Filename:" label not aligned with edit control
   - Fixed "Ready" indicator positioning
+  - Fixed editor panel bottom gap alignment with left/right panels
+  - Fixed editor panel width alignment with file handling buttons
+  - Fixed exception appearing when cancelling file open dialog (now silently ignored)
 
 ### Changed
 - Removed problematic Rectangle wrapper around conditional views

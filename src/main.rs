@@ -1,5 +1,5 @@
 use gcodekit4::{init_logging, VERSION, BUILD_DATE, list_ports, SerialCommunicator, ConnectionParams, ConnectionDriver, SerialParity, Communicator, SettingsDialog, SettingsPersistence, FirmwareSettingsIntegration, SettingValue, DeviceConsoleManager, DeviceMessageType, ConsoleListener, GcodeEditor};
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 use slint::VecModel;
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -377,6 +377,14 @@ fn main() -> anyhow::Result<()> {
                 }
             }
             Err(e) => {
+                let error_msg = e.to_string();
+                
+                // Silently ignore dialog cancellations
+                if error_msg.contains("cancelled") {
+                    debug!("File dialog cancelled by user");
+                    return;
+                }
+                
                 warn!("Failed to open file: {}", e);
                 
                 // Log error to device console
@@ -405,9 +413,10 @@ fn main() -> anyhow::Result<()> {
     main_window.on_menu_file_save(move || {
         info!("Menu: File > Save selected");
         
-        // Get current filename from window
+        // Get current filename and content from window
         if let Some(window) = window_weak.upgrade() {
             let filename = window.get_gcode_filename().to_string();
+            let current_content = window.get_gcode_content().to_string();
             
             // If it's "untitled.gcode", prompt for filename (treat as Save As)
             if filename.contains("untitled") {
@@ -422,8 +431,8 @@ fn main() -> anyhow::Result<()> {
                 return;
             }
             
-            // Save to current file
-            match gcode_editor_clone.save_file() {
+            // Save to current file with current content from TextEdit
+            match gcode_editor_clone.save_file_with_content(&current_content) {
                 Ok(_) => {
                     info!("File saved: {}", filename);
                     console_manager_clone.add_message(
@@ -459,8 +468,10 @@ fn main() -> anyhow::Result<()> {
         info!("Menu: File > Save As selected");
         
         if let Some(window) = window_weak.upgrade() {
-            // Use the editor's save_as_with_dialog method which handles everything
-            match gcode_editor_clone.save_as_with_dialog() {
+            let current_content = window.get_gcode_content().to_string();
+            
+            // Use the editor's save_as_with_dialog_and_content method with current content
+            match gcode_editor_clone.save_as_with_dialog_and_content(&current_content) {
                 Ok(path) => {
                     let file_name = path.file_name()
                         .and_then(|n| n.to_str())

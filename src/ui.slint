@@ -397,19 +397,17 @@ export component MainWindow inherits Window {
                         }
                     }
                     
-                    // G-Code Content Display - use VerticalBox so it grows naturally
-                    VerticalBox {
-                        Rectangle {
-                            background: #f5f5f5;
-                            
-                            ScrollView {
-                                VerticalBox {
-                                    TextEdit {
-                                        enabled: true;
-                                        text <=> root.gcode-content;
-                                        read-only: false;
-                                        wrap: word-wrap;
-                                    }
+                    // G-Code Content Display
+                    Rectangle {
+                        background: #f5f5f5;
+                        
+                        ScrollView {
+                            VerticalBox {
+                                TextEdit {
+                                    enabled: true;
+                                    text <=> root.gcode-content;
+                                    read-only: false;
+                                    wrap: word-wrap;
                                 }
                             }
                         }

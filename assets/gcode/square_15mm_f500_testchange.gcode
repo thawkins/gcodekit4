@@ -2,7 +2,7 @@
 ; Square centered at X20 Y20
 ; Laser intensity S255, feed rate F500
 ; Path repeated 20 times
-; Updated
+; Updated 2 
 
 G21 ; Units in millimeters
 G90 ; Absolute coordinates

@@ -509,7 +509,20 @@ impl GcodeEditor {
         Ok(path)
     }
 
-    /// Save file to disk
+    /// Save file to disk with given content
+    pub fn save_file_with_content(&self, content: &str) -> anyhow::Result<()> {
+        let file = self.file.lock().unwrap();
+        
+        if let Some(path) = &file.path {
+            std::fs::write(path, content)?;
+            info!("Saved file to: {}", path);
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!("No file path set. Use save_as instead."))
+        }
+    }
+
+    /// Save file to disk (uses internal content)
     pub fn save_file(&self) -> anyhow::Result<()> {
         let file = self.file.lock().unwrap();
         
@@ -552,10 +565,27 @@ impl GcodeEditor {
         Ok(())
     }
 
+    /// Save with a new name and provided content
+    pub fn save_as_with_content(&self, path: &Path, content: &str) -> anyhow::Result<()> {
+        std::fs::write(path, content)?;
+        
+        let mut file = self.file.lock().unwrap();
+        file.path = Some(path.to_string_lossy().to_string());
+        info!("Saved as: {:?}", path);
+        Ok(())
+    }
+
     /// Save file with new name using dialog
     pub fn save_as_with_dialog(&self) -> anyhow::Result<PathBuf> {
         let path = self.save_as_dialog()?;
         self.save_as(&path)?;
+        Ok(path)
+    }
+
+    /// Save file with new name using dialog and provided content
+    pub fn save_as_with_dialog_and_content(&self, content: &str) -> anyhow::Result<PathBuf> {
+        let path = self.save_as_dialog()?;
+        self.save_as_with_content(&path, content)?;
         Ok(path)
     }
 
