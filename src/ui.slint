@@ -518,6 +518,7 @@ export component MainWindow inherits Window {
                                     step-combo := ComboBox {
                                         model: ["0.1", "1.0", "10", "50"];
                                         current-index: step-index;
+                                        enabled: root.connected;
                                         selected => {
                                             step-index = step-combo.current-index;
                                             step-size = [0.1, 1.0, 10.0, 50.0][step-combo.current-index];
@@ -535,36 +536,37 @@ export component MainWindow inherits Window {
                             
                             // Jog Buttons - 4x3 Grid
                             VerticalBox {
-                                spacing: 8px;
+                                spacing: 6px;
                                 
                                 // Row 1
                                 HorizontalBox {
-                                    spacing: 8px;
+                                    spacing: 6px;
                                     
-                                    Button { text: "⟲"; width: 25%; height: 50px; }
-                                    Button { text: "▲"; width: 25%; height: 50px; }
-                                    Button { text: "⟳"; width: 25%; height: 50px; }
-                                    Button { text: "▲"; width: 25%; height: 50px; }
+                                    Button { text: "⟲"; width: 25%; height: 50px; enabled: root.connected; }
+                                    Button { text: "▲"; width: 25%; height: 50px; enabled: root.connected; }
+                                    Button { text: "⟳"; width: 25%; height: 50px; enabled: root.connected; }
+                                    Button { text: "▲"; width: 25%; height: 50px; enabled: root.connected; }
                                 }
                                 
                                 // Row 2
                                 HorizontalBox {
-                                    spacing: 8px;
+                                    spacing: 6px;
                                     
-                                    Button { text: "◀"; width: 25%; height: 50px; }
-                                    Button { text: "⌂"; width: 25%; height: 50px; }
-                                    Button { text: "▶"; width: 25%; height: 50px; }
+                                    Button { text: "◀"; width: 25%; height: 50px; enabled: root.connected; }
+                                    Button { text: "⌂"; width: 25%; height: 50px; enabled: root.connected; }
+                                    Button { text: "▶"; width: 25%; height: 50px; enabled: root.connected; }
                                     Rectangle {
                                         width: 25%;
                                         height: 50px;
                                         background: #ecf0f1;
                                         border-width: 2px;
-                                        border-color: #c0392b;
+                                        border-color: root.connected ? #c0392b : #bdc3c7;
                                         border-radius: 5px;
+                                        opacity: root.connected ? 1.0 : 0.5;
                                         Text {
                                             text: "⊘";
                                             font-size: 28px;
-                                            color: #c0392b;
+                                            color: root.connected ? #c0392b : #bdc3c7;
                                             horizontal-alignment: center;
                                             vertical-alignment: center;
                                         }
@@ -573,90 +575,102 @@ export component MainWindow inherits Window {
                                 
                                 // Row 3
                                 HorizontalBox {
-                                    spacing: 8px;
+                                    spacing: 6px;
                                     
-                                    Button { text: "⟲"; width: 25%; height: 50px; }
-                                    Button { text: "▼"; width: 25%; height: 50px; }
-                                    Button { text: "⟳"; width: 25%; height: 50px; }
-                                    Button { text: "▼"; width: 25%; height: 50px; }
+                                    Button { text: "⟲"; width: 25%; height: 50px; enabled: root.connected; }
+                                    Button { text: "▼"; width: 25%; height: 50px; enabled: root.connected; }
+                                    Button { text: "⟳"; width: 25%; height: 50px; enabled: root.connected; }
+                                    Button { text: "▼"; width: 25%; height: 50px; enabled: root.connected; }
                                 }
                             }
                             
                             // Axis Controls - Row of buttons
                             HorizontalBox {
-                                spacing: 8px;
+                                spacing: 6px;
                                 
                                 Button {
                                     text: "∄ Feed";
                                     width: 25%;
                                     height: 45px;
+                                    enabled: root.connected;
                                 }
                                 Button {
                                     text: "X⊙";
                                     width: 25%;
                                     height: 45px;
+                                    enabled: root.connected;
                                 }
                                 Button {
                                     text: "Y⊙";
                                     width: 25%;
                                     height: 45px;
+                                    enabled: root.connected;
                                 }
                                 Button {
                                     text: "Z⊙";
                                     width: 25%;
                                     height: 45px;
+                                    enabled: root.connected;
                                 }
                             }
                             
                             // G-Code Commands Row 1
                             HorizontalBox {
-                                spacing: 8px;
+                                spacing: 6px;
                                 
                                 Button {
                                     text: "G54";
                                     width: 25%;
                                     height: 40px;
+                                    enabled: root.connected;
                                 }
                                 Button {
                                     text: "G55";
                                     width: 25%;
                                     height: 40px;
+                                    enabled: root.connected;
                                 }
                                 Button {
                                     text: "G56";
                                     width: 25%;
                                     height: 40px;
+                                    enabled: root.connected;
                                 }
                                 Button {
                                     text: "G57";
                                     width: 25%;
                                     height: 40px;
+                                    enabled: root.connected;
                                 }
                             }
                             
                             // Additional Controls Row
                             HorizontalBox {
-                                spacing: 8px;
+                                spacing: 6px;
                                 
                                 Button {
                                     text: "NA";
                                     width: 25%;
                                     height: 40px;
+                                    enabled: root.connected;
                                 }
                                 Button {
                                     text: "NA";
                                     width: 25%;
                                     height: 40px;
+                                    enabled: root.connected;
                                 }
                                 Button {
                                     text: "NA";
                                     width: 25%;
                                     height: 40px;
+                                    enabled: root.connected;
                                 }
                                 Button {
                                     text: "NA";
                                     width: 25%;
                                     height: 40px;
+                                    enabled: root.connected;
                                 }
                             }
                             
