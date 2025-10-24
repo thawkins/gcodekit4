@@ -678,7 +678,7 @@ export component MainWindow inherits Window {
                             // DRO Display (from left panel)
                             Rectangle {
                                 background: #ecf0f1;
-                                height: 150px;
+                                height: 90px;
                                 
                                 VerticalBox {
                                     padding: 10px;
@@ -691,26 +691,36 @@ export component MainWindow inherits Window {
                                     }
                                     
                                     HorizontalBox {
-                                        Text { text: "X:"; width: 30px; }
-                                        LineEdit {
-                                            read-only: true;
-                                            text: round(root.position-x * 1000.0) / 1000.0;
+                                        spacing: 10px;
+                                        
+                                        HorizontalBox {
+                                            width: 33%;
+                                            spacing: 4px;
+                                            Text { text: "X:"; width: 20px; }
+                                            LineEdit {
+                                                read-only: true;
+                                                text: round(root.position-x * 1000.0) / 1000.0;
+                                            }
                                         }
-                                    }
-                                    
-                                    HorizontalBox {
-                                        Text { text: "Y:"; width: 30px; }
-                                        LineEdit {
-                                            read-only: true;
-                                            text: round(root.position-y * 1000.0) / 1000.0;
+                                        
+                                        HorizontalBox {
+                                            width: 33%;
+                                            spacing: 4px;
+                                            Text { text: "Y:"; width: 20px; }
+                                            LineEdit {
+                                                read-only: true;
+                                                text: round(root.position-y * 1000.0) / 1000.0;
+                                            }
                                         }
-                                    }
-                                    
-                                    HorizontalBox {
-                                        Text { text: "Z:"; width: 30px; }
-                                        LineEdit {
-                                            read-only: true;
-                                            text: round(root.position-z * 1000.0) / 1000.0;
+                                        
+                                        HorizontalBox {
+                                            width: 33%;
+                                            spacing: 4px;
+                                            Text { text: "Z:"; width: 20px; }
+                                            LineEdit {
+                                                read-only: true;
+                                                text: round(root.position-z * 1000.0) / 1000.0;
+                                            }
                                         }
                                     }
                                 }
