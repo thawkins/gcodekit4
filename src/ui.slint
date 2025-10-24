@@ -62,6 +62,8 @@ export component MainWindow inherits Window {
     // Internal state for UI selections
     private property <int> port-index: 0;
     private property <int> console-scroll-ref: 0;
+    private property <float> step-size: 1.0;
+    private property <int> step-index: 1;
     
     // Private properties for menu state
     private property <bool> file-menu-open: false;
@@ -462,54 +464,69 @@ export component MainWindow inherits Window {
                         VerticalBox {
                             spacing: 15px;
                             
-                            // Header with icons and controls
+                            // Header with icons and controls - increased by 40%
                             HorizontalBox {
                                 spacing: 20px;
                                 alignment: center;
-                                height: 60px;
+                                height: 84px;
                                 
                                 // Icon placeholders (using text as stand-in for icons)
                                 Rectangle {
-                                    width: 40px;
-                                    height: 40px;
+                                    width: 56px;
+                                    height: 56px;
                                     background: #e0e0e0;
-                                    Text { text: "⊞"; font-size: 20px; horizontal-alignment: center; vertical-alignment: center; }
+                                    Text { text: "⊞"; font-size: 28px; horizontal-alignment: center; vertical-alignment: center; }
                                 }
                                 Rectangle {
-                                    width: 40px;
-                                    height: 40px;
+                                    width: 56px;
+                                    height: 56px;
                                     background: #e0e0e0;
-                                    Text { text: "📄"; font-size: 20px; horizontal-alignment: center; vertical-alignment: center; }
+                                    Text { text: "📄"; font-size: 28px; horizontal-alignment: center; vertical-alignment: center; }
                                 }
                                 Rectangle {
-                                    width: 40px;
-                                    height: 40px;
+                                    width: 56px;
+                                    height: 56px;
                                     background: #e0e0e0;
-                                    Text { text: "⊕"; font-size: 20px; horizontal-alignment: center; vertical-alignment: center; }
+                                    Text { text: "⊕"; font-size: 28px; horizontal-alignment: center; vertical-alignment: center; }
                                 }
                                 Rectangle {
-                                    width: 40px;
-                                    height: 40px;
+                                    width: 56px;
+                                    height: 56px;
                                     background: #e0e0e0;
-                                    Text { text: "💻"; font-size: 20px; horizontal-alignment: center; vertical-alignment: center; }
+                                    Text { text: "💻"; font-size: 28px; horizontal-alignment: center; vertical-alignment: center; }
                                 }
                             }
                             
-                            // Step Size and Status Line
+                            // Step Size Dropdown and Status Line
                             HorizontalBox {
                                 spacing: 20px;
                                 alignment: space-between;
-                                height: 30px;
+                                height: 35px;
                                 
-                                Text {
-                                    text: "Step Size | Jog Feed";
-                                    font-size: 13px;
-                                    vertical-alignment: center;
+                                HorizontalBox {
+                                    width: 40%;
+                                    spacing: 8px;
+                                    alignment: start;
+                                    
+                                    Text {
+                                        text: "Step Size (mm):";
+                                        vertical-alignment: center;
+                                        font-size: 12px;
+                                    }
+                                    
+                                    step-combo := ComboBox {
+                                        model: ["0.1", "1.0", "10", "50"];
+                                        current-index: step-index;
+                                        selected => {
+                                            step-index = step-combo.current-index;
+                                            step-size = [0.1, 1.0, 10.0, 50.0][step-combo.current-index];
+                                        }
+                                    }
                                 }
                                 
                                 Text {
                                     text: "XY:" + round(root.position-x * 10.0) / 10.0 + " | Z:" + round(root.position-z * 10.0) / 10.0 + " | F:2400.0";
-                                    font-size: 13px;
+                                    font-size: 12px;
                                     font-family: "Monospace";
                                     vertical-alignment: center;
                                 }
