@@ -286,19 +286,90 @@ export component MainWindow inherits Window {
             VerticalBox {
                 spacing: 0px;
                 
-                // View title
+                // Tab bar
                 Rectangle {
-                    background: #34495e;
-                    height: 35px;
+                    background: #2c3e50;
+                    height: 40px;
                     
-                    Text {
-                        text: current-view == "gcode-editor" ? "G-Code Editor" : 
-                              current-view == "machine" ? "Machine Control" : "Device Console";
-                        color: white;
-                        font-size: 14px;
-                        vertical-alignment: center;
-                        horizontal-alignment: left;
-                        padding-left: 15px;
+                    HorizontalBox {
+                        padding: 4px;
+                        spacing: 2px;
+                        alignment: start;
+                        
+                        // G-Code Editor Tab
+                        Rectangle {
+                            width: 140px;
+                            height: 32px;
+                            background: current-view == "gcode-editor" ? #34495e : #3d5470;
+                            border-radius: 3px;
+                            
+                            Text {
+                                text: "G-Code Editor";
+                                color: current-view == "gcode-editor" ? white : #bdc3c7;
+                                font-size: 12px;
+                                font-weight: current-view == "gcode-editor" ? 700 : 400;
+                                vertical-alignment: center;
+                                horizontal-alignment: center;
+                            }
+                            
+                            TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => {
+                                    current-view = "gcode-editor";
+                                    root.menu-view-gcode-editor();
+                                }
+                            }
+                        }
+                        
+                        // Machine Control Tab
+                        Rectangle {
+                            width: 140px;
+                            height: 32px;
+                            background: current-view == "machine" ? #34495e : #3d5470;
+                            border-radius: 3px;
+                            
+                            Text {
+                                text: "Machine Control";
+                                color: current-view == "machine" ? white : #bdc3c7;
+                                font-size: 12px;
+                                font-weight: current-view == "machine" ? 700 : 400;
+                                vertical-alignment: center;
+                                horizontal-alignment: center;
+                            }
+                            
+                            TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => {
+                                    current-view = "machine";
+                                    root.menu-view-machine();
+                                }
+                            }
+                        }
+                        
+                        // Device Console Tab
+                        Rectangle {
+                            width: 140px;
+                            height: 32px;
+                            background: current-view == "device-console" ? #34495e : #3d5470;
+                            border-radius: 3px;
+                            
+                            Text {
+                                text: "Device Console";
+                                color: current-view == "device-console" ? white : #bdc3c7;
+                                font-size: 12px;
+                                font-weight: current-view == "device-console" ? 700 : 400;
+                                vertical-alignment: center;
+                                horizontal-alignment: center;
+                            }
+                            
+                            TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => {
+                                    current-view = "device-console";
+                                    root.menu-view-device-console();
+                                }
+                            }
+                        }
                     }
                 }
                 
@@ -587,6 +658,7 @@ export component MainWindow inherits Window {
                                     model: ["0.1", "1.0", "10", "50"];
                                     current-index: step-index;
                                     enabled: true;
+                                    height: 24px;
                                     selected => {
                                         step-index = step-combo.current-index;
                                         step-size = [0.1, 1.0, 10.0, 50.0][step-combo.current-index];
@@ -648,6 +720,46 @@ export component MainWindow inherits Window {
                                         opacity: root.connected ? 1.0 : 0.5;
                                         Text { text: "▲"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
                                     }
+
+                                    Rectangle {
+                                        width: 5%;
+                                        height: 65px;
+                                    }
+                                     Rectangle {
+                                        width: 10%;
+                                        height: 65px;
+                                    }
+                                    Rectangle {
+                                        width: 10%;
+                                        height: 65px;
+                                        background: #ecf0f1;
+                                        border-width: 2px;
+                                        border-color: root.connected ? #34495e : #bdc3c7;
+                                        border-radius: 5px;
+                                        opacity: root.connected ? 1.0 : 0.5;
+                                        Text { text: "X⊙"; font-size: 28px; horizontal-alignment: center; vertical-alignment: center; }
+                                    }
+                                    Rectangle {
+                                        width: 10%;
+                                        height: 65px;
+                                        background: #ecf0f1;
+                                        border-width: 2px;
+                                        border-color: root.connected ? #34495e : #bdc3c7;
+                                        border-radius: 5px;
+                                        opacity: root.connected ? 1.0 : 0.5;
+                                        Text { text: "Y⊙"; font-size: 28px; horizontal-alignment: center; vertical-alignment: center; }
+                                    }
+                                    Rectangle {
+                                        width: 10%;
+                                        height: 65px;
+                                        background: #ecf0f1;
+                                        border-width: 2px;
+                                        border-color: root.connected ? #34495e : #bdc3c7;
+                                        border-radius: 5px;
+                                        opacity: root.connected ? 1.0 : 0.5;
+                                        Text { text: "Z⊙"; font-size: 28px; horizontal-alignment: center; vertical-alignment: center; }
+                                    }
+
                                 }
                                 
                                 HorizontalBox {
@@ -699,6 +811,50 @@ export component MainWindow inherits Window {
                                             vertical-alignment: center;
                                         }
                                     }
+                                    Rectangle {
+                                        width: 5%;
+                                        height: 65px;
+                                    }
+                                     Rectangle {
+                                        width: 10%;
+                                        height: 65px;
+                                        background: #ecf0f1;
+                                        border-width: 2px;
+                                        border-color: root.connected ? #34495e : #bdc3c7;
+                                        border-radius: 5px;
+                                        opacity: root.connected ? 1.0 : 0.5;
+                                        Text { text: "G54"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
+                                    }
+                                    Rectangle {
+                                        width: 10%;
+                                        height: 65px;
+                                        background: #ecf0f1;
+                                        border-width: 2px;
+                                        border-color: root.connected ? #34495e : #bdc3c7;
+                                        border-radius: 5px;
+                                        opacity: root.connected ? 1.0 : 0.5;
+                                        Text { text: "G55"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
+                                    }
+                                    Rectangle {
+                                        width: 10%;
+                                        height: 65px;
+                                        background: #ecf0f1;
+                                        border-width: 2px;
+                                        border-color: root.connected ? #34495e : #bdc3c7;
+                                        border-radius: 5px;
+                                        opacity: root.connected ? 1.0 : 0.5;
+                                        Text { text: "G56"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
+                                    }
+                                    Rectangle {
+                                        width: 10%;
+                                        height: 65px;
+                                        background: #ecf0f1;
+                                        border-width: 2px;
+                                        border-color: root.connected ? #34495e : #bdc3c7;
+                                        border-radius: 5px;
+                                        opacity: root.connected ? 1.0 : 0.5;
+                                        Text { text: "G57"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
+                                    }
                                 }
                                 
                                 HorizontalBox {
@@ -744,141 +900,54 @@ export component MainWindow inherits Window {
                                         opacity: root.connected ? 1.0 : 0.5;
                                         Text { text: "▼"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
                                     }
-                                }
-                                
-                                // Row 4: Axis Controls
-                                HorizontalBox {
-                                    spacing: 6px;
-                                    
                                     Rectangle {
-                                        width: 10%;
-                                        height: 58px;
+                                        width: 5%;
+                                        height: 65px;
                                     }
+
                                     Rectangle {
                                         width: 10%;
-                                        height: 58px;
+                                        height: 65px;
                                         background: #ecf0f1;
                                         border-width: 2px;
                                         border-color: root.connected ? #34495e : #bdc3c7;
                                         border-radius: 5px;
                                         opacity: root.connected ? 1.0 : 0.5;
-                                        Text { text: "X⊙"; font-size: 28px; horizontal-alignment: center; vertical-alignment: center; }
+                                        Text { text: "NA"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
                                     }
                                     Rectangle {
                                         width: 10%;
-                                        height: 58px;
+                                        height: 65px;
                                         background: #ecf0f1;
                                         border-width: 2px;
                                         border-color: root.connected ? #34495e : #bdc3c7;
                                         border-radius: 5px;
                                         opacity: root.connected ? 1.0 : 0.5;
-                                        Text { text: "Y⊙"; font-size: 28px; horizontal-alignment: center; vertical-alignment: center; }
+                                        Text { text: "NA"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
                                     }
                                     Rectangle {
                                         width: 10%;
-                                        height: 58px;
+                                        height: 65px;
                                         background: #ecf0f1;
                                         border-width: 2px;
                                         border-color: root.connected ? #34495e : #bdc3c7;
                                         border-radius: 5px;
                                         opacity: root.connected ? 1.0 : 0.5;
-                                        Text { text: "Z⊙"; font-size: 28px; horizontal-alignment: center; vertical-alignment: center; }
+                                        Text { text: "NA"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
                                     }
-                                }
-                                
-                                // Row 5: G-Code Commands
-                                HorizontalBox {
-                                    spacing: 6px;
-                                    
                                     Rectangle {
                                         width: 10%;
-                                        height: 52px;
+                                        height: 65px;
                                         background: #ecf0f1;
                                         border-width: 2px;
                                         border-color: root.connected ? #34495e : #bdc3c7;
                                         border-radius: 5px;
                                         opacity: root.connected ? 1.0 : 0.5;
-                                        Text { text: "G54"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
-                                    }
-                                    Rectangle {
-                                        width: 10%;
-                                        height: 52px;
-                                        background: #ecf0f1;
-                                        border-width: 2px;
-                                        border-color: root.connected ? #34495e : #bdc3c7;
-                                        border-radius: 5px;
-                                        opacity: root.connected ? 1.0 : 0.5;
-                                        Text { text: "G55"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
-                                    }
-                                    Rectangle {
-                                        width: 10%;
-                                        height: 52px;
-                                        background: #ecf0f1;
-                                        border-width: 2px;
-                                        border-color: root.connected ? #34495e : #bdc3c7;
-                                        border-radius: 5px;
-                                        opacity: root.connected ? 1.0 : 0.5;
-                                        Text { text: "G56"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
-                                    }
-                                    Rectangle {
-                                        width: 10%;
-                                        height: 52px;
-                                        background: #ecf0f1;
-                                        border-width: 2px;
-                                        border-color: root.connected ? #34495e : #bdc3c7;
-                                        border-radius: 5px;
-                                        opacity: root.connected ? 1.0 : 0.5;
-                                        Text { text: "G57"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
+                                        Text { text: "NA"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
                                     }
                                 }
                                 
-                                // Row 6: Additional Controls
-                                HorizontalBox {
-                                    spacing: 6px;
-                                    
-                                    Rectangle {
-                                        width: 10%;
-                                        height: 52px;
-                                        background: #ecf0f1;
-                                        border-width: 2px;
-                                        border-color: root.connected ? #34495e : #bdc3c7;
-                                        border-radius: 5px;
-                                        opacity: root.connected ? 1.0 : 0.5;
-                                        Text { text: "NA"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
-                                    }
-                                    Rectangle {
-                                        width: 10%;
-                                        height: 52px;
-                                        background: #ecf0f1;
-                                        border-width: 2px;
-                                        border-color: root.connected ? #34495e : #bdc3c7;
-                                        border-radius: 5px;
-                                        opacity: root.connected ? 1.0 : 0.5;
-                                        Text { text: "NA"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
-                                    }
-                                    Rectangle {
-                                        width: 10%;
-                                        height: 52px;
-                                        background: #ecf0f1;
-                                        border-width: 2px;
-                                        border-color: root.connected ? #34495e : #bdc3c7;
-                                        border-radius: 5px;
-                                        opacity: root.connected ? 1.0 : 0.5;
-                                        Text { text: "NA"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
-                                    }
-                                    Rectangle {
-                                        width: 10%;
-                                        height: 52px;
-                                        background: #ecf0f1;
-                                        border-width: 2px;
-                                        border-color: root.connected ? #34495e : #bdc3c7;
-                                        border-radius: 5px;
-                                        opacity: root.connected ? 1.0 : 0.5;
-                                        Text { text: "NA"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
-                                    }
-                                }
-                            }
-                            
+                            }                          
 
                         }
                     }

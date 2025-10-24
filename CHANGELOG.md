@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.2] - 2025-10-24
+
+### Changed
+- **UI Tab Bar Implementation**
+  - Redesigned view navigation with tabbed interface at top of center panel
+  - Added three tab buttons: G-Code Editor, Machine Control, Device Console
+  - Implemented visual tab selection indicators (highlight active tab, dim inactive tabs)
+  - Added tab touch areas with pointer cursor for better UX
+  - Converted title bar from static text to dynamic tab buttons
+
 ## [0.12.1] - 2025-10-24
 
 ### Changed
