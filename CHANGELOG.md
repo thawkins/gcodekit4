@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.1] - 2025-10-24
+
+### Changed
+- **Machine View UI Refinements**
+  - Removed "Position (Work)" panel from left sidebar
+  - Removed "Overrides" panel from machine view right side
+  - Removed static text display (XY:0 | Z:0 | F:2400.0) from step size row
+  - Moved rows 4-6 (Axis Controls, G-Code Commands, Additional Controls) to display horizontally alongside Jog Buttons
+  - Merged button rows into single vertical layout with horizontal button rows
+  - Increased button text and icon sizes by 30% without resizing button dimensions
+  - Made Step Size dropdown always enabled (independent of connection state)
+  - Added "mm" label after Step Size dropdown
+  - Fixed Step Size dropdown vertical truncation by removing height constraint
+  - Converted standard Buttons to custom styled Rectangle components with explicit font sizes
+  - Restored right-side panel with "Placeholder" text for future functionality
+
+### Fixed
+- Step Size dropdown vertical clipping issue by removing artificial height constraint
+
 ## [0.12.0] - 2025-10-24
 
 ### Added
