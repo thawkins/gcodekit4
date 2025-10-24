@@ -1,10 +1,10 @@
 # GCodeKit4 Project Statistics
 
 ## Overall Project Status
-- **Version**: 0.11.0
+- **Version**: 0.12.0
 - **Status**: Production Ready
-- **Build Date**: 2025-10-22
-- **Last Updated**: 2025-10-22 06:33 UTC
+- **Build Date**: 2025-10-24
+- **Last Updated**: 2025-10-24 06:05 UTC
 
 ## Code Metrics
 

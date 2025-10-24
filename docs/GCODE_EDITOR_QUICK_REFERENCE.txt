@@ -1,0 +1,153 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║              GCODE EDITOR UI ANALYSIS - QUICK REFERENCE CARD              ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+PROBLEM STATEMENT
+─────────────────────────────────────────────────────────────────────────────
+Gcode editor oscillates between two broken states:
+  • State A: Content visible + editable, but layout broken (right panel hidden)
+  • State B: Layout correct + all panels visible, but no content + no editing
+
+ROOT CAUSE
+─────────────────────────────────────────────────────────────────────────────
+Two Rectangle elements in src/ui.slint lack `height: 100%;` constraint.
+Without explicit height, they expand unbounded, causing layout collapse.
+
+SLINT VERSION
+─────────────────────────────────────────────────────────────────────────────
+Current: 1.14.1 ✅ (No upgrade needed - this is a layout design issue)
+
+THE FIX (Minimal - 2 lines added)
+─────────────────────────────────────────────────────────────────────────────
+
+File: src/ui.slint
+
+Line 336 - ADD height: 100%;
+┌────────────────────────────────────────────────────────────────────────┐
+│ // View Container - maintains consistent layout                        │
+│ Rectangle {                                                             │
+│     height: 100%;  ← ADD THIS LINE                                     │
+│     background: #ffffff;                                               │
+│     if current-view == "gcode-editor" : VerticalBox {                  │
+└────────────────────────────────────────────────────────────────────────┘
+
+Line 402 - ADD height: 100%;
+┌────────────────────────────────────────────────────────────────────────┐
+│ // G-Code Content Display                                              │
+│ Rectangle {                                                             │
+│     height: 100%;  ← ADD THIS LINE                                     │
+│     background: #f5f5f5;                                               │
+│     border-width: 2px;                                                 │
+│     border-color: #000000;                                             │
+│     ScrollView {                                                        │
+│         TextEdit {                                                      │
+└────────────────────────────────────────────────────────────────────────┘
+
+RESULTS AFTER FIX
+─────────────────────────────────────────────────────────────────────────────
+✅ Gcode content displays in TextEdit
+✅ TextEdit allows editing
+✅ ScrollView works for large files (1000+ lines)
+✅ Right panel stays visible (250px width)
+✅ All three panels properly sized
+✅ View switching works smoothly
+✅ Layout remains stable
+✅ No oscillation between broken states
+
+WHAT THE FIX DOES
+─────────────────────────────────────────────────────────────────────────────
+1. Constrains view container to available space
+2. Constrains text editor area to remaining space after toolbar
+3. Allows ScrollView to work properly (needs parent height)
+4. Prevents TextEdit unbounded expansion
+5. Preserves right panel visibility
+6. Maintains layout through content changes and view switching
+
+TESTING CHECKLIST
+─────────────────────────────────────────────────────────────────────────────
+□ Build with `cargo build`
+□ Load small file (10-20 lines) - should display with all panels visible
+□ Edit content - TextEdit should respond normally
+□ Load large file (1000+ lines) - ScrollView should work, right panel visible
+□ Switch views (View menu > G-Code Editor / Device Console) - both work
+□ Resize window - layout recalculates smoothly
+□ All panels properly sized in all conditions
+
+RELATED DOCUMENTATION
+─────────────────────────────────────────────────────────────────────────────
+GCODE_EDITOR_ANALYSIS_INDEX.md      Quick navigation guide
+GCODE_EDITOR_LAYOUT_VISUAL.txt      Visual diagrams and before/after
+GCODE_EDITOR_UI_ANALYSIS.md         Deep technical analysis (why this works)
+
+WHY THIS WORKS (In 30 Seconds)
+─────────────────────────────────────────────────────────────────────────────
+Slint uses constraints-based layout. Without explicit height:
+• Rectangle doesn't know how much space to allocate
+• TextEdit expands to show all content (hundreds of lines)
+• Rectangle expands with TextEdit
+• Right panel (250px) gets pushed off-screen
+
+With `height: 100%;`:
+• Rectangle knows it must fit in available space
+• TextEdit is bounded by Rectangle's height
+• ScrollView works (has constrained parent)
+• All panels stay properly positioned
+
+KEY LEARNING FOR FUTURE
+─────────────────────────────────────────────────────────────────────────────
+In Slint:
+  ✓ Always specify height for containers with variable content
+  ✓ TextEdit + ScrollView requires explicit parent height
+  ✓ Use VerticalBox/HorizontalBox for flexible layout, not Rectangle
+  ✓ Conditional rendering needs parent height for reliability
+  ✓ Nested containers should cascade height constraints downward
+
+IMPLEMENTATION TIME ESTIMATE
+─────────────────────────────────────────────────────────────────────────────
+Making the fix:        2 minutes (2 lines to add)
+Testing the fix:       5 minutes (build + verify all scenarios)
+Total time:            ~7 minutes
+
+ISSUES IDENTIFIED (Priority)
+─────────────────────────────────────────────────────────────────────────────
+🔴 CRITICAL #1: View Container Rectangle - NO height (line 336)
+   Fix: Add height: 100%;
+   
+🔴 CRITICAL #2: TextEdit Area Rectangle - NO height (line 402)
+   Fix: Add height: 100%;
+   
+🟠 MAJOR #3: Center Panel VerticalBox - NO explicit sizing (line 317)
+   Status: Amplified by Issues #1 and #2, will resolve with fixes
+   
+🟠 MAJOR #4: Rectangle wrapper around conditionals (line 336)
+   Status: Structural issue, address with explicit constraints
+
+WHY IT OSCILLATES
+─────────────────────────────────────────────────────────────────────────────
+State A (content visible, layout broken)
+  ↓ (attempt fix by restructuring)
+State B (layout looks right, no content)
+  ↓ (attempt fix by changing bindings)
+State A (cycle continues)
+
+ROOT CAUSE remains: Missing height constraints
+Each fix attempt addresses symptoms, not root cause
+Cycle perpetuates until height constraints are added
+
+QUICK START
+─────────────────────────────────────────────────────────────────────────────
+1. Open src/ui.slint
+2. Find line 336 (// View Container comment)
+3. Add `height: 100%;` after Rectangle {
+4. Find line 402 (// G-Code Content Display comment)
+5. Add `height: 100%;` after Rectangle {
+6. Save file
+7. Run `cargo build`
+8. Test with gcode files
+9. Verify all panels visible and functional
+
+═════════════════════════════════════════════════════════════════════════════
+Analysis Date: 2024-10-24
+Slint Version: 1.14.1
+Status: Ready for implementation
+═════════════════════════════════════════════════════════════════════════════

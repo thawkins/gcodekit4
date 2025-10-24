@@ -1,5 +1,5 @@
 use gcodekit4::{init_logging, VERSION, BUILD_DATE, list_ports, SerialCommunicator, ConnectionParams, ConnectionDriver, SerialParity, Communicator, SettingsDialog, SettingsPersistence, FirmwareSettingsIntegration, SettingValue, DeviceConsoleManager, DeviceMessageType, ConsoleListener, GcodeEditor};
-use tracing::info;
+use tracing::{info, warn};
 use slint::VecModel;
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -122,13 +122,8 @@ fn main() -> anyhow::Result<()> {
     info!("G-Code editor initialized");
     
     // Load sample G-Code content for demonstration
-    let sample_gcode = "; Sample G-Code\nG00 X10 Y10\nG01 Z-5 F100\nG00 Z5\nM30\n";
-    if let Err(e) = gcode_editor.load_content(sample_gcode) {
-        info!("Warning: Could not load sample G-Code: {}", e);
-    } else {
-        let editor_content = gcode_editor.get_display_content();
-        main_window.set_gcode_content(slint::SharedString::from(editor_content));
-    }
+    // Note: Don't load sample gcode - start with empty editor
+    // Let user choose to open a file or type their own
     
     // Load settings from config file if it exists
     {
@@ -285,10 +280,224 @@ fn main() -> anyhow::Result<()> {
     
     // Set up menu-file-open callback
     let window_weak = main_window.as_weak();
+    let gcode_editor_clone = gcode_editor.clone();
+    let console_manager_clone = console_manager.clone();
     main_window.on_menu_file_open(move || {
         info!("Menu: File > Open selected");
+        
+        // Open file dialog and load file
+        match gcode_editor_clone.open_and_load_file() {
+            Ok(path) => {
+                let file_name = path.file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("unknown")
+                    .to_string();
+                let full_path = path.display().to_string();
+                let line_count = gcode_editor_clone.get_line_count();
+                
+                info!("File loaded: {:?}", path);
+                
+                // Log to device console
+                console_manager_clone.add_message(
+                    DeviceMessageType::Success,
+                    format!("✓ File loaded: {}", file_name)
+                );
+                console_manager_clone.add_message(
+                    DeviceMessageType::Output,
+                    format!("  Lines: {}", line_count)
+                );
+                console_manager_clone.add_message(
+                    DeviceMessageType::Output,
+                    format!("  Path: {}", path.display())
+                );
+                
+                // Update UI with new content
+                let content = gcode_editor_clone.get_plain_content();
+                
+                // DEBUG: Log the content that will be set in TextEdit
+                info!("TextEdit content length: {} characters", content.len());
+                let preview = if content.len() > 100 { 
+                    format!("{}...", &content[..100]) 
+                } else { 
+                    content.clone() 
+                };
+                info!("TextEdit content preview:\n{}", preview);
+                console_manager_clone.add_message(
+                    DeviceMessageType::Output,
+                    format!("CONTENT LENGTH: {} chars", content.len())
+                );
+                console_manager_clone.add_message(
+                    DeviceMessageType::Output,
+                    format!("CONTENT PREVIEW: {}", preview)
+                );
+                
+                if let Some(window) = window_weak.upgrade() {
+                    // DEBUG: Log view switch
+                    info!("Switching to gcode-editor view");
+                    console_manager_clone.add_message(
+                        DeviceMessageType::Output,
+                        format!("DEBUG: Switching to gcode-editor view")
+                    );
+                    
+                    // IMPORTANT: Switch to gcode-editor view to show the content
+                    window.set_current_view(slint::SharedString::from("gcode-editor"));
+                    
+                    // DEBUG: Log TextEdit update
+                    info!("Setting gcode-content property with {} chars", content.len());
+                    console_manager_clone.add_message(
+                        DeviceMessageType::Output,
+                        format!("DEBUG: Setting TextEdit content ({} chars)", content.len())
+                    );
+                    
+                    window.set_gcode_content(slint::SharedString::from(content.clone()));
+                    
+                    // VERIFY: Log what was set
+                    let verify_content = window.get_gcode_content();
+                    info!("VERIFY - After set_gcode_content, get_gcode_content returns {} chars", verify_content.len());
+                    console_manager_clone.add_message(
+                        DeviceMessageType::Output,
+                        format!("VERIFY: get_gcode_content returned {} chars", verify_content.len())
+                    );
+                    
+                    window.set_gcode_filename(slint::SharedString::from(&full_path));
+                    window.set_connection_status(slint::SharedString::from(
+                        format!("Loaded: {} ({} lines)", file_name, line_count)
+                    ));
+                    
+                    // DEBUG: Log console update
+                    info!("Updating console output");
+                    console_manager_clone.add_message(
+                        DeviceMessageType::Output,
+                        format!("DEBUG: TextEdit content set in view")
+                    );
+                    
+                    // Update console display
+                    let console_output = console_manager_clone.get_output();
+                    window.set_console_output(slint::SharedString::from(console_output));
+                }
+            }
+            Err(e) => {
+                warn!("Failed to open file: {}", e);
+                
+                // Log error to device console
+                console_manager_clone.add_message(
+                    DeviceMessageType::Error,
+                    format!("✗ Failed to load file: {}", e)
+                );
+                
+                if let Some(window) = window_weak.upgrade() {
+                    window.set_connection_status(slint::SharedString::from(
+                        format!("Error: {}", e)
+                    ));
+                    
+                    // Update console display
+                    let console_output = console_manager_clone.get_output();
+                    window.set_console_output(slint::SharedString::from(console_output));
+                }
+            }
+        }
+    });
+    
+    // Set up menu-file-save callback
+    let window_weak = main_window.as_weak();
+    let gcode_editor_clone = gcode_editor.clone();
+    let console_manager_clone = console_manager.clone();
+    main_window.on_menu_file_save(move || {
+        info!("Menu: File > Save selected");
+        
+        // Get current filename from window
         if let Some(window) = window_weak.upgrade() {
-            window.set_connection_status(slint::SharedString::from("File dialog would open here"));
+            let filename = window.get_gcode_filename().to_string();
+            
+            // If it's "untitled.gcode", prompt for filename (treat as Save As)
+            if filename.contains("untitled") {
+                info!("No current file, treating Save as Save As");
+                console_manager_clone.add_message(
+                    DeviceMessageType::Output,
+                    "No file loaded. Use 'Save As' to save with a filename."
+                );
+                window.set_connection_status(slint::SharedString::from(
+                    "Please use 'Save As' to save the file"
+                ));
+                return;
+            }
+            
+            // Save to current file
+            match gcode_editor_clone.save_file() {
+                Ok(_) => {
+                    info!("File saved: {}", filename);
+                    console_manager_clone.add_message(
+                        DeviceMessageType::Success,
+                        format!("✓ File saved: {}", filename)
+                    );
+                    window.set_connection_status(slint::SharedString::from(
+                        format!("Saved: {}", filename)
+                    ));
+                }
+                Err(e) => {
+                    warn!("Failed to save file: {}", e);
+                    console_manager_clone.add_message(
+                        DeviceMessageType::Error,
+                        format!("✗ Failed to save: {}", e)
+                    );
+                    window.set_connection_status(slint::SharedString::from(
+                        format!("Error saving file: {}", e)
+                    ));
+                }
+            }
+            
+            let console_output = console_manager_clone.get_output();
+            window.set_console_output(slint::SharedString::from(console_output));
+        }
+    });
+    
+    // Set up menu-file-save-as callback
+    let window_weak = main_window.as_weak();
+    let gcode_editor_clone = gcode_editor.clone();
+    let console_manager_clone = console_manager.clone();
+    main_window.on_menu_file_save_as(move || {
+        info!("Menu: File > Save As selected");
+        
+        if let Some(window) = window_weak.upgrade() {
+            // Use the editor's save_as_with_dialog method which handles everything
+            match gcode_editor_clone.save_as_with_dialog() {
+                Ok(path) => {
+                    let file_name = path.file_name()
+                        .and_then(|n| n.to_str())
+                        .unwrap_or("unknown")
+                        .to_string();
+                    let full_path = path.display().to_string();
+                    
+                    info!("File saved as: {}", file_name);
+                    console_manager_clone.add_message(
+                        DeviceMessageType::Success,
+                        format!("✓ File saved as: {}", file_name)
+                    );
+                    console_manager_clone.add_message(
+                        DeviceMessageType::Output,
+                        format!("  Path: {}", path.display())
+                    );
+                    
+                    // Update filename in UI
+                    window.set_gcode_filename(slint::SharedString::from(full_path));
+                    window.set_connection_status(slint::SharedString::from(
+                        format!("Saved as: {}", file_name)
+                    ));
+                }
+                Err(e) => {
+                    warn!("Failed to save file as: {}", e);
+                    console_manager_clone.add_message(
+                        DeviceMessageType::Error,
+                        format!("✗ Failed to save as: {}", e)
+                    );
+                    window.set_connection_status(slint::SharedString::from(
+                        format!("Error: {}", e)
+                    ));
+                }
+            }
+            
+            let console_output = console_manager_clone.get_output();
+            window.set_console_output(slint::SharedString::from(console_output));
         }
     });
     

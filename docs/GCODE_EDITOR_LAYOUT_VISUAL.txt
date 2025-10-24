@@ -1,0 +1,174 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║          VISUAL LAYOUT COMPARISON: Current vs. Fixed                       ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+CURRENT (BROKEN) LAYOUT STRUCTURE
+────────────────────────────────────────────────────────────────────────────
+
+VerticalBox (center panel, line 317)
+    │
+    ├─ Rectangle (title, height: 35px)
+    │  └─ "G-Code Editor"
+    │
+    └─ Rectangle (height: ??? - NO CONSTRAINT)  ← PROBLEM #1
+       │
+       └─ if current-view == "gcode-editor":
+          │
+          ├─ Rectangle (toolbar, height: 80px)
+          │
+          └─ Rectangle (height: ??? - NO CONSTRAINT)  ← PROBLEM #2
+             │
+             └─ ScrollView
+                │
+                └─ TextEdit (height: ??? - EXPANDS TO CONTENT)  ← PROBLEM #2
+
+When TextEdit loads large files:
+  1. TextEdit expands to show all lines (no height constraint)
+  2. ScrollView can't constrain it (parent has no height)
+  3. Rectangle (line 402) expands to fit TextEdit
+  4. Rectangle (line 336) expands to fit everything
+  5. Center VerticalBox expands
+  6. Right panel (250px) pushed off viewport
+  7. Layout BREAKS - right panel disappears
+
+
+FIXED LAYOUT STRUCTURE
+────────────────────────────────────────────────────────────────────────────
+
+VerticalBox (center panel, line 317)
+    │
+    ├─ Rectangle (title, height: 35px)
+    │  └─ "G-Code Editor"
+    │
+    └─ Rectangle (height: 100%) ✓ FIX #1 - Takes all remaining space
+       │
+       └─ if current-view == "gcode-editor":
+          │
+          ├─ Rectangle (toolbar, height: 80px)
+          │
+          └─ Rectangle (height: 100%) ✓ FIX #2 - Takes remaining space
+             │
+             └─ ScrollView (inherits height from parent)
+                │
+                └─ TextEdit (constrained by ScrollView's height) ✓
+                   - Scrolls when content exceeds height
+                   - Doesn't expand layout
+
+When TextEdit loads large files:
+  1. TextEdit is constrained by ScrollView height
+  2. ScrollView is constrained by Rectangle height (100%)
+  3. Rectangle (line 402) gets fixed portion of space
+  4. Rectangle (line 336) distributes space properly
+  5. Center VerticalBox fills its allocated space
+  6. Right panel remains visible at 250px width
+  7. Layout HOLDS - all panels properly sized
+
+
+SPACE ALLOCATION COMPARISON
+────────────────────────────────────────────────────────────────────────────
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ MAIN HORIZONTAL BOX (inside main content area)                         │
+│                                                                         │
+│  ┌──────────┐  ┌─────────────────────────┐  ┌──────────┐             │
+│  │          │  │                         │  │          │             │
+│  │  LEFT    │  │  CENTER                 │  │  RIGHT   │             │
+│  │  PANEL   │  │  (Variable, Broken)     │  │  PANEL   │             │
+│  │          │  │                         │  │          │             │
+│  │ 300px    │  │ ??? px (expands when    │  │ 250px    │             │
+│  │ (fixed)  │  │ TextEdit grows)         │  │ (fixed)  │             │
+│  │          │  │                         │  │          │             │
+│  └──────────┘  └─────────────────────────┘  └──────────┘             │
+│                                                                         │
+│        RESULT: Right panel pushed off or hidden!                       │
+└─────────────────────────────────────────────────────────────────────────┘
+
+                                    ↓ AFTER FIX
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ MAIN HORIZONTAL BOX (inside main content area)                         │
+│                                                                         │
+│  ┌──────────┐  ┌─────────────────────────┐  ┌──────────┐             │
+│  │          │  │                         │  │          │             │
+│  │  LEFT    │  │  CENTER                 │  │  RIGHT   │             │
+│  │  PANEL   │  │  (Grows to fill)        │  │  PANEL   │             │
+│  │          │  │                         │  │          │             │
+│  │ 300px    │  │ Remaining px            │  │ 250px    │             │
+│  │ (fixed)  │  │ (grows/shrinks)         │  │ (fixed)  │             │
+│  │          │  │                         │  │          │             │
+│  └──────────┘  └─────────────────────────┘  └──────────┘             │
+│                                                                         │
+│        RESULT: All panels properly sized, right panel visible!         │
+└─────────────────────────────────────────────────────────────────────────┘
+
+
+HEIGHT DISTRIBUTION CHAIN (GCODE-EDITOR VIEW)
+────────────────────────────────────────────────────────────────────────────
+
+CURRENT (BROKEN):
+  Main Window
+    ├─ Menu (40px)
+    ├─ Content Area (height = window.height - 40px - 30px = variable)
+    │   └─ Center VerticalBox
+    │       ├─ Title Rectangle (35px)
+    │       └─ View Container Rectangle (height: undefined → size to content)
+    │           └─ Toolbar Rectangle (80px)
+    │           └─ TextEdit Area Rectangle (height: undefined → size to content)
+    │               └─ TextEdit (height: undefined → EXPANDS)
+    │                           ↑ BREAKS HERE - all parent heights undefined
+    └─ Status Bar (30px)
+
+
+FIXED:
+  Main Window
+    ├─ Menu (40px)
+    ├─ Content Area (height = window.height - 40px - 30px = calculated)
+    │   └─ Center VerticalBox (height = 100% of Content Area)
+    │       ├─ Title Rectangle (35px)
+    │       └─ View Container Rectangle (height: 100% → fills remaining)
+    │           └─ Toolbar Rectangle (80px)
+    │           └─ TextEdit Area Rectangle (height: 100% → fills remaining)
+    │               └─ ScrollView (height: inherited from parent)
+    │                   └─ TextEdit (height: constrained by ScrollView)
+    │                           ✓ WORKS - all heights properly constrained
+    └─ Status Bar (30px)
+
+
+KEY DIFFERENCES
+────────────────────────────────────────────────────────────────────────────
+
+┌──────────────────┬─────────────────────┬──────────────────────────────┐
+│ Component        │ Current             │ Fixed                        │
+├──────────────────┼─────────────────────┼──────────────────────────────┤
+│ View Container   │ height: undefined   │ height: 100%                 │
+│ Rectangle        │ Grows with content  │ Fixed to parent bounds       │
+│                  │                     │                              │
+│ TextEdit Area    │ height: undefined   │ height: 100%                 │
+│ Rectangle        │ Grows with content  │ Fixed to parent bounds       │
+│                  │                     │                              │
+│ TextEdit         │ height: undefined   │ Constrained by ScrollView    │
+│ Inside ScrollView│ Expands infinitely  │ height inherited from parent │
+│                  │                     │                              │
+│ ScrollView       │ height: undefined   │ height: inherited from       │
+│ Function         │ Can't scroll        │ parent, fully functional     │
+│                  │                     │                              │
+│ Right Panel      │ Pushed off-screen   │ Remains at 250px width       │
+│ Visibility       │ when content large  │ in all conditions            │
+└──────────────────┴─────────────────────┴──────────────────────────────┘
+
+
+THE CRITICAL MISSING LINES (what needs to be added)
+────────────────────────────────────────────────────────────────────────────
+
+In src/ui.slint:
+
+Line 336:  Rectangle {
++              height: 100%;     ← ADD THIS
+               background: #ffffff;
+               
+               if current-view == "gcode-editor" : VerticalBox {
+                   
+Line 402:          Rectangle {
++                      height: 100%;     ← ADD THIS
+                       background: #f5f5f5;
+

@@ -34,13 +34,17 @@ export component MainWindow inherits Window {
     in property <string> app-version: "0.9.1";
     in property <string> app-build-date: "2025-10-22";
     in property <string> console-output: "[INFO] GCodeKit4 initialized\n[INFO] Ready for operation\n";
-    in property <string> gcode-content: "; G-Code viewer\nG00 X10 Y10\nG01 Z-5 F100\nG00 Z5\n";
+    in-out property <string> gcode-content: "";
+    in-out property <string> current-view: "gcode-editor";
+    in-out property <string> gcode-filename: "untitled.gcode";
     in property <int> console-scroll-trigger: 0;
     
     callback refresh-ports();
     callback connect(string, int);
     callback disconnect();
     callback menu-file-open();
+    callback menu-file-save();
+    callback menu-file-save-as();
     callback menu-file-exit();
     callback menu-edit-preferences();
     callback menu-settings-save();
@@ -56,7 +60,6 @@ export component MainWindow inherits Window {
     
     // Internal state for UI selections
     private property <int> port-index: 0;
-    private property <string> current-view: "device-console"; // gcode-editor or device-console
     private property <int> console-scroll-ref: 0;
     
     // Private properties for menu state
@@ -189,11 +192,10 @@ export component MainWindow inherits Window {
             }
         }
         
-        // Main content area - with constrained height
-        Rectangle {
-            HorizontalBox {
-                spacing: 10px;
-                padding: 10px;
+        // Main content area
+        HorizontalBox {
+            spacing: 10px;
+            padding: 10px;
             
             // Left panel - Connection and Control
             VerticalBox {
@@ -313,7 +315,7 @@ export component MainWindow inherits Window {
             
             // Center panel - File and Viewer
             VerticalBox {
-                spacing: 10px;
+                spacing: 0px;
                 
                 // View title
                 Rectangle {
@@ -330,80 +332,122 @@ export component MainWindow inherits Window {
                     }
                 }
                 
-                // View Container - maintains consistent layout
-                Rectangle {
-                    background: #ffffff;
+                // GCode Editor View
+                if current-view == "gcode-editor" : VerticalBox {
+                    spacing: 0px;
                     
-                    if current-view == "gcode-editor" : VerticalBox {
-                        spacing: 0px;
+                    // File Operations Toolbar
+                    Rectangle {
+                        background: #ecf0f1;
+                        height: 120px;
                         
-                        // File Operations - only visible in gcode-editor view
-                        Rectangle {
-                            background: #ecf0f1;
-                            height: 50px;
+                        VerticalBox {
+                            padding: 10px;
+                            spacing: 8px;
                             
                             HorizontalBox {
-                                padding: 10px;
-                                spacing: 5px;
+                                spacing: 15px;
                                 
                                 Button {
                                     text: "Open File";
+                                    clicked => {
+                                        root.menu-file-open();
+                                    }
                                 }
                                 Button {
                                     text: "Save";
+                                    enabled: root.gcode-content != "" && root.gcode-filename != "untitled.gcode";
+                                    clicked => {
+                                        root.menu-file-save();
+                                    }
+                                }
+                                Button {
+                                    text: "Save As";
+                                    enabled: root.gcode-content != "";
+                                    clicked => {
+                                        root.menu-file-save-as();
+                                    }
+                                }
+                                Button {
+                                    text: "Send";
+                                    enabled: root.gcode-content != "";
+                                    clicked => {
+                                        // Will implement send to machine
+                                    }
+                                }
+                            }
+                            
+                            HorizontalBox {
+                                spacing: 15px;
+                                
+                                Text {
+                                    text: "Filename:";
+                                    vertical-alignment: center;
+                                }
+                                LineEdit {
+                                    text <=> root.gcode-filename;
+                                    horizontal-stretch: 1.0;
                                 }
                                 Text {
                                     text: "Ready";
                                     color: green;
+                                    vertical-alignment: center;
                                 }
-                            }
-                        }
-                        
-                        ScrollView {
-                            TextEdit {
-                                read-only: true;
-                                text: root.gcode-content;
                             }
                         }
                     }
                     
-                    if current-view == "device-console" : VerticalBox {
-                        spacing: 5px;
-                        padding: 10px;
-                        
-                        HorizontalBox {
-                            spacing: 5px;
-                            
-                            Button {
-                                text: "Clear";
-                                clicked => {
-                                    root.console-clear-clicked();
-                                }
-                            }
-                            
-                            Button {
-                                text: "Copy";
-                                clicked => {
-                                    root.console-copy-clicked();
-                                }
-                            }
-                        }
-                        
+                    // G-Code Content Display - use VerticalBox so it grows naturally
+                    VerticalBox {
                         Rectangle {
-                            background: #ffffff;
-                            padding: 10px;
+                            background: #f5f5f5;
                             
-                            console-scroll := ScrollView {
+                            ScrollView {
                                 VerticalBox {
-                                    padding: 5px;
-                                    alignment: start;
-                                    
-                                    Text {
-                                        text: root.console-output;
-                                        color: #000000;
+                                    TextEdit {
+                                        enabled: true;
+                                        text <=> root.gcode-content;
+                                        read-only: false;
                                         wrap: word-wrap;
                                     }
                                 }
+                            }
+                        }
+                    }
+                }
+                
+                // Device Console View
+                if current-view == "device-console" : VerticalBox {
+                    spacing: 5px;
+                    padding: 10px;
+                    
+                    HorizontalBox {
+                        spacing: 5px;
+                        
+                        Button {
+                            text: "Clear";
+                            clicked => {
+                                root.console-clear-clicked();
+                            }
+                        }
+                        
+                        Button {
+                            text: "Copy";
+                            clicked => {
+                                root.console-copy-clicked();
+                            }
+                        }
+                    }
+                    
+                    console-scroll := ScrollView {
+                        VerticalBox {
+                            padding: 5px;
+                            alignment: start;
+                            
+                            Text {
+                                text: root.console-output;
+                                color: #000000;
+                                wrap: word-wrap;
                             }
                         }
                     }
@@ -478,7 +522,6 @@ export component MainWindow inherits Window {
                         }
                     }
                 }
-            }
             }
         }
         

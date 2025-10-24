@@ -1,0 +1,131 @@
+; 15mm square cut test for laser cutter
+; Square centered at X20 Y20
+; Laser intensity S255
+; Path repeated 20 times
+
+G21 ; Units in millimeters
+G90 ; Absolute coordinates
+G0 X12.5 Y12.5 ; Move to start point (bottom left corner)
+M3 S255 ; Laser on at full intensity
+
+; Square 1
+G1 X27.5 Y12.5
+G1 X27.5 Y27.5
+G1 X12.5 Y27.5
+G1 X12.5 Y12.5
+
+; Square 2
+G1 X27.5 Y12.5
+G1 X27.5 Y27.5
+G1 X12.5 Y27.5
+G1 X12.5 Y12.5
+
+; Square 3
+G1 X27.5 Y12.5
+G1 X27.5 Y27.5
+G1 X12.5 Y27.5
+G1 X12.5 Y12.5
+
+; Square 4
+G1 X27.5 Y12.5
+G1 X27.5 Y27.5
+G1 X12.5 Y27.5
+G1 X12.5 Y12.5
+
+; Square 5
+G1 X27.5 Y12.5
+G1 X27.5 Y27.5
+G1 X12.5 Y27.5
+G1 X12.5 Y12.5
+
+; Square 6
+G1 X27.5 Y12.5
+G1 X27.5 Y27.5
+G1 X12.5 Y27.5
+G1 X12.5 Y12.5
+
+; Square 7
+G1 X27.5 Y12.5
+G1 X27.5 Y27.5
+G1 X12.5 Y27.5
+G1 X12.5 Y12.5
+
+; Square 8
+G1 X27.5 Y12.5
+G1 X27.5 Y27.5
+G1 X12.5 Y27.5
+G1 X12.5 Y12.5
+
+; Square 9
+G1 X27.5 Y12.5
+G1 X27.5 Y27.5
+G1 X12.5 Y27.5
+G1 X12.5 Y12.5
+
+; Square 10
+G1 X27.5 Y12.5
+G1 X27.5 Y27.5
+G1 X12.5 Y27.5
+G1 X12.5 Y12.5
+
+; Square 11
+G1 X27.5 Y12.5
+G1 X27.5 Y27.5
+G1 X12.5 Y27.5
+G1 X12.5 Y12.5
+
+; Square 12
+G1 X27.5 Y12.5
+G1 X27.5 Y27.5
+G1 X12.5 Y27.5
+G1 X12.5 Y12.5
+
+; Square 13
+G1 X27.5 Y12.5
+G1 X27.5 Y27.5
+G1 X12.5 Y27.5
+G1 X12.5 Y12.5
+
+; Square 14
+G1 X27.5 Y12.5
+G1 X27.5 Y27.5
+G1 X12.5 Y27.5
+G1 X12.5 Y12.5
+
+; Square 15
+G1 X27.5 Y12.5
+G1 X27.5 Y27.5
+G1 X12.5 Y27.5
+G1 X12.5 Y12.5
+
+; Square 16
+G1 X27.5 Y12.5
+G1 X27.5 Y27.5
+G1 X12.5 Y27.5
+G1 X12.5 Y12.5
+
+; Square 17
+G1 X27.5 Y12.5
+G1 X27.5 Y27.5
+G1 X12.5 Y27.5
+G1 X12.5 Y12.5
+
+; Square 18
+G1 X27.5 Y12.5
+G1 X27.5 Y27.5
+G1 X12.5 Y27.5
+G1 X12.5 Y12.5
+
+; Square 19
+G1 X27.5 Y12.5
+G1 X27.5 Y27.5
+G1 X12.5 Y27.5
+G1 X12.5 Y12.5
+
+; Square 20
+G1 X27.5 Y12.5
+G1 X27.5 Y27.5
+G1 X12.5 Y27.5
+G1 X12.5 Y12.5
+
+M5 ; Laser off

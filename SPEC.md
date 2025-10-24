@@ -1,8 +1,8 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.11.0  
-**Last Updated**: 2025-10-22  
-**Status**: Production Release (Phase 7 - Device Console Logging)
+**Version**: 0.12.0  
+**Last Updated**: 2025-10-24  
+**Status**: Production Release (Phase 8 - G-Code Editor UI Complete)
 
 ## 1. Executive Summary
 

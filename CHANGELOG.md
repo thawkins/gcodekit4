@@ -5,6 +5,58 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] - 2025-10-24
+
+### Added
+- **G-Code Editor UI Complete Rebuild**
+  - Complete restructuring of center panel layout using nested VerticalBox containers
+  - Proper layout hierarchy: Center VerticalBox → Content VerticalBox → Rectangle → ScrollView → TextEdit
+  - TextEdit now displays loaded gcode content correctly
+  - Full directory path display in filename field
+  - Expanded filename control with horizontal-stretch for better visibility
+
+### Fixed
+- **Critical Layout Issues**
+  - Fixed TextEdit not displaying content (was hidden/zero-height)
+  - Fixed right panel being pushed off-screen when loading large files
+  - Fixed filename field being hidden underneath editor
+  - Fixed layout oscillation between broken states
+  - Fixed toolbar alignment issues
+  - Fixed "Filename:" label not aligned with edit control
+  - Fixed "Ready" indicator positioning
+
+### Changed
+- Removed problematic Rectangle wrapper around conditional views
+- Moved conditionals directly to center VerticalBox for proper space allocation
+- Increased toolbar height from 80px to 120px to accommodate filename field
+- Increased horizontal spacing from 5px to 15px (1 EM) for cleaner appearance
+- Removed test content from default gcode-content property (now starts empty)
+- Documentation files reorganized to docs/ folder (14 files moved)
+
+### Technical Details
+- Slint layout system uses constraints-based sizing
+- TextEdit needs explicit parent height constraint via VerticalBox hierarchy
+- ScrollView must have bounded parent height to function properly
+- VerticalBox naturally distributes space to children, Rectangle does not
+- Proper spacing alignment using vertical-alignment: center and horizontal-stretch
+
+### Layout Structure
+```
+Center VerticalBox (main container)
+├─ Title Rectangle (35px height)
+└─ if gcode-editor: VerticalBox (grows to fill)
+   ├─ Toolbar Rectangle (120px fixed)
+   │  └─ VerticalBox with buttons and filename
+   └─ Content VerticalBox (grows to fill remaining)
+      └─ Rectangle with background
+         └─ ScrollView
+            └─ VerticalBox
+               └─ TextEdit (properly constrained and visible)
+└─ if device-console: VerticalBox (grows to fill)
+   ├─ HorizontalBox (buttons)
+   └─ ScrollView → VerticalBox → Text (console output)
+```
+
 ## [0.11.0] - 2025-10-22
 
 ### Added

@@ -4,15 +4,18 @@
 //! - Syntax highlighting for G-Code commands
 //! - Line number support
 //! - Current line tracking during execution
-//! - File management (open, save)
+//! - File management (open, save, save as)
 //! - Search and replace functionality
 //! - Real-time validation
 //!
 //! This module merges functionality from both gcode_editor and gcode_viewer
 //! into a unified, comprehensive editor implementation.
+//! 
+//! File operations use the `rfd` crate for cross-platform file dialogs.
 
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
 /// Token types for G-Code syntax highlighting
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -474,6 +477,107 @@ impl GcodeEditor {
     pub fn is_read_only(&self) -> bool {
         !self.is_editable()
     }
+
+    /// Load a file from disk using a file dialog
+    pub fn open_file_dialog(&self) -> anyhow::Result<PathBuf> {
+        let file = rfd::FileDialog::new()
+            .add_filter("G-Code files", &["gcode", "gc", "ngc", "tap"])
+            .add_filter("Text files", &["txt"])
+            .add_filter("All files", &["*"])
+            .pick_file()
+            .ok_or_else(|| anyhow::anyhow!("File dialog cancelled"))?;
+        
+        info!("Selected file: {:?}", file);
+        Ok(file)
+    }
+
+    /// Load file content from disk
+    pub fn load_file(&self, path: &Path) -> anyhow::Result<()> {
+        let content = std::fs::read_to_string(path)?;
+        self.load_content(&content)?;
+        
+        let mut file = self.file.lock().unwrap();
+        file.path = Some(path.to_string_lossy().to_string());
+        info!("Loaded file from: {:?}", path);
+        Ok(())
+    }
+
+    /// Load file content and extract the path from dialog
+    pub fn open_and_load_file(&self) -> anyhow::Result<PathBuf> {
+        let path = self.open_file_dialog()?;
+        self.load_file(&path)?;
+        Ok(path)
+    }
+
+    /// Save file to disk
+    pub fn save_file(&self) -> anyhow::Result<()> {
+        let file = self.file.lock().unwrap();
+        
+        if let Some(path) = &file.path {
+            let content = file.get_plain_content();
+            std::fs::write(path, content)?;
+            info!("Saved file to: {}", path);
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!("No file path set. Use save_as instead."))
+        }
+    }
+
+    /// Save file with a new name using file dialog
+    pub fn save_as_dialog(&self) -> anyhow::Result<PathBuf> {
+        let file = rfd::FileDialog::new()
+            .add_filter("G-Code files", &["gcode", "gc", "ngc", "tap"])
+            .add_filter("Text files", &["txt"])
+            .add_filter("All files", &["*"])
+            .set_file_name("untitled.gcode")
+            .save_file()
+            .ok_or_else(|| anyhow::anyhow!("Save dialog cancelled"))?;
+        
+        info!("Save as: {:?}", file);
+        Ok(file)
+    }
+
+    /// Save file with a new name
+    pub fn save_as(&self, path: &Path) -> anyhow::Result<()> {
+        let content = {
+            let file = self.file.lock().unwrap();
+            file.get_plain_content()
+        };
+        
+        std::fs::write(path, content)?;
+        
+        let mut file = self.file.lock().unwrap();
+        file.path = Some(path.to_string_lossy().to_string());
+        info!("Saved as: {:?}", path);
+        Ok(())
+    }
+
+    /// Save file with new name using dialog
+    pub fn save_as_with_dialog(&self) -> anyhow::Result<PathBuf> {
+        let path = self.save_as_dialog()?;
+        self.save_as(&path)?;
+        Ok(path)
+    }
+
+    /// Get the current file path
+    pub fn get_file_path(&self) -> Option<String> {
+        let file = self.file.lock().unwrap();
+        file.path.clone()
+    }
+
+    /// Set the file path (useful for tracking)
+    pub fn set_file_path(&self, path: Option<String>) {
+        let mut file = self.file.lock().unwrap();
+        file.path = path;
+    }
+
+    /// Export content to a specific file
+    pub fn export_to(&self, path: &Path) -> anyhow::Result<()> {
+        let content = self.get_plain_content();
+        std::fs::write(path, content)?;
+        info!("Exported to: {:?}", path);
+        Ok(())
+    }
 }
 
 impl Default for GcodeEditor {
@@ -608,4 +712,49 @@ mod tests {
         assert_eq!(text, Some("G00 X10".to_string()));
     }
 
+    #[test]
+    fn test_file_path_tracking() {
+        let editor = GcodeEditor::new();
+        editor.load_content("G00 X10").unwrap();
+        
+        let path = Some("/path/to/file.gcode".to_string());
+        editor.set_file_path(path.clone());
+        
+        assert_eq!(editor.get_file_path(), path);
+    }
+
+    #[test]
+    fn test_export_content() {
+        use tempfile::NamedTempFile;
+        
+        let editor = GcodeEditor::new();
+        editor.load_content("G00 X10\nG01 Y20").unwrap();
+        
+        let temp_file = NamedTempFile::new().unwrap();
+        let path = temp_file.path();
+        
+        let result = editor.export_to(path);
+        assert!(result.is_ok());
+        
+        let content = std::fs::read_to_string(path).unwrap();
+        assert_eq!(content, "G00 X10\nG01 Y20");
+    }
+
+    #[test]
+    fn test_save_as_file() {
+        use tempfile::NamedTempFile;
+        
+        let editor = GcodeEditor::new();
+        editor.load_content("G00 X10").unwrap();
+        
+        let temp_file = NamedTempFile::new().unwrap();
+        let path = temp_file.path();
+        
+        let result = editor.save_as(path);
+        assert!(result.is_ok());
+        assert_eq!(editor.get_file_path(), Some(path.to_string_lossy().to_string()));
+        
+        let content = std::fs::read_to_string(path).unwrap();
+        assert_eq!(content, "G00 X10");
+    }
 }
