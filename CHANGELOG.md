@@ -20,11 +20,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Emergency stop button (red center stop)
   - Axis control buttons (X, Y, Z zero position)
   - G-Code coordinate system selectors (G54-G57)
-  - DRO (Digital Readout) display showing work position for X, Y, Z axes
-  - Real-time position display at top showing XY/Z coordinates and feed rate
-  - Icon placeholder row at top for future visual elements
+  - DRO (Digital Readout) display showing work position for X, Y, Z axes and rotary A, B, C axes
+  - Feed rate indicator with mm/m units
+  - Spindle speed indicator with rpm units
+  - Compact overrides panel (Feed and Spindle) integrated into machine view
+  - Proper scrollbar management with content padding
 
 ### Fixed
+- **DRO Display Alignment Issues**
+  - Fixed A, B, C rotary axes display overflowing outside Position (Work) box
+  - Increased DRO box height to 175px to properly contain X, Y, Z and A, B, C rows
+  - Fixed label vertical alignment with input controls (centered with vertical-alignment: center)
+- **Layout and Overflow Issues**
+  - Removed 4 icon placeholders at top of machine control view
+  - Moved DRO display to top of machine view for better visibility
+  - Reduced jog button widths by 60% to compact the control layout
+  - Replaced Feed button with blank space and reduced all other non-jog buttons by 60%
+  - Fixed scrollview horizontal scrollbar overlap by adjusting padding
+  - Integrated overrides panel into machine view to the right of controls
 - **Critical Layout Issues**
   - Fixed TextEdit not displaying content (was hidden/zero-height)
   - Fixed right panel being pushed off-screen when loading large files
@@ -44,6 +57,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Increased horizontal spacing from 5px to 15px (1 EM) for cleaner appearance
 - Removed test content from default gcode-content property (now starts empty)
 - Documentation files reorganized to docs/ folder (14 files moved)
+- Updated DRO display to show 4 columns per row (X/Y/Z + Feed, A/B/C + Speed)
+- Changed DRO axis labels from single letters to "Feed:" and "Speed:" for clarity
+- Added unit legends: "mm" after position values, "mm/m" after feed rate, "rpm" after spindle speed
+- Integrated jog controls and overrides into single horizontal layout
 
 ### Technical Details
 - Slint layout system uses constraints-based sizing

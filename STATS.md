@@ -273,15 +273,16 @@ Cross-Platform:         ✅ Linux, macOS, Windows
 
 ## Summary
 
-GCodeKit4 v0.10.0 now features:
+GCodeKit4 v0.12.0 now features:
 
 1. **Professional UI** - Dark theme, 5 categories, responsive layout, view switching
 2. **Full Persistence** - Config files, bidirectional sync, all platforms
 3. **Firmware Integration** - 30+ GRBL parameters, dynamic rendering, compact display
-4. **View Management** - G-Code Editor and Device Console views with menu switching
-5. **Stable Layout** - Perfect panel alignment, no visual jarring during transitions
-6. **Production Ready** - 361 tests passing, zero compilation errors, complete documentation
+4. **Machine Control View** - Compact jog controls, integrated overrides panel, DRO with A/B/C rotary axes
+5. **Enhanced DRO** - Position display with units (mm), Feed rate (mm/m), Spindle speed (rpm)
+6. **Stable Layout** - Perfect panel alignment, no visual jarring during transitions, proper scrollbar management
+7. **Production Ready** - 361 tests passing, zero compilation errors, complete documentation
 
 **Status: ✅ READY FOR PRODUCTION**
 
-Last Updated: 2025-10-22
+Last Updated: 2025-10-24

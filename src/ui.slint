@@ -33,6 +33,8 @@ export component MainWindow inherits Window {
     in property <float> position-a: 0.0;
     in property <float> position-b: 0.0;
     in property <float> position-c: 0.0;
+    in property <float> feed-rate: 0.0;
+    in property <float> spindle-speed: 0.0;
     in property <string> machine-state: "DISCONNECTED";
     in property <string> app-version: "0.9.1";
     in property <string> app-build-date: "2025-10-22";
@@ -467,37 +469,145 @@ export component MainWindow inherits Window {
                         VerticalBox {
                             spacing: 15px;
                             padding: 5px;
+                            padding-right: 5px;
                             
-                            // Header with icons and controls - increased by 8%
-                            HorizontalBox {
-                                spacing: 20px;
-                                alignment: center;
-                                height: 61px;
+                            // DRO Display (moved to top)
+                            Rectangle {
+                                background: #ecf0f1;
+                                height: 175px;
                                 
-                                // Icon placeholders (using text as stand-in for icons)
-                                Rectangle {
-                                    width: 40px;
-                                    height: 40px;
-                                    background: #e0e0e0;
-                                    Text { text: "⊞"; font-size: 20px; horizontal-alignment: center; vertical-alignment: center; }
-                                }
-                                Rectangle {
-                                    width: 40px;
-                                    height: 40px;
-                                    background: #e0e0e0;
-                                    Text { text: "📄"; font-size: 20px; horizontal-alignment: center; vertical-alignment: center; }
-                                }
-                                Rectangle {
-                                    width: 40px;
-                                    height: 40px;
-                                    background: #e0e0e0;
-                                    Text { text: "⊕"; font-size: 20px; horizontal-alignment: center; vertical-alignment: center; }
-                                }
-                                Rectangle {
-                                    width: 40px;
-                                    height: 40px;
-                                    background: #e0e0e0;
-                                    Text { text: "💻"; font-size: 20px; horizontal-alignment: center; vertical-alignment: center; }
+                                VerticalBox {
+                                    padding: 10px;
+                                    spacing: 6px;
+                                    
+                                    Text {
+                                        text: "Position (Work)";
+                                        font-weight: 700;
+                                        font-size: 14px;
+                                    }
+                                    
+                                    // Linear axes (X, Y, Z) + Feed
+                                    HorizontalBox {
+                                        spacing: 10px;
+                                        alignment: start;
+                                        
+                                        HorizontalBox {
+                                            width: 23%;
+                                            spacing: 4px;
+                                            Text { 
+                                                text: "X:"; 
+                                                width: 20px;
+                                                vertical-alignment: center;
+                                            }
+                                            LineEdit {
+                                                read-only: true;
+                                                text: round(root.position-x * 1000.0) / 1000.0 + " mm\u{2003}";
+                                            }
+                                        }
+                                        
+                                        HorizontalBox {
+                                            width: 23%;
+                                            spacing: 4px;
+                                            Text { 
+                                                text: "Y:"; 
+                                                width: 20px;
+                                                vertical-alignment: center;
+                                            }
+                                            LineEdit {
+                                                read-only: true;
+                                                text: round(root.position-y * 1000.0) / 1000.0 + " mm\u{2003}";
+                                            }
+                                        }
+                                        
+                                        HorizontalBox {
+                                            width: 23%;
+                                            spacing: 4px;
+                                            Text { 
+                                                text: "Z:"; 
+                                                width: 20px;
+                                                vertical-alignment: center;
+                                            }
+                                            LineEdit {
+                                                read-only: true;
+                                                text: round(root.position-z * 1000.0) / 1000.0 + " mm\u{2003}";
+                                            }
+                                        }
+                                        
+                                        HorizontalBox {
+                                            width: 24.8%;
+                                            spacing: 4px;
+                                            Text { 
+                                                text: "Feed:"; 
+                                                vertical-alignment: center;
+                                            }
+                                            LineEdit {
+                                                read-only: true;
+                                                text: round(root.feed-rate * 10.0) / 10.0 + " mm/m\u{2003}\u{2003}";
+                                            }
+                                        }
+                                    }
+                                    
+                                    // Rotary axes (A, B, C) + Speed
+                                    HorizontalBox {
+                                        spacing: 10px;
+                                        alignment: start;
+                                        width: 100%;
+                                        
+                                        HorizontalBox {
+                                            width: 23%;
+                                            spacing: 4px;
+                                            Text { 
+                                                text: "A:"; 
+                                                width: 20px;
+                                                vertical-alignment: center;
+                                            }
+                                            LineEdit {
+                                                read-only: true;
+                                                text: round(root.position-a * 1000.0) / 1000.0 + " mm\u{2003}";
+                                            }
+                                        }
+                                        
+                                        HorizontalBox {
+                                            width: 23%;
+                                            spacing: 4px;
+                                            Text { 
+                                                text: "B:"; 
+                                                width: 20px;
+                                                vertical-alignment: center;
+                                            }
+                                            LineEdit {
+                                                read-only: true;
+                                                text: round(root.position-b * 1000.0) / 1000.0 + " mm\u{2003}";
+                                            }
+                                        }
+                                        
+                                        HorizontalBox {
+                                            width: 23%;
+                                            spacing: 4px;
+                                            Text { 
+                                                text: "C:"; 
+                                                width: 20px;
+                                                vertical-alignment: center;
+                                            }
+                                            LineEdit {
+                                                read-only: true;
+                                                text: round(root.position-c * 1000.0) / 1000.0 + " mm\u{2003}";
+                                            }
+                                        }
+                                        
+                                        HorizontalBox {
+                                            width: 24.8%;
+                                            spacing: 4px;
+                                            Text { 
+                                                text: "Speed:"; 
+                                                vertical-alignment: center;
+                                            }
+                                            LineEdit {
+                                                read-only: true;
+                                                text: round(root.spindle-speed) + " rpm\u{2003}\u{2003}";
+                                            }
+                                        }
+                                    }
                                 }
                             }
                             
@@ -538,234 +648,192 @@ export component MainWindow inherits Window {
                                 }
                             }
                             
-                            // Jog Buttons - 4x3 Grid
-                            VerticalBox {
-                                spacing: 6px;
-                                
-                                // Row 1
-                                HorizontalBox {
-                                    spacing: 6px;
-                                    
-                                    Button { text: "⟲"; width: 25%; height: 50px; enabled: root.connected; }
-                                    Button { text: "▲"; width: 25%; height: 50px; enabled: root.connected; }
-                                    Button { text: "⟳"; width: 25%; height: 50px; enabled: root.connected; }
-                                    Button { text: "▲"; width: 25%; height: 50px; enabled: root.connected; }
-                                }
-                                
-                                // Row 2
-                                HorizontalBox {
-                                    spacing: 6px;
-                                    
-                                    Button { text: "◀"; width: 25%; height: 50px; enabled: root.connected; }
-                                    Button { text: "⌂"; width: 25%; height: 50px; enabled: root.connected; }
-                                    Button { text: "▶"; width: 25%; height: 50px; enabled: root.connected; }
-                                    Rectangle {
-                                        width: 25%;
-                                        height: 50px;
-                                        background: #ecf0f1;
-                                        border-width: 2px;
-                                        border-color: root.connected ? #c0392b : #bdc3c7;
-                                        border-radius: 5px;
-                                        opacity: root.connected ? 1.0 : 0.5;
-                                        Text {
-                                            text: "⊘";
-                                            font-size: 28px;
-                                            color: root.connected ? #c0392b : #bdc3c7;
-                                            horizontal-alignment: center;
-                                            vertical-alignment: center;
-                                        }
-                                    }
-                                }
-                                
-                                // Row 3
-                                HorizontalBox {
-                                    spacing: 6px;
-                                    
-                                    Button { text: "⟲"; width: 25%; height: 50px; enabled: root.connected; }
-                                    Button { text: "▼"; width: 25%; height: 50px; enabled: root.connected; }
-                                    Button { text: "⟳"; width: 25%; height: 50px; enabled: root.connected; }
-                                    Button { text: "▼"; width: 25%; height: 50px; enabled: root.connected; }
-                                }
-                            }
-                            
-                            // Axis Controls - Row of buttons
+                            // Main controls area with buttons and overrides
                             HorizontalBox {
-                                spacing: 6px;
+                                spacing: 15px;
                                 
-                                Button {
-                                    text: "∄ Feed";
-                                    width: 25%;
-                                    height: 45px;
-                                    enabled: root.connected;
-                                }
-                                Button {
-                                    text: "X⊙";
-                                    width: 25%;
-                                    height: 45px;
-                                    enabled: root.connected;
-                                }
-                                Button {
-                                    text: "Y⊙";
-                                    width: 25%;
-                                    height: 45px;
-                                    enabled: root.connected;
-                                }
-                                Button {
-                                    text: "Z⊙";
-                                    width: 25%;
-                                    height: 45px;
-                                    enabled: root.connected;
-                                }
-                            }
-                            
-                            // G-Code Commands Row 1
-                            HorizontalBox {
-                                spacing: 6px;
-                                
-                                Button {
-                                    text: "G54";
-                                    width: 25%;
-                                    height: 40px;
-                                    enabled: root.connected;
-                                }
-                                Button {
-                                    text: "G55";
-                                    width: 25%;
-                                    height: 40px;
-                                    enabled: root.connected;
-                                }
-                                Button {
-                                    text: "G56";
-                                    width: 25%;
-                                    height: 40px;
-                                    enabled: root.connected;
-                                }
-                                Button {
-                                    text: "G57";
-                                    width: 25%;
-                                    height: 40px;
-                                    enabled: root.connected;
-                                }
-                            }
-                            
-                            // Additional Controls Row
-                            HorizontalBox {
-                                spacing: 6px;
-                                
-                                Button {
-                                    text: "NA";
-                                    width: 25%;
-                                    height: 40px;
-                                    enabled: root.connected;
-                                }
-                                Button {
-                                    text: "NA";
-                                    width: 25%;
-                                    height: 40px;
-                                    enabled: root.connected;
-                                }
-                                Button {
-                                    text: "NA";
-                                    width: 25%;
-                                    height: 40px;
-                                    enabled: root.connected;
-                                }
-                                Button {
-                                    text: "NA";
-                                    width: 25%;
-                                    height: 40px;
-                                    enabled: root.connected;
-                                }
-                            }
-                            
-                            // DRO Display (from left panel)
-                            Rectangle {
-                                background: #ecf0f1;
-                                height: 130px;
-                                
+                                // Left side - all buttons
                                 VerticalBox {
-                                    padding: 10px;
                                     spacing: 6px;
                                     
-                                    Text {
-                                        text: "Position (Work)";
-                                        font-weight: 700;
-                                        font-size: 14px;
+                                    // Jog Buttons - 4x3 Grid
+                                    VerticalBox {
+                                        spacing: 6px;
+                                        
+                                        // Row 1
+                                        HorizontalBox {
+                                            spacing: 6px;
+                                            
+                                            Button { text: "⟲"; width: 10%; height: 50px; enabled: root.connected; }
+                                            Button { text: "▲"; width: 10%; height: 50px; enabled: root.connected; }
+                                            Button { text: "⟳"; width: 10%; height: 50px; enabled: root.connected; }
+                                            Button { text: "▲"; width: 10%; height: 50px; enabled: root.connected; }
+                                        }
+                                        
+                                        // Row 2
+                                        HorizontalBox {
+                                            spacing: 6px;
+                                            
+                                            Button { text: "◀"; width: 10%; height: 50px; enabled: root.connected; }
+                                            Button { text: "⌂"; width: 10%; height: 50px; enabled: root.connected; }
+                                            Button { text: "▶"; width: 10%; height: 50px; enabled: root.connected; }
+                                            Rectangle {
+                                                width: 10%;
+                                                height: 50px;
+                                                background: #ecf0f1;
+                                                border-width: 2px;
+                                                border-color: root.connected ? #c0392b : #bdc3c7;
+                                                border-radius: 5px;
+                                                opacity: root.connected ? 1.0 : 0.5;
+                                                Text {
+                                                    text: "⊘";
+                                                    font-size: 28px;
+                                                    color: root.connected ? #c0392b : #bdc3c7;
+                                                    horizontal-alignment: center;
+                                                    vertical-alignment: center;
+                                                }
+                                            }
+                                        }
+                                        
+                                        // Row 3
+                                        HorizontalBox {
+                                            spacing: 6px;
+                                            
+                                            Button { text: "⟲"; width: 10%; height: 50px; enabled: root.connected; }
+                                            Button { text: "▼"; width: 10%; height: 50px; enabled: root.connected; }
+                                            Button { text: "⟳"; width: 10%; height: 50px; enabled: root.connected; }
+                                            Button { text: "▼"; width: 10%; height: 50px; enabled: root.connected; }
+                                        }
                                     }
                                     
-                                    // Linear axes (X, Y, Z)
+                                    // Axis Controls - Row of buttons
                                     HorizontalBox {
-                                        spacing: 10px;
-                                        alignment: start;
+                                        spacing: 6px;
                                         
-                                        HorizontalBox {
-                                            width: 33%;
-                                            spacing: 4px;
-                                            Text { text: "X:"; width: 20px; }
-                                            LineEdit {
-                                                read-only: true;
-                                                text: round(root.position-x * 1000.0) / 1000.0;
-                                            }
+                                        Rectangle {
+                                            width: 10%;
+                                            height: 45px;
                                         }
-                                        
-                                        HorizontalBox {
-                                            width: 33%;
-                                            spacing: 4px;
-                                            Text { text: "Y:"; width: 20px; }
-                                            LineEdit {
-                                                read-only: true;
-                                                text: round(root.position-y * 1000.0) / 1000.0;
-                                            }
+                                        Button {
+                                            text: "X⊙";
+                                            width: 10%;
+                                            height: 45px;
+                                            enabled: root.connected;
                                         }
-                                        
-                                        HorizontalBox {
-                                            width: 33%;
-                                            spacing: 4px;
-                                            Text { text: "Z:"; width: 20px; }
-                                            LineEdit {
-                                                read-only: true;
-                                                text: round(root.position-z * 1000.0) / 1000.0;
-                                            }
+                                        Button {
+                                            text: "Y⊙";
+                                            width: 10%;
+                                            height: 45px;
+                                            enabled: root.connected;
+                                        }
+                                        Button {
+                                            text: "Z⊙";
+                                            width: 10%;
+                                            height: 45px;
+                                            enabled: root.connected;
                                         }
                                     }
                                     
-                                    // Rotary axes (A, B, C)
+                                    // G-Code Commands Row 1
                                     HorizontalBox {
-                                        spacing: 10px;
-                                        alignment: start;
+                                        spacing: 6px;
                                         
-                                        HorizontalBox {
-                                            width: 33%;
-                                            spacing: 4px;
-                                            Text { text: "A:"; width: 20px; }
-                                            LineEdit {
-                                                read-only: true;
-                                                text: round(root.position-a * 1000.0) / 1000.0;
-                                            }
+                                        Button {
+                                            text: "G54";
+                                            width: 10%;
+                                            height: 40px;
+                                            enabled: root.connected;
+                                        }
+                                        Button {
+                                            text: "G55";
+                                            width: 10%;
+                                            height: 40px;
+                                            enabled: root.connected;
+                                        }
+                                        Button {
+                                            text: "G56";
+                                            width: 10%;
+                                            height: 40px;
+                                            enabled: root.connected;
+                                        }
+                                        Button {
+                                            text: "G57";
+                                            width: 10%;
+                                            height: 40px;
+                                            enabled: root.connected;
+                                        }
+                                    }
+                                    
+                                    // Additional Controls Row
+                                    HorizontalBox {
+                                        spacing: 6px;
+                                        
+                                        Button {
+                                            text: "NA";
+                                            width: 10%;
+                                            height: 40px;
+                                            enabled: root.connected;
+                                        }
+                                        Button {
+                                            text: "NA";
+                                            width: 10%;
+                                            height: 40px;
+                                            enabled: root.connected;
+                                        }
+                                        Button {
+                                            text: "NA";
+                                            width: 10%;
+                                            height: 40px;
+                                            enabled: root.connected;
+                                        }
+                                        Button {
+                                            text: "NA";
+                                            width: 10%;
+                                            height: 40px;
+                                            enabled: root.connected;
+                                        }
+                                    }
+                                }
+                                
+                                // Right side - Overrides panel
+                                Rectangle {
+                                    background: #ecf0f1;
+                                    width: 200px;
+                                    
+                                    VerticalBox {
+                                        padding: 10px;
+                                        spacing: 8px;
+                                        
+                                        Text {
+                                            text: "Overrides";
+                                            font-weight: 700;
+                                            font-size: 14px;
                                         }
                                         
                                         HorizontalBox {
-                                            width: 33%;
-                                            spacing: 4px;
-                                            Text { text: "B:"; width: 20px; }
-                                            LineEdit {
-                                                read-only: true;
-                                                text: round(root.position-b * 1000.0) / 1000.0;
+                                            Text { text: "Feed:"; width: 50px; }
+                                            SpinBox {
+                                                value: 100;
+                                                minimum: 0;
+                                                maximum: 200;
                                             }
+                                            Text { text: "%"; }
                                         }
                                         
                                         HorizontalBox {
-                                            width: 33%;
-                                            spacing: 4px;
-                                            Text { text: "C:"; width: 20px; }
-                                            LineEdit {
-                                                read-only: true;
-                                                text: round(root.position-c * 1000.0) / 1000.0;
+                                            Text { text: "Spindle:"; width: 50px; }
+                                            SpinBox {
+                                                value: 100;
+                                                minimum: 0;
+                                                maximum: 200;
                                             }
+                                            Text { text: "%"; }
                                         }
                                     }
                                 }
                             }
+                            
+
                         }
                     }
                 }
