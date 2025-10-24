@@ -30,6 +30,9 @@ export component MainWindow inherits Window {
     in property <float> position-x: 0.0;
     in property <float> position-y: 0.0;
     in property <float> position-z: 0.0;
+    in property <float> position-a: 0.0;
+    in property <float> position-b: 0.0;
+    in property <float> position-c: 0.0;
     in property <string> machine-state: "DISCONNECTED";
     in property <string> app-version: "0.9.1";
     in property <string> app-build-date: "2025-10-22";
@@ -678,11 +681,11 @@ export component MainWindow inherits Window {
                             // DRO Display (from left panel)
                             Rectangle {
                                 background: #ecf0f1;
-                                height: 90px;
+                                height: 130px;
                                 
                                 VerticalBox {
                                     padding: 10px;
-                                    spacing: 8px;
+                                    spacing: 6px;
                                     
                                     Text {
                                         text: "Position (Work)";
@@ -690,6 +693,7 @@ export component MainWindow inherits Window {
                                         font-size: 14px;
                                     }
                                     
+                                    // Linear axes (X, Y, Z)
                                     HorizontalBox {
                                         spacing: 10px;
                                         
@@ -720,6 +724,41 @@ export component MainWindow inherits Window {
                                             LineEdit {
                                                 read-only: true;
                                                 text: round(root.position-z * 1000.0) / 1000.0;
+                                            }
+                                        }
+                                    }
+                                    
+                                    // Rotary axes (A, B, C)
+                                    HorizontalBox {
+                                        spacing: 10px;
+                                        
+                                        HorizontalBox {
+                                            width: 33%;
+                                            spacing: 4px;
+                                            Text { text: "A:"; width: 20px; }
+                                            LineEdit {
+                                                read-only: true;
+                                                text: round(root.position-a * 1000.0) / 1000.0;
+                                            }
+                                        }
+                                        
+                                        HorizontalBox {
+                                            width: 33%;
+                                            spacing: 4px;
+                                            Text { text: "B:"; width: 20px; }
+                                            LineEdit {
+                                                read-only: true;
+                                                text: round(root.position-b * 1000.0) / 1000.0;
+                                            }
+                                        }
+                                        
+                                        HorizontalBox {
+                                            width: 33%;
+                                            spacing: 4px;
+                                            Text { text: "C:"; width: 20px; }
+                                            LineEdit {
+                                                read-only: true;
+                                                text: round(root.position-c * 1000.0) / 1000.0;
                                             }
                                         }
                                     }
