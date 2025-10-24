@@ -665,6 +665,15 @@ fn main() -> anyhow::Result<()> {
         }
     });
     
+    // Set up menu-view-machine callback
+    let window_weak = main_window.as_weak();
+    main_window.on_menu_view_machine(move || {
+        info!("Menu: View > Machine Control selected");
+        if let Some(window) = window_weak.upgrade() {
+            window.set_connection_status(slint::SharedString::from("Machine Control activated"));
+        }
+    });
+    
     // Set up menu-view-device-console callback
     let window_weak = main_window.as_weak();
     let console_manager_weak = std::sync::Arc::downgrade(&console_manager);

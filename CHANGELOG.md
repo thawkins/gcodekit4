@@ -14,6 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - TextEdit now displays loaded gcode content correctly
   - Full directory path display in filename field
   - Expanded filename control with horizontal-stretch for better visibility
+- **Machine Control View**
+  - New central panel view with comprehensive machine control interface
+  - Jog controls in 4x3 grid layout (XY/Z axis movements, rotations, home)
+  - Emergency stop button (red center stop)
+  - Axis control buttons (X, Y, Z zero position)
+  - G-Code coordinate system selectors (G54-G57)
+  - DRO (Digital Readout) display showing work position for X, Y, Z axes
+  - Real-time position display at top showing XY/Z coordinates and feed rate
+  - Icon placeholder row at top for future visual elements
 
 ### Fixed
 - **Critical Layout Issues**

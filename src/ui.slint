@@ -52,6 +52,7 @@ export component MainWindow inherits Window {
     callback menu-settings-restore-defaults();
     callback menu-view-fullscreen();
     callback menu-view-gcode-editor();
+    callback menu-view-machine();
     callback menu-view-device-console();
     callback menu-help-about();
     callback update-setting(string, string);
@@ -323,7 +324,8 @@ export component MainWindow inherits Window {
                     height: 35px;
                     
                     Text {
-                        text: current-view == "gcode-editor" ? "G-Code Editor" : "Device Console";
+                        text: current-view == "gcode-editor" ? "G-Code Editor" : 
+                              current-view == "machine" ? "Machine Control" : "Device Console";
                         color: white;
                         font-size: 14px;
                         vertical-alignment: center;
@@ -446,6 +448,239 @@ export component MainWindow inherits Window {
                                 text: root.console-output;
                                 color: #000000;
                                 wrap: word-wrap;
+                            }
+                        }
+                    }
+                }
+                
+                // Machine Control View
+                if current-view == "machine" : VerticalBox {
+                    spacing: 0px;
+                    padding: 15px;
+                    
+                    ScrollView {
+                        VerticalBox {
+                            spacing: 15px;
+                            
+                            // Header with icons and controls
+                            HorizontalBox {
+                                spacing: 20px;
+                                alignment: center;
+                                height: 60px;
+                                
+                                // Icon placeholders (using text as stand-in for icons)
+                                Rectangle {
+                                    width: 40px;
+                                    height: 40px;
+                                    background: #e0e0e0;
+                                    Text { text: "⊞"; font-size: 20px; horizontal-alignment: center; vertical-alignment: center; }
+                                }
+                                Rectangle {
+                                    width: 40px;
+                                    height: 40px;
+                                    background: #e0e0e0;
+                                    Text { text: "📄"; font-size: 20px; horizontal-alignment: center; vertical-alignment: center; }
+                                }
+                                Rectangle {
+                                    width: 40px;
+                                    height: 40px;
+                                    background: #e0e0e0;
+                                    Text { text: "⊕"; font-size: 20px; horizontal-alignment: center; vertical-alignment: center; }
+                                }
+                                Rectangle {
+                                    width: 40px;
+                                    height: 40px;
+                                    background: #e0e0e0;
+                                    Text { text: "💻"; font-size: 20px; horizontal-alignment: center; vertical-alignment: center; }
+                                }
+                            }
+                            
+                            // Step Size and Status Line
+                            HorizontalBox {
+                                spacing: 20px;
+                                alignment: space-between;
+                                height: 30px;
+                                
+                                Text {
+                                    text: "Step Size | Jog Feed";
+                                    font-size: 13px;
+                                    vertical-alignment: center;
+                                }
+                                
+                                Text {
+                                    text: "XY:" + round(root.position-x * 10.0) / 10.0 + " | Z:" + round(root.position-z * 10.0) / 10.0 + " | F:2400.0";
+                                    font-size: 13px;
+                                    font-family: "Monospace";
+                                    vertical-alignment: center;
+                                }
+                            }
+                            
+                            // Jog Buttons - 4x3 Grid
+                            VerticalBox {
+                                spacing: 8px;
+                                
+                                // Row 1
+                                HorizontalBox {
+                                    spacing: 8px;
+                                    
+                                    Button { text: "⟲"; width: 25%; height: 50px; }
+                                    Button { text: "▲"; width: 25%; height: 50px; }
+                                    Button { text: "⟳"; width: 25%; height: 50px; }
+                                    Button { text: "▲"; width: 25%; height: 50px; }
+                                }
+                                
+                                // Row 2
+                                HorizontalBox {
+                                    spacing: 8px;
+                                    
+                                    Button { text: "◀"; width: 25%; height: 50px; }
+                                    Button { text: "⌂"; width: 25%; height: 50px; }
+                                    Button { text: "▶"; width: 25%; height: 50px; }
+                                    Rectangle {
+                                        width: 25%;
+                                        height: 50px;
+                                        background: #ecf0f1;
+                                        border-width: 2px;
+                                        border-color: #c0392b;
+                                        border-radius: 5px;
+                                        Text {
+                                            text: "⊘";
+                                            font-size: 28px;
+                                            color: #c0392b;
+                                            horizontal-alignment: center;
+                                            vertical-alignment: center;
+                                        }
+                                    }
+                                }
+                                
+                                // Row 3
+                                HorizontalBox {
+                                    spacing: 8px;
+                                    
+                                    Button { text: "⟲"; width: 25%; height: 50px; }
+                                    Button { text: "▼"; width: 25%; height: 50px; }
+                                    Button { text: "⟳"; width: 25%; height: 50px; }
+                                    Button { text: "▼"; width: 25%; height: 50px; }
+                                }
+                            }
+                            
+                            // Axis Controls - Row of buttons
+                            HorizontalBox {
+                                spacing: 8px;
+                                
+                                Button {
+                                    text: "∄ Feed";
+                                    width: 25%;
+                                    height: 45px;
+                                }
+                                Button {
+                                    text: "X⊙";
+                                    width: 25%;
+                                    height: 45px;
+                                }
+                                Button {
+                                    text: "Y⊙";
+                                    width: 25%;
+                                    height: 45px;
+                                }
+                                Button {
+                                    text: "Z⊙";
+                                    width: 25%;
+                                    height: 45px;
+                                }
+                            }
+                            
+                            // G-Code Commands Row 1
+                            HorizontalBox {
+                                spacing: 8px;
+                                
+                                Button {
+                                    text: "G54";
+                                    width: 25%;
+                                    height: 40px;
+                                }
+                                Button {
+                                    text: "G55";
+                                    width: 25%;
+                                    height: 40px;
+                                }
+                                Button {
+                                    text: "G56";
+                                    width: 25%;
+                                    height: 40px;
+                                }
+                                Button {
+                                    text: "G57";
+                                    width: 25%;
+                                    height: 40px;
+                                }
+                            }
+                            
+                            // Additional Controls Row
+                            HorizontalBox {
+                                spacing: 8px;
+                                
+                                Button {
+                                    text: "NA";
+                                    width: 25%;
+                                    height: 40px;
+                                }
+                                Button {
+                                    text: "NA";
+                                    width: 25%;
+                                    height: 40px;
+                                }
+                                Button {
+                                    text: "NA";
+                                    width: 25%;
+                                    height: 40px;
+                                }
+                                Button {
+                                    text: "NA";
+                                    width: 25%;
+                                    height: 40px;
+                                }
+                            }
+                            
+                            // DRO Display (from left panel)
+                            Rectangle {
+                                background: #ecf0f1;
+                                height: 150px;
+                                
+                                VerticalBox {
+                                    padding: 10px;
+                                    spacing: 8px;
+                                    
+                                    Text {
+                                        text: "Position (Work)";
+                                        font-weight: 700;
+                                        font-size: 14px;
+                                    }
+                                    
+                                    HorizontalBox {
+                                        Text { text: "X:"; width: 30px; }
+                                        LineEdit {
+                                            read-only: true;
+                                            text: round(root.position-x * 1000.0) / 1000.0;
+                                        }
+                                    }
+                                    
+                                    HorizontalBox {
+                                        Text { text: "Y:"; width: 30px; }
+                                        LineEdit {
+                                            read-only: true;
+                                            text: round(root.position-y * 1000.0) / 1000.0;
+                                        }
+                                    }
+                                    
+                                    HorizontalBox {
+                                        Text { text: "Z:"; width: 30px; }
+                                        LineEdit {
+                                            read-only: true;
+                                            text: round(root.position-z * 1000.0) / 1000.0;
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -703,7 +938,7 @@ export component MainWindow inherits Window {
         y: 40px;
         x: 156px;
         width: 200px;
-        height: 130px;
+        height: 160px;
         background: #34495e;
         z: 1001;
         
@@ -766,6 +1001,33 @@ export component MainWindow inherits Window {
                         view-menu-open = false;
                         current-view = "gcode-editor";
                         root.menu-view-gcode-editor();
+                    }
+                }
+            }
+            
+            Rectangle {
+                height: 28px;
+                background: mi-view-machine-area.has-hover ? #455a64 : transparent;
+                
+                HorizontalBox {
+                    alignment: start;
+                    padding-left: 8px;
+                    spacing: 8px;
+                    
+                    Text {
+                        text: current-view == "machine" ? "✓ Machine Control" : "  Machine Control";
+                        color: white;
+                        font-size: 12px;
+                        vertical-alignment: center;
+                    }
+                }
+                
+                mi-view-machine-area := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        view-menu-open = false;
+                        current-view = "machine";
+                        root.menu-view-machine();
                     }
                 }
             }
