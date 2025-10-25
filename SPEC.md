@@ -1,10 +1,11 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.24.0-alpha  
+**Version**: 0.24.1-alpha  
 **Last Updated**: 2025-10-25  
 **Status**: COMPLETE (All 7 Phases Complete - 150/150 Tasks)
 
-### Latest Release (v0.24.0-alpha)
+### Latest Release (v0.24.1-alpha)
+- ✅ **Settings Dialog Fixes** - Config directory creation and state management
 - ✅ **2D G-Code Visualizer** - Complete implementation
 - ✅ **Zero Compiler Warnings** - Production-ready code
 - ✅ **100% Public API Documented** - Comprehensive docblocks
