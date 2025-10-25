@@ -919,6 +919,8 @@ fn main() -> anyhow::Result<()> {
             let window_weak_render = window_weak.clone();
             let zoom_scale_render = zoom_for_refresh.clone();
             let pan_offset_render = pan_for_refresh.clone();
+            let zoom_scale_for_msg = zoom_for_refresh.clone();
+            let pan_offset_for_msg = pan_for_refresh.clone();
             
             std::thread::spawn(move || {
                 use gcodekit4::visualizer::Visualizer2D;
@@ -957,6 +959,8 @@ fn main() -> anyhow::Result<()> {
                     let window_handle = window_weak_render.clone();
                     let status_clone = status.clone();
                     let image_clone = image_data.clone();
+                    let zoom_for_closure = zoom_scale_for_msg.clone();
+                    let pan_for_closure = pan_offset_for_msg.clone();
                     
                     slint::invoke_from_event_loop(move || {
                         if let Some(window) = window_handle.upgrade() {
@@ -978,6 +982,15 @@ fn main() -> anyhow::Result<()> {
                                         ),
                                     );
                                     window.set_visualization_image(img_buffer);
+                                    
+                                    // Update indicator properties
+                                    if let Ok(scale) = zoom_for_closure.lock() {
+                                        window.set_visualizer_zoom_scale(*scale);
+                                    }
+                                    if let Ok(offsets) = pan_for_closure.lock() {
+                                        window.set_visualizer_x_offset(offsets.0);
+                                        window.set_visualizer_y_offset(offsets.1);
+                                    }
                                 }
                             }
                         }

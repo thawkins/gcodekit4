@@ -70,6 +70,9 @@ export component MainWindow inherits Window {
     // Visualizer panel properties
     in property <float> visualizer-progress: 0.0;
     in property <string> visualizer-status: "Ready";
+    in property <float> visualizer-x-offset: 0.0;
+    in property <float> visualizer-y-offset: 0.0;
+    in property <float> visualizer-zoom-scale: 1.0;
     
     callback refresh-ports();
     callback connect(string, int);
