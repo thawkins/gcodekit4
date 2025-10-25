@@ -709,6 +709,18 @@ fn main() -> anyhow::Result<()> {
                     }
                 };
 
+                // Ensure config directory exists
+                if let Err(e) = gcodekit4::config::SettingsManager::ensure_config_dir() {
+                    info!("Failed to create config directory: {}", e);
+                    if let Some(window) = window_weak.upgrade() {
+                        window.set_connection_status(slint::SharedString::from(format!(
+                            "Error: Failed to create config directory: {}",
+                            e
+                        )));
+                    }
+                    return;
+                }
+
                 if let Err(e) = persistence.save_to_file(&config_path) {
                     info!("Error saving settings to file: {}", e);
                     if let Some(window) = window_weak.upgrade() {
@@ -724,6 +736,15 @@ fn main() -> anyhow::Result<()> {
                             "Settings saved successfully",
                         ));
                     }
+                    
+                    // Reset the unsaved changes flag and sync defaults
+                    drop(dialog);  // Release the borrow
+                    let mut dialog_mut = settings_dialog_clone.borrow_mut();
+                    for setting in dialog_mut.settings.values_mut() {
+                        setting.default = setting.value.clone();
+                    }
+                    dialog_mut.has_unsaved_changes = false;
+                    info!("Dialog defaults synced with saved values");
                 }
             }
         } else {
@@ -739,7 +760,7 @@ fn main() -> anyhow::Result<()> {
     main_window.on_menu_settings_cancel(move || {
         info!("Menu: Settings Cancel clicked");
         if let Some(window) = window_weak.upgrade() {
-            window.set_connection_status(slint::SharedString::from("Settings changes discarded"));
+            window.set_connection_status(slint::SharedString::from("Settings dialog closed"));
         }
     });
 
@@ -756,6 +777,55 @@ fn main() -> anyhow::Result<()> {
         if let Some(window) = window_weak.upgrade() {
             window
                 .set_connection_status(slint::SharedString::from("Settings restored to defaults"));
+        }
+    });
+
+    // Set up update-setting callback
+    let settings_dialog_clone = settings_dialog.clone();
+    main_window.on_update_setting(move |setting_id: slint::SharedString, value: slint::SharedString| {
+        debug!("Setting updated: {} = {}", setting_id, value);
+
+        let mut dialog = settings_dialog_clone.borrow_mut();
+        let setting_id_str = setting_id.to_string();
+        let value_str = value.to_string();
+
+        if let Some(setting) = dialog.get_setting_mut(&setting_id_str) {
+            let new_value = match &setting.value {
+                gcodekit4::ui::settings_dialog::SettingValue::String(_) => {
+                    gcodekit4::ui::settings_dialog::SettingValue::String(value_str)
+                }
+                gcodekit4::ui::settings_dialog::SettingValue::Integer(_) => {
+                    if let Ok(i) = value_str.parse::<i32>() {
+                        gcodekit4::ui::settings_dialog::SettingValue::Integer(i)
+                    } else {
+                        return;
+                    }
+                }
+                gcodekit4::ui::settings_dialog::SettingValue::Float(_) => {
+                    if let Ok(f) = value_str.parse::<f64>() {
+                        gcodekit4::ui::settings_dialog::SettingValue::Float(f)
+                    } else {
+                        return;
+                    }
+                }
+                gcodekit4::ui::settings_dialog::SettingValue::Boolean(_) => {
+                    let b = matches!(value_str.to_lowercase().as_str(), "true" | "1" | "yes");
+                    gcodekit4::ui::settings_dialog::SettingValue::Boolean(b)
+                }
+                gcodekit4::ui::settings_dialog::SettingValue::Enum(_, ref options) => {
+                    if options.contains(&value_str) {
+                        gcodekit4::ui::settings_dialog::SettingValue::Enum(value_str, options.clone())
+                    } else {
+                        return;
+                    }
+                }
+            };
+
+            setting.value = new_value;
+            dialog.has_unsaved_changes = true;
+            debug!("Setting {} updated successfully", setting_id_str);
+        } else {
+            debug!("Setting {} not found in dialog", setting_id_str);
         }
     });
 
