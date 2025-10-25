@@ -5,6 +5,24 @@ All notable changes to this project should be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.22.0] - 2025-10-25
+
+### Changed
+- **UI Refactoring: Modular Panel Architecture**
+  - ✅ **Status**: COMPLETE - All Phase 6 & 7 UI tasks (91-120) implemented
+  - ✅ **Modularization**: Separated `src/ui.slint` into separate component files:
+    - `src/ui_panels/gcode_editor.slint` - G-Code editor with file operations
+    - `src/ui_panels/device_console.slint` - Device console output with controls
+    - `src/ui_panels/machine_control.slint` - Position display and jog controls
+    - `src/ui_panels/file_validation.slint` - File validation results and issues
+    - `src/ui_panels/advanced_features.slint` - Tool management, simulation, WCS, soft limits
+    - `src/ui_panels/safety_diagnostics.slint` - Emergency stop, safety status, diagnostics
+  - ✅ **Import System**: Main `src/ui.slint` now imports all panel components
+  - ✅ **Property Binding**: All panels properly connected to root window properties
+  - ✅ **Callback Integration**: Panel callbacks properly forwarded to main window
+  - ✅ **Build Verification**: Project compiles successfully with all panels functional
+  - ✅ **Result**: UI is now maintainable, scalable, and follows component-based architecture
+
 ## [0.21.0] - 2025-10-25
 
 ### Fixed
