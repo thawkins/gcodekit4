@@ -8,13 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.21.0] - 2025-10-25
 
 ### Fixed
-- **UI Layout: Phase 6 Panels Display and Visibility**
-  - ✅ **Problem**: FileValidation, AdvancedFeatures, and SafetyDiagnostics panels were not displaying properly
-  - ✅ **Solution**: Added `horizontal-stretch: 1.0` to center panel and all content views to fill available width
-  - ✅ **Result**: All 6 views (gcode-editor, device-console, machine, file-validation, advanced-features, safety-diagnostics) now display with proper layout
-  - ✅ **Tabs Fixed**: The 3 new panel tabs are now fully functional and properly displayed
-  - ✅ **ScrollView Fixed**: Each panel is properly contained within its ScrollView and no longer cuts off at status bar
-  - ✅ **Build**: Project compiles with all layout fixes applied
+- **UI Layout: Phase 6 Panels Display and Visibility - FINAL FIX**
+  - ✅ **Problem**: FileValidation, AdvancedFeatures, and SafetyDiagnostics panels had horizontal-stretch but were not filling vertical space
+  - ✅ **Root Cause**: Missing `vertical-stretch: 1.0` property on all 6 view VerticalBoxes and center panel container
+  - ✅ **Solution**: Added `vertical-stretch: 1.0` to:
+    - Center panel (VerticalBox at line 308)
+    - All 6 view containers (gcode-editor, device-console, machine, file-validation, advanced-features, safety-diagnostics)
+    - ScrollView containers in the 3 new panels
+  - ✅ **Result**: All panels now display with proper vertical expansion, filling available space from tab bar to status bar
+  - ✅ **Status Bar Fix**: Status bar no longer gets pulled up by the 3 new panels
+  - ✅ **ScrollView Fix**: Content now properly scrolls within each panel's scrollview
+  - ✅ **Build Status**: Project compiles successfully with no Slint errors
 
 - **UI Integration: File Validation, Advanced Features, and Safety & Diagnostics Panels Visibility**
   - ✅ **Problem**: The FileValidation Panel, AdvancedFeatures Panel, and SafetyDiagnostics Panel were defined but not visible on the UI
