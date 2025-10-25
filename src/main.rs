@@ -387,18 +387,13 @@ fn main() -> anyhow::Result<()> {
                     // Use a channel to communicate progress from background thread
                     let (tx, rx) = std::sync::mpsc::channel();
                     
-                    eprintln!("DEBUG: About to spawn visualization thread with {} bytes of content", content_clone.len());
                     std::thread::spawn(move || {
-                        eprintln!("DEBUG: Visualization thread started");
                         render_gcode_visualization_background_channel(content_clone, tx);
-                        eprintln!("DEBUG: Visualization thread completed");
                     });
                     
                     // Use Slint's invoke_from_event_loop to safely update UI from background thread
                     std::thread::spawn(move || {
                         while let Ok((progress, status, image_data)) = rx.recv() {
-                            eprintln!("DEBUG: Main thread received progress: {}", progress);
-                            
                             // Use invoke_from_event_loop to update UI safely
                             let window_handle = window_weak.clone();
                             let status_clone = status.clone();
@@ -408,7 +403,6 @@ fn main() -> anyhow::Result<()> {
                                 if let Some(window) = window_handle.upgrade() {
                                     window.set_visualizer_progress(progress);
                                     window.set_visualizer_status(slint::SharedString::from(status_clone.clone()));
-                                    eprintln!("DEBUG: Updated progress to {}", progress);
                                     
                                     if let Some(png_bytes) = image_clone {
                                         if let Ok(img) = image::load_from_memory_with_format(&png_bytes, image::ImageFormat::Png) {
@@ -419,7 +413,6 @@ fn main() -> anyhow::Result<()> {
                                                 rgba_img.height(),
                                             ));
                                             window.set_visualization_image(img_buffer);
-                                            eprintln!("DEBUG: Set visualization image");
                                         }
                                     }
                                 }
@@ -893,36 +886,22 @@ fn render_gcode_visualization_background_channel(
 ) {
     use gcodekit4::visualizer::Visualizer2D;
     
-    eprintln!("DEBUG: render_gcode_visualization_background_channel called with {} bytes", gcode_content.len());
-    
     let _ = tx.send((0.1, "Parsing G-code...".to_string(), None));
-    eprintln!("DEBUG: Sent 0.1 progress");
     
     // Parse G-code
-    eprintln!("DEBUG: Creating visualizer");
     let mut visualizer = Visualizer2D::new();
-    eprintln!("DEBUG: Parsing gcode...");
     visualizer.parse_gcode(&gcode_content);
     
-    let cmd_count = visualizer.get_command_count();
-    eprintln!("DEBUG: Parsed {} G-code commands", cmd_count);
-    
     let _ = tx.send((0.3, "Rendering image...".to_string(), None));
-    eprintln!("DEBUG: Sent 0.3 progress");
     
     // Render to image
     let image_bytes = visualizer.render(800, 600);
-    eprintln!("DEBUG: Rendered image: {} bytes", image_bytes.len());
     
     if !image_bytes.is_empty() {
         let _ = tx.send((0.7, "Encoding PNG...".to_string(), None));
-        eprintln!("DEBUG: Sent 0.7 progress");
-        
         let _ = tx.send((1.0, "Complete".to_string(), Some(image_bytes)));
-        eprintln!("DEBUG: Sent 1.0 progress with image");
     } else {
         let _ = tx.send((1.0, "Error: no image data".to_string(), None));
-        eprintln!("DEBUG: Sent error");
     }
 }
 
