@@ -1032,6 +1032,7 @@ fn main() -> anyhow::Result<()> {
 
     // Handle reset view button
     let zoom_scale_reset = zoom_scale.clone();
+    let pan_offset_reset = pan_offset.clone();
     let window_weak_reset = main_window.as_weak();
     main_window.on_reset_view(move || {
         info!("Reset view requested");
@@ -1039,11 +1040,17 @@ fn main() -> anyhow::Result<()> {
         if let Ok(mut scale) = zoom_scale_reset.lock() {
             *scale = 1.0;
             info!("Zoom scale reset to 100%");
-            
-            // Trigger refresh with reset zoom scale
-            if let Some(window) = window_weak_reset.upgrade() {
-                window.invoke_refresh_visualization();
-            }
+        }
+        
+        if let Ok(mut offsets) = pan_offset_reset.lock() {
+            offsets.0 = 0.0;
+            offsets.1 = 0.0;
+            info!("Pan offsets reset to (0, 0)");
+        }
+        
+        // Trigger refresh with reset zoom scale and offsets
+        if let Some(window) = window_weak_reset.upgrade() {
+            window.invoke_refresh_visualization();
         }
     });
 
@@ -1086,7 +1093,7 @@ fn main() -> anyhow::Result<()> {
         info!("Pan up requested");
         
         if let Ok(mut offsets) = pan_up_clone.lock() {
-            offsets.1 += 60.0; // 10% of 600px canvas
+            offsets.1 -= 60.0; // 10% of 600px canvas (down in screen coords)
             info!("Pan offset: x={}, y={}", offsets.0, offsets.1);
             
             if let Some(window) = window_weak_pan_up.upgrade() {
@@ -1102,7 +1109,7 @@ fn main() -> anyhow::Result<()> {
         info!("Pan down requested");
         
         if let Ok(mut offsets) = pan_down_clone.lock() {
-            offsets.1 -= 60.0; // 10% of 600px canvas
+            offsets.1 += 60.0; // 10% of 600px canvas (up in screen coords)
             info!("Pan offset: x={}, y={}", offsets.0, offsets.1);
             
             if let Some(window) = window_weak_pan_down.upgrade() {
