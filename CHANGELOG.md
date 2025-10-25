@@ -8,6 +8,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.21.0] - 2025-10-25
 
 ### Fixed
+- **UI Layout: Machine View and Phase 6 Panel Content - COMPLETE FIX**
+  - ✅ **Problem**: Machine view was incomplete (missing A, B, C rotary axes and jog buttons) and orphaned code caused panel misalignment
+  - ✅ **Root Cause**: Machine view interruption at rotary axes section with orphaned code block positioned after safety-diagnostics view
+  - ✅ **Solution**: 
+    - Restored complete machine view with all rotary axes (A, B, C) and speed display
+    - Restored all jog button grid sections (3 rows of control buttons)
+    - Removed 367 lines of orphaned/duplicated machine view code
+    - Fixed structural closing braces for proper component hierarchy
+  - ✅ **Result**: All three new panels (File Validation, Advanced Features, Safety & Diagnostics) now display with proper content
+  - ✅ **Panel Properties**: Initialized all Phase 6 panel properties with default values:
+    - File Validation: summary status, error/warning counts, validation issues list
+    - Advanced Features: tool change mode, simulation state
+    - Safety & Diagnostics: emergency stop armed status, safety status, diagnostics info
+  - ✅ **Scrollview**: Content properly contained within scrollviews, no status bar distortion
+  - ✅ **Build Status**: Project compiles with 0 errors, 514 tests passing
+  - ✅ **Git**: Commit d18a5ea consolidates all UI fixes
+
 - **UI Layout: Phase 6 Panels Display and Visibility - FINAL FIX**
   - ✅ **Problem**: FileValidation, AdvancedFeatures, and SafetyDiagnostics panels had horizontal-stretch but were not filling vertical space
   - ✅ **Root Cause**: Missing `vertical-stretch: 1.0` property on all 6 view VerticalBoxes and center panel container
