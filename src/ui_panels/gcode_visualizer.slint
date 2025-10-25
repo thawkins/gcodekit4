@@ -5,6 +5,9 @@
 import { ScrollView, VerticalBox, HorizontalBox, Button, GridBox } from "std-widgets.slint";
 
 export component GcodeVisualizerPanel {
+    horizontal-stretch: 1.0;
+    vertical-stretch: 1.0;
+
     in property <string> gcode-filename: "untitled.gcode";
     in property <string> machine-x: "0.000";
     in property <string> machine-y: "0.000";
