@@ -886,10 +886,12 @@ fn main() -> anyhow::Result<()> {
     // Zoom state tracking (Arc for shared state across closures)
     use std::sync::{Arc, Mutex};
     let zoom_scale = Arc::new(Mutex::new(1.0f32));
+    let pan_offset = Arc::new(Mutex::new((0.0f32, 0.0f32)));
 
     // Handle refresh visualization button
     let window_weak = main_window.as_weak();
     let zoom_for_refresh = zoom_scale.clone();
+    let pan_for_refresh = pan_offset.clone();
     main_window.on_refresh_visualization(move || {
         info!("Refresh visualization requested");
         
@@ -916,6 +918,7 @@ fn main() -> anyhow::Result<()> {
             let (tx, rx) = std::sync::mpsc::channel();
             let window_weak_render = window_weak.clone();
             let zoom_scale_render = zoom_for_refresh.clone();
+            let pan_offset_render = pan_for_refresh.clone();
             
             std::thread::spawn(move || {
                 use gcodekit4::visualizer::Visualizer2D;
@@ -928,6 +931,12 @@ fn main() -> anyhow::Result<()> {
                 // Apply zoom scale
                 if let Ok(scale) = zoom_scale_render.lock() {
                     visualizer.zoom_scale = *scale;
+                }
+                
+                // Apply pan offsets
+                if let Ok(offsets) = pan_offset_render.lock() {
+                    visualizer.x_offset = offsets.0;
+                    visualizer.y_offset = offsets.1;
                 }
                 
                 let _ = tx.send((0.3, "Rendering image...".to_string(), None));
@@ -1033,6 +1042,70 @@ fn main() -> anyhow::Result<()> {
             
             // Trigger refresh with reset zoom scale
             if let Some(window) = window_weak_reset.upgrade() {
+                window.invoke_refresh_visualization();
+            }
+        }
+    });
+
+    // Handle pan left button
+    let pan_left_clone = pan_offset.clone();
+    let window_weak_pan_left = main_window.as_weak();
+    main_window.on_pan_left(move || {
+        info!("Pan left requested");
+        
+        if let Ok(mut offsets) = pan_left_clone.lock() {
+            offsets.0 -= 80.0; // 10% of 800px canvas
+            info!("Pan offset: x={}, y={}", offsets.0, offsets.1);
+            
+            if let Some(window) = window_weak_pan_left.upgrade() {
+                window.invoke_refresh_visualization();
+            }
+        }
+    });
+
+    // Handle pan right button
+    let pan_right_clone = pan_offset.clone();
+    let window_weak_pan_right = main_window.as_weak();
+    main_window.on_pan_right(move || {
+        info!("Pan right requested");
+        
+        if let Ok(mut offsets) = pan_right_clone.lock() {
+            offsets.0 += 80.0; // 10% of 800px canvas
+            info!("Pan offset: x={}, y={}", offsets.0, offsets.1);
+            
+            if let Some(window) = window_weak_pan_right.upgrade() {
+                window.invoke_refresh_visualization();
+            }
+        }
+    });
+
+    // Handle pan up button
+    let pan_up_clone = pan_offset.clone();
+    let window_weak_pan_up = main_window.as_weak();
+    main_window.on_pan_up(move || {
+        info!("Pan up requested");
+        
+        if let Ok(mut offsets) = pan_up_clone.lock() {
+            offsets.1 += 60.0; // 10% of 600px canvas
+            info!("Pan offset: x={}, y={}", offsets.0, offsets.1);
+            
+            if let Some(window) = window_weak_pan_up.upgrade() {
+                window.invoke_refresh_visualization();
+            }
+        }
+    });
+
+    // Handle pan down button
+    let pan_down_clone = pan_offset.clone();
+    let window_weak_pan_down = main_window.as_weak();
+    main_window.on_pan_down(move || {
+        info!("Pan down requested");
+        
+        if let Ok(mut offsets) = pan_down_clone.lock() {
+            offsets.1 -= 60.0; // 10% of 600px canvas
+            info!("Pan offset: x={}, y={}", offsets.0, offsets.1);
+            
+            if let Some(window) = window_weak_pan_down.upgrade() {
                 window.invoke_refresh_visualization();
             }
         }

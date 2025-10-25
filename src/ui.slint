@@ -98,6 +98,10 @@ export component MainWindow inherits Window {
     callback zoom-in();
     callback zoom-out();
     callback reset-view();
+    callback pan-left();
+    callback pan-right();
+    callback pan-up();
+    callback pan-down();
     
     // Internal state for UI selections
     private property <int> port-index: 0;
@@ -599,6 +603,22 @@ if current-view == "safety-diagnostics" : SafetyDiagnosticsPanel {
                     
                     reset-view => {
                         root.reset-view();
+                    }
+                    
+                    pan-left => {
+                        root.pan-left();
+                    }
+                    
+                    pan-right => {
+                        root.pan-right();
+                    }
+                    
+                    pan-up => {
+                        root.pan-up();
+                    }
+                    
+                    pan-down => {
+                        root.pan-down();
                     }
                 }
             }

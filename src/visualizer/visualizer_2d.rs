@@ -43,6 +43,10 @@ pub struct Visualizer2D {
     pub current_pos: Point2D,
     /// Zoom/scale factor for rendering (1.0 = 100%)
     pub zoom_scale: f32,
+    /// X-offset for panning the view (in pixels)
+    pub x_offset: f32,
+    /// Y-offset for panning the view (in pixels)
+    pub y_offset: f32,
 }
 
 impl Visualizer2D {
@@ -56,6 +60,8 @@ impl Visualizer2D {
             max_y: 100.0,
             current_pos: Point2D::new(0.0, 0.0),
             zoom_scale: 1.0,
+            x_offset: 0.0,
+            y_offset: 0.0,
         }
     }
 
@@ -221,6 +227,32 @@ impl Visualizer2D {
     pub fn get_zoom_percent(&self) -> u32 {
         (self.zoom_scale * 100.0).round() as u32
     }
+
+    /// Pan view to the right by 10% of canvas width
+    pub fn pan_right(&mut self, canvas_width: f32) {
+        self.x_offset += canvas_width * 0.1;
+    }
+
+    /// Pan view to the left by 10% of canvas width
+    pub fn pan_left(&mut self, canvas_width: f32) {
+        self.x_offset -= canvas_width * 0.1;
+    }
+
+    /// Pan view down by 10% of canvas height
+    pub fn pan_down(&mut self, canvas_height: f32) {
+        self.y_offset -= canvas_height * 0.1;
+    }
+
+    /// Pan view up by 10% of canvas height
+    pub fn pan_up(&mut self, canvas_height: f32) {
+        self.y_offset += canvas_height * 0.1;
+    }
+
+    /// Reset pan to center (offset = 0)
+    pub fn reset_pan(&mut self) {
+        self.x_offset = 0.0;
+        self.y_offset = 0.0;
+    }
 }
 
 impl Visualizer2D {
@@ -263,18 +295,18 @@ impl Visualizer2D {
         // draw_grid(&mut img, width, height, self.min_x, self.min_y, scale);
 
         // Draw origin
-        let origin_x = safe_to_i32((0.0 - self.min_x) * scale + 20.0);
-        let origin_y = safe_to_i32(height as f32 - (0.0 - self.min_y) * scale - 20.0);
+        let origin_x = safe_to_i32((0.0 - self.min_x) * scale + 20.0 + self.x_offset);
+        let origin_y = safe_to_i32(height as f32 - (0.0 - self.min_y) * scale - 20.0 + self.y_offset);
         draw_cross(&mut img, origin_x, origin_y, 5, Rgba([100, 100, 100, 200]));
 
         // Draw commands
         for cmd in &self.commands {
             match cmd {
                 GCodeCommand::Move { from, to, rapid } => {
-                    let x1 = safe_to_i32((from.x - self.min_x) * scale + 20.0);
-                    let y1 = safe_to_i32(height as f32 - (from.y - self.min_y) * scale - 20.0);
-                    let x2 = safe_to_i32((to.x - self.min_x) * scale + 20.0);
-                    let y2 = safe_to_i32(height as f32 - (to.y - self.min_y) * scale - 20.0);
+                    let x1 = safe_to_i32((from.x - self.min_x) * scale + 20.0 + self.x_offset);
+                    let y1 = safe_to_i32(height as f32 - (from.y - self.min_y) * scale - 20.0 + self.y_offset);
+                    let x2 = safe_to_i32((to.x - self.min_x) * scale + 20.0 + self.x_offset);
+                    let y2 = safe_to_i32(height as f32 - (to.y - self.min_y) * scale - 20.0 + self.y_offset);
 
                     let color = if *rapid {
                         Rgba([150, 150, 150, 200]) // Gray for rapid moves
@@ -301,6 +333,8 @@ impl Visualizer2D {
                         self.min_y,
                         scale,
                         height as f32,
+                        self.x_offset,
+                        self.y_offset,
                         color,
                     );
                 }
@@ -319,7 +353,8 @@ impl Visualizer2D {
                 .unwrap_or(self.min_x)
                 - self.min_x)
                 * scale
-                + 20.0,
+                + 20.0
+                + self.x_offset,
         );
         let start_y = safe_to_i32(
             height as f32
@@ -333,13 +368,14 @@ impl Visualizer2D {
                     .unwrap_or(self.min_y)
                     - self.min_y)
                     * scale
-                - 20.0,
+                - 20.0
+                + self.y_offset,
         );
         draw_circle(&mut img, start_x, start_y, 4, Rgba([0, 200, 0, 255]));
 
         // Draw end point
-        let end_x = safe_to_i32((self.current_pos.x - self.min_x) * scale + 20.0);
-        let end_y = safe_to_i32(height as f32 - (self.current_pos.y - self.min_y) * scale - 20.0);
+        let end_x = safe_to_i32((self.current_pos.x - self.min_x) * scale + 20.0 + self.x_offset);
+        let end_y = safe_to_i32(height as f32 - (self.current_pos.y - self.min_y) * scale - 20.0 + self.y_offset);
         draw_circle(&mut img, end_x, end_y, 4, Rgba([200, 0, 0, 255]));
 
         encode_image_to_bytes(&img)
@@ -493,6 +529,8 @@ fn draw_arc(
     min_y: f32,
     scale: f32,
     height: f32,
+    x_offset: f32,
+    y_offset: f32,
     color: Rgba<u8>,
 ) {
     // Draw arc as multiple line segments for simplicity
@@ -511,8 +549,8 @@ fn draw_arc(
     // Cap the number of segments to prevent hang
     let steps = ((radius * angle_diff) as i32).max(10).min(1000) as usize;
 
-    let mut prev_x = (from.x - min_x) * scale + 20.0;
-    let mut prev_y = height - (from.y - min_y) * scale - 20.0;
+    let mut prev_x = (from.x - min_x) * scale + 20.0 + x_offset;
+    let mut prev_y = height - (from.y - min_y) * scale - 20.0 + y_offset;
 
     for i in 1..=steps {
         let t = i as f32 / steps as f32;
@@ -521,8 +559,8 @@ fn draw_arc(
         let x = center.x + radius * angle.cos();
         let y = center.y + radius * angle.sin();
 
-        let screen_x = (x - min_x) * scale + 20.0;
-        let screen_y = height - (y - min_y) * scale - 20.0;
+        let screen_x = (x - min_x) * scale + 20.0 + x_offset;
+        let screen_y = height - (y - min_y) * scale - 20.0 + y_offset;
 
         let prev_x_i32 = safe_to_i32(prev_x);
         let prev_y_i32 = safe_to_i32(prev_y);
