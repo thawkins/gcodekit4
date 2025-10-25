@@ -1,7 +1,7 @@
 # GCodeKit4 - Universal G-Code Sender Rust Implementation Plan
 
-**Current Status**: Phase 6 Tasks 91-94 COMPLETE (File I/O, Processing, Statistics) - 86/150 Tasks (57%)  
-**Version**: 0.15.0-alpha  
+**Current Status**: Phase 6 Tasks 91-96 COMPLETE (File I/O, Processing, Export, Drag-Drop) - 88/150 Tasks (58%)  
+**Version**: 0.16.0-alpha  
 **Last Updated**: 2025-10-25
 
 ## Completion Summary
@@ -13,7 +13,7 @@
 | Phase 3: Additional Firmware | 36-50 | ✅ COMPLETE | 100% |
 | Phase 4: G-Code Processing | 51-65 | ✅ COMPLETE | 100% |
 | Phase 5: UI Implementation | 66-90 | ✅ COMPLETE | 100% (All Tasks Complete!) |
-| Phase 6: Advanced Features | 91-120 | ⏳ IN PROGRESS (91-94) | 33% |
+| Phase 6: Advanced Features | 91-120 | ⏳ IN PROGRESS (91-96) | 50% |
 | Phase 7: Polish & Release | 121-150 | ⏰ PENDING | 0% |
 
 ## Project Overview

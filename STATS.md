@@ -1,17 +1,17 @@
 # GCodeKit4 Project Statistics
 
 ## Overall Project Status
-- **Version**: 0.15.0-alpha
-- **Status**: Phase 6 In Progress (Tasks 91-94 Complete)
-- **Completion**: 86/150 Tasks (57%)
+- **Version**: 0.16.0-alpha
+- **Status**: Phase 6 In Progress (Tasks 91-96 Complete)
+- **Completion**: 88/150 Tasks (58%)
 - **Build Date**: 2025-10-25
-- **Last Updated**: 2025-10-25 03:58 UTC
+- **Last Updated**: 2025-10-25 04:15 UTC
 
 ## Code Metrics
 
 ### Total Lines of Code
 ```
-Rust Implementation:  ~34,200+ lines (added 1,000+ for processing)
+Rust Implementation:  ~35,500+ lines (added 1,300+ for export/drag-drop)
   - UI Module:        ~11,800 lines (24 files)
   - Firmware:         ~8,000 lines (GRBL, TinyG, g2core, FluidNC, Smoothieware)
   - Core:             ~3,500 lines (controllers, events, messaging, state)
@@ -19,12 +19,12 @@ Rust Implementation:  ~34,200+ lines (added 1,000+ for processing)
   - G-Code:           ~2,000 lines (parser, preprocessors, validation)
   - Visualizer:       ~2,300 lines (3D rendering, toolpath)
   - Data Models:      ~1,200 lines (positions, commands, states)
-  - Utilities:        ~3,000 lines (file I/O, processing, file I/O)
+  - Utilities:        ~4,300 lines (file I/O, processing, export/drag-drop)
 
 Slint UI:             ~1,300+ lines
   - Main interface    ~1,260 lines
 
-Tests:                ~484 tests (added 33 for processing)
+Tests:                ~517 tests (added 36 for export/drag-drop)
   - All modules       100% pass rate (0 failures)
 ```
 
@@ -39,14 +39,16 @@ src/
 ├── core/                  3,500 lines
 ├── data/                  1,200 lines
 ├── utils/
-│   ├── mod.rs            80 lines
-│   ├── file_io.rs        750 lines (file reading, recent files)
-│   └── processing.rs     800 lines (processing pipeline, statistics)
-└── main.rs               500 lines
+│   ├── mod.rs        100 lines
+│   ├── file_io.rs    750 lines (file reading, recent files)
+│   ├── processing.rs 800 lines (processing pipeline, statistics)
+│   └── export.rs     850 lines (file export, drag-and-drop)
+└── main.rs           500 lines
 
 tests/
 ├── file_io_91_92.rs      21 integration tests (Tasks 91-92)
 ├── processing_93_94.rs   23 integration tests (Tasks 93-94)
+├── export_95_96.rs       21 integration tests (Tasks 95-96)
 └── ... (existing tests)
 ```
 

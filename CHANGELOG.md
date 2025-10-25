@@ -5,10 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.0] - 2025-10-25
+
+### Added
+- **Phase 6 Advanced Features - Tasks 95-96 COMPLETE**
+  - **Task 95: File Export**
+    - `FileExporter` for saving processed G-code
+    - Multi-format export support (.nc, .gcode, .ngc, .gco)
+    - `ExportOptions` for flexible export control:
+      - Format selection
+      - Comment inclusion/exclusion
+      - Empty line handling
+      - Header generation with timestamps
+      - Line ending options (Unix/Windows)
+    - Automatic directory creation
+    - Content filtering based on options
+    - Header generation with export metadata
+  - **Task 96: Drag and Drop Support**
+    - `DropEvent` for drag-drop interactions
+    - `DropZone` for drop areas with visual feedback
+    - `DropFileType` for file type filtering
+    - `DropTarget` for identifying drop locations
+    - `DropIndicatorState` for visual feedback states
+    - Support for G-code, image, text, and all file types
+    - Multiple file drop handling
+    - Position tracking for drops
+    - Validation checking for dropped files
+    - Visual indicator colors and CSS classes
+
+### Infrastructure
+- New export module: src/utils/export.rs (850+ lines)
+- 15 unit tests for export/drop components
+- 21 integration tests for complete workflows
+- Comprehensive documentation in docs/EXPORT_DRAGDROP_DOCUMENTATION.md
+- Support for flexible export options
+- Multiple drop zone support
+
+### Testing
+- All 36 tests passing (15 unit + 21 integration)
+- Combined Phase 6: 97 integration + 15 unit = 112 tests
+- 100% API coverage
+- No clippy warnings
+- Edge cases and error handling tested
+
 ## [0.15.0] - 2025-10-25
 
 ### Added
-- **Phase 6 File Management & Processing - Tasks 93-94 (IN PROGRESS)**
+- **Phase 6 File Management & Processing - Tasks 93-94 COMPLETE**
   - **Task 93: File Processing Pipeline**
     - `FileProcessingPipeline` for complete file processing
     - Single-pass file processing with streaming

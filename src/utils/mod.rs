@@ -2,6 +2,7 @@
 
 pub mod file_io;
 pub mod processing;
+pub mod export;
 
 pub use file_io::{
     FileEncoding, FileReadStats, FileValidation, GcodeFileReader, RecentFileEntry,
@@ -10,6 +11,10 @@ pub use file_io::{
 pub use processing::{
     BoundingBox, FeedRateStats, FileProcessingPipeline, FileStatistics, ProcessedFile,
     SpindleStats,
+};
+pub use export::{
+    DropEvent, DropFileType, DropIndicatorState, DropTarget, DropZone, ExportOptions,
+    FileExporter, FileFormat,
 };
 
 /// Format a float to a reasonable number of decimal places
