@@ -1,8 +1,15 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.20.0-alpha  
+**Version**: 0.24.0-alpha  
 **Last Updated**: 2025-10-25  
 **Status**: COMPLETE (All 7 Phases Complete - 150/150 Tasks)
+
+### Latest Release (v0.24.0-alpha)
+- ✅ **2D G-Code Visualizer** - Complete implementation
+- ✅ **Zero Compiler Warnings** - Production-ready code
+- ✅ **100% Public API Documented** - Comprehensive docblocks
+- ✅ **Thread-Safe UI Updates** - Proper Slint event loop integration
+- ✅ **Professional Code Formatting** - cargo fmt applied to all files
 
 ## 1. Executive Summary
 
