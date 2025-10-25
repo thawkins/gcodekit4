@@ -52,7 +52,6 @@ export component MainWindow inherits Window {
     in property <string> console-output: "[INFO] GCodeKit4 initialized\n[INFO] Ready for operation\n";
     in-out property <string> gcode-content: "";
     in-out property <string> current-view: "gcode-editor";
-    in-out property <image> visualization-image;
     in-out property <string> gcode-filename: "untitled.gcode";
     in property <int> console-scroll-trigger: 0;
     
@@ -101,124 +100,44 @@ export component MainWindow inherits Window {
     private property <float> step-size: 1.0;
     private property <int> step-index: 1;
     
-    // Private properties for dialogs
+    // Private properties for menu state
+    private property <bool> file-menu-open: false;
+    private property <bool> edit-menu-open: false;
+    private property <bool> view-menu-open: false;
+    private property <bool> help-menu-open: false;
     private property <bool> about-dialog-visible: false;
     private property <bool> settings-dialog-visible: false;
     private property <string> settings-category: "controller";
-    // Native menu bar with dark theme support
-    MenuBar {
-        Menu {
-            title: @tr("File");
-            MenuItem {
-                title: @tr("Open File");
-                activated => { root.menu-file-open(); }
-            }
-            MenuItem {
-                title: @tr("Save File");
-                activated => { root.menu-file-save(); }
-            }
-            MenuItem {
-                title: @tr("Save As");
-                activated => { root.menu-file-save-as(); }
-            }
-            MenuItem {
-                title: @tr("Exit");
-                activated => { root.menu-file-exit(); }
-            }
-        }
-        
-        Menu {
-            title: @tr("Edit");
-            MenuItem {
-                title: @tr("Preferences");
-                activated => { 
-                    root.menu-edit-preferences();
-                    settings-dialog-visible = true;
-                }
-            }
-        }
-        
-        Menu {
-            title: @tr("View");
-            MenuItem {
-                title: current-view == "gcode-editor" ? @tr("✓ G-Code Editor") : @tr("G-Code Editor");
-                activated => {
-                    if (current-view != "gcode-editor") {
-                        current-view = "gcode-editor";
-                        root.menu-view-gcode-editor();
-                    }
-                }
-            }
-            MenuItem {
-                title: current-view == "machine" ? @tr("✓ Machine") : @tr("Machine");
-                activated => {
-                    if (current-view != "machine") {
-                        current-view = "machine";
-                        root.menu-view-machine();
-                    }
-                }
-            }
-            MenuItem {
-                title: current-view == "device-console" ? @tr("✓ Device Console") : @tr("Device Console");
-                activated => {
-                    if (current-view != "device-console") {
-                        current-view = "device-console";
-                        root.menu-view-device-console();
-                    }
-                }
-            }
-            MenuItem {
-                title: current-view == "file-validation" ? @tr("✓ File Validation") : @tr("File Validation");
-                activated => {
-                    if (current-view != "file-validation") {
-                        current-view = "file-validation";
-                        root.menu-view-file-validation();
-                    }
-                }
-            }
-            MenuItem {
-                title: current-view == "advanced-features" ? @tr("✓ Advanced Features") : @tr("Advanced Features");
-                activated => {
-                    if (current-view != "advanced-features") {
-                        current-view = "advanced-features";
-                        root.menu-view-advanced-features();
-                    }
-                }
-            }
-            MenuItem {
-                title: current-view == "safety-diagnostics" ? @tr("✓ Safety & Diagnostics") : @tr("Safety & Diagnostics");
-                activated => {
-                    if (current-view != "safety-diagnostics") {
-                        current-view = "safety-diagnostics";
-                        root.menu-view-safety-diagnostics();
-                    }
-                }
-            }
-            MenuItem {
-                title: current-view == "gcode-visualizer" ? @tr("✓ Visualizer") : @tr("Visualizer");
-                activated => {
-                    if (current-view != "gcode-visualizer") {
-                        current-view = "gcode-visualizer";
-                        root.menu-view-gcode-visualizer();
-                    }
-                }
-            }
-        }
-        
-        Menu {
-            title: @tr("Help");
-            MenuItem {
-                title: @tr("About");
-                activated => { 
-                    root.menu-help-about();
-                    about-dialog-visible = true;
-                }
-            }
-        }
-    }
     
     VerticalBox {
         spacing: 0px;
+        
+        // Main menu bar with File, Edit, View, Help menus
+        MainMenu {
+            file-menu-open <=> file-menu-open;
+            edit-menu-open <=> edit-menu-open;
+            view-menu-open <=> view-menu-open;
+            help-menu-open <=> help-menu-open;
+            current-view <=> current-view;
+            
+            menu-file-open => { root.menu-file-open(); }
+            menu-file-save => { root.menu-file-save(); }
+            menu-file-save-as => { root.menu-file-save-as(); }
+            menu-file-exit => { root.menu-file-exit(); }
+            menu-edit-preferences => { root.menu-edit-preferences(); }
+            menu-settings-save => { root.menu-settings-save(); }
+            menu-settings-cancel => { root.menu-settings-cancel(); }
+            menu-settings-restore-defaults => { root.menu-settings-restore-defaults(); }
+            menu-view-fullscreen => { root.menu-view-fullscreen(); }
+            menu-view-gcode-editor => { root.menu-view-gcode-editor(); }
+            menu-view-machine => { root.menu-view-machine(); }
+            menu-view-device-console => { root.menu-view-device-console(); }
+            menu-view-file-validation => { root.menu-view-file-validation(); }
+            menu-view-advanced-features => { root.menu-view-advanced-features(); }
+            menu-view-safety-diagnostics => { root.menu-view-safety-diagnostics(); }
+            menu-view-gcode-visualizer => { root.menu-view-gcode-visualizer(); }
+            menu-help-about => { root.menu-help-about(); }
+        }
         
         // Main content area
         HorizontalBox {
@@ -570,8 +489,6 @@ if current-view == "safety-diagnostics" : SafetyDiagnosticsPanel {
                 // GCode Visualizer View
 if current-view == "gcode-visualizer" : GcodeVisualizerPanel {
                     gcode-filename <=> root.gcode-filename;
-                    gcode-content <=> root.gcode-content;
-                    visualization-image: root.visualization-image;
                     machine-x: Math.round(root.position-x * 1000) / 1000 + "";
                     machine-y: Math.round(root.position-y * 1000) / 1000 + "";
                     machine-z: Math.round(root.position-z * 1000) / 1000 + "";
@@ -668,6 +585,372 @@ if current-view == "gcode-visualizer" : GcodeVisualizerPanel {
 
     
 
+    // File Menu Dropdown
+    if file-menu-open : Rectangle {
+        y: 40px;
+        x: 8px;
+        width: 120px;
+        height: 70px;
+        background: #34495e;
+        z: 1001;
+        
+        VerticalBox {
+            padding: 4px;
+            spacing: 2px;
+            
+            Rectangle {
+                height: 28px;
+                background: mi-file-open-area.has-hover ? #455a64 : transparent;
+                
+                Text {
+                    text: "Open File";
+                    color: white;
+                    font-size: 12px;
+                    vertical-alignment: center;
+                    padding-left: 12px;
+                }
+                
+                mi-file-open-area := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        file-menu-open = false;
+                        root.menu-file-open();
+                    }
+                }
+            }
+            
+            Rectangle {
+                height: 28px;
+                background: mi-file-exit-area.has-hover ? #455a64 : transparent;
+                
+                Text {
+                    text: "Exit";
+                    color: white;
+                    font-size: 12px;
+                    vertical-alignment: center;
+                    padding-left: 12px;
+                }
+                
+                mi-file-exit-area := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        file-menu-open = false;
+                        root.menu-file-exit();
+                    }
+                }
+            }
+        }
+    }
+    
+    // Edit Menu Dropdown
+    if edit-menu-open : Rectangle {
+        y: 40px;
+        x: 78px;
+        width: 140px;
+        height: 40px;
+        background: #34495e;
+        z: 1001;
+        
+        VerticalBox {
+            padding: 4px;
+            spacing: 2px;
+            
+            Rectangle {
+                height: 28px;
+                background: mi-edit-prefs-area.has-hover ? #455a64 : transparent;
+                
+                Text {
+                    text: "Preferences";
+                    color: white;
+                    font-size: 12px;
+                    vertical-alignment: center;
+                    padding-left: 12px;
+                }
+                
+                mi-edit-prefs-area := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        edit-menu-open = false;
+                        settings-dialog-visible = true;
+                        root.menu-edit-preferences();
+                    }
+                }
+            }
+        }
+    }
+    
+    // View Menu Dropdown
+    if view-menu-open : Rectangle {
+        y: 40px;
+        x: 156px;
+        width: 200px;
+        height: 244px;
+        background: #34495e;
+        z: 1001;
+        
+        VerticalBox {
+            padding: 4px;
+            spacing: 2px;
+            
+            Rectangle {
+                height: 28px;
+                background: mi-view-fullscreen-area.has-hover ? #455a64 : transparent;
+                
+                HorizontalBox {
+                    alignment: start;
+                    padding-left: 8px;
+                    spacing: 8px;
+                    
+                    Text {
+                        text: "Fullscreen";
+                        color: white;
+                        font-size: 12px;
+                        vertical-alignment: center;
+                    }
+                }
+                
+                mi-view-fullscreen-area := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        view-menu-open = false;
+                        root.menu-view-fullscreen();
+                    }
+                }
+            }
+            
+            // Separator line
+            Rectangle {
+                height: 1px;
+                background: #455a64;
+            }
+            
+            Rectangle {
+                height: 28px;
+                background: mi-view-gcode-area.has-hover ? #455a64 : transparent;
+                
+                HorizontalBox {
+                    alignment: start;
+                    padding-left: 8px;
+                    spacing: 8px;
+                    
+                    Text {
+                        text: current-view == "gcode-editor" ? "✓ G-Code Editor" : "  G-Code Editor";
+                        color: white;
+                        font-size: 12px;
+                        vertical-alignment: center;
+                    }
+                }
+                
+                mi-view-gcode-area := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        view-menu-open = false;
+                        current-view = "gcode-editor";
+                        root.menu-view-gcode-editor();
+                    }
+                }
+            }
+            
+            Rectangle {
+                height: 28px;
+                background: mi-view-machine-area.has-hover ? #455a64 : transparent;
+                
+                HorizontalBox {
+                    alignment: start;
+                    padding-left: 8px;
+                    spacing: 8px;
+                    
+                    Text {
+                        text: current-view == "machine" ? "✓ Machine Control" : "  Machine Control";
+                        color: white;
+                        font-size: 12px;
+                        vertical-alignment: center;
+                    }
+                }
+                
+                mi-view-machine-area := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        view-menu-open = false;
+                        current-view = "machine";
+                        root.menu-view-machine();
+                    }
+                }
+            }
+            
+            Rectangle {
+                height: 28px;
+                background: mi-view-console-area.has-hover ? #455a64 : transparent;
+                
+                HorizontalBox {
+                    alignment: start;
+                    padding-left: 8px;
+                    spacing: 8px;
+                    
+                    Text {
+                        text: current-view == "device-console" ? "✓ Device Console" : "  Device Console";
+                        color: white;
+                        font-size: 12px;
+                        vertical-alignment: center;
+                    }
+                }
+                
+                mi-view-console-area := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        view-menu-open = false;
+                        current-view = "device-console";
+                        root.menu-view-device-console();
+                    }
+                }
+            }
+            
+            // Separator line
+            Rectangle {
+                height: 1px;
+                background: #455a64;
+            }
+            
+            Rectangle {
+                height: 28px;
+                background: mi-view-validation-area.has-hover ? #455a64 : transparent;
+                
+                HorizontalBox {
+                    alignment: start;
+                    padding-left: 8px;
+                    spacing: 8px;
+                    
+                    Text {
+                        text: current-view == "file-validation" ? "✓ File Validation" : "  File Validation";
+                        color: white;
+                        font-size: 12px;
+                        vertical-alignment: center;
+                    }
+                }
+                
+                mi-view-validation-area := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        view-menu-open = false;
+                        current-view = "file-validation";
+                        root.menu-view-file-validation();
+                    }
+                }
+            }
+            
+            Rectangle {
+                height: 28px;
+                background: mi-view-advanced-area.has-hover ? #455a64 : transparent;
+                
+                HorizontalBox {
+                    alignment: start;
+                    padding-left: 8px;
+                    spacing: 8px;
+                    
+                    Text {
+                        text: current-view == "advanced-features" ? "✓ Advanced Features" : "  Advanced Features";
+                        color: white;
+                        font-size: 12px;
+                        vertical-alignment: center;
+                    }
+                }
+                
+                mi-view-advanced-area := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        view-menu-open = false;
+                        current-view = "advanced-features";
+                        root.menu-view-advanced-features();
+                    }
+                }
+            }
+            
+            Rectangle {
+                height: 28px;
+                background: mi-view-safety-area.has-hover ? #455a64 : transparent;
+                
+                HorizontalBox {
+                    alignment: start;
+                    padding-left: 8px;
+                    spacing: 8px;
+                    
+                    Text {
+                        text: current-view == "safety-diagnostics" ? "✓ Safety & Diagnostics" : "  Safety & Diagnostics";
+                        color: white;
+                        font-size: 12px;
+                        vertical-alignment: center;
+                    }
+                }
+                
+                mi-view-safety-area := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        view-menu-open = false;
+                        current-view = "safety-diagnostics";
+                        root.menu-view-safety-diagnostics();
+                    }
+                }
+
+                // Visualizer Menu Item
+                Rectangle {
+                    height: 28px;
+                    background: transparent;
+                    
+                    Text {
+                        text: current-view == "gcode-visualizer" ? "✓ Visualizer" : "  Visualizer";
+                        color: white;
+                        font-size: 12px;
+                        vertical-alignment: center;
+                    }
+                }
+                
+                mi-view-visualizer := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        view-menu-open = false;
+                        current-view = "gcode-visualizer";
+                        root.menu-view-gcode-visualizer();
+                    }
+                }
+            }
+        }
+    }
+    
+    // Help Menu Dropdown
+    if help-menu-open : Rectangle {
+        y: 40px;
+        x: 234px;
+        width: 120px;
+        height: 40px;
+        background: #34495e;
+        z: 1001;
+        
+        VerticalBox {
+            padding: 4px;
+            spacing: 2px;
+            
+            Rectangle {
+                height: 28px;
+                background: mi-help-about-area.has-hover ? #455a64 : transparent;
+                
+                Text {
+                    text: "About";
+                    color: white;
+                    font-size: 12px;
+                    vertical-alignment: center;
+                    padding-left: 12px;
+                }
+                
+                mi-help-about-area := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        help-menu-open = false;
+                        about-dialog-visible = true;
+                    }
+                }
+            }
+        }
+    }
     
     // About Dialog
     if about-dialog-visible : Rectangle {

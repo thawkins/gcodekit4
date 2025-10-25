@@ -380,6 +380,13 @@ fn main() -> anyhow::Result<()> {
                         format!("Loaded: {} ({} lines)", file_name, line_count)
                     ));
                     
+                    // Render visualization in background thread to avoid blocking UI
+                    let window_weak = window.as_weak();
+                    let content_clone = content.clone();
+                    std::thread::spawn(move || {
+                        render_gcode_visualization_background(window_weak, &content_clone);
+                    });
+                    
                     // DEBUG: Log console update
                     info!("Updating console output");
                     console_manager_clone.add_message(
@@ -800,6 +807,116 @@ fn get_available_ports() -> anyhow::Result<Vec<slint::SharedString>> {
         Err(e) => {
             info!("Error listing serial ports: {}", e);
             Ok(vec![slint::SharedString::from("Error reading ports")])
+        }
+    }
+}
+
+/// Render G-code visualization to an image
+fn render_gcode_visualization(window: &MainWindow, gcode_content: &str) {
+    use gcodekit4::visualizer::Visualizer2D;
+    
+    info!("Rendering 2D G-code visualization");
+    
+    // Parse G-code
+    let mut visualizer = Visualizer2D::new();
+    visualizer.parse_gcode(gcode_content);
+    
+    info!("Parsed {} G-code commands", visualizer.get_command_count());
+    
+    // Render to image
+    let image_bytes = visualizer.render(800, 600);
+    
+    if !image_bytes.is_empty() {
+        // Convert PNG bytes to slint Image
+        if let Ok(img) = image::load_from_memory_with_format(&image_bytes, image::ImageFormat::Png) {
+            let rgba_img = img.to_rgba8();
+            let img_buffer = slint::Image::from_rgba8(slint::SharedPixelBuffer::clone_from_slice(
+                &rgba_img,
+                rgba_img.width(),
+                rgba_img.height(),
+            ));
+            window.set_visualization_image(img_buffer);
+            info!("Visualization rendered successfully");
+        } else {
+            info!("Failed to load rendered image");
+        }
+    } else {
+        info!("Failed to render visualization - no image bytes");
+    }
+}
+
+/// Render G-code visualization in background thread
+fn render_gcode_visualization_background(window_weak: slint::Weak<MainWindow>, gcode_content: &str) {
+    use gcodekit4::visualizer::Visualizer2D;
+    
+    info!("Starting background G-code visualization rendering");
+    
+    // Convert to owned string to ensure it outlives the closure
+    let gcode_owned = gcode_content.to_string();
+    
+    if let Some(window) = window_weak.upgrade() {
+        window.set_visualizer_progress(0.1);
+        window.set_visualizer_status(slint::SharedString::from("Parsing G-code..."));
+    }
+    
+    // Parse G-code
+    let mut visualizer = Visualizer2D::new();
+    visualizer.parse_gcode(&gcode_owned);
+    
+    let cmd_count = visualizer.get_command_count();
+    info!("Parsed {} G-code commands", cmd_count);
+    
+    if let Some(window) = window_weak.upgrade() {
+        window.set_visualizer_progress(0.3);
+        window.set_visualizer_status(slint::SharedString::from("Rendering image..."));
+    }
+    
+    // Render to image
+    let image_bytes = visualizer.render(800, 600);
+    
+    info!("Rendered image: {} bytes", image_bytes.len());
+    
+    if image_bytes.is_empty() {
+        info!("ERROR: No image bytes produced");
+        if let Some(window) = window_weak.upgrade() {
+            window.set_visualizer_status(slint::SharedString::from("Error: empty image"));
+        }
+        return;
+    }
+    
+    if let Some(window) = window_weak.upgrade() {
+        window.set_visualizer_progress(0.7);
+        window.set_visualizer_status(slint::SharedString::from("Encoding PNG..."));
+    }
+    
+    // Convert PNG bytes to slint Image
+    match image::load_from_memory_with_format(&image_bytes, image::ImageFormat::Png) {
+        Ok(img) => {
+            info!("Image loaded successfully: {}x{}", img.width(), img.height());
+            let rgba_img = img.to_rgba8();
+            let img_buffer = slint::Image::from_rgba8(slint::SharedPixelBuffer::clone_from_slice(
+                &rgba_img,
+                rgba_img.width(),
+                rgba_img.height(),
+            ));
+            
+            info!("Created Slint image buffer");
+            
+            // Update UI from background thread
+            if let Some(window) = window_weak.upgrade() {
+                window.set_visualization_image(img_buffer);
+                window.set_visualizer_progress(1.0);
+                window.set_visualizer_status(slint::SharedString::from("Complete"));
+                info!("Visualization set on window");
+            } else {
+                info!("ERROR: Could not upgrade window");
+            }
+        }
+        Err(e) => {
+            info!("ERROR: Failed to load rendered image: {}", e);
+            if let Some(window) = window_weak.upgrade() {
+                window.set_visualizer_status(slint::SharedString::from("Error rendering"));
+            }
         }
     }
 }

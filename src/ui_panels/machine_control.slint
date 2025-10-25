@@ -1,0 +1,429 @@
+/// Machine Control Panel Component
+/// Displays position (DRO), jog controls, and coordinate system buttons
+
+import { Button, ComboBox, LineEdit, VerticalBox, HorizontalBox, ScrollView } from "std-widgets.slint";
+
+export component MachineControlPanel inherits VerticalBox {
+    spacing: 0px;
+    padding: 10px;
+    horizontal-stretch: 1.0;
+    vertical-stretch: 1.0;
+    
+    in property <bool> connected: false;
+    in property <float> position-x: 0.0;
+    in property <float> position-y: 0.0;
+    in property <float> position-z: 0.0;
+    in property <float> position-a: 0.0;
+    in property <float> position-b: 0.0;
+    in property <float> position-c: 0.0;
+    in property <float> feed-rate: 0.0;
+    in property <float> spindle-speed: 0.0;
+    
+    private property <float> step-size: 1.0;
+    private property <int> step-index: 1;
+    
+    ScrollView {
+        VerticalBox {
+            spacing: 15px;
+            padding: 5px;
+            padding-right: 5px;
+            horizontal-stretch: 1.0;
+            vertical-stretch: 1.0;
+            
+            /// DRO Display (moved to top)
+            Rectangle {
+                background: #ecf0f1;
+                height: 175px;
+                
+                VerticalBox {
+                    padding: 10px;
+                    spacing: 4px;
+                    
+                    Text {
+                        text: "Position (Work)";
+                        font-weight: 700;
+                        font-size: 14px;
+                    }
+                    
+                    /// Linear axes (X, Y, Z) + Feed
+                    HorizontalBox {
+                        spacing: 10px;
+                        alignment: start;
+                        
+                        HorizontalBox {
+                            width: 23%;
+                            spacing: 4px;
+                            Text { 
+                                text: "X:"; 
+                                width: 20px;
+                                vertical-alignment: center;
+                            }
+                            LineEdit {
+                                read-only: true;
+                                text: round(root.position-x * 1000.0) / 1000.0 + " mm\u{2003}";
+                            }
+                        }
+                        
+                        HorizontalBox {
+                            width: 23%;
+                            spacing: 4px;
+                            Text { 
+                                text: "Y:"; 
+                                width: 20px;
+                                vertical-alignment: center;
+                            }
+                            LineEdit {
+                                read-only: true;
+                                text: round(root.position-y * 1000.0) / 1000.0 + " mm\u{2003}";
+                            }
+                        }
+                        
+                        HorizontalBox {
+                            width: 23%;
+                            spacing: 4px;
+                            Text { 
+                                text: "Z:"; 
+                                width: 20px;
+                                vertical-alignment: center;
+                            }
+                            LineEdit {
+                                read-only: true;
+                                text: round(root.position-z * 1000.0) / 1000.0 + " mm\u{2003}";
+                            }
+                        }
+                        
+                        HorizontalBox {
+                            width: 24.8%;
+                            spacing: 4px;
+                            Text { 
+                                text: "Feed:"; 
+                                vertical-alignment: center;
+                            }
+                            LineEdit {
+                                read-only: true;
+                                text: round(root.feed-rate * 10.0) / 10.0 + " mm/m\u{2003}\u{2003}";
+                            }
+                        }
+                    }
+                    
+                    /// Rotary axes (A, B, C) + Speed
+                    HorizontalBox {
+                        spacing: 10px;
+                        alignment: start;
+                        width: 100%;
+                        
+                        HorizontalBox {
+                            width: 23%;
+                            spacing: 4px;
+                            Text { 
+                                text: "A:"; 
+                                width: 20px;
+                                vertical-alignment: center;
+                            }
+                            LineEdit {
+                                read-only: true;
+                                text: round(root.position-a * 1000.0) / 1000.0 + " mm\u{2003}";
+                            }
+                        }
+                        
+                        HorizontalBox {
+                            width: 23%;
+                            spacing: 4px;
+                            Text { 
+                                text: "B:"; 
+                                width: 20px;
+                                vertical-alignment: center;
+                            }
+                            LineEdit {
+                                read-only: true;
+                                text: round(root.position-b * 1000.0) / 1000.0 + " mm\u{2003}";
+                            }
+                        }
+                        
+                        HorizontalBox {
+                            width: 23%;
+                            spacing: 4px;
+                            Text { 
+                                text: "C:"; 
+                                width: 20px;
+                                vertical-alignment: center;
+                            }
+                            LineEdit {
+                                read-only: true;
+                                text: round(root.position-c * 1000.0) / 1000.0 + " mm\u{2003}";
+                            }
+                        }
+                        
+                        HorizontalBox {
+                            width: 24.8%;
+                            spacing: 4px;
+                            Text { 
+                                text: "Speed:"; 
+                                vertical-alignment: center;
+                            }
+                            LineEdit {
+                                read-only: true;
+                                text: round(root.spindle-speed) + " rpm\u{2003}\u{2003}";
+                            }
+                        }
+                    }
+                }
+            }
+            
+            /// Step Size Dropdown and Status Line
+            HorizontalBox {
+                spacing: 6px;
+                alignment: start;
+                
+                Text {
+                    text: "Step Size (mm):";
+                    vertical-alignment: center;
+                    font-size: 12px;
+                }
+                
+                step-combo := ComboBox {
+                    model: ["0.1", "1.0", "10", "50"];
+                    current-index: step-index;
+                    enabled: true;
+                    height: 24px;
+                    selected => {
+                        step-index = step-combo.current-index;
+                        step-size = [0.1, 1.0, 10.0, 50.0][step-combo.current-index];
+                    }
+                }
+                
+                Text {
+                    text: "mm";
+                    vertical-alignment: center;
+                    font-size: 12px;
+                }
+            }
+            
+            /// Main controls area with buttons
+            Rectangle {
+                background: transparent;
+                
+                VerticalBox {
+                    alignment: center;
+                    spacing: 6px;
+                    
+                    /// Row 1-3: Jog Buttons Grid
+                    HorizontalBox {
+                        spacing: 6px;
+                        
+                        Rectangle {
+                            width: 10%;
+                            height: 65px;
+                            background: #ecf0f1;
+                            border-width: 2px;
+                            border-color: root.connected ? #34495e : #bdc3c7;
+                            border-radius: 5px;
+                            opacity: root.connected ? 1.0 : 0.5;
+                            Text { text: "⟲"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
+                        }
+                        Rectangle {
+                            width: 10%;
+                            height: 65px;
+                            background: #ecf0f1;
+                            border-width: 2px;
+                            border-color: root.connected ? #34495e : #bdc3c7;
+                            border-radius: 5px;
+                            opacity: root.connected ? 1.0 : 0.5;
+                            Text { text: "▲"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
+                        }
+
+                        Rectangle {
+                            width: 5%;
+                            height: 65px;
+                        }
+                         Rectangle {
+                            width: 10%;
+                            height: 65px;
+                        }
+                        Rectangle {
+                            width: 10%;
+                            height: 65px;
+                            background: #ecf0f1;
+                            border-width: 2px;
+                            border-color: root.connected ? #34495e : #bdc3c7;
+                            border-radius: 5px;
+                            opacity: root.connected ? 1.0 : 0.5;
+                            Text { text: "X⊙"; font-size: 28px; horizontal-alignment: center; vertical-alignment: center; }
+                        }
+                        Rectangle {
+                            width: 10%;
+                            height: 65px;
+                            background: #ecf0f1;
+                            border-width: 2px;
+                            border-color: root.connected ? #34495e : #bdc3c7;
+                            border-radius: 5px;
+                            opacity: root.connected ? 1.0 : 0.5;
+                            Text { text: "Y⊙"; font-size: 28px; horizontal-alignment: center; vertical-alignment: center; }
+                        }
+                        Rectangle {
+                            width: 10%;
+                            height: 65px;
+                            background: #ecf0f1;
+                            border-width: 2px;
+                            border-color: root.connected ? #34495e : #bdc3c7;
+                            border-radius: 5px;
+                            opacity: root.connected ? 1.0 : 0.5;
+                            Text { text: "Z⊙"; font-size: 28px; horizontal-alignment: center; vertical-alignment: center; }
+                        }
+
+                    }
+                    
+                    HorizontalBox {
+                        spacing: 6px;
+                        
+                        Rectangle {
+                            width: 10%;
+                            height: 65px;
+                            background: #ecf0f1;
+                            border-width: 2px;
+                            border-color: root.connected ? #34495e : #bdc3c7;
+                            border-radius: 5px;
+                            opacity: root.connected ? 1.0 : 0.5;
+                            Text { text: "◀"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
+                        }
+                        Rectangle {
+                            width: 10%;
+                            height: 65px;
+                            background: #ecf0f1;
+                            border-width: 2px;
+                            border-color: root.connected ? #34495e : #bdc3c7;
+                            border-radius: 5px;
+                            opacity: root.connected ? 1.0 : 0.5;
+                            Text { text: "⌂"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
+                        }
+                        Rectangle {
+                            width: 10%;
+                            height: 65px;
+                            background: #ecf0f1;
+                            border-width: 2px;
+                            border-color: root.connected ? #34495e : #bdc3c7;
+                            border-radius: 5px;
+                            opacity: root.connected ? 1.0 : 0.5;
+                            Text { text: "▶"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
+                        }
+
+                        Rectangle {
+                            width: 5%;
+                            height: 65px;
+                        }
+                        Rectangle {
+                            width: 10%;
+                            height: 65px;
+                            background: #ecf0f1;
+                            border-width: 2px;
+                            border-color: root.connected ? #34495e : #bdc3c7;
+                            border-radius: 5px;
+                            opacity: root.connected ? 1.0 : 0.5;
+                            Text { text: "G54"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
+                        }
+                        Rectangle {
+                            width: 10%;
+                            height: 65px;
+                            background: #ecf0f1;
+                            border-width: 2px;
+                            border-color: root.connected ? #34495e : #bdc3c7;
+                            border-radius: 5px;
+                            opacity: root.connected ? 1.0 : 0.5;
+                            Text { text: "G55"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
+                        }
+                        Rectangle {
+                            width: 10%;
+                            height: 65px;
+                            background: #ecf0f1;
+                            border-width: 2px;
+                            border-color: root.connected ? #34495e : #bdc3c7;
+                            border-radius: 5px;
+                            opacity: root.connected ? 1.0 : 0.5;
+                            Text { text: "G56"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
+                        }
+                    }
+                    
+                    HorizontalBox {
+                        spacing: 6px;
+                        
+                        Rectangle {
+                            width: 10%;
+                            height: 65px;
+                            background: #ecf0f1;
+                            border-width: 2px;
+                            border-color: root.connected ? #34495e : #bdc3c7;
+                            border-radius: 5px;
+                            opacity: root.connected ? 1.0 : 0.5;
+                            Text { text: "⟲"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
+                        }
+                        Rectangle {
+                            width: 10%;
+                            height: 65px;
+                            background: #ecf0f1;
+                            border-width: 2px;
+                            border-color: root.connected ? #34495e : #bdc3c7;
+                            border-radius: 5px;
+                            opacity: root.connected ? 1.0 : 0.5;
+                            Text { text: "▼"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
+                        }
+                        Rectangle {
+                            width: 10%;
+                            height: 65px;
+                            background: #ecf0f1;
+                            border-width: 2px;
+                            border-color: root.connected ? #34495e : #bdc3c7;
+                            border-radius: 5px;
+                            opacity: root.connected ? 1.0 : 0.5;
+                            Text { text: "⟳"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
+                        }
+                        Rectangle {
+                            width: 10%;
+                            height: 65px;
+                            background: #ecf0f1;
+                            border-width: 2px;
+                            border-color: root.connected ? #34495e : #bdc3c7;
+                            border-radius: 5px;
+                            opacity: root.connected ? 1.0 : 0.5;
+                            Text { text: "▼"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
+                        }
+                        Rectangle {
+                            width: 5%;
+                            height: 65px;
+                        }
+
+                        Rectangle {
+                            width: 10%;
+                            height: 65px;
+                            background: #ecf0f1;
+                            border-width: 2px;
+                            border-color: root.connected ? #34495e : #bdc3c7;
+                            border-radius: 5px;
+                            opacity: root.connected ? 1.0 : 0.5;
+                            Text { text: "G57"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
+                        }
+                        Rectangle {
+                            width: 10%;
+                            height: 65px;
+                            background: #ecf0f1;
+                            border-width: 2px;
+                            border-color: root.connected ? #34495e : #bdc3c7;
+                            border-radius: 5px;
+                            opacity: root.connected ? 1.0 : 0.5;
+                            Text { text: "G58"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
+                        }
+                        Rectangle {
+                            width: 10%;
+                            height: 65px;
+                            background: #ecf0f1;
+                            border-width: 2px;
+                            border-color: root.connected ? #34495e : #bdc3c7;
+                            border-radius: 5px;
+                            opacity: root.connected ? 1.0 : 0.5;
+                            Text { text: "G59"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

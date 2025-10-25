@@ -1,0 +1,49 @@
+/// Device Console Panel Component
+/// Displays device console output with clear and copy buttons
+
+import { Button, TextEdit, VerticalBox, HorizontalBox, ScrollView } from "std-widgets.slint";
+
+export component DeviceConsolePanel inherits VerticalBox {
+    spacing: 5px;
+    padding: 10px;
+    horizontal-stretch: 1.0;
+    vertical-stretch: 1.0;
+    
+    in property <string> console-output: "";
+    
+    callback console-clear-clicked();
+    callback console-copy-clicked();
+    
+    HorizontalBox {
+        spacing: 5px;
+        
+        Button {
+            text: "Clear";
+            clicked => {
+                root.console-clear-clicked();
+            }
+        }
+        
+        Button {
+            text: "Copy";
+            clicked => {
+                root.console-copy-clicked();
+            }
+        }
+    }
+    
+    ScrollView {
+        VerticalBox {
+            padding: 5px;
+            alignment: start;
+            horizontal-stretch: 1.0;
+            vertical-stretch: 1.0;
+            
+            Text {
+                text: root.console-output;
+                color: #000000;
+                wrap: word-wrap;
+            }
+        }
+    }
+}

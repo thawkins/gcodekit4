@@ -10,6 +10,8 @@ export component GcodeVisualizerPanel inherits VerticalBox {
     vertical-stretch: 1.0;
 
     in property <string> gcode-filename: "untitled.gcode";
+    in property <string> gcode-content: "";
+    in property <image> visualization-image;
     in property <string> machine-x: "0.000";
     in property <string> machine-y: "0.000";
     in property <string> machine-z: "0.000";
@@ -83,37 +85,6 @@ export component GcodeVisualizerPanel inherits VerticalBox {
             }
         }
 
-        // Status bar
-        Rectangle {
-            height: 24px;
-            background: #ecf0f1;
-            border-width: 1px;
-            border-color: #bdc3c7;
-            border-radius: 2px;
-
-            HorizontalBox {
-                padding-left: 4px;
-                padding-right: 8px;
-                padding-top: 4px;
-                padding-bottom: 4px;
-                alignment: start;
-                spacing: 20px;
-
-                Text {
-                    text: "File: " + root.gcode-filename;
-                    font-size: 11px;
-                    color: #34495e;
-                    overflow: elide;
-                }
-
-                Text {
-                    text: "Status: " + root.visualizer-status;
-                    font-size: 11px;
-                    color: #34495e;
-                }
-            }
-        }
-
         // Main visualization area with scrollview
         ScrollView {
             VerticalBox {
@@ -121,45 +92,75 @@ export component GcodeVisualizerPanel inherits VerticalBox {
                 spacing: 12px;
                 alignment: center;
 
-                    // 3D Visualizer Placeholder
+                    // 2D Visualizer - Rendered Toolpath
                     Rectangle {
                         width: 100%;
-                        height: 350px;
-                        background: #2c3e50;
+                        height: 500px;
+                        background: #f5f5f5;
                         border-width: 2px;
-                        border-color: #3d5470;
+                        border-color: #ddd;
                         border-radius: 4px;
-
-                        VerticalBox {
+                        
+                        if root.gcode-content == "" : VerticalBox {
                             alignment: center;
                             spacing: 8px;
-
+                            
                             Text {
-                                text: "3D Toolpath Visualization";
+                                text: "2D G-Code Visualizer";
                                 font-size: 14px;
                                 font-weight: 700;
-                                color: #ecf0f1;
+                                color: #333;
                             }
-
+                            
                             Text {
-                                text: "(3D canvas will render here)";
+                                text: "Load G-Code to view visualization";
                                 font-size: 12px;
-                                color: #bdc3c7;
+                                color: #666;
                             }
-
+                            
                             Rectangle {
                                 width: 60px;
                                 height: 60px;
-                                background: #34495e;
+                                background: #ddd;
                                 border-radius: 4px;
-
+                                
                                 Text {
-                                    text: "🎨";
+                                    text: "📐";
                                     font-size: 36px;
                                     horizontal-alignment: center;
                                     vertical-alignment: center;
                                 }
                             }
+                        }
+                        
+                        if root.gcode-content != "" && root.visualization-image.width == 0 : VerticalBox {
+                            alignment: center;
+                            spacing: 8px;
+                            
+                            Text {
+                                text: "📊 2D G-Code Visualization";
+                                font-size: 14px;
+                                font-weight: 700;
+                                color: #333;
+                            }
+                            
+                            Text {
+                                text: "File: " + root.gcode-filename;
+                                font-size: 11px;
+                                color: #666;
+                            }
+                            
+                            Text {
+                                text: "(Rendering...)";
+                                font-size: 10px;
+                                color: #999;
+                            }
+                        }
+                        
+                        if root.gcode-content != "" && root.visualization-image.width > 0 : Image {
+                            source: root.visualization-image;
+                            width: 100%;
+                            height: 100%;
                         }
                     }
 

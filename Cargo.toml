@@ -52,10 +52,13 @@ config = "0.15.18"
 toml = "0.9.8"
 
 # UI Framework
-slint = { version = "1.14.1", features = ["backend-winit"] }
+slint = { version = "1.14.1", features = ["backend-winit", "image-default-formats"] }
+
+# Image rendering
+image = "0.25"
 
 # File dialogs
-rfd = "0.14"
+rfd = "0.15.4"
 
 # Build dependencies
 [build-dependencies]
