@@ -883,6 +883,91 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
+    // Handle refresh visualization button
+    let window_weak = main_window.as_weak();
+    main_window.on_refresh_visualization(move || {
+        info!("Refresh visualization requested");
+        
+        // Get the current G-code content
+        if let Some(window) = window_weak.upgrade() {
+            let content = window.get_gcode_content();
+            
+            if content.is_empty() {
+                window.set_visualizer_status(slint::SharedString::from("No G-code loaded"));
+                return;
+            }
+            
+            info!("Re-rendering visualization with {} chars", content.len());
+            
+            // Reset progress
+            window.set_visualizer_progress(0.0);
+            window.set_visualizer_status(slint::SharedString::from("Refreshing..."));
+            
+            // Clear current image to show loading state
+            window.set_visualization_image(slint::Image::default());
+            
+            // Spawn rendering thread
+            let content_owned = content.to_string();
+            let (tx, rx) = std::sync::mpsc::channel();
+            let window_weak_render = window_weak.clone();
+            
+            std::thread::spawn(move || {
+                use gcodekit4::visualizer::Visualizer2D;
+                
+                let _ = tx.send((0.1, "Parsing G-code...".to_string(), None));
+                
+                let mut visualizer = Visualizer2D::new();
+                visualizer.parse_gcode(&content_owned);
+                
+                let _ = tx.send((0.3, "Rendering image...".to_string(), None));
+                
+                let image_bytes = visualizer.render(800, 600);
+                
+                if !image_bytes.is_empty() {
+                    let _ = tx.send((0.7, "Encoding PNG...".to_string(), None));
+                    let _ = tx.send((1.0, "Complete".to_string(), Some(image_bytes)));
+                } else {
+                    let _ = tx.send((1.0, "Error: no image data".to_string(), None));
+                }
+            });
+            
+            // Process messages from rendering thread
+            std::thread::spawn(move || {
+                while let Ok((progress, status, image_data)) = rx.recv() {
+                    let window_handle = window_weak_render.clone();
+                    let status_clone = status.clone();
+                    let image_clone = image_data.clone();
+                    
+                    slint::invoke_from_event_loop(move || {
+                        if let Some(window) = window_handle.upgrade() {
+                            window.set_visualizer_progress(progress);
+                            window.set_visualizer_status(slint::SharedString::from(
+                                status_clone.clone(),
+                            ));
+                            
+                            if let Some(png_bytes) = image_clone {
+                                if let Ok(img) =
+                                    image::load_from_memory_with_format(&png_bytes, image::ImageFormat::Png)
+                                {
+                                    let rgba_img = img.to_rgba8();
+                                    let img_buffer = slint::Image::from_rgba8(
+                                        slint::SharedPixelBuffer::clone_from_slice(
+                                            &rgba_img,
+                                            rgba_img.width(),
+                                            rgba_img.height(),
+                                        ),
+                                    );
+                                    window.set_visualization_image(img_buffer);
+                                }
+                            }
+                        }
+                    })
+                    .ok();
+                }
+            });
+        }
+    });
+
     main_window
         .show()
         .map_err(|e| anyhow::anyhow!("UI Show Error: {}", e))?;

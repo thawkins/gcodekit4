@@ -94,6 +94,7 @@ export component MainWindow inherits Window {
     callback update-setting(string, string);
     callback console-clear-clicked();
     callback console-copy-clicked();
+    callback refresh-visualization();
     
     // Internal state for UI selections
     private property <int> port-index: 0;
@@ -568,7 +569,7 @@ if current-view == "safety-diagnostics" : SafetyDiagnosticsPanel {
                 }
 
                 // GCode Visualizer View
-if current-view == "gcode-visualizer" : GcodeVisualizerPanel {
+                if current-view == "gcode-visualizer" : GcodeVisualizerPanel {
                     gcode-filename <=> root.gcode-filename;
                     gcode-content <=> root.gcode-content;
                     visualization-image: root.visualization-image;
@@ -580,6 +581,10 @@ if current-view == "gcode-visualizer" : GcodeVisualizerPanel {
                     work-z: Math.round(root.position-c * 1000) / 1000 + "";
                     progress: root.visualizer-progress;
                     visualizer-status: root.visualizer-status;
+                    
+                    refresh-visualization => {
+                        root.refresh-visualization();
+                    }
                 }
             }
         }
