@@ -369,10 +369,10 @@ mod tests {
         let manager = DeviceConsoleManager::new();
         assert!(!manager.is_verbose_enabled());
 
-        manager.toggle_verbose();
+        manager.set_verbose_enabled(true);
         assert!(manager.is_verbose_enabled());
 
-        manager.toggle_verbose();
+        manager.set_verbose_enabled(false);
         assert!(!manager.is_verbose_enabled());
     }
 

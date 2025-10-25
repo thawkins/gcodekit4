@@ -5,6 +5,58 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.0] - 2025-10-25
+
+### Added
+- **Phase 5 UI Implementation - Complete (Tasks 83-90)**
+  - **Task 83: 3D Visualizer Features** - Show work coordinate system, machine limits, grid display, tool position marker, bounding box
+  - **Task 84: Progress Indicators** - Stream progress tracking, time elapsed, time remaining, completion percentage
+    - `StreamProgress` struct for tracking file streaming state
+    - `ProgressDisplay` struct for UI-ready progress information
+    - Comprehensive progress calculation methods
+  - **Task 85: Status Notifications** - Notification system with success, warning, error levels
+    - `NotificationManager` with auto-dismiss support
+    - Thread-safe notification queue
+    - Level-based filtering and management
+  - **Task 86: Keyboard Shortcuts** - Global keyboard shortcut management system
+    - `KeyboardManager` with default bindings
+    - Support for custom key bindings
+    - 30+ built-in shortcuts for common operations
+  - **Task 87: Themes and Styling** - Theme system with light, dark, high-contrast modes
+    - `ThemeManager` for theme switching
+    - Customizable colors, fonts, spacing
+    - DPI-aware scaling support
+    - Font size multiplier support
+  - **Task 89: Responsive Layout** - Panel management and layout persistence
+    - `LayoutManager` for dynamic panel management
+    - Three preset layouts: Workbench, Programming, Monitoring
+    - Resizable and dockable panels
+    - Layout save/restore functionality
+  - **Task 90: Help and Documentation** - Help system and documentation integration
+    - `HelpSystem` with searchable topics
+    - Keyboard shortcut reference
+    - `TooltipProvider` for UI element tooltips
+    - `AppInfo` for about dialog
+
+### Infrastructure
+- New UI modules: `progress_indicators`, `notifications`, `keyboard_shortcuts`, `themes`, `layout_manager`, `help_system`
+- 46 new unit tests across all new modules (all passing)
+- Comprehensive documentation in each module
+- Thread-safe notification management
+- Platform-independent theme system
+
+### Testing
+- All 46 tests in new modules passing
+- Progress tracking calculations verified
+- Notification lifecycle tested
+- Keyboard binding system verified
+- Theme switching tested
+- Layout persistence tested
+- Help system search tested
+
+### Fixed
+- Pre-existing test issue in device_console_manager.rs (toggle_verbose → set_verbose_enabled)
+
 ## [0.12.3] - 2025-10-25
 
 ### Changed

@@ -35,6 +35,12 @@ pub mod firmware_settings_panel;
 pub mod firmware_integration;
 pub mod ui_polish;
 pub mod file_management;
+pub mod progress_indicators;
+pub mod notifications;
+pub mod keyboard_shortcuts;
+pub mod themes;
+pub mod layout_manager;
+pub mod help_system;
 
 pub use architecture::UiArchitecture;
 pub use state::UiState;
@@ -55,5 +61,11 @@ pub use settings_dialog::{SettingsDialog, Setting, SettingValue, SettingsCategor
 pub use settings_persistence::SettingsPersistence;
 pub use firmware_settings_panel::{FirmwareSettingsPanel, FirmwareParameter, ParameterType};
 pub use firmware_integration::FirmwareSettingsIntegration;
-pub use ui_polish::{ProgressIndicator, NotificationManager, KeyboardShortcutManager, Theme, I18nManager};
+pub use ui_polish::{ProgressIndicator, NotificationManager, KeyboardShortcutManager, I18nManager};
 pub use file_management::{FileReader, RecentFilesManager, FileStatistics, TemplateLibrary};
+pub use progress_indicators::{StreamProgress, ProgressDisplay};
+pub use notifications::{Notification, NotificationLevel, NotificationManager as NotificationMgr};
+pub use keyboard_shortcuts::{KeyboardManager, KeyboardAction, KeyBinding, KeyModifiers};
+pub use themes::{Theme, ThemeId, ThemeManager, Color, ThemeColors, FontConfig};
+pub use layout_manager::{LayoutManager, Layout, PanelId, PanelLocation, PanelState, LayoutPreset};
+pub use help_system::{HelpSystem, HelpTopic, AppInfo, TooltipProvider, ShortcutReference};
