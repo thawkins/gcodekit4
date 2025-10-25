@@ -384,7 +384,7 @@ fn main() -> anyhow::Result<()> {
                     let window_weak = window.as_weak();
                     let content_clone = content.clone();
                     std::thread::spawn(move || {
-                        render_gcode_visualization_background(window_weak, &content_clone);
+                        render_gcode_visualization_background(window_weak, content_clone);
                     });
                     
                     // DEBUG: Log console update
@@ -847,13 +847,12 @@ fn render_gcode_visualization(window: &MainWindow, gcode_content: &str) {
 }
 
 /// Render G-code visualization in background thread
-fn render_gcode_visualization_background(window_weak: slint::Weak<MainWindow>, gcode_content: &str) {
+fn render_gcode_visualization_background(window_weak: slint::Weak<MainWindow>, gcode_content: String) {
     use gcodekit4::visualizer::Visualizer2D;
     
     info!("Starting background G-code visualization rendering");
     
-    // Convert to owned string to ensure it outlives the closure
-    let gcode_owned = gcode_content.to_string();
+    // gcode_content is already owned, no need to convert
     
     if let Some(window) = window_weak.upgrade() {
         window.set_visualizer_progress(0.1);
@@ -862,7 +861,7 @@ fn render_gcode_visualization_background(window_weak: slint::Weak<MainWindow>, g
     
     // Parse G-code
     let mut visualizer = Visualizer2D::new();
-    visualizer.parse_gcode(&gcode_owned);
+    visualizer.parse_gcode(&gcode_content);
     
     let cmd_count = visualizer.get_command_count();
     info!("Parsed {} G-code commands", cmd_count);
