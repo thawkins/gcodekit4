@@ -4,6 +4,7 @@ pub mod file_io;
 pub mod processing;
 pub mod export;
 pub mod advanced;
+pub mod phase6_extended;
 
 pub use file_io::{
     FileEncoding, FileReadStats, FileValidation, GcodeFileReader, RecentFileEntry,
@@ -21,6 +22,13 @@ pub use advanced::{
     AdvancedProber, BasicProber, BackupEntry, BackupManager, FileComparison,
     GcodeTemplate, TemplateLibrary, TemplateVariable, ValidationIssue, ValidationResult,
     ValidationSeverity, ProbePoint,
+};
+pub use phase6_extended::{
+    ProbeMesh, HeightPoint, ToolInfo, ToolLibrary, ToolOffset, ToolOffsetManager,
+    WorkOffset, WorkCoordinateSystem, SoftLimits, Simulator, SimulationPosition, Stepper,
+    Bookmark, BookmarkManager, ProgramState, PerformanceMetrics, HistoryEntry, CommandHistory,
+    CustomMacro, PendantButton, PendantConfig, CustomAction, AutoConnectConfig, NetworkConfig,
+    LogEntry, DataLogger, Alarm, AlarmType, AlarmManager,
 };
 
 /// Format a float to a reasonable number of decimal places
