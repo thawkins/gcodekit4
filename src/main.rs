@@ -688,6 +688,33 @@ fn main() -> anyhow::Result<()> {
         }
     });
     
+    // Set up menu-view-file-validation callback
+    let window_weak = main_window.as_weak();
+    main_window.on_menu_view_file_validation(move || {
+        info!("Menu: View > File Validation selected");
+        if let Some(window) = window_weak.upgrade() {
+            window.set_connection_status(slint::SharedString::from("File Validation panel activated"));
+        }
+    });
+    
+    // Set up menu-view-advanced-features callback
+    let window_weak = main_window.as_weak();
+    main_window.on_menu_view_advanced_features(move || {
+        info!("Menu: View > Advanced Features selected");
+        if let Some(window) = window_weak.upgrade() {
+            window.set_connection_status(slint::SharedString::from("Advanced Features panel activated"));
+        }
+    });
+    
+    // Set up menu-view-safety-diagnostics callback
+    let window_weak = main_window.as_weak();
+    main_window.on_menu_view_safety_diagnostics(move || {
+        info!("Menu: View > Safety & Diagnostics selected");
+        if let Some(window) = window_weak.upgrade() {
+            window.set_connection_status(slint::SharedString::from("Safety & Diagnostics panel activated"));
+        }
+    });
+    
     // Set up menu-help-about callback
     let window_weak = main_window.as_weak();
     main_window.on_menu_help_about(move || {

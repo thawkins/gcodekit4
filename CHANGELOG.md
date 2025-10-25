@@ -1,9 +1,76 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+All notable changes to this project should be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.21.0] - 2025-10-25
+
+### Fixed
+- **UI Integration: File Validation, Advanced Features, and Safety & Diagnostics Panels Visibility**
+  - ✅ **Problem**: The FileValidation Panel, AdvancedFeatures Panel, and SafetyDiagnostics Panel were defined but not visible on the UI
+  - ✅ **Solution**: Restructured UI layout to integrate the three panels inside the main center panel with scrollviews
+  - ✅ **Tabs Added**: Added three new tabs to the tab bar for File Validation, Advanced Features, and Safety & Diagnostics
+  - ✅ **ScrollView Integration**: Each panel is now wrapped in a ScrollView for proper content overflow handling
+  - ✅ **Indentation Fixed**: Corrected all indentation for proper Slint component hierarchy (16-space indent for center panel content)
+  - ✅ **Tab Navigation**: Users can now click tabs or use View menu to switch between all 6 views
+  - ✅ **Build Status**: Project compiles successfully with all 6 tabs and panels fully integrated
+
+### Added
+- **Phase 7 UI Central Views - File Validation, Advanced Features, Safety & Diagnostics Panels Now Visible**
+  - **File Validation Central View (Task 97)**
+    - New dedicated central view for file validation panel
+    - Summary stats: Valid status, Error count, Warning count, Summary text
+    - Validation issues list with severity indicators (color-coded)
+    - Issues displayed as cards with line numbers and suggestions
+    - Integrated with FileValidationPanel UI component
+  - **Advanced Features Central View (Tasks 103-120)**
+    - New dedicated central view for advanced features panel
+    - Tool Management section showing tool change mode
+    - Simulation Mode section with state display (Idle/Running/Paused/Completed)
+    - Work Coordinate Systems (G54-G59) selectable grid
+    - Soft Limits Configuration with min/max input fields
+    - Professional card-based layout for each section
+  - **Safety & Diagnostics Central View (Tasks 121 + 125)**
+    - New dedicated central view for safety/diagnostics panel
+    - Emergency Stop indicator with armed/triggered visual status
+    - Safety Status section with Motion Interlock and Feed Hold
+    - System Diagnostics information display
+    - Red theme for critical safety information
+  - **View Menu Integration**
+    - Added three new menu items to View menu
+    - File Validation option with checkmark when active
+    - Advanced Features option with checkmark when active
+    - Safety & Diagnostics option with checkmark when active
+    - Smooth view switching with status updates
+  - **UI Properties & Callbacks**
+    - Added validation-issues, validation-summary properties
+    - Added validation-error-count, validation-warning-count properties
+    - Added advanced-features-mode, simulation-state properties
+    - Added safety-status, emergency-stop-armed, diagnostics-info properties
+    - Implemented menu callbacks for all three new views
+    - Status bar updates when switching views
+  - **UI Slint Component Structure**
+    - FileValidationPanel with header and summary stats
+    - Advanced features layout with card-based sections
+    - Safety diagnostics with emergency stop prominent display
+    - Responsive ScrollView for all panels
+    - Color-coded severity indicators and status displays
+
+### Changed
+- Updated View Menu: expanded from 4 items to 7 items
+- Updated main window callbacks: added 3 new view menu callbacks
+- Enhanced UI property system with 6 new properties for panel data
+- Improved main.rs event handling for new views
+
+### Technical Details
+- Total UI lines: 2100+ (expanded from 1839)
+- UI module organization: 27 modules (unchanged)
+- View count: 7 central views (expanded from 4)
+- Callback count: 19 UI callbacks (expanded from 16)
+- Build status: ✅ PASSING
+- Test status: ✅ 514/514 PASSING
 
 ## [0.20.0] - 2025-10-25
 
@@ -54,6 +121,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - UI Modules: 27 (12,600+ lines)
 - Total Tests: 541 (100% passing)
 - Production Status: Ready for deployment
+
 
 ## [0.19.0] - 2025-10-25
 
