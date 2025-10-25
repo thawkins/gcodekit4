@@ -3,6 +3,7 @@
 pub mod file_io;
 pub mod processing;
 pub mod export;
+pub mod advanced;
 
 pub use file_io::{
     FileEncoding, FileReadStats, FileValidation, GcodeFileReader, RecentFileEntry,
@@ -15,6 +16,11 @@ pub use processing::{
 pub use export::{
     DropEvent, DropFileType, DropIndicatorState, DropTarget, DropZone, ExportOptions,
     FileExporter, FileFormat,
+};
+pub use advanced::{
+    AdvancedProber, BasicProber, BackupEntry, BackupManager, FileComparison,
+    GcodeTemplate, TemplateLibrary, TemplateVariable, ValidationIssue, ValidationResult,
+    ValidationSeverity, ProbePoint,
 };
 
 /// Format a float to a reasonable number of decimal places
