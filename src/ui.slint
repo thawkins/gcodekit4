@@ -1,7 +1,17 @@
-// GCodeKit4 Main UI
-// Universal G-Code Sender for CNC Machines
+//! GCodeKit4 Main UI
+//! Universal G-Code Sender for CNC Machines
+//! Modular UI with separated panel components
 
 import { Button, ComboBox, LineEdit, TextEdit, VerticalBox, HorizontalBox, ScrollView, SpinBox, CheckBox } from "std-widgets.slint";
+
+// Import all panel components
+import { GcodeEditorPanel } from "ui_panels/gcode_editor.slint";
+import { DeviceConsolePanel } from "ui_panels/device_console.slint";
+import { MachineControlPanel } from "ui_panels/machine_control.slint";
+import { FileValidationPanel } from "ui_panels/file_validation.slint";
+import { AdvancedFeaturesPanel } from "ui_panels/advanced_features.slint";
+import { SafetyDiagnosticsPanel } from "ui_panels/safety_diagnostics.slint";
+import { GcodeVisualizerPanel } from "ui_panels/gcode_visualizer.slint";
 
 export struct PortInfo {
     port: string,
@@ -55,6 +65,10 @@ export component MainWindow inherits Window {
     in property <bool> emergency-stop-armed: true;
     in property <string> diagnostics-info: "Ready";
     
+    // Visualizer panel properties
+    in property <float> visualizer-progress: 0.0;
+    in property <string> visualizer-status: "Ready";
+    
     callback refresh-ports();
     callback connect(string, int);
     callback disconnect();
@@ -73,6 +87,7 @@ export component MainWindow inherits Window {
     callback menu-view-file-validation();
     callback menu-view-advanced-features();
     callback menu-view-safety-diagnostics();
+    callback menu-view-gcode-visualizer();
     callback menu-help-about();
     callback update-setting(string, string);
     callback console-clear-clicked();
@@ -469,1161 +484,109 @@ export component MainWindow inherits Window {
                                 }
                             }
                         }
+
+                        // GCode Visualizer Tab
+                        Rectangle {
+                            width: 120px;
+                            height: 32px;
+                            background: current-view == "gcode-visualizer" ? #34495e : #3d5470;
+                            border-radius: 3px;
+                            
+                            Text {
+                                text: "Visualizer";
+                                color: current-view == "gcode-visualizer" ? white : #bdc3c7;
+                                font-size: 12px;
+                                font-weight: current-view == "gcode-visualizer" ? 700 : 400;
+                                vertical-alignment: center;
+                                horizontal-alignment: center;
+                            }
+                            
+                            TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => {
+                                    current-view = "gcode-visualizer";
+                                    root.menu-view-gcode-visualizer();
+                                }
+                            }
+                        }
                     }
                 }
                 
-                // GCode Editor View
-                if current-view == "gcode-editor" : VerticalBox {
-                    spacing: 0px;
-                    horizontal-stretch: 1.0;
-                    vertical-stretch: 1.0;
-                    
-                    // File Operations Toolbar
-                    Rectangle {
-                        background: #ecf0f1;
-                        height: 120px;
-                        
-                        VerticalBox {
-                            padding: 10px;
-                            spacing: 8px;
-                            
-                            HorizontalBox {
-                                spacing: 15px;
-                                
-                                Button {
-                                    text: "Open File";
-                                    clicked => {
-                                        root.menu-file-open();
-                                    }
-                                }
-                                Button {
-                                    text: "Save";
-                                    enabled: root.gcode-content != "" && root.gcode-filename != "untitled.gcode";
-                                    clicked => {
-                                        root.menu-file-save();
-                                    }
-                                }
-                                Button {
-                                    text: "Save As";
-                                    enabled: root.gcode-content != "";
-                                    clicked => {
-                                        root.menu-file-save-as();
-                                    }
-                                }
-                                Button {
-                                    text: "Send";
-                                    enabled: root.gcode-content != "";
-                                    clicked => {
-                                        // Will implement send to machine
-                                    }
-                                }
-                            }
-                            
-                            HorizontalBox {
-                                spacing: 15px;
-                                
-                                Text {
-                                    text: "Filename:";
-                                    vertical-alignment: center;
-                                }
-                                LineEdit {
-                                    text <=> root.gcode-filename;
-                                    horizontal-stretch: 1.0;
-                                }
-                                Text {
-                                    text: "Ready";
-                                    color: green;
-                                    vertical-alignment: center;
-                                }
-                            }
-                        }
+                // GCode Editor View - using imported component
+                if current-view == "gcode-editor" : GcodeEditorPanel {
+                    gcode-content <=> root.gcode-content;
+                    gcode-filename <=> root.gcode-filename;
+                    menu-file-open => {
+                        root.menu-file-open();
                     }
-                    
-                    // G-Code Content Display
-                    Rectangle {
-                        background: #f5f5f5;
-                        
-                        ScrollView {
-                            VerticalBox {
-                                TextEdit {
-                                    enabled: true;
-                                    text <=> root.gcode-content;
-                                    read-only: false;
-                                    wrap: word-wrap;
-                                }
-                            }
-                        }
+                    menu-file-save => {
+                        root.menu-file-save();
+                    }
+                    menu-file-save-as => {
+                        root.menu-file-save-as();
                     }
                 }
                 
                 // Device Console View
-                if current-view == "device-console" : VerticalBox {
-                    spacing: 5px;
-                    padding: 10px;
-                    horizontal-stretch: 1.0;
-                    vertical-stretch: 1.0;
-                    
-                    HorizontalBox {
-                        spacing: 5px;
-                        
-                        Button {
-                            text: "Clear";
-                            clicked => {
-                                root.console-clear-clicked();
-                            }
-                        }
-                        
-                        Button {
-                            text: "Copy";
-                            clicked => {
-                                root.console-copy-clicked();
-                            }
-                        }
+                // Device Console View - using imported component
+                if current-view == "device-console" : DeviceConsolePanel {
+                    console-output: root.console-output;
+                    console-clear-clicked => {
+                        root.console-clear-clicked();
                     }
-                    
-                    console-scroll := ScrollView {
-                        VerticalBox {
-                            padding: 5px;
-                            alignment: start;
-                            
-                            Text {
-                                text: root.console-output;
-                                color: #000000;
-                                wrap: word-wrap;
-                            }
-                        }
+                    console-copy-clicked => {
+                        root.console-copy-clicked();
                     }
                 }
                 
                 // Machine Control View
-                if current-view == "machine" : VerticalBox {
-                    spacing: 0px;
-                    padding: 10px;
-                    horizontal-stretch: 1.0;
-                    vertical-stretch: 1.0;
-                    
-                    ScrollView {
-                        VerticalBox {
-                            spacing: 15px;
-                            padding: 5px;
-                            padding-right: 5px;
-                            
-                            // DRO Display (moved to top)
-                            Rectangle {
-                                background: #ecf0f1;
-                                height: 175px;
-                                
-                                VerticalBox {
-                                    padding: 10px;
-                                    spacing: 4px;
-                                    
-                                    Text {
-                                        text: "Position (Work)";
-                                        font-weight: 700;
-                                        font-size: 14px;
-                                    }
-                                    
-                                    // Linear axes (X, Y, Z) + Feed
-                                    HorizontalBox {
-                                        spacing: 10px;
-                                        alignment: start;
-                                        
-                                        HorizontalBox {
-                                            width: 23%;
-                                            spacing: 4px;
-                                            Text { 
-                                                text: "X:"; 
-                                                width: 20px;
-                                                vertical-alignment: center;
-                                            }
-                                            LineEdit {
-                                                read-only: true;
-                                                text: round(root.position-x * 1000.0) / 1000.0 + " mm\u{2003}";
-                                            }
-                                        }
-                                        
-                                        HorizontalBox {
-                                            width: 23%;
-                                            spacing: 4px;
-                                            Text { 
-                                                text: "Y:"; 
-                                                width: 20px;
-                                                vertical-alignment: center;
-                                            }
-                                            LineEdit {
-                                                read-only: true;
-                                                text: round(root.position-y * 1000.0) / 1000.0 + " mm\u{2003}";
-                                            }
-                                        }
-                                        
-                                        HorizontalBox {
-                                            width: 23%;
-                                            spacing: 4px;
-                                            Text { 
-                                                text: "Z:"; 
-                                                width: 20px;
-                                                vertical-alignment: center;
-                                            }
-                                            LineEdit {
-                                                read-only: true;
-                                                text: round(root.position-z * 1000.0) / 1000.0 + " mm\u{2003}";
-                                            }
-                                        }
-                                        
-                                        HorizontalBox {
-                                            width: 24.8%;
-                                            spacing: 4px;
-                                            Text { 
-                                                text: "Feed:"; 
-                                                vertical-alignment: center;
-                                            }
-                                            LineEdit {
-                                                read-only: true;
-                                                text: round(root.feed-rate * 10.0) / 10.0 + " mm/m\u{2003}\u{2003}";
-                                            }
-                                        }
-                                    }
-                                    
-                                    // Rotary axes (A, B, C) + Speed
-                                    HorizontalBox {
-                                        spacing: 10px;
-                                        alignment: start;
-                                        width: 100%;
-                                        
-                                        HorizontalBox {
-                                            width: 23%;
-                                            spacing: 4px;
-                                            Text { 
-                                                text: "A:"; 
-                                                width: 20px;
-                                                vertical-alignment: center;
-                                            }
-                                            LineEdit {
-                                                read-only: true;
-                                                text: round(root.position-a * 1000.0) / 1000.0 + " mm\u{2003}";
-                                            }
-                                        }
-                                        
-                                        HorizontalBox {
-                                            width: 23%;
-                                            spacing: 4px;
-                                            Text { 
-                                                text: "B:"; 
-                                                width: 20px;
-                                                vertical-alignment: center;
-                                            }
-                                            LineEdit {
-                                                read-only: true;
-                                                text: round(root.position-b * 1000.0) / 1000.0 + " mm\u{2003}";
-                                            }
-                                        }
-                                        
-                                        HorizontalBox {
-                                            width: 23%;
-                                            spacing: 4px;
-                                            Text { 
-                                                text: "C:"; 
-                                                width: 20px;
-                                                vertical-alignment: center;
-                                            }
-                                            LineEdit {
-                                                read-only: true;
-                                                text: round(root.position-c * 1000.0) / 1000.0 + " mm\u{2003}";
-                                            }
-                                        }
-                                        
-                                        HorizontalBox {
-                                            width: 24.8%;
-                                            spacing: 4px;
-                                            Text { 
-                                                text: "Speed:"; 
-                                                vertical-alignment: center;
-                                            }
-                                            LineEdit {
-                                                read-only: true;
-                                                text: round(root.spindle-speed) + " rpm\u{2003}\u{2003}";
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            
-                            // Step Size Dropdown and Status Line
-                            HorizontalBox {
-                                spacing: 6px;
-                                alignment: start;
-                                
-                                Text {
-                                    text: "Step Size (mm):";
-                                    vertical-alignment: center;
-                                    font-size: 12px;
-                                }
-                                
-                                step-combo := ComboBox {
-                                    model: ["0.1", "1.0", "10", "50"];
-                                    current-index: step-index;
-                                    enabled: true;
-                                    height: 24px;
-                                    selected => {
-                                        step-index = step-combo.current-index;
-                                        step-size = [0.1, 1.0, 10.0, 50.0][step-combo.current-index];
-                                    }
-                                }
-                                
-                                Text {
-                                    text: "mm";
-                                    vertical-alignment: center;
-                                    font-size: 12px;
-                                }
-                            }
-                            
-                            // Main controls area with buttons
-                            Rectangle {
-                                background: transparent;
-                                
-                                VerticalBox {
-                                    alignment: center;
-                                    spacing: 6px;
-                                    
-                                    // Row 1-3: Jog Buttons Grid
-                                    HorizontalBox {
-                                        spacing: 6px;
-                                        
-                                        Rectangle {
-                                            width: 10%;
-                                            height: 65px;
-                                            background: #ecf0f1;
-                                            border-width: 2px;
-                                            border-color: root.connected ? #34495e : #bdc3c7;
-                                            border-radius: 5px;
-                                            opacity: root.connected ? 1.0 : 0.5;
-                                            Text { text: "⟲"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
-                                        }
-                                        Rectangle {
-                                            width: 10%;
-                                            height: 65px;
-                                            background: #ecf0f1;
-                                            border-width: 2px;
-                                            border-color: root.connected ? #34495e : #bdc3c7;
-                                            border-radius: 5px;
-                                            opacity: root.connected ? 1.0 : 0.5;
-                                            Text { text: "▲"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
-                                        }
-
-                                        Rectangle {
-                                            width: 5%;
-                                            height: 65px;
-                                        }
-                                         Rectangle {
-                                            width: 10%;
-                                            height: 65px;
-                                        }
-                                        Rectangle {
-                                            width: 10%;
-                                            height: 65px;
-                                            background: #ecf0f1;
-                                            border-width: 2px;
-                                            border-color: root.connected ? #34495e : #bdc3c7;
-                                            border-radius: 5px;
-                                            opacity: root.connected ? 1.0 : 0.5;
-                                            Text { text: "X⊙"; font-size: 28px; horizontal-alignment: center; vertical-alignment: center; }
-                                        }
-                                        Rectangle {
-                                            width: 10%;
-                                            height: 65px;
-                                            background: #ecf0f1;
-                                            border-width: 2px;
-                                            border-color: root.connected ? #34495e : #bdc3c7;
-                                            border-radius: 5px;
-                                            opacity: root.connected ? 1.0 : 0.5;
-                                            Text { text: "Y⊙"; font-size: 28px; horizontal-alignment: center; vertical-alignment: center; }
-                                        }
-                                        Rectangle {
-                                            width: 10%;
-                                            height: 65px;
-                                            background: #ecf0f1;
-                                            border-width: 2px;
-                                            border-color: root.connected ? #34495e : #bdc3c7;
-                                            border-radius: 5px;
-                                            opacity: root.connected ? 1.0 : 0.5;
-                                            Text { text: "Z⊙"; font-size: 28px; horizontal-alignment: center; vertical-alignment: center; }
-                                        }
-
-                                    }
-                                    
-                                    HorizontalBox {
-                                        spacing: 6px;
-                                        
-                                        Rectangle {
-                                            width: 10%;
-                                            height: 65px;
-                                            background: #ecf0f1;
-                                            border-width: 2px;
-                                            border-color: root.connected ? #34495e : #bdc3c7;
-                                            border-radius: 5px;
-                                            opacity: root.connected ? 1.0 : 0.5;
-                                            Text { text: "◀"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
-                                        }
-                                        Rectangle {
-                                            width: 10%;
-                                            height: 65px;
-                                            background: #ecf0f1;
-                                            border-width: 2px;
-                                            border-color: root.connected ? #34495e : #bdc3c7;
-                                            border-radius: 5px;
-                                            opacity: root.connected ? 1.0 : 0.5;
-                                            Text { text: "⌂"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
-                                        }
-                                        Rectangle {
-                                            width: 10%;
-                                            height: 65px;
-                                            background: #ecf0f1;
-                                            border-width: 2px;
-                                            border-color: root.connected ? #34495e : #bdc3c7;
-                                            border-radius: 5px;
-                                            opacity: root.connected ? 1.0 : 0.5;
-                                            Text { text: "▶"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
-                                        }
-
-                                        Rectangle {
-                                            width: 5%;
-                                            height: 65px;
-                                        }
-                                        Rectangle {
-                                            width: 10%;
-                                            height: 65px;
-                                            background: #ecf0f1;
-                                            border-width: 2px;
-                                            border-color: root.connected ? #34495e : #bdc3c7;
-                                            border-radius: 5px;
-                                            opacity: root.connected ? 1.0 : 0.5;
-                                            Text { text: "G54"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
-                                        }
-                                        Rectangle {
-                                            width: 10%;
-                                            height: 65px;
-                                            background: #ecf0f1;
-                                            border-width: 2px;
-                                            border-color: root.connected ? #34495e : #bdc3c7;
-                                            border-radius: 5px;
-                                            opacity: root.connected ? 1.0 : 0.5;
-                                            Text { text: "G55"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
-                                        }
-                                        Rectangle {
-                                            width: 10%;
-                                            height: 65px;
-                                            background: #ecf0f1;
-                                            border-width: 2px;
-                                            border-color: root.connected ? #34495e : #bdc3c7;
-                                            border-radius: 5px;
-                                            opacity: root.connected ? 1.0 : 0.5;
-                                            Text { text: "G56"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
-                                        }
-                                    }
-                                    
-                                    HorizontalBox {
-                                        spacing: 6px;
-                                        
-                                        Rectangle {
-                                            width: 10%;
-                                            height: 65px;
-                                            background: #ecf0f1;
-                                            border-width: 2px;
-                                            border-color: root.connected ? #34495e : #bdc3c7;
-                                            border-radius: 5px;
-                                            opacity: root.connected ? 1.0 : 0.5;
-                                            Text { text: "⟲"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
-                                        }
-                                        Rectangle {
-                                            width: 10%;
-                                            height: 65px;
-                                            background: #ecf0f1;
-                                            border-width: 2px;
-                                            border-color: root.connected ? #34495e : #bdc3c7;
-                                            border-radius: 5px;
-                                            opacity: root.connected ? 1.0 : 0.5;
-                                            Text { text: "▼"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
-                                        }
-                                        Rectangle {
-                                            width: 10%;
-                                            height: 65px;
-                                            background: #ecf0f1;
-                                            border-width: 2px;
-                                            border-color: root.connected ? #34495e : #bdc3c7;
-                                            border-radius: 5px;
-                                            opacity: root.connected ? 1.0 : 0.5;
-                                            Text { text: "⟳"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
-                                        }
-                                        Rectangle {
-                                            width: 10%;
-                                            height: 65px;
-                                            background: #ecf0f1;
-                                            border-width: 2px;
-                                            border-color: root.connected ? #34495e : #bdc3c7;
-                                            border-radius: 5px;
-                                            opacity: root.connected ? 1.0 : 0.5;
-                                            Text { text: "▼"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
-                                        }
-                                        Rectangle {
-                                            width: 5%;
-                                            height: 65px;
-                                        }
-
-                                        Rectangle {
-                                            width: 10%;
-                                            height: 65px;
-                                            background: #ecf0f1;
-                                            border-width: 2px;
-                                            border-color: root.connected ? #34495e : #bdc3c7;
-                                            border-radius: 5px;
-                                            opacity: root.connected ? 1.0 : 0.5;
-                                            Text { text: "G57"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
-                                        }
-                                        Rectangle {
-                                            width: 10%;
-                                            height: 65px;
-                                            background: #ecf0f1;
-                                            border-width: 2px;
-                                            border-color: root.connected ? #34495e : #bdc3c7;
-                                            border-radius: 5px;
-                                            opacity: root.connected ? 1.0 : 0.5;
-                                            Text { text: "G58"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
-                                        }
-                                        Rectangle {
-                                            width: 10%;
-                                            height: 65px;
-                                            background: #ecf0f1;
-                                            border-width: 2px;
-                                            border-color: root.connected ? #34495e : #bdc3c7;
-                                            border-radius: 5px;
-                                            opacity: root.connected ? 1.0 : 0.5;
-                                            Text { text: "G59"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
-                                        }
-                                    }
-                                }
-                            }                          
-
-                        }
-                    }
+                if current-view == "machine" : MachineControlPanel {
+                    connected: root.connected;
+                    position-x: root.position-x;
+                    position-y: root.position-y;
+                    position-z: root.position-z;
+                    position-a: root.position-a;
+                    position-b: root.position-b;
+                    position-c: root.position-c;
+                    feed-rate: root.feed-rate;
+                    spindle-speed: root.spindle-speed;
                 }
                 
                 // File Validation View
-                if current-view == "file-validation" : VerticalBox {
-                    spacing: 0px;
-                    padding: 10px;
-                    horizontal-stretch: 1.0;
-                    vertical-stretch: 1.0;
-                    
-                    ScrollView {
-                        vertical-stretch: 1.0;
-                        horizontal-stretch: 1.0;
-                        VerticalBox {
-                            spacing: 10px;
-                            padding: 5px;
-                            
-                            // Header
-                            Rectangle {
-                                background: #3498db;
-                                height: 50px;
-                                
-                                VerticalBox {
-                                    padding: 8px;
-                                    alignment: center;
-                                    
-                                    Text {
-                                        text: "File Validation Results";
-                                        color: white;
-                                        font-size: 16px;
-                                        font-weight: 700;
-                                    }
-                                }
-                            }
-                            
-                            // Summary Stats
-                            HorizontalBox {
-                                spacing: 10px;
-                                
-                                Rectangle {
-                                    background: #2ecc71;
-                                    height: 60px;
-                                    width: 25%;
-                                    border-radius: 5px;
-                                    
-                                    VerticalBox {
-                                        padding: 8px;
-                                        alignment: center;
-                                        
-                                        Text {
-                                            text: "Valid";
-                                            color: white;
-                                            font-size: 11px;
-                                        }
-                                        Text {
-                                            text: root.validation-summary == "No issues detected" ? "✓" : "✗";
-                                            color: white;
-                                            font-size: 24px;
-                                            font-weight: 700;
-                                        }
-                                    }
-                                }
-                                
-                                Rectangle {
-                                    background: #e74c3c;
-                                    height: 60px;
-                                    width: 25%;
-                                    border-radius: 5px;
-                                    
-                                    VerticalBox {
-                                        padding: 8px;
-                                        alignment: center;
-                                        
-                                        Text {
-                                            text: "Errors";
-                                            color: white;
-                                            font-size: 11px;
-                                        }
-                                        Text {
-                                            text: root.validation-error-count;
-                                            color: white;
-                                            font-size: 24px;
-                                            font-weight: 700;
-                                        }
-                                    }
-                                }
-                                
-                                Rectangle {
-                                    background: #f39c12;
-                                    height: 60px;
-                                    width: 25%;
-                                    border-radius: 5px;
-                                    
-                                    VerticalBox {
-                                        padding: 8px;
-                                        alignment: center;
-                                        
-                                        Text {
-                                            text: "Warnings";
-                                            color: white;
-                                            font-size: 11px;
-                                        }
-                                        Text {
-                                            text: root.validation-warning-count;
-                                            color: white;
-                                            font-size: 24px;
-                                            font-weight: 700;
-                                        }
-                                    }
-                                }
-                                
-                                Rectangle {
-                                    background: #9b59b6;
-                                    height: 60px;
-                                    width: 25%;
-                                    border-radius: 5px;
-                                    
-                                    VerticalBox {
-                                        padding: 8px;
-                                        alignment: center;
-                                        
-                                        Text {
-                                            text: "Summary";
-                                            color: white;
-                                            font-size: 11px;
-                                        }
-                                        Text {
-                                            text: root.validation-summary;
-                                            color: white;
-                                            font-size: 12px;
-                                            font-weight: 700;
-                                            wrap: word-wrap;
-                                        }
-                                    }
-                                }
-                            }
-                            
-                            // Issues List
-                            Rectangle {
-                                background: #ecf0f1;
-                                border-width: 1px;
-                                border-color: #bdc3c7;
-                                border-radius: 5px;
-                                
-                                VerticalBox {
-                                    padding: 10px;
-                                    spacing: 5px;
-                                    
-                                    Text {
-                                        text: "Validation Issues (" + root.validation-issues.length + ")";
-                                        font-size: 12px;
-                                        font-weight: 700;
-                                        color: #2c3e50;
-                                    }
-                                    
-                                    if root.validation-issues.length == 0 : Text {
-                                        text: "✓ No issues found. File is ready to use.";
-                                        color: #27ae60;
-                                        font-size: 11px;
-                                    }
-                                    
-                                    if root.validation-issues.length > 0 : VerticalBox {
-                                        for issue in root.validation-issues : Rectangle {
-                                            background: white;
-                                            border-width: 1px;
-                                            border-color: #bdc3c7;
-                                            border-radius: 3px;
-                                            height: 50px;
-                                            
-                                            HorizontalBox {
-                                                padding: 8px;
-                                                spacing: 8px;
-                                                alignment: start;
-                                                
-                                                Rectangle {
-                                                    width: 8px;
-                                                    background: #3498db;
-                                                    border-radius: 2px;
-                                                }
-                                                
-                                                VerticalBox {
-                                                    Text {
-                                                        text: issue;
-                                                        font-size: 11px;
-                                                        color: #2c3e50;
-                                                        wrap: word-wrap;
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                // File Validation View
+                if current-view == "file-validation" : FileValidationPanel {
+                    validation-issues: root.validation-issues;
+                    validation-summary: root.validation-summary;
+                    validation-error-count: root.validation-error-count;
+                    validation-warning-count: root.validation-warning-count;
                 }
                 
                 // Advanced Features View
-                if current-view == "advanced-features" : VerticalBox {
-                    spacing: 0px;
-                    padding: 10px;
-                    horizontal-stretch: 1.0;
-                    vertical-stretch: 1.0;
-                    
-                    ScrollView {
-                        vertical-stretch: 1.0;
-                        horizontal-stretch: 1.0;
-                        VerticalBox {
-                            spacing: 10px;
-                            padding: 5px;
-                            
-                            // Header
-                            Rectangle {
-                                background: #9b59b6;
-                                height: 50px;
-                                
-                                VerticalBox {
-                                    padding: 8px;
-                                    alignment: center;
-                                    
-                                    Text {
-                                        text: "Advanced Features";
-                                        color: white;
-                                        font-size: 16px;
-                                        font-weight: 700;
-                                    }
-                                }
-                            }
-                            
-                            // Tool Management Section
-                            Rectangle {
-                                background: #ecf0f1;
-                                border-width: 1px;
-                                border-color: #bdc3c7;
-                                border-radius: 5px;
-                                
-                                VerticalBox {
-                                    padding: 10px;
-                                    spacing: 8px;
-                                    
-                                    Text {
-                                        text: "Tool Management";
-                                        font-size: 12px;
-                                        font-weight: 700;
-                                        color: #2c3e50;
-                                    }
-                                    
-                                    Rectangle {
-                                        height: 30px;
-                                        background: white;
-                                        border-width: 1px;
-                                        border-color: #bdc3c7;
-                                        border-radius: 3px;
-                                        
-                                        HorizontalBox {
-                                            padding: 5px;
-                                            spacing: 8px;
-                                            alignment: start;
-                                            
-                                            Text {
-                                                text: "Tool Change Mode:";
-                                                width: 40%;
-                                                vertical-alignment: center;
-                                                font-size: 11px;
-                                            }
-                                            Text {
-                                                text: root.advanced-features-mode;
-                                                width: 60%;
-                                                color: #3498db;
-                                                font-weight: 700;
-                                                vertical-alignment: center;
-                                                font-size: 11px;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            
-                            // Simulation Section
-                            Rectangle {
-                                background: #ecf0f1;
-                                border-width: 1px;
-                                border-color: #bdc3c7;
-                                border-radius: 5px;
-                                
-                                VerticalBox {
-                                    padding: 10px;
-                                    spacing: 8px;
-                                    
-                                    Text {
-                                        text: "Simulation Mode";
-                                        font-size: 12px;
-                                        font-weight: 700;
-                                        color: #2c3e50;
-                                    }
-                                    
-                                    Rectangle {
-                                        height: 30px;
-                                        background: white;
-                                        border-width: 1px;
-                                        border-color: #bdc3c7;
-                                        border-radius: 3px;
-                                        
-                                        HorizontalBox {
-                                            padding: 5px;
-                                            spacing: 8px;
-                                            alignment: start;
-                                            
-                                            Text {
-                                                text: "State:";
-                                                width: 40%;
-                                                vertical-alignment: center;
-                                                font-size: 11px;
-                                            }
-                                            Text {
-                                                text: root.simulation-state;
-                                                width: 60%;
-                                                color: root.simulation-state == "Running" ? #2ecc71 : 
-                                                       root.simulation-state == "Paused" ? #f39c12 : 
-                                                       root.simulation-state == "Completed" ? #27ae60 : #95a5a6;
-                                                font-weight: 700;
-                                                vertical-alignment: center;
-                                                font-size: 11px;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            
-                            // Work Coordinate Systems
-                            Rectangle {
-                                background: #ecf0f1;
-                                border-width: 1px;
-                                border-color: #bdc3c7;
-                                border-radius: 5px;
-                                
-                                VerticalBox {
-                                    padding: 10px;
-                                    spacing: 8px;
-                                    
-                                    Text {
-                                        text: "Work Coordinate Systems (G54-G59)";
-                                        font-size: 12px;
-                                        font-weight: 700;
-                                        color: #2c3e50;
-                                    }
-                                    
-                                    HorizontalBox {
-                                        spacing: 5px;
-                                        
-                                        for wcs in ["G54", "G55", "G56", "G57", "G58", "G59"] : Rectangle {
-                                            width: 16.5%;
-                                            height: 35px;
-                                            background: #3498db;
-                                            border-radius: 3px;
-                                            
-                                            Text {
-                                                text: wcs;
-                                                color: white;
-                                                font-size: 11px;
-                                                font-weight: 700;
-                                                horizontal-alignment: center;
-                                                vertical-alignment: center;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            
-                            // Soft Limits Section
-                            Rectangle {
-                                background: #ecf0f1;
-                                border-width: 1px;
-                                border-color: #bdc3c7;
-                                border-radius: 5px;
-                                
-                                VerticalBox {
-                                    padding: 10px;
-                                    spacing: 8px;
-                                    
-                                    Text {
-                                        text: "Soft Limits Configuration";
-                                        font-size: 12px;
-                                        font-weight: 700;
-                                        color: #2c3e50;
-                                    }
-                                    
-                                    HorizontalBox {
-                                        spacing: 10px;
-                                        
-                                        Rectangle {
-                                            width: 48%;
-                                            background: white;
-                                            height: 25px;
-                                            border-width: 1px;
-                                            border-color: #bdc3c7;
-                                            border-radius: 3px;
-                                            
-                                            HorizontalBox {
-                                                padding: 3px;
-                                                alignment: start;
-                                                spacing: 5px;
-                                                
-                                                Text {
-                                                    text: "Min:";
-                                                    font-size: 10px;
-                                                    width: 30%;
-                                                    vertical-alignment: center;
-                                                }
-                                                LineEdit {
-                                                    text: "-100";
-                                                    font-size: 10px;
-                                                }
-                                            }
-                                        }
-                                        
-                                        Rectangle {
-                                            width: 48%;
-                                            background: white;
-                                            height: 25px;
-                                            border-width: 1px;
-                                            border-color: #bdc3c7;
-                                            border-radius: 3px;
-                                            
-                                            HorizontalBox {
-                                                padding: 3px;
-                                                alignment: start;
-                                                spacing: 5px;
-                                                
-                                                Text {
-                                                    text: "Max:";
-                                                    font-size: 10px;
-                                                    width: 30%;
-                                                    vertical-alignment: center;
-                                                }
-                                                LineEdit {
-                                                    text: "+100";
-                                                    font-size: 10px;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                // Advanced Features View
+                if current-view == "advanced-features" : AdvancedFeaturesPanel {
+                    advanced-features-mode: root.advanced-features-mode;
+                    simulation-state: root.simulation-state;
                 }
                 
                 // Safety & Diagnostics View
-                if current-view == "safety-diagnostics" : VerticalBox {
-                    spacing: 0px;
-                    padding: 10px;
-                    horizontal-stretch: 1.0;
-                    vertical-stretch: 1.0;
-                    
-                    ScrollView {
-                        vertical-stretch: 1.0;
-                        horizontal-stretch: 1.0;
-                        VerticalBox {
-                            spacing: 10px;
-                            padding: 5px;
-                            
-                            // Header
-                            Rectangle {
-                                background: #e74c3c;
-                                height: 50px;
-                                
-                                VerticalBox {
-                                    padding: 8px;
-                                    alignment: center;
-                                    
-                                    Text {
-                                        text: "Safety & Diagnostics";
-                                        color: white;
-                                        font-size: 16px;
-                                        font-weight: 700;
-                                    }
-                                }
-                            }
-                            
-                            // Emergency Stop Section
-                            Rectangle {
-                                background: #ecf0f1;
-                                border-width: 2px;
-                                border-color: #c0392b;
-                                border-radius: 5px;
-                                
-                                VerticalBox {
-                                    padding: 10px;
-                                    spacing: 8px;
-                                    
-                                    Text {
-                                        text: "Emergency Stop";
-                                        font-size: 12px;
-                                        font-weight: 700;
-                                        color: #2c3e50;
-                                    }
-                                    
-                                    Rectangle {
-                                        height: 40px;
-                                        background: root.emergency-stop-armed ? #2ecc71 : #e74c3c;
-                                        border-radius: 5px;
-                                        
-                                        Text {
-                                            text: root.emergency-stop-armed ? "🛡 ARMED - Ready" : "⚠ TRIGGERED - Stopped";
-                                            color: white;
-                                            font-size: 12px;
-                                            font-weight: 700;
-                                            horizontal-alignment: center;
-                                            vertical-alignment: center;
-                                        }
-                                    }
-                                }
-                            }
-                            
-                            // Safety Status Section
-                            Rectangle {
-                                background: #ecf0f1;
-                                border-width: 1px;
-                                border-color: #bdc3c7;
-                                border-radius: 5px;
-                                
-                                VerticalBox {
-                                    padding: 10px;
-                                    spacing: 8px;
-                                    
-                                    Text {
-                                        text: "Safety Status";
-                                        font-size: 12px;
-                                        font-weight: 700;
-                                        color: #2c3e50;
-                                    }
-                                    
-                                    HorizontalBox {
-                                        spacing: 10px;
-                                        
-                                        Rectangle {
-                                            width: 50%;
-                                            background: white;
-                                            height: 50px;
-                                            border-width: 1px;
-                                            border-color: #bdc3c7;
-                                            border-radius: 3px;
-                                            
-                                            VerticalBox {
-                                                padding: 5px;
-                                                alignment: center;
-                                                
-                                                Text {
-                                                    text: "Motion Interlock";
-                                                    font-size: 10px;
-                                                    color: #2c3e50;
-                                                }
-                                                Text {
-                                                    text: root.safety-status == "Safe" ? "✓ Enabled" : "⚠ Disabled";
-                                                    font-size: 12px;
-                                                    color: root.safety-status == "Safe" ? #27ae60 : #e74c3c;
-                                                    font-weight: 700;
-                                                }
-                                            }
-                                        }
-                                        
-                                        Rectangle {
-                                            width: 50%;
-                                            background: white;
-                                            height: 50px;
-                                            border-width: 1px;
-                                            border-color: #bdc3c7;
-                                            border-radius: 3px;
-                                            
-                                            VerticalBox {
-                                                padding: 5px;
-                                                alignment: center;
-                                                
-                                                Text {
-                                                    text: "Feed Hold";
-                                                    font-size: 10px;
-                                                    color: #2c3e50;
-                                                }
-                                                Text {
-                                                    text: "Ready";
-                                                    font-size: 12px;
-                                                    color: #3498db;
-                                                    font-weight: 700;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            
-                            // Diagnostics Info Section
-                            Rectangle {
-                                background: #ecf0f1;
-                                border-width: 1px;
-                                border-color: #bdc3c7;
-                                border-radius: 5px;
-                                
-                                VerticalBox {
-                                    padding: 10px;
-                                    spacing: 8px;
-                                    
-                                    Text {
-                                        text: "System Diagnostics";
-                                        font-size: 12px;
-                                        font-weight: 700;
-                                        color: #2c3e50;
-                                    }
-                                    
-                                    Text {
-                                        text: root.diagnostics-info;
-                                        font-size: 11px;
-                                        color: #34495e;
-                                        wrap: word-wrap;
-                                        font-family: "Monospace";
-                                    }
-                                }
-                            }
-                        }
-                    }
+                // Safety & Diagnostics View
+if current-view == "safety-diagnostics" : SafetyDiagnosticsPanel {
+                    emergency-stop-armed: root.emergency-stop-armed;
+                    safety-status: root.safety-status;
+                    diagnostics-info: root.diagnostics-info;
+                }
+
+                // GCode Visualizer View
+if current-view == "gcode-visualizer" : GcodeVisualizerPanel {
+                    gcode-filename <=> root.gcode-filename;
+                    machine-x: Math.round(root.position-x * 1000) / 1000 + "";
+                    machine-y: Math.round(root.position-y * 1000) / 1000 + "";
+                    machine-z: Math.round(root.position-z * 1000) / 1000 + "";
+                    work-x: Math.round(root.position-a * 1000) / 1000 + "";
+                    work-y: Math.round(root.position-b * 1000) / 1000 + "";
+                    work-z: Math.round(root.position-c * 1000) / 1000 + "";
+                    progress: root.visualizer-progress;
+                    visualizer-status: root.visualizer-status;
                 }
             }
         }
@@ -2015,6 +978,28 @@ export component MainWindow inherits Window {
                         view-menu-open = false;
                         current-view = "safety-diagnostics";
                         root.menu-view-safety-diagnostics();
+                    }
+                }
+
+                // Visualizer Menu Item
+                Rectangle {
+                    height: 28px;
+                    background: transparent;
+                    
+                    Text {
+                        text: current-view == "gcode-visualizer" ? "✓ Visualizer" : "  Visualizer";
+                        color: white;
+                        font-size: 12px;
+                        vertical-alignment: center;
+                    }
+                }
+                
+                mi-view-visualizer := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        view-menu-open = false;
+                        current-view = "gcode-visualizer";
+                        root.menu-view-gcode-visualizer();
                     }
                 }
             }
