@@ -1,10 +1,10 @@
 # GCodeKit4 Project Statistics
 
 ## Overall Project Status
-- **Version**: 0.12.0
+- **Version**: 0.12.3-alpha
 - **Status**: Production Ready
-- **Build Date**: 2025-10-24
-- **Last Updated**: 2025-10-24 06:05 UTC
+- **Build Date**: 2025-10-25
+- **Last Updated**: 2025-10-25 01:46 UTC
 
 ## Code Metrics
 
@@ -273,16 +273,17 @@ Cross-Platform:         ✅ Linux, macOS, Windows
 
 ## Summary
 
-GCodeKit4 v0.12.0 now features:
+GCodeKit4 v0.12.3-alpha now features:
 
 1. **Professional UI** - Dark theme, 5 categories, responsive layout, view switching
 2. **Full Persistence** - Config files, bidirectional sync, all platforms
 3. **Firmware Integration** - 30+ GRBL parameters, dynamic rendering, compact display
 4. **Machine Control View** - Compact jog controls, integrated overrides panel, DRO with A/B/C rotary axes
 5. **Enhanced DRO** - Position display with units (mm), Feed rate (mm/m), Spindle speed (rpm)
-6. **Stable Layout** - Perfect panel alignment, no visual jarring during transitions, proper scrollbar management
-7. **Production Ready** - 361 tests passing, zero compilation errors, complete documentation
+6. **Improved Panel Layouts** - Connection panel aligned to top, centered button controls, reduced DRO row spacing
+7. **Stable Layout** - Perfect panel alignment, no visual jarring during transitions, proper scrollbar management
+8. **Production Ready** - 361 tests passing, zero compilation errors, complete documentation
 
 **Status: ✅ READY FOR PRODUCTION**
 
-Last Updated: 2025-10-24
+Last Updated: 2025-10-25

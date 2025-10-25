@@ -213,47 +213,55 @@ export component MainWindow inherits Window {
                 // Connection Panel
                 Rectangle {
                     background: #ecf0f1;
-                    VerticalBox {
-                        padding: 10px;
-                        spacing: 8px;
+                    height: 135px;
+                    
+                    Rectangle {
+                        background: #ecf0f1;
+                        width: 100%;
+                        y: 0;
                         
-                        Text {
-                            text: "Connection";
-                            font-weight: 700;
-                            font-size: 14px;
-                        }
-                        
-                        HorizontalBox {
-                            Text { text: "Port:"; width: 50px; }
-                            port-combo := ComboBox {
-                                model: root.available-ports;
-                                current-index: port-index;
-                                selected => {
-                                    port-index = port-combo.current-index;
-                                    if (port-combo.current-index >= 0 && port-combo.current-index < root.available-ports.length) {
-                                        root.selected-port = root.available-ports[port-combo.current-index];
+                        VerticalBox {
+                            padding: 10px;
+                            spacing: 8px;
+                            
+                            Text {
+                                text: "Connection";
+                                font-weight: 700;
+                                font-size: 14px;
+                            }
+                            
+                            HorizontalBox {
+                                Text { text: "Port:"; width: 50px; }
+                                port-combo := ComboBox {
+                                    model: root.available-ports;
+                                    current-index: port-index;
+                                    selected => {
+                                        port-index = port-combo.current-index;
+                                        if (port-combo.current-index >= 0 && port-combo.current-index < root.available-ports.length) {
+                                            root.selected-port = root.available-ports[port-combo.current-index];
+                                        }
                                     }
                                 }
                             }
-                        }
-                        
-                        HorizontalBox {
-                            spacing: 5px;
-                            Button {
-                                text: root.connected ? "Disconnect" : "Connect";
-                                width: 50%;
-                                clicked => {
-                                    if (root.connected) {
-                                        root.disconnect();
-                                    } else {
-                                        root.connect(root.selected-port, 115200);
+                            
+                            HorizontalBox {
+                                spacing: 5px;
+                                Button {
+                                    text: root.connected ? "Disconnect" : "Connect";
+                                    width: 50%;
+                                    clicked => {
+                                        if (root.connected) {
+                                            root.disconnect();
+                                        } else {
+                                            root.connect(root.selected-port, 115200);
+                                        }
                                     }
                                 }
-                            }
-                            Button {
-                                text: "Refresh";
-                                width: 50%;
-                                clicked => { root.refresh-ports(); }
+                                Button {
+                                    text: "Refresh";
+                                    width: 50%;
+                                    clicked => { root.refresh-ports(); }
+                                }
                             }
                         }
                     }
@@ -510,7 +518,7 @@ export component MainWindow inherits Window {
                                 
                                 VerticalBox {
                                     padding: 10px;
-                                    spacing: 6px;
+                                    spacing: 4px;
                                     
                                     Text {
                                         text: "Position (Work)";
@@ -673,280 +681,284 @@ export component MainWindow inherits Window {
                             }
                             
                             // Main controls area with buttons
-                            VerticalBox {
-                                spacing: 6px;
+                            Rectangle {
+                                background: transparent;
                                 
-                                // Row 1-3: Jog Buttons Grid
-                                HorizontalBox {
+                                VerticalBox {
+                                    alignment: center;
                                     spacing: 6px;
                                     
-                                    Rectangle {
-                                        width: 10%;
-                                        height: 65px;
-                                        background: #ecf0f1;
-                                        border-width: 2px;
-                                        border-color: root.connected ? #34495e : #bdc3c7;
-                                        border-radius: 5px;
-                                        opacity: root.connected ? 1.0 : 0.5;
-                                        Text { text: "⟲"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
-                                    }
-                                    Rectangle {
-                                        width: 10%;
-                                        height: 65px;
-                                        background: #ecf0f1;
-                                        border-width: 2px;
-                                        border-color: root.connected ? #34495e : #bdc3c7;
-                                        border-radius: 5px;
-                                        opacity: root.connected ? 1.0 : 0.5;
-                                        Text { text: "▲"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
-                                    }
-                                    Rectangle {
-                                        width: 10%;
-                                        height: 65px;
-                                        background: #ecf0f1;
-                                        border-width: 2px;
-                                        border-color: root.connected ? #34495e : #bdc3c7;
-                                        border-radius: 5px;
-                                        opacity: root.connected ? 1.0 : 0.5;
-                                        Text { text: "⟳"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
-                                    }
-                                    Rectangle {
-                                        width: 10%;
-                                        height: 65px;
-                                        background: #ecf0f1;
-                                        border-width: 2px;
-                                        border-color: root.connected ? #34495e : #bdc3c7;
-                                        border-radius: 5px;
-                                        opacity: root.connected ? 1.0 : 0.5;
-                                        Text { text: "▲"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
-                                    }
+                                    // Row 1-3: Jog Buttons Grid
+                                    HorizontalBox {
+                                        spacing: 6px;
+                                        
+                                        Rectangle {
+                                            width: 10%;
+                                            height: 65px;
+                                            background: #ecf0f1;
+                                            border-width: 2px;
+                                            border-color: root.connected ? #34495e : #bdc3c7;
+                                            border-radius: 5px;
+                                            opacity: root.connected ? 1.0 : 0.5;
+                                            Text { text: "⟲"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
+                                        }
+                                        Rectangle {
+                                            width: 10%;
+                                            height: 65px;
+                                            background: #ecf0f1;
+                                            border-width: 2px;
+                                            border-color: root.connected ? #34495e : #bdc3c7;
+                                            border-radius: 5px;
+                                            opacity: root.connected ? 1.0 : 0.5;
+                                            Text { text: "▲"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
+                                        }
+                                        Rectangle {
+                                            width: 10%;
+                                            height: 65px;
+                                            background: #ecf0f1;
+                                            border-width: 2px;
+                                            border-color: root.connected ? #34495e : #bdc3c7;
+                                            border-radius: 5px;
+                                            opacity: root.connected ? 1.0 : 0.5;
+                                            Text { text: "⟳"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
+                                        }
+                                        Rectangle {
+                                            width: 10%;
+                                            height: 65px;
+                                            background: #ecf0f1;
+                                            border-width: 2px;
+                                            border-color: root.connected ? #34495e : #bdc3c7;
+                                            border-radius: 5px;
+                                            opacity: root.connected ? 1.0 : 0.5;
+                                            Text { text: "▲"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
+                                        }
 
-                                    Rectangle {
-                                        width: 5%;
-                                        height: 65px;
-                                    }
-                                     Rectangle {
-                                        width: 10%;
-                                        height: 65px;
-                                    }
-                                    Rectangle {
-                                        width: 10%;
-                                        height: 65px;
-                                        background: #ecf0f1;
-                                        border-width: 2px;
-                                        border-color: root.connected ? #34495e : #bdc3c7;
-                                        border-radius: 5px;
-                                        opacity: root.connected ? 1.0 : 0.5;
-                                        Text { text: "X⊙"; font-size: 28px; horizontal-alignment: center; vertical-alignment: center; }
-                                    }
-                                    Rectangle {
-                                        width: 10%;
-                                        height: 65px;
-                                        background: #ecf0f1;
-                                        border-width: 2px;
-                                        border-color: root.connected ? #34495e : #bdc3c7;
-                                        border-radius: 5px;
-                                        opacity: root.connected ? 1.0 : 0.5;
-                                        Text { text: "Y⊙"; font-size: 28px; horizontal-alignment: center; vertical-alignment: center; }
-                                    }
-                                    Rectangle {
-                                        width: 10%;
-                                        height: 65px;
-                                        background: #ecf0f1;
-                                        border-width: 2px;
-                                        border-color: root.connected ? #34495e : #bdc3c7;
-                                        border-radius: 5px;
-                                        opacity: root.connected ? 1.0 : 0.5;
-                                        Text { text: "Z⊙"; font-size: 28px; horizontal-alignment: center; vertical-alignment: center; }
-                                    }
+                                        Rectangle {
+                                            width: 5%;
+                                            height: 65px;
+                                        }
+                                         Rectangle {
+                                            width: 10%;
+                                            height: 65px;
+                                        }
+                                        Rectangle {
+                                            width: 10%;
+                                            height: 65px;
+                                            background: #ecf0f1;
+                                            border-width: 2px;
+                                            border-color: root.connected ? #34495e : #bdc3c7;
+                                            border-radius: 5px;
+                                            opacity: root.connected ? 1.0 : 0.5;
+                                            Text { text: "X⊙"; font-size: 28px; horizontal-alignment: center; vertical-alignment: center; }
+                                        }
+                                        Rectangle {
+                                            width: 10%;
+                                            height: 65px;
+                                            background: #ecf0f1;
+                                            border-width: 2px;
+                                            border-color: root.connected ? #34495e : #bdc3c7;
+                                            border-radius: 5px;
+                                            opacity: root.connected ? 1.0 : 0.5;
+                                            Text { text: "Y⊙"; font-size: 28px; horizontal-alignment: center; vertical-alignment: center; }
+                                        }
+                                        Rectangle {
+                                            width: 10%;
+                                            height: 65px;
+                                            background: #ecf0f1;
+                                            border-width: 2px;
+                                            border-color: root.connected ? #34495e : #bdc3c7;
+                                            border-radius: 5px;
+                                            opacity: root.connected ? 1.0 : 0.5;
+                                            Text { text: "Z⊙"; font-size: 28px; horizontal-alignment: center; vertical-alignment: center; }
+                                        }
 
-                                }
-                                
-                                HorizontalBox {
-                                    spacing: 6px;
+                                    }
                                     
-                                    Rectangle {
-                                        width: 10%;
-                                        height: 65px;
-                                        background: #ecf0f1;
-                                        border-width: 2px;
-                                        border-color: root.connected ? #34495e : #bdc3c7;
-                                        border-radius: 5px;
-                                        opacity: root.connected ? 1.0 : 0.5;
-                                        Text { text: "◀"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
-                                    }
-                                    Rectangle {
-                                        width: 10%;
-                                        height: 65px;
-                                        background: #ecf0f1;
-                                        border-width: 2px;
-                                        border-color: root.connected ? #34495e : #bdc3c7;
-                                        border-radius: 5px;
-                                        opacity: root.connected ? 1.0 : 0.5;
-                                        Text { text: "⌂"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
-                                    }
-                                    Rectangle {
-                                        width: 10%;
-                                        height: 65px;
-                                        background: #ecf0f1;
-                                        border-width: 2px;
-                                        border-color: root.connected ? #34495e : #bdc3c7;
-                                        border-radius: 5px;
-                                        opacity: root.connected ? 1.0 : 0.5;
-                                        Text { text: "▶"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
-                                    }
-                                    Rectangle {
-                                        width: 10%;
-                                        height: 65px;
-                                        background: #ecf0f1;
-                                        border-width: 2px;
-                                        border-color: root.connected ? #c0392b : #bdc3c7;
-                                        border-radius: 5px;
-                                        opacity: root.connected ? 1.0 : 0.5;
-                                        Text {
-                                            text: "⊘";
-                                            font-size: 61px;
-                                            color: root.connected ? #c0392b : #bdc3c7;
-                                            horizontal-alignment: center;
-                                            vertical-alignment: center;
+                                    HorizontalBox {
+                                        spacing: 6px;
+                                        
+                                        Rectangle {
+                                            width: 10%;
+                                            height: 65px;
+                                            background: #ecf0f1;
+                                            border-width: 2px;
+                                            border-color: root.connected ? #34495e : #bdc3c7;
+                                            border-radius: 5px;
+                                            opacity: root.connected ? 1.0 : 0.5;
+                                            Text { text: "◀"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
+                                        }
+                                        Rectangle {
+                                            width: 10%;
+                                            height: 65px;
+                                            background: #ecf0f1;
+                                            border-width: 2px;
+                                            border-color: root.connected ? #34495e : #bdc3c7;
+                                            border-radius: 5px;
+                                            opacity: root.connected ? 1.0 : 0.5;
+                                            Text { text: "⌂"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
+                                        }
+                                        Rectangle {
+                                            width: 10%;
+                                            height: 65px;
+                                            background: #ecf0f1;
+                                            border-width: 2px;
+                                            border-color: root.connected ? #34495e : #bdc3c7;
+                                            border-radius: 5px;
+                                            opacity: root.connected ? 1.0 : 0.5;
+                                            Text { text: "▶"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
+                                        }
+                                        Rectangle {
+                                            width: 10%;
+                                            height: 65px;
+                                            background: #ecf0f1;
+                                            border-width: 2px;
+                                            border-color: root.connected ? #c0392b : #bdc3c7;
+                                            border-radius: 5px;
+                                            opacity: root.connected ? 1.0 : 0.5;
+                                            Text {
+                                                text: "⊘";
+                                                font-size: 61px;
+                                                color: root.connected ? #c0392b : #bdc3c7;
+                                                horizontal-alignment: center;
+                                                vertical-alignment: center;
+                                            }
+                                        }
+                                        Rectangle {
+                                            width: 5%;
+                                            height: 65px;
+                                        }
+                                         Rectangle {
+                                            width: 10%;
+                                            height: 65px;
+                                            background: #ecf0f1;
+                                            border-width: 2px;
+                                            border-color: root.connected ? #34495e : #bdc3c7;
+                                            border-radius: 5px;
+                                            opacity: root.connected ? 1.0 : 0.5;
+                                            Text { text: "G54"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
+                                        }
+                                        Rectangle {
+                                            width: 10%;
+                                            height: 65px;
+                                            background: #ecf0f1;
+                                            border-width: 2px;
+                                            border-color: root.connected ? #34495e : #bdc3c7;
+                                            border-radius: 5px;
+                                            opacity: root.connected ? 1.0 : 0.5;
+                                            Text { text: "G55"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
+                                        }
+                                        Rectangle {
+                                            width: 10%;
+                                            height: 65px;
+                                            background: #ecf0f1;
+                                            border-width: 2px;
+                                            border-color: root.connected ? #34495e : #bdc3c7;
+                                            border-radius: 5px;
+                                            opacity: root.connected ? 1.0 : 0.5;
+                                            Text { text: "G56"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
+                                        }
+                                        Rectangle {
+                                            width: 10%;
+                                            height: 65px;
+                                            background: #ecf0f1;
+                                            border-width: 2px;
+                                            border-color: root.connected ? #34495e : #bdc3c7;
+                                            border-radius: 5px;
+                                            opacity: root.connected ? 1.0 : 0.5;
+                                            Text { text: "G57"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
                                         }
                                     }
-                                    Rectangle {
-                                        width: 5%;
-                                        height: 65px;
-                                    }
-                                     Rectangle {
-                                        width: 10%;
-                                        height: 65px;
-                                        background: #ecf0f1;
-                                        border-width: 2px;
-                                        border-color: root.connected ? #34495e : #bdc3c7;
-                                        border-radius: 5px;
-                                        opacity: root.connected ? 1.0 : 0.5;
-                                        Text { text: "G54"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
-                                    }
-                                    Rectangle {
-                                        width: 10%;
-                                        height: 65px;
-                                        background: #ecf0f1;
-                                        border-width: 2px;
-                                        border-color: root.connected ? #34495e : #bdc3c7;
-                                        border-radius: 5px;
-                                        opacity: root.connected ? 1.0 : 0.5;
-                                        Text { text: "G55"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
-                                    }
-                                    Rectangle {
-                                        width: 10%;
-                                        height: 65px;
-                                        background: #ecf0f1;
-                                        border-width: 2px;
-                                        border-color: root.connected ? #34495e : #bdc3c7;
-                                        border-radius: 5px;
-                                        opacity: root.connected ? 1.0 : 0.5;
-                                        Text { text: "G56"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
-                                    }
-                                    Rectangle {
-                                        width: 10%;
-                                        height: 65px;
-                                        background: #ecf0f1;
-                                        border-width: 2px;
-                                        border-color: root.connected ? #34495e : #bdc3c7;
-                                        border-radius: 5px;
-                                        opacity: root.connected ? 1.0 : 0.5;
-                                        Text { text: "G57"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
-                                    }
-                                }
-                                
-                                HorizontalBox {
-                                    spacing: 6px;
                                     
-                                    Rectangle {
-                                        width: 10%;
-                                        height: 65px;
-                                        background: #ecf0f1;
-                                        border-width: 2px;
-                                        border-color: root.connected ? #34495e : #bdc3c7;
-                                        border-radius: 5px;
-                                        opacity: root.connected ? 1.0 : 0.5;
-                                        Text { text: "⟲"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
-                                    }
-                                    Rectangle {
-                                        width: 10%;
-                                        height: 65px;
-                                        background: #ecf0f1;
-                                        border-width: 2px;
-                                        border-color: root.connected ? #34495e : #bdc3c7;
-                                        border-radius: 5px;
-                                        opacity: root.connected ? 1.0 : 0.5;
-                                        Text { text: "▼"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
-                                    }
-                                    Rectangle {
-                                        width: 10%;
-                                        height: 65px;
-                                        background: #ecf0f1;
-                                        border-width: 2px;
-                                        border-color: root.connected ? #34495e : #bdc3c7;
-                                        border-radius: 5px;
-                                        opacity: root.connected ? 1.0 : 0.5;
-                                        Text { text: "⟳"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
-                                    }
-                                    Rectangle {
-                                        width: 10%;
-                                        height: 65px;
-                                        background: #ecf0f1;
-                                        border-width: 2px;
-                                        border-color: root.connected ? #34495e : #bdc3c7;
-                                        border-radius: 5px;
-                                        opacity: root.connected ? 1.0 : 0.5;
-                                        Text { text: "▼"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
-                                    }
-                                    Rectangle {
-                                        width: 5%;
-                                        height: 65px;
-                                    }
+                                    HorizontalBox {
+                                        spacing: 6px;
+                                        
+                                        Rectangle {
+                                            width: 10%;
+                                            height: 65px;
+                                            background: #ecf0f1;
+                                            border-width: 2px;
+                                            border-color: root.connected ? #34495e : #bdc3c7;
+                                            border-radius: 5px;
+                                            opacity: root.connected ? 1.0 : 0.5;
+                                            Text { text: "⟲"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
+                                        }
+                                        Rectangle {
+                                            width: 10%;
+                                            height: 65px;
+                                            background: #ecf0f1;
+                                            border-width: 2px;
+                                            border-color: root.connected ? #34495e : #bdc3c7;
+                                            border-radius: 5px;
+                                            opacity: root.connected ? 1.0 : 0.5;
+                                            Text { text: "▼"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
+                                        }
+                                        Rectangle {
+                                            width: 10%;
+                                            height: 65px;
+                                            background: #ecf0f1;
+                                            border-width: 2px;
+                                            border-color: root.connected ? #34495e : #bdc3c7;
+                                            border-radius: 5px;
+                                            opacity: root.connected ? 1.0 : 0.5;
+                                            Text { text: "⟳"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
+                                        }
+                                        Rectangle {
+                                            width: 10%;
+                                            height: 65px;
+                                            background: #ecf0f1;
+                                            border-width: 2px;
+                                            border-color: root.connected ? #34495e : #bdc3c7;
+                                            border-radius: 5px;
+                                            opacity: root.connected ? 1.0 : 0.5;
+                                            Text { text: "▼"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
+                                        }
+                                        Rectangle {
+                                            width: 5%;
+                                            height: 65px;
+                                        }
 
-                                    Rectangle {
-                                        width: 10%;
-                                        height: 65px;
-                                        background: #ecf0f1;
-                                        border-width: 2px;
-                                        border-color: root.connected ? #34495e : #bdc3c7;
-                                        border-radius: 5px;
-                                        opacity: root.connected ? 1.0 : 0.5;
-                                        Text { text: "NA"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
-                                    }
-                                    Rectangle {
-                                        width: 10%;
-                                        height: 65px;
-                                        background: #ecf0f1;
-                                        border-width: 2px;
-                                        border-color: root.connected ? #34495e : #bdc3c7;
-                                        border-radius: 5px;
-                                        opacity: root.connected ? 1.0 : 0.5;
-                                        Text { text: "NA"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
-                                    }
-                                    Rectangle {
-                                        width: 10%;
-                                        height: 65px;
-                                        background: #ecf0f1;
-                                        border-width: 2px;
-                                        border-color: root.connected ? #34495e : #bdc3c7;
-                                        border-radius: 5px;
-                                        opacity: root.connected ? 1.0 : 0.5;
-                                        Text { text: "NA"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
-                                    }
-                                    Rectangle {
-                                        width: 10%;
-                                        height: 65px;
-                                        background: #ecf0f1;
-                                        border-width: 2px;
-                                        border-color: root.connected ? #34495e : #bdc3c7;
-                                        border-radius: 5px;
-                                        opacity: root.connected ? 1.0 : 0.5;
-                                        Text { text: "NA"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
+                                        Rectangle {
+                                            width: 10%;
+                                            height: 65px;
+                                            background: #ecf0f1;
+                                            border-width: 2px;
+                                            border-color: root.connected ? #34495e : #bdc3c7;
+                                            border-radius: 5px;
+                                            opacity: root.connected ? 1.0 : 0.5;
+                                            Text { text: "NA"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
+                                        }
+                                        Rectangle {
+                                            width: 10%;
+                                            height: 65px;
+                                            background: #ecf0f1;
+                                            border-width: 2px;
+                                            border-color: root.connected ? #34495e : #bdc3c7;
+                                            border-radius: 5px;
+                                            opacity: root.connected ? 1.0 : 0.5;
+                                            Text { text: "NA"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
+                                        }
+                                        Rectangle {
+                                            width: 10%;
+                                            height: 65px;
+                                            background: #ecf0f1;
+                                            border-width: 2px;
+                                            border-color: root.connected ? #34495e : #bdc3c7;
+                                            border-radius: 5px;
+                                            opacity: root.connected ? 1.0 : 0.5;
+                                            Text { text: "NA"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
+                                        }
+                                        Rectangle {
+                                            width: 10%;
+                                            height: 65px;
+                                            background: #ecf0f1;
+                                            border-width: 2px;
+                                            border-color: root.connected ? #34495e : #bdc3c7;
+                                            border-radius: 5px;
+                                            opacity: root.connected ? 1.0 : 0.5;
+                                            Text { text: "NA"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
+                                        }
                                     }
                                 }
-                                
                             }                          
 
                         }

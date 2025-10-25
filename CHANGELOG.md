@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.3] - 2025-10-25
+
+### Changed
+- **Connection Panel Layout**
+  - Wrapped connection panel components into a fixed-height rectangle
+  - Aligned connection panel to the top of the left-hand panel for better visual hierarchy
+  - Added explicit height constraint (135px) for consistent panel sizing
+- **Machine View Button Layout**
+  - Wrapped all jog and control buttons in a centered rectangle
+  - Centered button controls both horizontally and vertically within the machine view
+  - Improved button group visual organization and alignment
+- **DRO Display Spacing**
+  - Reduced vertical spacing between XYZ and ABC axis rows by 30%
+  - Changed DRO row spacing from 6px to 4px for more compact display
+  - Improved visual density while maintaining readability
+
 ## [0.12.2] - 2025-10-24
 
 ### Changed
