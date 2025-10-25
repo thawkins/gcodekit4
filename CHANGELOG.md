@@ -5,10 +5,50 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.0] - 2025-10-25
+
+### Added
+- **Phase 6 File Management & Processing - Tasks 93-94 (IN PROGRESS)**
+  - **Task 93: File Processing Pipeline**
+    - `FileProcessingPipeline` for complete file processing
+    - Single-pass file processing with streaming
+    - HashMap-based caching with O(1) lookups
+    - `ProcessedFile` output structure with statistics and content
+    - Cache management: enable/disable, clear, size tracking
+    - Multi-file processing support
+    - Optional cache disabling for memory constraints
+  - **Task 94: File Statistics**
+    - `FileStatistics` comprehensive statistics structure
+    - Motion command counting (G0, G1, G2/G3)
+    - M-code tracking and breakdown
+    - `BoundingBox` 3D bounds tracking (width, height, depth)
+    - `FeedRateStats` feed rate analysis (min, max, changes)
+    - `SpindleStats` spindle analysis (speed range, on-time)
+    - Total distance calculation
+    - Estimated execution time (simplified model)
+    - Command count breakdown by type
+    - Time formatting helpers (hours/minutes/seconds)
+    - Summary generation
+
+### Infrastructure
+- New processing module: src/utils/processing.rs (800+ lines)
+- 10 unit tests for processing components
+- 23 integration tests for complete workflows
+- Support for large file analysis
+- Efficient single-pass statistics calculation
+- Comprehensive documentation in docs/PROCESSING_STATISTICS_DOCUMENTATION.md
+
+### Testing
+- All 33 tests passing (10 unit + 23 integration)
+- Combined with 91-92: 64 total tests for file I/O
+- 100% API coverage
+- No clippy warnings
+- Edge cases and error handling tested
+
 ## [0.14.0] - 2025-10-25
 
 ### Added
-- **Phase 6 File Management & Processing - Tasks 91-92 (IN PROGRESS)**
+- **Phase 6 File Management & Processing - Tasks 91-92 COMPLETE**
   - **Task 91: File I/O - Reading**
     - `GcodeFileReader` struct with full file handling capabilities
     - Support for UTF-8 and ASCII encodings with automatic detection

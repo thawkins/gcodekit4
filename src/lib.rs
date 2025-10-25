@@ -70,7 +70,7 @@ pub use gcode::{
     stream::{FileStreamReader, GcodeStreamReader, PausableStream, StringStreamReader},
 };
 pub use ui::{SettingsDialog, Setting, SettingValue, SettingsCategory, KeyboardShortcut, SettingsPersistence, FirmwareSettingsIntegration, DeviceConsoleManager, DeviceMessageType, ConsoleListener, GcodeEditor, GcodeLine, Token, TokenType};
-pub use utils::{FileEncoding, FileReadStats, FileValidation, GcodeFileReader, RecentFileEntry, RecentFilesManager};
+pub use utils::{FileEncoding, FileReadStats, FileValidation, GcodeFileReader, RecentFileEntry, RecentFilesManager, BoundingBox, FeedRateStats, FileProcessingPipeline, FileStatistics, ProcessedFile, SpindleStats};
 
 /// Library version
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

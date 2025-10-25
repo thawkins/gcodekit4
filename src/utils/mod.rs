@@ -1,10 +1,15 @@
 //! Utility functions and helpers
 
 pub mod file_io;
+pub mod processing;
 
 pub use file_io::{
     FileEncoding, FileReadStats, FileValidation, GcodeFileReader, RecentFileEntry,
     RecentFilesManager,
+};
+pub use processing::{
+    BoundingBox, FeedRateStats, FileProcessingPipeline, FileStatistics, ProcessedFile,
+    SpindleStats,
 };
 
 /// Format a float to a reasonable number of decimal places
