@@ -490,7 +490,7 @@ fn encode_image_to_bytes(img: &RgbaImage) -> Vec<u8> {
     ) {
         Ok(_) => bytes,
         Err(e) => {
-            eprintln!("PNG encoding error: {}", e);
+            tracing::error!("PNG encoding error: {}", e);
             Vec::new()
         }
     }
