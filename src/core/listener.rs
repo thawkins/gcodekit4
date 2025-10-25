@@ -8,6 +8,10 @@ use async_trait::async_trait;
 
 /// Handle for a registered listener
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+/// Handle for a registered controller listener
+///
+/// Uniquely identifies a listener subscription. Can be used to unsubscribe
+/// from controller events.
 pub struct ControllerListenerHandle(pub String);
 
 /// Listener trait for controller events
