@@ -1,17 +1,17 @@
 # GCodeKit4 Project Statistics
 
 ## Overall Project Status
-- **Version**: 0.13.0-alpha
-- **Status**: Phase 5 Complete - Production Ready
-- **Completion**: 82/150 Tasks (55%)
+- **Version**: 0.14.0-alpha
+- **Status**: Phase 6 In Progress (Tasks 91-92 Complete)
+- **Completion**: 84/150 Tasks (56%)
 - **Build Date**: 2025-10-25
-- **Last Updated**: 2025-10-25 03:20 UTC
+- **Last Updated**: 2025-10-25 03:31 UTC
 
 ## Code Metrics
 
 ### Total Lines of Code
 ```
-Rust Implementation:  ~32,500+ lines
+Rust Implementation:  ~33,200+ lines (added 700+ for file I/O)
   - UI Module:        ~11,800 lines (24 files)
   - Firmware:         ~8,000 lines (GRBL, TinyG, g2core, FluidNC, Smoothieware)
   - Core:             ~3,500 lines (controllers, events, messaging, state)
@@ -19,12 +19,12 @@ Rust Implementation:  ~32,500+ lines
   - G-Code:           ~2,000 lines (parser, preprocessors, validation)
   - Visualizer:       ~2,300 lines (3D rendering, toolpath)
   - Data Models:      ~1,200 lines (positions, commands, states)
-  - Utilities:        ~1,300 lines (helpers, conversions, calculations)
+  - Utilities:        ~2,000 lines (helpers, conversions, file I/O)
 
 Slint UI:             ~1,300+ lines
   - Main interface    ~1,260 lines
 
-Tests:                ~421 tests
+Tests:                ~451 tests (added 30 for file I/O)
   - All modules       100% pass rate (0 failures)
 ```
 
@@ -47,13 +47,61 @@ src/
 ├── visualizer/            2,300 lines
 ├── core/                  3,500 lines
 ├── data/                  1,200 lines
-├── utils/                 1,300 lines
-└── main.rs                500 lines
+├── utils/
+│   ├── mod.rs            50 lines
+│   └── [NEW] file_io.rs  750 lines (file I/O implementation)
+└── main.rs               500 lines
+
+tests/
+├── [NEW] file_io_91_92.rs   21 integration tests
+└── ... (existing tests)
 ```
 
-## Phase 5 Completion Summary
+## Phase 6 Progress (Tasks 91-120)
 
-### Tasks 83-90: New Implementation (All Complete ✅)
+### Tasks 91-92: File I/O and Recent Files ✅ COMPLETE
+
+#### Task 91: File I/O - Reading ✅
+**Module: src/utils/file_io.rs (700 lines)**
+- `GcodeFileReader` struct with comprehensive file handling
+- Encoding detection (UTF-8, ASCII) with automatic detection
+- Memory-efficient streaming with configurable buffer (256 KB)
+- Three reading modes:
+  - `read_all()` - Load entire file into memory
+  - `read_lines()` - Stream with callback for each line
+  - `read_lines_limited()` - Preview mode with line limit
+- File validation with motion command detection
+- `FileValidation` struct with:
+  - Empty file detection
+  - Motion command counting (rapid G0, linear G1, arc G2/G3)
+  - Long line warnings
+  - Comprehensive error reporting
+- `FileReadStats` for progress tracking (bytes, lines, encoding, time)
+- Progress percentage calculation
+- **Tests**: 11 unit tests + 11 integration tests (all passing)
+
+#### Task 92: File I/O - Recent Files ✅
+**Module: src/utils/file_io.rs (continued)**
+- `RecentFilesManager` for tracking recently opened files
+- `RecentFileEntry` with full metadata:
+  - File path and name
+  - File size with formatted display (B, KB, MB)
+  - Open timestamp and last accessed timestamp
+- Automatic JSON persistence with configurable save path
+- LRU (Least Recently Used) ordering - most recent first
+- Duplicate file handling (moves to front instead of duplicating)
+- Maximum file limit with automatic trimming
+- File operations:
+  - `add()` - Add/update file in list
+  - `remove()` - Remove specific file
+  - `clear()` - Clear all history
+  - `find_by_path()` - Find entry by path
+  - `touch()` - Update access time and move to front
+  - `get()` - Get by index
+  - `list()` - Get all entries
+- Load/save functionality for cross-session history
+- Thread-safe operations
+- **Tests**: 10 integration tests (all passing)
 
 #### Task 83: 3D Visualizer Features ✅
 - Work coordinate system rendering

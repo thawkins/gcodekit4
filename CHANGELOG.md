@@ -5,6 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.0] - 2025-10-25
+
+### Added
+- **Phase 6 File Management & Processing - Tasks 91-92 (IN PROGRESS)**
+  - **Task 91: File I/O - Reading**
+    - `GcodeFileReader` struct with full file handling capabilities
+    - Support for UTF-8 and ASCII encodings with automatic detection
+    - Streaming line-by-line reading with memory efficiency for large files
+    - `read_all()` for full file loading
+    - `read_lines()` for memory-efficient streaming
+    - `read_lines_limited()` for preview functionality
+    - Buffer-based reading (256 KB buffer) for optimal I/O performance
+    - `FileEncoding` enum for encoding support and detection
+    - `FileReadStats` struct with progress tracking (bytes, lines, encoding, time)
+    - `FileValidation` struct with comprehensive file validation
+    - Validation checks: empty files, missing motion commands, line length warnings
+    - Motion command detection and counting (rapid G0, linear G1, arc G2/G3)
+  - **Task 92: File I/O - Recent Files**
+    - `RecentFilesManager` for tracking recently opened files
+    - `RecentFileEntry` with full metadata (path, name, size, timestamps)
+    - Automatic persistence to JSON with configurable save path
+    - Recently-used file ordering with LRU behavior
+    - Duplicate file handling (moves to front instead of duplicating)
+    - Maximum file limit with automatic trimming
+    - File operations: add, remove, clear, find, touch, get_by_index
+    - Load/save functionality for cross-session history
+    - Formatted file size display (B, KB, MB)
+    - Updated access timestamps for all operations
+
+### Infrastructure
+- New utils module: `file_io` with comprehensive file handling
+- 30 new unit and integration tests (all passing)
+- 9 module-level unit tests for encoding, validation, stats
+- 21 integration tests for complete workflows
+- Support for large file streaming to prevent memory exhaustion
+- Comprehensive documentation with examples
+- Full docblock documentation on all public APIs
+
+### Testing
+- All 30 unit tests passing
+- All 21 integration tests passing (file_io_91_92.rs)
+- Encoding detection validated
+- File validation workflows tested
+- Recent files persistence verified
+- Complete file I/O workflows validated
+- No clippy warnings on new code
+
 ## [0.13.0] - 2025-10-25
 
 ### Added

@@ -1,5 +1,12 @@
 //! Utility functions and helpers
 
+pub mod file_io;
+
+pub use file_io::{
+    FileEncoding, FileReadStats, FileValidation, GcodeFileReader, RecentFileEntry,
+    RecentFilesManager,
+};
+
 /// Format a float to a reasonable number of decimal places
 pub fn format_float(value: f64, precision: usize) -> String {
     format!("{:.prec$}", value, prec = precision)
