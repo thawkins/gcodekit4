@@ -5,6 +5,7 @@ pub mod processing;
 pub mod export;
 pub mod advanced;
 pub mod phase6_extended;
+pub mod phase7;
 
 pub use file_io::{
     FileEncoding, FileReadStats, FileValidation, GcodeFileReader, RecentFileEntry,
@@ -29,6 +30,14 @@ pub use phase6_extended::{
     Bookmark, BookmarkManager, ProgramState, PerformanceMetrics, HistoryEntry, CommandHistory,
     CustomMacro, PendantButton, PendantConfig, CustomAction, AutoConnectConfig, NetworkConfig,
     LogEntry, DataLogger, Alarm, AlarmType, AlarmManager,
+};
+pub use phase7::{
+    EmergencyStopManager, EmergencyStopState, MotionInterlock, FeedHoldManager,
+    SafetyFeaturesManager, SafetyError,
+    Plugin, PluginMetadata, PluginConfig, PluginRegistry, PluginError,
+    ExportFormat, PostProcessor, FormatExporter,
+    CalibrationStep, CalibrationResult, CalibrationStepType, CalibrationWizard,
+    CommunicationDiagnostics, BufferDiagnostics, PerformanceProfiler, DiagnosticReport,
 };
 
 /// Format a float to a reasonable number of decimal places
