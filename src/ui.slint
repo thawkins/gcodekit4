@@ -307,6 +307,7 @@ export component MainWindow inherits Window {
             // Center panel - File and Viewer
             VerticalBox {
                 spacing: 0px;
+                horizontal-stretch: 1.0;
                 
                 // Tab bar
                 Rectangle {
@@ -473,6 +474,7 @@ export component MainWindow inherits Window {
                 // GCode Editor View
                 if current-view == "gcode-editor" : VerticalBox {
                     spacing: 0px;
+                    horizontal-stretch: 1.0;
                     
                     // File Operations Toolbar
                     Rectangle {
@@ -556,6 +558,7 @@ export component MainWindow inherits Window {
                 if current-view == "device-console" : VerticalBox {
                     spacing: 5px;
                     padding: 10px;
+                    horizontal-stretch: 1.0;
                     
                     HorizontalBox {
                         spacing: 5px;
@@ -593,6 +596,7 @@ export component MainWindow inherits Window {
                 if current-view == "machine" : VerticalBox {
                     spacing: 0px;
                     padding: 10px;
+                    horizontal-stretch: 1.0;
                     
                     ScrollView {
                         VerticalBox {
@@ -693,6 +697,7 @@ export component MainWindow inherits Window {
                 if current-view == "file-validation" : VerticalBox {
                     spacing: 0px;
                     padding: 10px;
+                    horizontal-stretch: 1.0;
                     
                     ScrollView {
                         VerticalBox {
@@ -883,6 +888,7 @@ export component MainWindow inherits Window {
                 if current-view == "advanced-features" : VerticalBox {
                     spacing: 0px;
                     padding: 10px;
+                    horizontal-stretch: 1.0;
                     
                     ScrollView {
                         VerticalBox {
@@ -1130,6 +1136,7 @@ export component MainWindow inherits Window {
                 if current-view == "safety-diagnostics" : VerticalBox {
                     spacing: 0px;
                     padding: 10px;
+                    horizontal-stretch: 1.0;
                     
                     ScrollView {
                         VerticalBox {
