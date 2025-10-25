@@ -98,6 +98,7 @@ export component MainWindow inherits Window {
     callback zoom-in();
     callback zoom-out();
     callback reset-view();
+    callback fit-to-view();
     callback pan-left();
     callback pan-right();
     callback pan-up();
@@ -603,6 +604,10 @@ if current-view == "safety-diagnostics" : SafetyDiagnosticsPanel {
                     
                     reset-view => {
                         root.reset-view();
+                    }
+                    
+                    fit-to-view => {
+                        root.fit-to-view();
                     }
                     
                     pan-left => {

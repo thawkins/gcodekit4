@@ -253,6 +253,84 @@ impl Visualizer2D {
         self.x_offset = 0.0;
         self.y_offset = 0.0;
     }
+
+    /// Calculate zoom and offset to fit all cutting commands in view with 5% margin
+    pub fn fit_to_view(&mut self, canvas_width: f32, canvas_height: f32) {
+        // Calculate bounding box of all non-rapid moves (cutting commands)
+        let mut min_x = f32::MAX;
+        let mut max_x = f32::MIN;
+        let mut min_y = f32::MAX;
+        let mut max_y = f32::MIN;
+
+        for cmd in &self.commands {
+            match cmd {
+                GCodeCommand::Move { to, rapid, .. } => {
+                    if !rapid {
+                        // Only consider cutting moves, not rapid moves
+                        min_x = min_x.min(to.x);
+                        max_x = max_x.max(to.x);
+                        min_y = min_y.min(to.y);
+                        max_y = max_y.max(to.y);
+                    }
+                }
+                GCodeCommand::Arc { to, .. } => {
+                    // Arcs are always cutting
+                    min_x = min_x.min(to.x);
+                    max_x = max_x.max(to.x);
+                    min_y = min_y.min(to.y);
+                    max_y = max_y.max(to.y);
+                }
+            }
+        }
+
+        // If no cutting commands found, reset to default
+        if min_x == f32::MAX || max_x == f32::MIN || min_y == f32::MAX || max_y == f32::MIN {
+            self.zoom_scale = 1.0;
+            self.x_offset = 0.0;
+            self.y_offset = 0.0;
+            return;
+        }
+
+        // Calculate dimensions
+        let bbox_width = max_x - min_x;
+        let bbox_height = max_y - min_y;
+
+        // Add 5% margin on each side (total 10% added)
+        let margin_factor = 0.05;
+        let padded_width = bbox_width * (1.0 + 2.0 * margin_factor);
+        let padded_height = bbox_height * (1.0 + 2.0 * margin_factor);
+
+        // Calculate scale to fit within canvas (leaving 20px padding on sides)
+        let padding = 20.0;
+        let available_width = canvas_width - 2.0 * padding;
+        let available_height = canvas_height - 2.0 * padding;
+
+        let scale_x = available_width / padded_width;
+        let scale_y = available_height / padded_height;
+
+        // Use the smaller scale to fit in both dimensions
+        let scale = scale_x.min(scale_y);
+
+        // Calculate position to center the bounding box with margin
+        let bbox_min_x_padded = min_x - bbox_width * margin_factor;
+        let bbox_min_y_padded = min_y - bbox_height * margin_factor;
+
+        // Center the scaled content
+        let scaled_bbox_width = padded_width * scale;
+        let scaled_bbox_height = padded_height * scale;
+
+        let center_x = (canvas_width - scaled_bbox_width) / 2.0;
+        let center_y = (canvas_height - scaled_bbox_height) / 2.0;
+
+        // Calculate offsets
+        let offset_x = center_x - (bbox_min_x_padded * scale) - padding;
+        let offset_y = center_y + (bbox_min_y_padded * scale) + padding;
+
+        // Apply calculated values
+        self.zoom_scale = scale;
+        self.x_offset = offset_x;
+        self.y_offset = offset_y;
+    }
 }
 
 impl Visualizer2D {

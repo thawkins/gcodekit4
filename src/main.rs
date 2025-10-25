@@ -1054,6 +1054,110 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
+    // Handle fit to view button
+    let window_weak_fit = main_window.as_weak();
+    let zoom_for_fit = zoom_scale.clone();
+    let pan_for_fit = pan_offset.clone();
+    main_window.on_fit_to_view(move || {
+        info!("Fit to view requested");
+        
+        if let Some(window) = window_weak_fit.upgrade() {
+            let content = window.get_gcode_content();
+            
+            if content.is_empty() {
+                window.set_visualizer_status(slint::SharedString::from("No G-code loaded"));
+                return;
+            }
+            
+            info!("Calculating fit-to-view for {} chars", content.len());
+            
+            // Reset progress
+            window.set_visualizer_progress(0.0);
+            window.set_visualizer_status(slint::SharedString::from("Fitting to view..."));
+            
+            // Clear current image to show loading state
+            window.set_visualization_image(slint::Image::default());
+            
+            // Spawn calculation thread
+            let content_owned = content.to_string();
+            let (tx, rx) = std::sync::mpsc::channel();
+            let window_weak_render = window_weak_fit.clone();
+            let zoom_fit_render = zoom_for_fit.clone();
+            let pan_fit_render = pan_for_fit.clone();
+            
+            std::thread::spawn(move || {
+                use gcodekit4::visualizer::Visualizer2D;
+                
+                let _ = tx.send((0.1, "Parsing G-code...".to_string(), None));
+                
+                let mut visualizer = Visualizer2D::new();
+                visualizer.parse_gcode(&content_owned);
+                
+                let _ = tx.send((0.2, "Calculating bounding box...".to_string(), None));
+                
+                // Calculate fit parameters (canvas is 800x600)
+                visualizer.fit_to_view(800.0, 600.0);
+                
+                // Apply fit parameters to shared state
+                if let Ok(mut scale) = zoom_fit_render.lock() {
+                    *scale = visualizer.zoom_scale;
+                    info!("Fit zoom scale: {}%", (*scale * 100.0).round() as u32);
+                }
+                
+                if let Ok(mut offsets) = pan_fit_render.lock() {
+                    offsets.0 = visualizer.x_offset;
+                    offsets.1 = visualizer.y_offset;
+                    info!("Fit offsets: x={}, y={}", offsets.0, offsets.1);
+                }
+                
+                let _ = tx.send((0.3, "Rendering image...".to_string(), None));
+                
+                let image_bytes = visualizer.render(800, 600);
+                
+                if !image_bytes.is_empty() {
+                    let _ = tx.send((0.7, "Encoding PNG...".to_string(), None));
+                    let _ = tx.send((1.0, "Complete".to_string(), Some(image_bytes)));
+                } else {
+                    let _ = tx.send((1.0, "Error: no image data".to_string(), None));
+                }
+            });
+            
+            // Process messages from rendering thread
+            std::thread::spawn(move || {
+                while let Ok((progress, status, image_data)) = rx.recv() {
+                    let window_handle = window_weak_render.clone();
+                    let status_clone = status.clone();
+                    let image_clone = image_data.clone();
+                    
+                    slint::invoke_from_event_loop(move || {
+                        if let Some(window) = window_handle.upgrade() {
+                            window.set_visualizer_progress(progress);
+                            window.set_visualizer_status(slint::SharedString::from(status_clone));
+                            
+                            if let Some(png_bytes) = image_clone {
+                                if let Ok(img) = image::load_from_memory_with_format(
+                                    &png_bytes,
+                                    image::ImageFormat::Png,
+                                ) {
+                                    let rgba_img = img.to_rgba8();
+                                    let img_buffer = slint::Image::from_rgba8(
+                                        slint::SharedPixelBuffer::clone_from_slice(
+                                            &rgba_img,
+                                            rgba_img.width(),
+                                            rgba_img.height(),
+                                        ),
+                                    );
+                                    window.set_visualization_image(img_buffer);
+                                }
+                            }
+                        }
+                    })
+                    .ok();
+                }
+            });
+        }
+    });
+
     // Handle pan left button
     let pan_left_clone = pan_offset.clone();
     let window_weak_pan_left = main_window.as_weak();
