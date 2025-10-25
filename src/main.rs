@@ -383,8 +383,40 @@ fn main() -> anyhow::Result<()> {
                     // Render visualization in background thread to avoid blocking UI
                     let window_weak = window.as_weak();
                     let content_clone = content.clone();
+                    
+                    // Use a channel to communicate progress from background thread
+                    let (tx, rx) = std::sync::mpsc::channel();
+                    
+                    eprintln!("DEBUG: About to spawn visualization thread with {} bytes of content", content_clone.len());
                     std::thread::spawn(move || {
-                        render_gcode_visualization_background(window_weak, content_clone);
+                        eprintln!("DEBUG: Visualization thread started");
+                        render_gcode_visualization_background_channel(content_clone, tx);
+                        eprintln!("DEBUG: Visualization thread completed");
+                    });
+                    
+                    // Process messages from the rendering thread on the main UI thread
+                    let window_weak_ui = window.as_weak();
+                    std::thread::spawn(move || {
+                        while let Ok((progress, status, image_data)) = rx.recv() {
+                            eprintln!("DEBUG: Main thread received progress: {}", progress);
+                            if let Some(window) = window_weak_ui.upgrade() {
+                                window.set_visualizer_progress(progress);
+                                window.set_visualizer_status(slint::SharedString::from(status.clone()));
+                                
+                                if let Some(png_bytes) = image_data {
+                                    if let Ok(img) = image::load_from_memory_with_format(&png_bytes, image::ImageFormat::Png) {
+                                        let rgba_img = img.to_rgba8();
+                                        let img_buffer = slint::Image::from_rgba8(slint::SharedPixelBuffer::clone_from_slice(
+                                            &rgba_img,
+                                            rgba_img.width(),
+                                            rgba_img.height(),
+                                        ));
+                                        window.set_visualization_image(img_buffer);
+                                        eprintln!("DEBUG: Set visualization image");
+                                    }
+                                }
+                            }
+                        }
                     });
                     
                     // DEBUG: Log console update
@@ -846,77 +878,48 @@ fn render_gcode_visualization(window: &MainWindow, gcode_content: &str) {
     }
 }
 
-/// Render G-code visualization in background thread
-fn render_gcode_visualization_background(window_weak: slint::Weak<MainWindow>, gcode_content: String) {
+/// Render G-code visualization in background thread using message passing
+fn render_gcode_visualization_background_channel(
+    gcode_content: String,
+    tx: std::sync::mpsc::Sender<(f32, String, Option<Vec<u8>>)>,
+) {
     use gcodekit4::visualizer::Visualizer2D;
     
-    info!("Starting background G-code visualization rendering");
+    eprintln!("DEBUG: render_gcode_visualization_background_channel called with {} bytes", gcode_content.len());
     
-    // gcode_content is already owned, no need to convert
-    
-    if let Some(window) = window_weak.upgrade() {
-        window.set_visualizer_progress(0.1);
-        window.set_visualizer_status(slint::SharedString::from("Parsing G-code..."));
-    }
+    let _ = tx.send((0.1, "Parsing G-code...".to_string(), None));
+    eprintln!("DEBUG: Sent 0.1 progress");
     
     // Parse G-code
+    eprintln!("DEBUG: Creating visualizer");
     let mut visualizer = Visualizer2D::new();
+    eprintln!("DEBUG: Parsing gcode...");
     visualizer.parse_gcode(&gcode_content);
     
     let cmd_count = visualizer.get_command_count();
-    info!("Parsed {} G-code commands", cmd_count);
+    eprintln!("DEBUG: Parsed {} G-code commands", cmd_count);
     
-    if let Some(window) = window_weak.upgrade() {
-        window.set_visualizer_progress(0.3);
-        window.set_visualizer_status(slint::SharedString::from("Rendering image..."));
-    }
+    let _ = tx.send((0.3, "Rendering image...".to_string(), None));
+    eprintln!("DEBUG: Sent 0.3 progress");
     
     // Render to image
     let image_bytes = visualizer.render(800, 600);
+    eprintln!("DEBUG: Rendered image: {} bytes", image_bytes.len());
     
-    info!("Rendered image: {} bytes", image_bytes.len());
-    
-    if image_bytes.is_empty() {
-        info!("ERROR: No image bytes produced");
-        if let Some(window) = window_weak.upgrade() {
-            window.set_visualizer_status(slint::SharedString::from("Error: empty image"));
-        }
-        return;
+    if !image_bytes.is_empty() {
+        let _ = tx.send((0.7, "Encoding PNG...".to_string(), None));
+        eprintln!("DEBUG: Sent 0.7 progress");
+        
+        let _ = tx.send((1.0, "Complete".to_string(), Some(image_bytes)));
+        eprintln!("DEBUG: Sent 1.0 progress with image");
+    } else {
+        let _ = tx.send((1.0, "Error: no image data".to_string(), None));
+        eprintln!("DEBUG: Sent error");
     }
-    
-    if let Some(window) = window_weak.upgrade() {
-        window.set_visualizer_progress(0.7);
-        window.set_visualizer_status(slint::SharedString::from("Encoding PNG..."));
-    }
-    
-    // Convert PNG bytes to slint Image
-    match image::load_from_memory_with_format(&image_bytes, image::ImageFormat::Png) {
-        Ok(img) => {
-            info!("Image loaded successfully: {}x{}", img.width(), img.height());
-            let rgba_img = img.to_rgba8();
-            let img_buffer = slint::Image::from_rgba8(slint::SharedPixelBuffer::clone_from_slice(
-                &rgba_img,
-                rgba_img.width(),
-                rgba_img.height(),
-            ));
-            
-            info!("Created Slint image buffer");
-            
-            // Update UI from background thread
-            if let Some(window) = window_weak.upgrade() {
-                window.set_visualization_image(img_buffer);
-                window.set_visualizer_progress(1.0);
-                window.set_visualizer_status(slint::SharedString::from("Complete"));
-                info!("Visualization set on window");
-            } else {
-                info!("ERROR: Could not upgrade window");
-            }
-        }
-        Err(e) => {
-            info!("ERROR: Failed to load rendered image: {}", e);
-            if let Some(window) = window_weak.upgrade() {
-                window.set_visualizer_status(slint::SharedString::from("Error rendering"));
-            }
-        }
-    }
+}
+
+/// Render G-code visualization in background thread
+#[allow(dead_code)]
+fn render_gcode_visualization_background(_window_weak: slint::Weak<MainWindow>, _gcode_content: String) {
+    // This function is deprecated - use render_gcode_visualization_background_channel instead
 }
