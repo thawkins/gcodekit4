@@ -394,28 +394,36 @@ fn main() -> anyhow::Result<()> {
                         eprintln!("DEBUG: Visualization thread completed");
                     });
                     
-                    // Process messages from the rendering thread on the main UI thread
-                    let window_weak_ui = window.as_weak();
+                    // Use Slint's invoke_from_event_loop to safely update UI from background thread
                     std::thread::spawn(move || {
                         while let Ok((progress, status, image_data)) = rx.recv() {
                             eprintln!("DEBUG: Main thread received progress: {}", progress);
-                            if let Some(window) = window_weak_ui.upgrade() {
-                                window.set_visualizer_progress(progress);
-                                window.set_visualizer_status(slint::SharedString::from(status.clone()));
-                                
-                                if let Some(png_bytes) = image_data {
-                                    if let Ok(img) = image::load_from_memory_with_format(&png_bytes, image::ImageFormat::Png) {
-                                        let rgba_img = img.to_rgba8();
-                                        let img_buffer = slint::Image::from_rgba8(slint::SharedPixelBuffer::clone_from_slice(
-                                            &rgba_img,
-                                            rgba_img.width(),
-                                            rgba_img.height(),
-                                        ));
-                                        window.set_visualization_image(img_buffer);
-                                        eprintln!("DEBUG: Set visualization image");
+                            
+                            // Use invoke_from_event_loop to update UI safely
+                            let window_handle = window_weak.clone();
+                            let status_clone = status.clone();
+                            let image_clone = image_data.clone();
+                            
+                            slint::invoke_from_event_loop(move || {
+                                if let Some(window) = window_handle.upgrade() {
+                                    window.set_visualizer_progress(progress);
+                                    window.set_visualizer_status(slint::SharedString::from(status_clone.clone()));
+                                    eprintln!("DEBUG: Updated progress to {}", progress);
+                                    
+                                    if let Some(png_bytes) = image_clone {
+                                        if let Ok(img) = image::load_from_memory_with_format(&png_bytes, image::ImageFormat::Png) {
+                                            let rgba_img = img.to_rgba8();
+                                            let img_buffer = slint::Image::from_rgba8(slint::SharedPixelBuffer::clone_from_slice(
+                                                &rgba_img,
+                                                rgba_img.width(),
+                                                rgba_img.height(),
+                                            ));
+                                            window.set_visualization_image(img_buffer);
+                                            eprintln!("DEBUG: Set visualization image");
+                                        }
                                     }
                                 }
-                            }
+                            }).ok();
                         }
                     });
                     
