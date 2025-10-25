@@ -125,7 +125,7 @@ impl JogCommand {
 
     /// Format jog command as GRBL G-code
     pub fn to_gcode(&self) -> String {
-        let axis_code = match self.plane {
+        let _axis_code = match self.plane {
             JogMode::XY => "G0 X",
             JogMode::XZ => "G0 X",
             JogMode::YZ => "G0 Y",

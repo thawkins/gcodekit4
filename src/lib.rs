@@ -18,6 +18,8 @@
 //! 6. **ui** - Slint-based user interface (11 panels)
 //! 7. **visualizer** - wgpu 3D rendering with interactive controls
 //! 8. **utils** - Helper functions and common utilities
+
+#![allow(dead_code)] // Allow dead code for infrastructure/future features
 //!
 //! ## Features
 //!

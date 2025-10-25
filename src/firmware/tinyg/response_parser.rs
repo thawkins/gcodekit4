@@ -103,6 +103,7 @@ impl Default for TinyGStatus {
 
 /// TinyG response parser
 #[derive(Debug, Default)]
+#[allow(dead_code)]
 pub struct TinyGResponseParser {
     /// Partial response buffer (for multi-line responses)
     buffer: String,

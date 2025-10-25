@@ -362,6 +362,7 @@ fn draw_cross(img: &mut RgbaImage, cx: i32, cy: i32, size: i32, color: Rgba<u8>)
 }
 
 /// Draw a simple grid
+#[allow(dead_code)]
 fn draw_grid(
     img: &mut RgbaImage,
     width: u32,

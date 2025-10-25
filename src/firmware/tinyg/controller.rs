@@ -53,6 +53,7 @@ impl Default for TinyGControllerState {
 ///
 /// Implements the ControllerTrait for TinyG firmware with full protocol support.
 /// TinyG uses JSON-based communication for increased flexibility and feature support.
+#[allow(dead_code)]
 pub struct TinyGController {
     /// Name identifier
     name: String,
@@ -84,6 +85,7 @@ impl TinyGController {
     }
 
     /// Initialize the controller and query its capabilities
+    #[allow(dead_code)]
     fn initialize(&self) -> anyhow::Result<()> {
         debug!("Initializing TinyG controller");
 

@@ -63,12 +63,12 @@ impl AppConfig {
     }
 
     /// Load from file
-    pub fn load_from_file(path: &PathBuf) -> Result<Self, String> {
+    pub fn load_from_file(_path: &PathBuf) -> Result<Self, String> {
         Ok(Self::new())
     }
 
     /// Save to file
-    pub fn save_to_file(&self, path: &PathBuf) -> Result<(), String> {
+    pub fn save_to_file(&self, _path: &PathBuf) -> Result<(), String> {
         Ok(())
     }
 }

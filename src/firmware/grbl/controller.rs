@@ -50,6 +50,7 @@ impl Default for GrblControllerState {
 /// GRBL Controller implementation
 ///
 /// Implements the ControllerTrait for GRBL firmware with full protocol support.
+#[allow(dead_code)]
 pub struct GrblController {
     /// Name identifier
     name: String,

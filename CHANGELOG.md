@@ -5,6 +5,49 @@ All notable changes to this project should be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.0] - 2025-10-25
+
+### Added
+- **2D G-Code Visualizer - Complete Implementation**
+  - ✅ **Rendering Engine**: Full 2D visualization system for G-code toolpaths
+    - `src/visualizer/visualizer_2d.rs` - Core 2D visualization module
+    - Renders to 800x600 PNG images with auto-scaling
+    - Supports G0 (rapid), G1 (linear), G2/G3 (arc) commands
+    - Color-coded visualization: Blue (cutting), Gray (rapid), Red (arcs)
+    - Start/end point markers and origin indicator
+  - ✅ **Background Thread Processing**: Non-blocking visualization rendering
+    - File loading completes immediately
+    - Visualization renders asynchronously in background thread
+    - Progress indicator updates (0.1 → 1.0) showing render stages
+    - Status messages: "Parsing G-code...", "Rendering image...", "Complete"
+  - ✅ **UI Integration**: Slint image display component
+    - `src/ui_panels/gcode_visualizer.slint` updated with Image component
+    - Displays rendered PNG when visualization-image is available
+    - Shows loading state while rendering
+  - ✅ **Safety & Performance**
+    - Safe integer arithmetic (safe_to_i32 function)
+    - Iteration limits on drawing loops to prevent hangs
+    - Overflow protection with saturating operations
+    - Proper error handling and reporting
+  - ✅ **Dependencies**: Added `image = "0.25"` for PNG encoding/decoding
+
+### Fixed
+- **Overflow Errors in Bresenham Algorithm**
+  - Changed error calculations to use i64 instead of i32
+  - Added bounds checking with saturating arithmetic
+  - Fixed infinite loops in line drawing with iteration limits
+- **UI Blocking During File Load**
+  - Moved visualization rendering to background thread
+  - Used Slint weak references for thread-safe UI updates
+  - Fixed reference lifetime issue (owned vs borrowed references)
+- **Grid and Arc Drawing Issues**
+  - Added maximum iteration limit to grid drawing (200 lines)
+  - Limited arc segments to 1000 steps maximum
+  - Added safety checks for invalid arc parameters
+- **PNG Encoding Errors**
+  - Proper error handling in image encoding
+  - Reports encoding failures with detailed logging
+
 ## [0.23.0] - 2025-10-25
 
 ### Changed

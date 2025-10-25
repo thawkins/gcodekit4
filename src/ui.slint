@@ -776,13 +776,17 @@ if current-view == "gcode-visualizer" : GcodeVisualizerPanel {
                     height: 50px;
                     background: #2c3e50;
                     
-                    Text {
-                        text: "Preferences";
-                        font-size: 18px;
-                        font-weight: 700;
-                        color: white;
-                        vertical-alignment: center;
+                    VerticalBox {
                         padding-left: 20px;
+                        alignment: center;
+                        
+                        Text {
+                            text: "Preferences";
+                            font-size: 18px;
+                            font-weight: 700;
+                            color: white;
+                            vertical-alignment: center;
+                        }
                     }
                 }
                 
@@ -804,12 +808,16 @@ if current-view == "gcode-visualizer" : GcodeVisualizerPanel {
                                 height: 35px;
                                 background: settings-category == "controller" ? #3d5470 : transparent;
                                 
-                                Text {
-                                    text: "Controller";
-                                    color: white;
-                                    font-size: 12px;
-                                    vertical-alignment: center;
+                                HorizontalBox {
                                     padding-left: 10px;
+                                    alignment: center;
+                                    
+                                    Text {
+                                        text: "Controller";
+                                        color: white;
+                                        font-size: 12px;
+                                        vertical-alignment: center;
+                                    }
                                 }
                                 
                                 TouchArea {
@@ -825,12 +833,16 @@ if current-view == "gcode-visualizer" : GcodeVisualizerPanel {
                                 height: 35px;
                                 background: settings-category == "ui" ? #3d5470 : transparent;
                                 
-                                Text {
-                                    text: "User Interface";
-                                    color: white;
-                                    font-size: 12px;
-                                    vertical-alignment: center;
+                                HorizontalBox {
                                     padding-left: 10px;
+                                    alignment: center;
+                                    
+                                    Text {
+                                        text: "User Interface";
+                                        color: white;
+                                        font-size: 12px;
+                                        vertical-alignment: center;
+                                    }
                                 }
                                 
                                 TouchArea {
@@ -846,12 +858,16 @@ if current-view == "gcode-visualizer" : GcodeVisualizerPanel {
                                 height: 35px;
                                 background: settings-category == "file" ? #3d5470 : transparent;
                                 
-                                Text {
-                                    text: "File Processing";
-                                    color: white;
-                                    font-size: 12px;
-                                    vertical-alignment: center;
+                                HorizontalBox {
                                     padding-left: 10px;
+                                    alignment: center;
+                                    
+                                    Text {
+                                        text: "File Processing";
+                                        color: white;
+                                        font-size: 12px;
+                                        vertical-alignment: center;
+                                    }
                                 }
                                 
                                 TouchArea {
@@ -867,12 +883,16 @@ if current-view == "gcode-visualizer" : GcodeVisualizerPanel {
                                 height: 35px;
                                 background: settings-category == "shortcuts" ? #3d5470 : transparent;
                                 
-                                Text {
-                                    text: "Keyboard";
-                                    color: white;
-                                    font-size: 12px;
-                                    vertical-alignment: center;
+                                HorizontalBox {
                                     padding-left: 10px;
+                                    alignment: center;
+                                    
+                                    Text {
+                                        text: "Keyboard";
+                                        color: white;
+                                        font-size: 12px;
+                                        vertical-alignment: center;
+                                    }
                                 }
                                 
                                 TouchArea {
@@ -888,12 +908,16 @@ if current-view == "gcode-visualizer" : GcodeVisualizerPanel {
                                 height: 35px;
                                 background: settings-category == "advanced" ? #3d5470 : transparent;
                                 
-                                Text {
-                                    text: "Advanced";
-                                    color: white;
-                                    font-size: 12px;
-                                    vertical-alignment: center;
+                                HorizontalBox {
                                     padding-left: 10px;
+                                    alignment: center;
+                                    
+                                    Text {
+                                        text: "Advanced";
+                                        color: white;
+                                        font-size: 12px;
+                                        vertical-alignment: center;
+                                    }
                                 }
                                 
                                 TouchArea {

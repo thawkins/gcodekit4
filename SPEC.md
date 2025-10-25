@@ -1151,6 +1151,13 @@ G54                ; Back to work coordinates
 - Buffer management: <1ms latency
 - UI responsiveness: <100ms update latency
 
+**2D Visualization**:
+- Render time: <100ms for typical G-code files
+- Supported formats: PNG (800x600)
+- Color coding: Blue (cutting), Gray (rapid), Red (arcs)
+- Auto-scaling: Maintains aspect ratio
+- Concurrent rendering: Background thread processing
+
 **3D Visualization**:
 - Render frame rate: >30 FPS
 - Toolpath vertex generation: <100ms for 100K lines
@@ -1159,6 +1166,7 @@ G54                ; Back to work coordinates
 **Memory Usage**:
 - Idle state: <50MB
 - With 100K line file loaded: <150MB
+- 2D visualization: <10MB per render
 - 3D visualization: <100MB additional
 
 ### 6.2 Reliability

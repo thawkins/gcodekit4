@@ -89,6 +89,7 @@ pub struct SettingsResponse {
 }
 
 /// GRBL response parser
+#[allow(dead_code)]
 pub struct GrblResponseParser {
     settings_cache: Vec<SettingsResponse>,
 }

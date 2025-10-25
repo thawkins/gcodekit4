@@ -15,7 +15,7 @@
 
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 
 /// Token types for G-Code syntax highlighting
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

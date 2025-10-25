@@ -812,6 +812,7 @@ fn get_available_ports() -> anyhow::Result<Vec<slint::SharedString>> {
 }
 
 /// Render G-code visualization to an image
+#[allow(dead_code)]
 fn render_gcode_visualization(window: &MainWindow, gcode_content: &str) {
     use gcodekit4::visualizer::Visualizer2D;
     
