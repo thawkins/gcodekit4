@@ -592,6 +592,9 @@ if current-view == "safety-diagnostics" : SafetyDiagnosticsPanel {
                     work-z: Math.round(root.position-c * 1000) / 1000 + "";
                     progress: root.visualizer-progress;
                     visualizer-status: root.visualizer-status;
+                    x-offset: root.visualizer-x-offset;
+                    y-offset: root.visualizer-y-offset;
+                    zoom-scale: root.visualizer-zoom-scale;
                     
                     refresh-visualization => {
                         root.refresh-visualization();

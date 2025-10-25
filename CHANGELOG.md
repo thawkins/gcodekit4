@@ -24,6 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `src/ui_panels/gcode_visualizer.slint` updated with Image component
     - Displays rendered PNG when visualization-image is available
     - Shows loading state while rendering
+  - ✅ **Interactive Controls**: Full visualization interactivity
+    - **Zoom Controls**: Zoom In/Out buttons increase/decrease scaling by 10%
+    - **Pan Controls**: Move Up/Down/Left/Right buttons pan the view by 10% increments
+    - **Fit Button**: Auto-fits bounding box with 5% margin on all sides
+    - **Reset Button**: Resets zoom (1.0), pan offsets (0, 0), and x/y_offset to default
+    - **Refresh Button**: Forces redraw of visualization with current parameters
+    - **Live Indicators**: Display current x_offset, y_offset, and scaling_factor values
   - ✅ **Safety & Performance**
     - Safe integer arithmetic (safe_to_i32 function)
     - Iteration limits on drawing loops to prevent hangs
@@ -47,6 +54,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **PNG Encoding Errors**
   - Proper error handling in image encoding
   - Reports encoding failures with detailed logging
+- **Indicator Controls Not Updating**
+  - Fixed indicator properties to update when visualization redraws
+  - Ensured zoom_scale, x_offset, and y_offset properties sync with backend state
+  - UI indicators now reflect current view transformation state
 
 ## [0.23.0] - 2025-10-25
 

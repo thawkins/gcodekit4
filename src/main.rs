@@ -1015,8 +1015,9 @@ fn main() -> anyhow::Result<()> {
             }
             info!("New zoom scale: {}%", (*scale * 100.0).round() as u32);
             
-            // Trigger refresh with new zoom scale
+            // Update UI immediately
             if let Some(window) = window_weak_zoom_in.upgrade() {
+                window.set_visualizer_zoom_scale(*scale);
                 window.invoke_refresh_visualization();
             }
         }
@@ -1036,8 +1037,9 @@ fn main() -> anyhow::Result<()> {
             }
             info!("New zoom scale: {}%", (*scale * 100.0).round() as u32);
             
-            // Trigger refresh with new zoom scale
+            // Update UI immediately
             if let Some(window) = window_weak_zoom_out.upgrade() {
+                window.set_visualizer_zoom_scale(*scale);
                 window.invoke_refresh_visualization();
             }
         }
@@ -1061,8 +1063,11 @@ fn main() -> anyhow::Result<()> {
             info!("Pan offsets reset to (0, 0)");
         }
         
-        // Trigger refresh with reset zoom scale and offsets
+        // Update UI immediately
         if let Some(window) = window_weak_reset.upgrade() {
+            window.set_visualizer_zoom_scale(1.0);
+            window.set_visualizer_x_offset(0.0);
+            window.set_visualizer_y_offset(0.0);
             window.invoke_refresh_visualization();
         }
     });
@@ -1136,11 +1141,15 @@ fn main() -> anyhow::Result<()> {
             });
             
             // Process messages from rendering thread
+            let zoom_for_closure_fit = zoom_for_fit.clone();
+            let pan_for_closure_fit = pan_for_fit.clone();
             std::thread::spawn(move || {
                 while let Ok((progress, status, image_data)) = rx.recv() {
                     let window_handle = window_weak_render.clone();
                     let status_clone = status.clone();
                     let image_clone = image_data.clone();
+                    let zoom_for_closure = zoom_for_closure_fit.clone();
+                    let pan_for_closure = pan_for_closure_fit.clone();
                     
                     slint::invoke_from_event_loop(move || {
                         if let Some(window) = window_handle.upgrade() {
@@ -1161,6 +1170,15 @@ fn main() -> anyhow::Result<()> {
                                         ),
                                     );
                                     window.set_visualization_image(img_buffer);
+                                    
+                                    // Update indicator properties
+                                    if let Ok(scale) = zoom_for_closure.lock() {
+                                        window.set_visualizer_zoom_scale(*scale);
+                                    }
+                                    if let Ok(offsets) = pan_for_closure.lock() {
+                                        window.set_visualizer_x_offset(offsets.0);
+                                        window.set_visualizer_y_offset(offsets.1);
+                                    }
                                 }
                             }
                         }
@@ -1182,6 +1200,8 @@ fn main() -> anyhow::Result<()> {
             info!("Pan offset: x={}, y={}", offsets.0, offsets.1);
             
             if let Some(window) = window_weak_pan_left.upgrade() {
+                window.set_visualizer_x_offset(offsets.0);
+                window.set_visualizer_y_offset(offsets.1);
                 window.invoke_refresh_visualization();
             }
         }
@@ -1198,6 +1218,8 @@ fn main() -> anyhow::Result<()> {
             info!("Pan offset: x={}, y={}", offsets.0, offsets.1);
             
             if let Some(window) = window_weak_pan_right.upgrade() {
+                window.set_visualizer_x_offset(offsets.0);
+                window.set_visualizer_y_offset(offsets.1);
                 window.invoke_refresh_visualization();
             }
         }
@@ -1214,6 +1236,8 @@ fn main() -> anyhow::Result<()> {
             info!("Pan offset: x={}, y={}", offsets.0, offsets.1);
             
             if let Some(window) = window_weak_pan_up.upgrade() {
+                window.set_visualizer_x_offset(offsets.0);
+                window.set_visualizer_y_offset(offsets.1);
                 window.invoke_refresh_visualization();
             }
         }
@@ -1230,6 +1254,8 @@ fn main() -> anyhow::Result<()> {
             info!("Pan offset: x={}, y={}", offsets.0, offsets.1);
             
             if let Some(window) = window_weak_pan_down.upgrade() {
+                window.set_visualizer_x_offset(offsets.0);
+                window.set_visualizer_y_offset(offsets.1);
                 window.invoke_refresh_visualization();
             }
         }
