@@ -117,6 +117,22 @@ fn main() -> anyhow::Result<()> {
     // Initialize console with default max lines (500)
     console_manager.set_max_lines(500);
     
+    // Initialize Phase 6 panels with sample data
+    // File Validation Panel
+    main_window.set_validation_summary(slint::SharedString::from("Ready"));
+    main_window.set_validation_error_count(0);
+    main_window.set_validation_warning_count(0);
+    main_window.set_validation_issues(Default::default());
+    
+    // Advanced Features Panel
+    main_window.set_advanced_features_mode(slint::SharedString::from("None"));
+    main_window.set_simulation_state(slint::SharedString::from("Idle"));
+    
+    // Safety & Diagnostics Panel
+    main_window.set_emergency_stop_armed(true);
+    main_window.set_safety_status(slint::SharedString::from("Safe"));
+    main_window.set_diagnostics_info(slint::SharedString::from("System Ready"));
+    
     // Initialize G-Code editor
     let gcode_editor = Rc::new(GcodeEditor::new());
     info!("G-Code editor initialized");
