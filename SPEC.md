@@ -1,6 +1,6 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.19.0-alpha  
+**Version**: 0.20.0-alpha  
 **Last Updated**: 2025-10-25  
 **Status**: COMPLETE (All 7 Phases Complete - 150/150 Tasks)
 

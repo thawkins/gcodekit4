@@ -41,6 +41,9 @@ pub mod keyboard_shortcuts;
 pub mod themes;
 pub mod layout_manager;
 pub mod help_system;
+pub mod file_validation_panel;
+pub mod advanced_features_panel;
+pub mod safety_diagnostics_panel;
 
 pub use architecture::UiArchitecture;
 pub use state::UiState;
@@ -69,3 +72,7 @@ pub use keyboard_shortcuts::{KeyboardManager, KeyboardAction, KeyBinding, KeyMod
 pub use themes::{Theme, ThemeId, ThemeManager, Color, ThemeColors, FontConfig};
 pub use layout_manager::{LayoutManager, Layout, PanelId, PanelLocation, PanelState, LayoutPreset};
 pub use help_system::{HelpSystem, HelpTopic, AppInfo, TooltipProvider, ShortcutReference};
+pub use file_validation_panel::{FileValidationPanel, ValidationIssue, ValidationSeverity};
+pub use advanced_features_panel::{AdvancedFeaturesPanel, SoftLimits, WorkCoordinateSystem, Tool, ToolChangeMode, SimulationState, PerformanceMetrics};
+pub use safety_diagnostics_panel::{SafetyDiagnosticsPanel, EmergencyStopDisplay, MotionInterlockState, FeedHoldState, CommunicationDiagnostics, BufferDiagnostics, PerformanceDiagnostics, DiagnosticEvent};
+
