@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.21.0] - 2025-10-25
 
 ### Fixed
+- **UI Layout: Remove Right-Hand Panel Placeholder**
+  - ✅ **Problem**: Orphaned right-hand panel (250px width) with placeholder text was taking up space
+  - ✅ **Solution**: Removed the right panel VerticalBox that contained placeholder content
+  - ✅ **Result**: Main content area now spans full width, UI cleaner without unused placeholder
+  - ✅ **Layout**: Center panel with 6 tabs (G-Code Editor, Machine Control, Device Console, File Validation, Advanced Features, Safety & Diagnostics) now expands properly
+  - ✅ **Verification**: All 514 tests passing, builds without errors
+
 - **UI Layout: Machine View and Phase 6 Panel Content - COMPLETE FIX**
   - ✅ **Problem**: Machine view was incomplete (missing A, B, C rotary axes and jog buttons) and orphaned code caused panel misalignment
   - ✅ **Root Cause**: Machine view interruption at rotary axes section with orphaned code block positioned after safety-diagnostics view
