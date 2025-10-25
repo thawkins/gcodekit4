@@ -883,8 +883,13 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
+    // Zoom state tracking (Arc for shared state across closures)
+    use std::sync::{Arc, Mutex};
+    let zoom_scale = Arc::new(Mutex::new(1.0f32));
+
     // Handle refresh visualization button
     let window_weak = main_window.as_weak();
+    let zoom_for_refresh = zoom_scale.clone();
     main_window.on_refresh_visualization(move || {
         info!("Refresh visualization requested");
         
@@ -910,6 +915,7 @@ fn main() -> anyhow::Result<()> {
             let content_owned = content.to_string();
             let (tx, rx) = std::sync::mpsc::channel();
             let window_weak_render = window_weak.clone();
+            let zoom_scale_render = zoom_for_refresh.clone();
             
             std::thread::spawn(move || {
                 use gcodekit4::visualizer::Visualizer2D;
@@ -918,6 +924,11 @@ fn main() -> anyhow::Result<()> {
                 
                 let mut visualizer = Visualizer2D::new();
                 visualizer.parse_gcode(&content_owned);
+                
+                // Apply zoom scale
+                if let Ok(scale) = zoom_scale_render.lock() {
+                    visualizer.zoom_scale = *scale;
+                }
                 
                 let _ = tx.send((0.3, "Rendering image...".to_string(), None));
                 
@@ -965,6 +976,65 @@ fn main() -> anyhow::Result<()> {
                     .ok();
                 }
             });
+        }
+    });
+
+    // Handle zoom in button
+    let zoom_scale_in = zoom_scale.clone();
+    let window_weak_zoom_in = main_window.as_weak();
+    main_window.on_zoom_in(move || {
+        info!("Zoom in requested");
+        
+        if let Ok(mut scale) = zoom_scale_in.lock() {
+            *scale *= 1.1;
+            // Clamp to reasonable values (10% to 500%)
+            if *scale > 5.0 {
+                *scale = 5.0;
+            }
+            info!("New zoom scale: {}%", (*scale * 100.0).round() as u32);
+            
+            // Trigger refresh with new zoom scale
+            if let Some(window) = window_weak_zoom_in.upgrade() {
+                window.invoke_refresh_visualization();
+            }
+        }
+    });
+
+    // Handle zoom out button
+    let zoom_scale_out = zoom_scale.clone();
+    let window_weak_zoom_out = main_window.as_weak();
+    main_window.on_zoom_out(move || {
+        info!("Zoom out requested");
+        
+        if let Ok(mut scale) = zoom_scale_out.lock() {
+            *scale /= 1.1;
+            // Clamp to reasonable values (10% to 500%)
+            if *scale < 0.1 {
+                *scale = 0.1;
+            }
+            info!("New zoom scale: {}%", (*scale * 100.0).round() as u32);
+            
+            // Trigger refresh with new zoom scale
+            if let Some(window) = window_weak_zoom_out.upgrade() {
+                window.invoke_refresh_visualization();
+            }
+        }
+    });
+
+    // Handle reset view button
+    let zoom_scale_reset = zoom_scale.clone();
+    let window_weak_reset = main_window.as_weak();
+    main_window.on_reset_view(move || {
+        info!("Reset view requested");
+        
+        if let Ok(mut scale) = zoom_scale_reset.lock() {
+            *scale = 1.0;
+            info!("Zoom scale reset to 100%");
+            
+            // Trigger refresh with reset zoom scale
+            if let Some(window) = window_weak_reset.upgrade() {
+                window.invoke_refresh_visualization();
+            }
         }
     });
 

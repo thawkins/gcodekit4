@@ -95,6 +95,9 @@ export component MainWindow inherits Window {
     callback console-clear-clicked();
     callback console-copy-clicked();
     callback refresh-visualization();
+    callback zoom-in();
+    callback zoom-out();
+    callback reset-view();
     
     // Internal state for UI selections
     private property <int> port-index: 0;
@@ -584,6 +587,18 @@ if current-view == "safety-diagnostics" : SafetyDiagnosticsPanel {
                     
                     refresh-visualization => {
                         root.refresh-visualization();
+                    }
+                    
+                    zoom-in => {
+                        root.zoom-in();
+                    }
+                    
+                    zoom-out => {
+                        root.zoom-out();
+                    }
+                    
+                    reset-view => {
+                        root.reset-view();
                     }
                 }
             }

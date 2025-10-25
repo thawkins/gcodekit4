@@ -41,6 +41,8 @@ pub struct Visualizer2D {
     pub min_y: f32,
     pub max_y: f32,
     pub current_pos: Point2D,
+    /// Zoom/scale factor for rendering (1.0 = 100%)
+    pub zoom_scale: f32,
 }
 
 impl Visualizer2D {
@@ -53,6 +55,7 @@ impl Visualizer2D {
             min_y: 0.0,
             max_y: 100.0,
             current_pos: Point2D::new(0.0, 0.0),
+            zoom_scale: 1.0,
         }
     }
 
@@ -190,6 +193,34 @@ impl Visualizer2D {
     pub fn get_bounds(&self) -> (f32, f32, f32, f32) {
         (self.min_x, self.max_x, self.min_y, self.max_y)
     }
+
+    /// Increase zoom by 10%
+    pub fn zoom_in(&mut self) {
+        self.zoom_scale *= 1.1;
+        // Clamp to reasonable values (10% to 500%)
+        if self.zoom_scale > 5.0 {
+            self.zoom_scale = 5.0;
+        }
+    }
+
+    /// Decrease zoom by 10%
+    pub fn zoom_out(&mut self) {
+        self.zoom_scale /= 1.1;
+        // Clamp to reasonable values (10% to 500%)
+        if self.zoom_scale < 0.1 {
+            self.zoom_scale = 0.1;
+        }
+    }
+
+    /// Reset zoom to default (100%)
+    pub fn reset_zoom(&mut self) {
+        self.zoom_scale = 1.0;
+    }
+
+    /// Get current zoom scale as percentage
+    pub fn get_zoom_percent(&self) -> u32 {
+        (self.zoom_scale * 100.0).round() as u32
+    }
 }
 
 impl Visualizer2D {
@@ -224,6 +255,9 @@ impl Visualizer2D {
 
         // Use uniform scaling to maintain aspect ratio, clamp to reasonable values
         let scale = scale_x.min(scale_y).min(100.0).max(0.1);
+
+        // Apply zoom scale factor
+        let scale = scale * self.zoom_scale;
 
         // Draw grid - disabled for now due to performance issues
         // draw_grid(&mut img, width, height, self.min_x, self.min_y, scale);
