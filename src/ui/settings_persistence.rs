@@ -4,11 +4,13 @@
 //! Bridges SettingsDialog (UI) with Config (persistence layer).
 //! Provides validation, migration, and synchronization of settings.
 
+use super::settings_dialog::{
+    KeyboardShortcut, Setting, SettingValue, SettingsCategory, SettingsDialog,
+};
 use crate::config::{Config, ConnectionType};
 use crate::error::Result;
-use super::settings_dialog::{SettingsDialog, SettingValue, SettingsCategory, Setting, KeyboardShortcut};
 use std::path::Path;
-use tracing::{info, debug};
+use tracing::{debug, info};
 
 /// Settings persistence layer
 #[derive(Debug, Clone)]
@@ -43,38 +45,41 @@ impl SettingsPersistence {
     /// Populate SettingsDialog from config
     pub fn populate_dialog(&self, dialog: &mut SettingsDialog) {
         info!("Populating settings dialog from config");
-        
+
         // Connection Settings
         self.add_connection_settings(dialog);
-        
+
         // UI Settings
         self.add_ui_settings(dialog);
-        
+
         // File Processing Settings
         self.add_file_processing_settings(dialog);
-        
+
         // Keyboard Shortcuts (from config if available)
         self.add_keyboard_shortcuts(dialog);
-        
-        info!("Settings dialog populated with {} settings", dialog.settings.len());
+
+        info!(
+            "Settings dialog populated with {} settings",
+            dialog.settings.len()
+        );
     }
 
     /// Load settings from dialog into config
     pub fn load_from_dialog(&mut self, dialog: &SettingsDialog) -> Result<()> {
         info!("Loading settings from dialog into config");
-        
+
         // Update connection settings
         self.update_connection_settings(dialog)?;
-        
+
         // Update UI settings
         self.update_ui_settings(dialog)?;
-        
+
         // Update file processing settings
         self.update_file_processing_settings(dialog)?;
-        
+
         // Validate updated config
         self.config.validate()?;
-        
+
         info!("Settings loaded from dialog successfully");
         Ok(())
     }
@@ -98,15 +103,19 @@ impl SettingsPersistence {
     /// Add connection settings to dialog
     fn add_connection_settings(&self, dialog: &mut SettingsDialog) {
         let conn = &self.config.connection;
-        
+
         // Connection Type
-        let conn_types = vec!["Serial".to_string(), "TCP/IP".to_string(), "WebSocket".to_string()];
+        let conn_types = vec![
+            "Serial".to_string(),
+            "TCP/IP".to_string(),
+            "WebSocket".to_string(),
+        ];
         let current_type = match conn.connection_type {
             ConnectionType::Serial => "Serial".to_string(),
             ConnectionType::Tcp => "TCP/IP".to_string(),
             ConnectionType::WebSocket => "WebSocket".to_string(),
         };
-        
+
         dialog.add_setting(
             Setting::new(
                 "connection_type",
@@ -134,13 +143,9 @@ impl SettingsPersistence {
 
         // Port
         dialog.add_setting(
-            Setting::new(
-                "port",
-                "Port",
-                SettingValue::String(conn.port.clone()),
-            )
-            .with_description("Serial port or hostname")
-            .with_category(SettingsCategory::Controller),
+            Setting::new("port", "Port", SettingValue::String(conn.port.clone()))
+                .with_description("Serial port or hostname")
+                .with_category(SettingsCategory::Controller),
         );
 
         // TCP Port
@@ -182,7 +187,7 @@ impl SettingsPersistence {
     /// Add UI settings to dialog
     fn add_ui_settings(&self, dialog: &mut SettingsDialog) {
         let ui = &self.config.ui;
-        
+
         // Theme
         let themes = vec!["Dark".to_string(), "Light".to_string()];
         dialog.add_setting(
@@ -233,7 +238,12 @@ impl SettingsPersistence {
             Setting::new(
                 "show_status_bar",
                 "Show Status Bar",
-                SettingValue::Boolean(ui.panel_visibility.get("status_bar").copied().unwrap_or(true)),
+                SettingValue::Boolean(
+                    ui.panel_visibility
+                        .get("status_bar")
+                        .copied()
+                        .unwrap_or(true),
+                ),
             )
             .with_description("Show the status bar at the bottom")
             .with_category(SettingsCategory::UserInterface),
@@ -245,7 +255,7 @@ impl SettingsPersistence {
     /// Add file processing settings to dialog
     fn add_file_processing_settings(&self, dialog: &mut SettingsDialog) {
         let file = &self.config.file_processing;
-        
+
         // Preserve Comments (inverted logic: preserve = not remove)
         dialog.add_setting(
             Setting::new(
@@ -311,7 +321,7 @@ impl SettingsPersistence {
     /// Update connection settings in config from dialog
     fn update_connection_settings(&mut self, dialog: &SettingsDialog) -> Result<()> {
         debug!("Updating connection settings from dialog");
-        
+
         if let Some(setting) = dialog.get_setting("connection_type") {
             let conn_type = match setting.value.as_str().as_str() {
                 "TCP/IP" => ConnectionType::Tcp,
@@ -355,7 +365,7 @@ impl SettingsPersistence {
     /// Update UI settings in config from dialog
     fn update_ui_settings(&mut self, dialog: &SettingsDialog) -> Result<()> {
         debug!("Updating UI settings from dialog");
-        
+
         if let Some(setting) = dialog.get_setting("theme") {
             self.config.ui.theme = setting.value.as_str();
         }
@@ -374,13 +384,19 @@ impl SettingsPersistence {
 
         if let Some(setting) = dialog.get_setting("show_toolbar") {
             if let Ok(value) = setting.value.as_str().parse::<bool>() {
-                self.config.ui.panel_visibility.insert("toolbar".to_string(), value);
+                self.config
+                    .ui
+                    .panel_visibility
+                    .insert("toolbar".to_string(), value);
             }
         }
 
         if let Some(setting) = dialog.get_setting("show_status_bar") {
             if let Ok(value) = setting.value.as_str().parse::<bool>() {
-                self.config.ui.panel_visibility.insert("status_bar".to_string(), value);
+                self.config
+                    .ui
+                    .panel_visibility
+                    .insert("status_bar".to_string(), value);
             }
         }
 
@@ -390,7 +406,7 @@ impl SettingsPersistence {
     /// Update file processing settings in config from dialog
     fn update_file_processing_settings(&mut self, dialog: &SettingsDialog) -> Result<()> {
         debug!("Updating file processing settings from dialog");
-        
+
         if let Some(setting) = dialog.get_setting("preserve_comments") {
             if let Ok(value) = setting.value.as_str().parse::<bool>() {
                 self.config.file_processing.preserve_comments = value;
@@ -434,7 +450,7 @@ mod tests {
         let persistence = SettingsPersistence::new();
         let mut dialog = SettingsDialog::new();
         persistence.populate_dialog(&mut dialog);
-        
+
         assert!(!dialog.settings.is_empty());
         assert!(dialog.get_setting("connection_type").is_some());
         assert!(dialog.get_setting("theme").is_some());
@@ -446,12 +462,12 @@ mod tests {
         let mut persistence = SettingsPersistence::new();
         let mut dialog = SettingsDialog::new();
         persistence.populate_dialog(&mut dialog);
-        
+
         // Modify a setting
         if let Some(setting) = dialog.get_setting_mut("baud_rate") {
             setting.value = SettingValue::Enum("9600".to_string(), vec!["9600".to_string()]);
         }
-        
+
         assert!(persistence.load_from_dialog(&dialog).is_ok());
     }
 
@@ -459,10 +475,10 @@ mod tests {
     fn test_settings_dialog_integration() {
         let persistence = SettingsPersistence::new();
         let mut dialog = SettingsDialog::new();
-        
+
         // Populate dialog
         persistence.populate_dialog(&mut dialog);
-        
+
         // Check categories are populated
         let categories = dialog.get_categories();
         assert!(categories.contains(&SettingsCategory::Controller));
@@ -475,7 +491,7 @@ mod tests {
         let persistence = SettingsPersistence::new();
         let mut dialog = SettingsDialog::new();
         persistence.populate_dialog(&mut dialog);
-        
+
         assert!(dialog.shortcuts.get("file_open").is_some());
         assert!(dialog.shortcuts.get("machine_home").is_some());
     }

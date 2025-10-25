@@ -72,7 +72,8 @@ pub fn extract_line_number(json: &Value) -> Option<u32> {
 
 /// Extract error code from a response
 pub fn extract_error_code(json: &Value) -> Option<u16> {
-    json.get("er")?.as_object()?
+    json.get("er")?
+        .as_object()?
         .get("code")
         .and_then(Value::as_u64)
         .map(|c| c as u16)
@@ -103,7 +104,12 @@ pub fn create_status_request() -> String {
 }
 
 /// Create a position setting command
-pub fn create_position_set(x: Option<f64>, y: Option<f64>, z: Option<f64>, a: Option<f64>) -> Value {
+pub fn create_position_set(
+    x: Option<f64>,
+    y: Option<f64>,
+    z: Option<f64>,
+    a: Option<f64>,
+) -> Value {
     let mut pos = serde_json::Map::new();
     if let Some(x_val) = x {
         pos.insert("x".to_string(), json!(x_val));
@@ -129,5 +135,3 @@ pub fn format_tinyg_value(value: f64, precision: usize) -> String {
 pub fn parse_offset_value(offset_str: &str) -> Option<f64> {
     offset_str.parse().ok()
 }
-
-

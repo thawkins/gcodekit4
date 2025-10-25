@@ -241,4 +241,3 @@ impl Default for CommandCreator {
         Self::new()
     }
 }
-

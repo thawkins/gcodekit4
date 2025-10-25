@@ -7,14 +7,14 @@
 //! - Command queuing and execution
 //! - Listener registration for controller events
 
-pub mod listener;
 pub mod event;
+pub mod listener;
 pub mod message;
 
+use crate::data::{ControllerState, ControllerStatus, PartialPosition};
 use async_trait::async_trait;
 use parking_lot::RwLock;
 use std::sync::Arc;
-use crate::data::{ControllerStatus, PartialPosition, ControllerState};
 
 pub use listener::{ControllerListener, ControllerListenerHandle};
 
@@ -104,7 +104,8 @@ pub trait ControllerTrait: Send + Sync {
     /// * `axis` - Axis to jog (X, Y, Z, A, B, or C)
     /// * `direction` - Direction (+1 or -1)
     /// * `feed_rate` - Feed rate in units/min
-    async fn jog_start(&mut self, axis: char, direction: i32, feed_rate: f64) -> anyhow::Result<()>;
+    async fn jog_start(&mut self, axis: char, direction: i32, feed_rate: f64)
+        -> anyhow::Result<()>;
 
     /// Stop jogging and cancel any pending jog commands
     async fn jog_stop(&mut self) -> anyhow::Result<()>;
@@ -216,7 +217,10 @@ pub trait ControllerTrait: Send + Sync {
     // ===== Listener Management =====
 
     /// Register a controller listener
-    fn register_listener(&mut self, listener: Arc<dyn ControllerListener>) -> ControllerListenerHandle;
+    fn register_listener(
+        &mut self,
+        listener: Arc<dyn ControllerListener>,
+    ) -> ControllerListenerHandle;
 
     /// Unregister a listener
     fn unregister_listener(&mut self, handle: ControllerListenerHandle);
@@ -305,7 +309,12 @@ impl ControllerTrait for SimpleController {
         Ok(())
     }
 
-    async fn jog_start(&mut self, axis: char, direction: i32, feed_rate: f64) -> anyhow::Result<()> {
+    async fn jog_start(
+        &mut self,
+        axis: char,
+        direction: i32,
+        feed_rate: f64,
+    ) -> anyhow::Result<()> {
         tracing::info!("Jog {} {} at {} F/min", axis, direction, feed_rate);
         Ok(())
     }
@@ -320,7 +329,12 @@ impl ControllerTrait for SimpleController {
         distance: f64,
         feed_rate: f64,
     ) -> anyhow::Result<()> {
-        tracing::info!("Incremental jog {} {} at {} F/min", axis, distance, feed_rate);
+        tracing::info!(
+            "Incremental jog {} {} at {} F/min",
+            axis,
+            distance,
+            feed_rate
+        );
         Ok(())
     }
 
@@ -409,12 +423,14 @@ impl ControllerTrait for SimpleController {
         Ok(())
     }
 
-    fn register_listener(&mut self, _listener: Arc<dyn ControllerListener>) -> ControllerListenerHandle {
+    fn register_listener(
+        &mut self,
+        _listener: Arc<dyn ControllerListener>,
+    ) -> ControllerListenerHandle {
         ControllerListenerHandle(uuid::Uuid::new_v4().to_string())
     }
 
-    fn unregister_listener(&mut self, _handle: ControllerListenerHandle) {
-    }
+    fn unregister_listener(&mut self, _handle: ControllerListenerHandle) {}
 
     fn listener_count(&self) -> usize {
         0

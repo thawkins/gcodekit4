@@ -1629,7 +1629,7 @@ impl CommandProcessor for ArcExpander {
         _state: &GcodeState,
     ) -> Result<Vec<GcodeCommand>, String> {
         let cmd_upper = command.command.to_uppercase();
-        
+
         if !cmd_upper.starts_with("G02") && !cmd_upper.starts_with("G03") {
             return Ok(vec![command.clone()]);
         }
@@ -1641,13 +1641,10 @@ impl CommandProcessor for ArcExpander {
             .unwrap_or(10);
 
         let mut expanded_commands = Vec::new();
-        
+
         for i in 1..=segments {
             let mut arc_segment = command.clone();
-            arc_segment.command = format!(
-                "{} ; Arc segment {}/{}",
-                command.command, i, segments
-            );
+            arc_segment.command = format!("{} ; Arc segment {}/{}", command.command, i, segments);
             expanded_commands.push(arc_segment);
         }
 
@@ -1793,13 +1790,13 @@ impl CommandProcessor for M30Processor {
         _state: &GcodeState,
     ) -> Result<Vec<GcodeCommand>, String> {
         let cmd_upper = command.command.to_uppercase();
-        
+
         if !cmd_upper.contains("M30") {
             return Ok(vec![command.clone()]);
         }
 
         let mut processed = command.clone();
-        
+
         // Check if we should auto-append M5 (spindle stop) before M30
         let add_spindle_stop = self
             .config

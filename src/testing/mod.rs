@@ -5,5 +5,5 @@
 pub mod project_completion;
 
 pub use project_completion::{
-    TestSuite, TestResult, ProjectStatus, ReleaseChecklist, CodeQualityMetrics,
+    CodeQualityMetrics, ProjectStatus, ReleaseChecklist, TestResult, TestSuite,
 };

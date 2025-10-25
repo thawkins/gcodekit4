@@ -57,7 +57,7 @@ All tests **MUST** be located in the `tests/` folder organized by module hierarc
 - **Imports**: Group std, external crates, then local modules; reorder automatically
 - **Error Handling**: Use `Result<T, E>` with `?`, `anyhow::Result` for main, `thiserror` for custom errors
 - **Types**: Prefer explicit types, use type aliases for complex types
--  **Logging**: Use `tracing` with structured logging, avoid `println!` in production
+-  **Logging**: Use `tracing` with structured logging, avoid `println!` in any phase of development. 
 - **Documentation**: `//!` for crate docs, `///` for public APIs, `//` for internal comments
 - **Linting**: No wildcard imports, cognitive complexity ≤30, warn on missing docs
 - **Best Practices**: Read the best practices at https://www.djamware.com/post/68b2c7c451ce620c6f5efc56/rust-project-structure-and-best-practices-for-clean-scalable-code and apply to the project.

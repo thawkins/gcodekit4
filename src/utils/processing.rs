@@ -20,8 +20,8 @@ use std::path::{Path, PathBuf};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use crate::utils::GcodeFileReader;
 use crate::data::Position;
+use crate::utils::GcodeFileReader;
 
 /// File processing statistics
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -383,16 +383,28 @@ impl FileProcessingPipeline {
             // Count motion commands
             if upper.contains("G00") || upper.starts_with("G0 ") {
                 statistics.rapid_moves += 1;
-                *statistics.command_counts.entry("G0".to_string()).or_insert(0) += 1;
+                *statistics
+                    .command_counts
+                    .entry("G0".to_string())
+                    .or_insert(0) += 1;
             } else if upper.contains("G01") || upper.starts_with("G1 ") {
                 statistics.linear_moves += 1;
-                *statistics.command_counts.entry("G1".to_string()).or_insert(0) += 1;
+                *statistics
+                    .command_counts
+                    .entry("G1".to_string())
+                    .or_insert(0) += 1;
             } else if upper.contains("G02") || upper.contains("G2 ") {
                 statistics.arc_moves += 1;
-                *statistics.command_counts.entry("G2".to_string()).or_insert(0) += 1;
+                *statistics
+                    .command_counts
+                    .entry("G2".to_string())
+                    .or_insert(0) += 1;
             } else if upper.contains("G03") || upper.contains("G3 ") {
                 statistics.arc_moves += 1;
-                *statistics.command_counts.entry("G3".to_string()).or_insert(0) += 1;
+                *statistics
+                    .command_counts
+                    .entry("G3".to_string())
+                    .or_insert(0) += 1;
             }
 
             // Count M-codes
@@ -411,7 +423,10 @@ impl FileProcessingPipeline {
 
             // Extract feed rate
             if let Some(f_pos) = upper.find('F') {
-                if let Ok(feed_str) = upper[f_pos + 1..].split_whitespace().next().unwrap_or("0")
+                if let Ok(feed_str) = upper[f_pos + 1..]
+                    .split_whitespace()
+                    .next()
+                    .unwrap_or("0")
                     .parse::<f64>()
                 {
                     statistics.feed_rate_stats.update(feed_str);
@@ -420,7 +435,10 @@ impl FileProcessingPipeline {
 
             // Extract spindle speed
             if let Some(s_pos) = upper.find('S') {
-                if let Ok(speed_str) = upper[s_pos + 1..].split_whitespace().next().unwrap_or("0")
+                if let Ok(speed_str) = upper[s_pos + 1..]
+                    .split_whitespace()
+                    .next()
+                    .unwrap_or("0")
                     .parse::<f64>()
                 {
                     statistics.spindle_stats.update(speed_str);
@@ -489,7 +507,8 @@ impl FileProcessingPipeline {
 
         // Cache result
         if self.cache_enabled {
-            self.cache.insert(path.to_path_buf(), processed_result.clone());
+            self.cache
+                .insert(path.to_path_buf(), processed_result.clone());
         }
 
         Ok(processed_result)
@@ -509,7 +528,8 @@ impl Default for FileProcessingPipeline {
 
 /// Extract numeric value from G-code
 fn extract_number(line: &str, pos: usize) -> Result<f64> {
-    let end = pos + 1
+    let end = pos
+        + 1
         + line[pos + 1..]
             .find(|c: char| !c.is_ascii_digit() && c != '.' && c != '-')
             .unwrap_or(line.len() - pos - 1);

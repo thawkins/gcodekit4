@@ -3,10 +3,10 @@
 //! Provides comprehensive firmware settings management for GRBL controllers,
 //! including query, parsing, updating, validation, and backup/restore functionality.
 
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
-use serde::{Deserialize, Serialize};
 use tracing::{debug, info, warn};
 
 /// GRBL firmware setting
@@ -143,7 +143,10 @@ impl SettingsManager {
     pub fn backup(&mut self) {
         debug!("Creating settings backup");
         self.backup = Some(self.settings.clone());
-        info!("Settings backup created with {} entries", self.settings.len());
+        info!(
+            "Settings backup created with {} entries",
+            self.settings.len()
+        );
     }
 
     /// Restore settings from backup

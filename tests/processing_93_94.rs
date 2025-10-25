@@ -13,7 +13,7 @@
 //! - Count commands by type
 //! - Calculate total distance
 
-use gcodekit4::utils::{FileProcessingPipeline, FileStatistics, BoundingBox};
+use gcodekit4::utils::{BoundingBox, FileProcessingPipeline, FileStatistics};
 use std::fs;
 use std::path::PathBuf;
 use tempfile::TempDir;
@@ -217,8 +217,7 @@ fn test_task_94_spindle_tracking() {
 #[test]
 fn test_task_94_time_estimation() {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
-    let content =
-        "G0 X10 Y20\nG1 X20 Y30 F100\nG1 X30 Y40 F50\nG0 Z10\n";
+    let content = "G0 X10 Y20\nG1 X20 Y30 F100\nG1 X30 Y40 F50\nG0 Z10\n";
     let file_path = create_test_gcode_file(&temp_dir, "timing.nc", content);
 
     let mut pipeline = FileProcessingPipeline::new();
@@ -233,7 +232,7 @@ fn test_task_94_time_estimation() {
 #[test]
 fn test_task_94_time_formatting() {
     let stats = FileStatistics::new();
-    
+
     let mut timed = stats.clone();
     timed.estimated_time = 3661;
     assert_eq!(timed.formatted_time(), "1h 1m 1s");
@@ -367,7 +366,10 @@ M5
         .process_file(&file_path)
         .expect("Failed to process file");
 
-    assert_eq!(result1.statistics.total_lines, result2.statistics.total_lines);
+    assert_eq!(
+        result1.statistics.total_lines,
+        result2.statistics.total_lines
+    );
 }
 
 #[test]

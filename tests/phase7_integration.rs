@@ -1,10 +1,10 @@
 // Integration tests for Phase 7 (Tasks 121-150)
 
 use gcodekit4::utils::{
-    EmergencyStopManager, EmergencyStopState, MotionInterlock, FeedHoldManager,
-    SafetyFeaturesManager, PluginRegistry, PluginMetadata, PluginConfig, ExportFormat,
-    PostProcessor, FormatExporter, CalibrationWizard, CalibrationStepType,
-    CommunicationDiagnostics, BufferDiagnostics, PerformanceProfiler, DiagnosticReport,
+    BufferDiagnostics, CalibrationStepType, CalibrationWizard, CommunicationDiagnostics,
+    DiagnosticReport, EmergencyStopManager, EmergencyStopState, ExportFormat, FeedHoldManager,
+    FormatExporter, MotionInterlock, PerformanceProfiler, PluginConfig, PluginMetadata,
+    PluginRegistry, PostProcessor, SafetyFeaturesManager,
 };
 use std::collections::HashMap;
 
@@ -124,7 +124,9 @@ fn test_plugin_registry_operations() {
 fn test_plugin_config_serialization() {
     let mut config = PluginConfig::default();
     config.enabled = true;
-    config.settings.insert("key".to_string(), serde_json::json!("value"));
+    config
+        .settings
+        .insert("key".to_string(), serde_json::json!("value"));
 
     assert!(config.enabled);
     assert_eq!(config.settings.len(), 1);
@@ -182,7 +184,11 @@ fn test_format_exporter_workflow() {
     let processor = PostProcessor::for_format(ExportFormat::StandardGcode);
     let exporter = FormatExporter::new(processor);
 
-    let gcode = vec!["G0 X0 Y0".to_string(), "G1 Z-5 F100".to_string(), "G0 Z5".to_string()];
+    let gcode = vec![
+        "G0 X0 Y0".to_string(),
+        "G1 Z-5 F100".to_string(),
+        "G0 Z5".to_string(),
+    ];
 
     assert!(exporter.export(&gcode).is_ok());
 
@@ -414,7 +420,11 @@ fn test_export_and_diagnostics() {
     let processor = PostProcessor::for_format(ExportFormat::LinuxCNC);
     let exporter = FormatExporter::new(processor);
 
-    let gcode = vec!["G0 X10".to_string(), "G1 Z-5".to_string(), "G0 Z5".to_string()];
+    let gcode = vec![
+        "G0 X10".to_string(),
+        "G1 Z-5".to_string(),
+        "G0 Z5".to_string(),
+    ];
 
     profiler.record(150);
     let result = exporter.export(&gcode);

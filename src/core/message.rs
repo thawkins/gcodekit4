@@ -80,7 +80,10 @@ impl Message {
 
     /// Format message for console output
     pub fn format_console(&self) -> String {
-        format!("[{}] {} | {}: {}", self.timestamp, self.level, self.source, self.text)
+        format!(
+            "[{}] {} | {}: {}",
+            self.timestamp, self.level, self.source, self.text
+        )
     }
 }
 
@@ -152,22 +155,38 @@ impl MessageDispatcher {
     }
 
     /// Publish info message
-    pub fn info(&self, source: impl Into<String>, text: impl Into<String>) -> Result<usize, broadcast::error::SendError<Message>> {
+    pub fn info(
+        &self,
+        source: impl Into<String>,
+        text: impl Into<String>,
+    ) -> Result<usize, broadcast::error::SendError<Message>> {
         self.publish(Message::info(source, text))
     }
 
     /// Publish warning message
-    pub fn warning(&self, source: impl Into<String>, text: impl Into<String>) -> Result<usize, broadcast::error::SendError<Message>> {
+    pub fn warning(
+        &self,
+        source: impl Into<String>,
+        text: impl Into<String>,
+    ) -> Result<usize, broadcast::error::SendError<Message>> {
         self.publish(Message::warning(source, text))
     }
 
     /// Publish error message
-    pub fn error(&self, source: impl Into<String>, text: impl Into<String>) -> Result<usize, broadcast::error::SendError<Message>> {
+    pub fn error(
+        &self,
+        source: impl Into<String>,
+        text: impl Into<String>,
+    ) -> Result<usize, broadcast::error::SendError<Message>> {
         self.publish(Message::error(source, text))
     }
 
     /// Publish verbose message
-    pub fn verbose(&self, source: impl Into<String>, text: impl Into<String>) -> Result<usize, broadcast::error::SendError<Message>> {
+    pub fn verbose(
+        &self,
+        source: impl Into<String>,
+        text: impl Into<String>,
+    ) -> Result<usize, broadcast::error::SendError<Message>> {
         self.publish(Message::verbose(source, text))
     }
 }

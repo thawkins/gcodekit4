@@ -114,7 +114,8 @@ impl FirmwareParameter {
 
         match self.param_type {
             ParameterType::Integer => {
-                let val: i32 = value_str.parse()
+                let val: i32 = value_str
+                    .parse()
                     .map_err(|_| "Invalid integer value".to_string())?;
                 if let Some(min) = self.min_value {
                     if (val as f64) < min {
@@ -128,7 +129,8 @@ impl FirmwareParameter {
                 }
             }
             ParameterType::Float => {
-                let val: f64 = value_str.parse()
+                let val: f64 = value_str
+                    .parse()
                     .map_err(|_| "Invalid float value".to_string())?;
                 if let Some(min) = self.min_value {
                     if val < min {
@@ -142,7 +144,9 @@ impl FirmwareParameter {
                 }
             }
             ParameterType::Boolean => {
-                if !["true", "false", "0", "1", "yes", "no"].contains(&value_str.to_lowercase().as_str()) {
+                if !["true", "false", "0", "1", "yes", "no"]
+                    .contains(&value_str.to_lowercase().as_str())
+                {
                     return Err("Invalid boolean value".to_string());
                 }
             }
@@ -222,7 +226,11 @@ impl FirmwareSettingsPanel {
     }
 
     /// Set parameter value with validation
-    pub fn set_parameter_value(&mut self, code: &str, value: impl Into<String>) -> Result<(), String> {
+    pub fn set_parameter_value(
+        &mut self,
+        code: &str,
+        value: impl Into<String>,
+    ) -> Result<(), String> {
         if let Some(param) = self.parameters.get_mut(code) {
             param.set_value(value)
         } else {
@@ -281,7 +289,8 @@ impl FirmwareSettingsPanel {
 
     /// Export parameters to JSON
     pub fn export_parameters(&self) -> Result<String, serde_json::Error> {
-        let export_map: HashMap<String, String> = self.parameters
+        let export_map: HashMap<String, String> = self
+            .parameters
             .iter()
             .map(|(k, v)| (k.clone(), v.value.clone()))
             .collect();
@@ -318,7 +327,7 @@ mod tests {
             .with_type(ParameterType::Integer)
             .with_range(1.0, 127.0)
             .with_description("Microseconds");
-        
+
         assert_eq!(param.code, "$0");
         assert_eq!(param.value, "10");
         assert!(!param.is_changed());
@@ -337,8 +346,7 @@ mod tests {
 
     #[test]
     fn test_parameter_readonly() {
-        let mut param = FirmwareParameter::new("$0", "Step Pulse", "10")
-            .read_only();
+        let mut param = FirmwareParameter::new("$0", "Step Pulse", "10").read_only();
 
         assert!(param.set_value("20").is_err());
     }
@@ -346,8 +354,8 @@ mod tests {
     #[test]
     fn test_firmware_settings_panel() {
         let mut panel = FirmwareSettingsPanel::new("GRBL", "1.1");
-        let param = FirmwareParameter::new("$0", "Step Pulse", "10")
-            .with_type(ParameterType::Integer);
+        let param =
+            FirmwareParameter::new("$0", "Step Pulse", "10").with_type(ParameterType::Integer);
         panel.add_parameter(param);
 
         assert_eq!(panel.list_parameters().len(), 1);

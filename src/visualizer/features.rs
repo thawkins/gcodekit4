@@ -3,7 +3,7 @@
 //! Show work coordinate system, display machine limits, add grid,
 //! show tool position marker, implement bounding box
 
-use crate::visualizer::setup::{Vector3, Color};
+use crate::visualizer::setup::{Color, Vector3};
 
 /// Grid configuration
 #[derive(Debug, Clone)]
@@ -66,7 +66,11 @@ impl WorkCoordinateSystem {
             _ => Color::gray(),
         };
 
-        Self { number, origin, color }
+        Self {
+            number,
+            origin,
+            color,
+        }
     }
 
     /// Get G-code designation
@@ -107,9 +111,12 @@ impl MachineLimits {
         if !self.enforced {
             return true;
         }
-        point.x >= self.min.x && point.x <= self.max.x &&
-        point.y >= self.min.y && point.y <= self.max.y &&
-        point.z >= self.min.z && point.z <= self.max.z
+        point.x >= self.min.x
+            && point.x <= self.max.x
+            && point.y >= self.min.y
+            && point.y <= self.max.y
+            && point.z >= self.min.z
+            && point.z <= self.max.z
     }
 
     /// Get size of limits
@@ -252,9 +259,7 @@ impl SceneFeatures {
     pub fn new() -> Self {
         Self {
             grid: GridConfig::default(),
-            coordinate_systems: vec![
-                WorkCoordinateSystem::new(1, Vector3::zero()),
-            ],
+            coordinate_systems: vec![WorkCoordinateSystem::new(1, Vector3::zero())],
             limits: None,
             bounding_box: None,
             tool_marker: ToolMarker::new(Vector3::zero()),

@@ -1,7 +1,7 @@
 //! Tests for event system
 
-use gcodekit4::{ControllerEvent, EventDispatcher};
 use gcodekit4::data::ControllerStatus;
+use gcodekit4::{ControllerEvent, EventDispatcher};
 
 #[test]
 fn test_event_creation() {
@@ -42,13 +42,10 @@ async fn test_event_dispatcher_publish() {
     let event = ControllerEvent::Connected("TestCTRL".to_string());
     assert!(dispatcher.publish(event.clone()).is_ok());
 
-    let received = tokio::time::timeout(
-        std::time::Duration::from_secs(1),
-        rx.recv(),
-    )
-    .await
-    .unwrap()
-    .unwrap();
+    let received = tokio::time::timeout(std::time::Duration::from_secs(1), rx.recv())
+        .await
+        .unwrap()
+        .unwrap();
 
     match (event, received) {
         (ControllerEvent::Connected(expected), ControllerEvent::Connected(actual)) => {

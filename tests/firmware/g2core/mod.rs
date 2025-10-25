@@ -2,5 +2,5 @@
 //!
 //! Re-export all g2core test modules for integration testing.
 
-mod protocol;
 mod controller;
+mod protocol;

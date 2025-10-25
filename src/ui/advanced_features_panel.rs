@@ -317,22 +317,40 @@ impl AdvancedFeaturesPanel {
         }
 
         if x < self.soft_limits.x_min {
-            violations.push(format!("X below minimum: {} < {}", x, self.soft_limits.x_min));
+            violations.push(format!(
+                "X below minimum: {} < {}",
+                x, self.soft_limits.x_min
+            ));
         }
         if x > self.soft_limits.x_max {
-            violations.push(format!("X exceeds maximum: {} > {}", x, self.soft_limits.x_max));
+            violations.push(format!(
+                "X exceeds maximum: {} > {}",
+                x, self.soft_limits.x_max
+            ));
         }
         if y < self.soft_limits.y_min {
-            violations.push(format!("Y below minimum: {} < {}", y, self.soft_limits.y_min));
+            violations.push(format!(
+                "Y below minimum: {} < {}",
+                y, self.soft_limits.y_min
+            ));
         }
         if y > self.soft_limits.y_max {
-            violations.push(format!("Y exceeds maximum: {} > {}", y, self.soft_limits.y_max));
+            violations.push(format!(
+                "Y exceeds maximum: {} > {}",
+                y, self.soft_limits.y_max
+            ));
         }
         if z < self.soft_limits.z_min {
-            violations.push(format!("Z below minimum: {} < {}", z, self.soft_limits.z_min));
+            violations.push(format!(
+                "Z below minimum: {} < {}",
+                z, self.soft_limits.z_min
+            ));
         }
         if z > self.soft_limits.z_max {
-            violations.push(format!("Z exceeds maximum: {} > {}", z, self.soft_limits.z_max));
+            violations.push(format!(
+                "Z exceeds maximum: {} > {}",
+                z, self.soft_limits.z_max
+            ));
         }
 
         violations

@@ -1,8 +1,7 @@
 //! Tests for GRBL Protocol Constants and Capabilities
 
 use gcodekit4::firmware::grbl::{
-    GrblCapabilities, GrblFeature, GrblFeatureSet, GrblVersion, VersionComparison,
-    constants::*,
+    constants::*, GrblCapabilities, GrblFeature, GrblFeatureSet, GrblVersion, VersionComparison,
 };
 
 #[test]
@@ -236,9 +235,7 @@ fn test_grbl_default_capabilities() {
 
 // Response parser tests
 mod response_parser_tests {
-    use gcodekit4::firmware::grbl::{
-        GrblResponse, GrblResponseParser, StatusReport, BufferState,
-    };
+    use gcodekit4::firmware::grbl::{BufferState, GrblResponse, GrblResponseParser, StatusReport};
 
     #[test]
     fn test_parse_ok_response() {
@@ -282,7 +279,13 @@ mod response_parser_tests {
 
         if let Some(GrblResponse::Status(status)) = response {
             assert_eq!(status.state, "Run");
-            assert_eq!(status.buffer_state, Some(BufferState { plan: 15, exec: 128 }));
+            assert_eq!(
+                status.buffer_state,
+                Some(BufferState {
+                    plan: 15,
+                    exec: 128
+                })
+            );
         }
     }
 
@@ -338,10 +341,7 @@ mod response_parser_tests {
             GrblResponseParser::error_description(23),
             "Failed to execute startup block"
         );
-        assert_eq!(
-            GrblResponseParser::error_description(99),
-            "Unknown error"
-        );
+        assert_eq!(GrblResponseParser::error_description(99), "Unknown error");
     }
 
     #[test]
@@ -350,14 +350,8 @@ mod response_parser_tests {
             GrblResponseParser::alarm_description(1),
             "Hard limit triggered"
         );
-        assert_eq!(
-            GrblResponseParser::alarm_description(6),
-            "Homing fail"
-        );
-        assert_eq!(
-            GrblResponseParser::alarm_description(99),
-            "Unknown alarm"
-        );
+        assert_eq!(GrblResponseParser::alarm_description(6), "Homing fail");
+        assert_eq!(GrblResponseParser::alarm_description(99), "Unknown alarm");
     }
 
     #[test]
@@ -396,11 +390,11 @@ mod response_parser_tests {
 
 // Status parser tests
 mod status_parser_tests {
-    use gcodekit4::firmware::grbl::{
-        StatusParser, MachinePosition, WorkPosition, BufferRxState, FeedSpindleState,
-        WorkCoordinateOffset,
-    };
     use gcodekit4::data::Units;
+    use gcodekit4::firmware::grbl::{
+        BufferRxState, FeedSpindleState, MachinePosition, StatusParser, WorkCoordinateOffset,
+        WorkPosition,
+    };
 
     #[test]
     fn test_parse_machine_position_basic() {
@@ -599,7 +593,9 @@ mod utils_tests {
     #[test]
     fn test_is_valid_response_status() {
         assert!(utils::is_valid_response("<Idle|MPos:0,0,0|WPos:0,0,0>"));
-        assert!(utils::is_valid_response("<Run|MPos:10,20,30|WPos:10,20,30>"));
+        assert!(utils::is_valid_response(
+            "<Run|MPos:10,20,30|WPos:10,20,30>"
+        ));
     }
 
     #[test]
@@ -726,10 +722,11 @@ mod utils_tests {
 
 // Command creator tests
 mod command_creator_tests {
-    use gcodekit4::firmware::grbl::{
-        CommandCreator, RealTimeCommand, SystemCommand, JogCommand, JogMode, ProbeCommand, ProbeType,
-    };
     use gcodekit4::data::{CNCPoint, Units};
+    use gcodekit4::firmware::grbl::{
+        CommandCreator, JogCommand, JogMode, ProbeCommand, ProbeType, RealTimeCommand,
+        SystemCommand,
+    };
 
     #[test]
     fn test_real_time_command_query_status() {
@@ -780,7 +777,7 @@ mod command_creator_tests {
         let target = CNCPoint::with_axes(10.0, 20.0, 0.0, 0.0, 0.0, 0.0, Units::MM);
         let jog = JogCommand::new(JogMode::XY, target, 1000.0);
         let gcode = jog.to_gcode();
-        
+
         assert!(gcode.contains("$J=G91 G0"));
         assert!(gcode.contains("X10.000"));
         assert!(gcode.contains("Y20.000"));
@@ -792,7 +789,7 @@ mod command_creator_tests {
         let target = CNCPoint::with_axes(10.0, 0.0, -5.0, 0.0, 0.0, 0.0, Units::MM);
         let jog = JogCommand::new(JogMode::XZ, target, 500.0);
         let gcode = jog.to_gcode();
-        
+
         assert!(gcode.contains("X10.000"));
         assert!(gcode.contains("Z-5.000"));
     }
@@ -802,7 +799,7 @@ mod command_creator_tests {
         let target = CNCPoint::with_axes(0.0, 0.0, -10.0, 0.0, 0.0, 0.0, Units::MM);
         let probe = ProbeCommand::new(ProbeType::Touching, target, 100.0);
         let gcode = probe.to_gcode();
-        
+
         assert!(gcode.contains("G38.2"));
         assert!(gcode.contains("Z-10.000"));
     }
@@ -812,7 +809,7 @@ mod command_creator_tests {
         let target = CNCPoint::new(Units::MM);
         let probe = ProbeCommand::new(ProbeType::Backing, target, 50.0);
         let gcode = probe.to_gcode();
-        
+
         assert!(gcode.contains("G38.4"));
     }
 

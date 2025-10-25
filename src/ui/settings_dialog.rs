@@ -20,7 +20,11 @@ pub struct KeyboardShortcut {
 
 impl KeyboardShortcut {
     /// Create new keyboard shortcut
-    pub fn new(action_id: impl Into<String>, desc: impl Into<String>, keys: impl Into<String>) -> Self {
+    pub fn new(
+        action_id: impl Into<String>,
+        desc: impl Into<String>,
+        keys: impl Into<String>,
+    ) -> Self {
         Self {
             action_id: action_id.into(),
             description: desc.into(),
@@ -194,7 +198,8 @@ impl SettingsDialog {
     /// Update setting value
     pub fn update_setting(&mut self, id: &str, value: SettingValue) -> bool {
         if let Some(setting) = self.settings.get_mut(id) {
-            if !matches!(setting.value, SettingValue::Enum(_, ref options) if !options.contains(&value.as_str())) {
+            if !matches!(setting.value, SettingValue::Enum(_, ref options) if !options.contains(&value.as_str()))
+            {
                 setting.value = value;
                 self.has_unsaved_changes = true;
                 return true;
@@ -254,7 +259,8 @@ impl SettingsDialog {
 
     /// Export settings to JSON
     pub fn export_settings(&self) -> Result<String, serde_json::Error> {
-        let settings_map: HashMap<String, String> = self.settings
+        let settings_map: HashMap<String, String> = self
+            .settings
             .iter()
             .map(|(k, v)| (k.clone(), v.value.as_str()))
             .collect();
@@ -268,12 +274,8 @@ impl SettingsDialog {
             if let Some(setting) = self.settings.get_mut(&key) {
                 let new_value = match &setting.value {
                     SettingValue::String(_) => SettingValue::String(value),
-                    SettingValue::Integer(_) => {
-                        SettingValue::Integer(value.parse().unwrap_or(0))
-                    }
-                    SettingValue::Float(_) => {
-                        SettingValue::Float(value.parse().unwrap_or(0.0))
-                    }
+                    SettingValue::Integer(_) => SettingValue::Integer(value.parse().unwrap_or(0)),
+                    SettingValue::Float(_) => SettingValue::Float(value.parse().unwrap_or(0.0)),
                     SettingValue::Boolean(_) => {
                         SettingValue::Boolean(value.parse().unwrap_or(false))
                     }
@@ -343,7 +345,12 @@ mod tests {
             .with_category(SettingsCategory::UserInterface);
 
         dialog.add_setting(setting);
-        assert_eq!(dialog.get_settings_for_category(&SettingsCategory::UserInterface).len(), 1);
+        assert_eq!(
+            dialog
+                .get_settings_for_category(&SettingsCategory::UserInterface)
+                .len(),
+            1
+        );
     }
 
     #[test]
@@ -358,9 +365,6 @@ mod tests {
         dialog2.add_setting(setting2);
         dialog2.import_settings(&json).unwrap();
 
-        assert_eq!(
-            dialog2.get_setting("theme").unwrap().value.as_str(),
-            "dark"
-        );
+        assert_eq!(dialog2.get_setting("theme").unwrap().value.as_str(), "dark");
     }
 }

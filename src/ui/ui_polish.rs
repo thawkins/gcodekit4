@@ -63,7 +63,7 @@ impl ProgressIndicator {
     pub fn update(&mut self, current: f32, message: impl Into<String>) {
         self.current = current.min(self.total);
         self.message = message.into();
-        
+
         if self.elapsed_time > 0.0 && self.current > 0.0 {
             let rate = self.current / self.elapsed_time;
             let remaining = (self.total - self.current) / rate;
@@ -357,7 +357,9 @@ impl KeyboardShortcutManager {
 
     /// Get action by key combination
     pub fn find_action(&self, key: Key, modifier: Modifier) -> Option<&KeyboardAction> {
-        self.shortcuts.values().find(|a| a.key == key && a.modifier == modifier)
+        self.shortcuts
+            .values()
+            .find(|a| a.key == key && a.modifier == modifier)
     }
 
     /// List all shortcuts
@@ -513,7 +515,12 @@ impl I18nManager {
     }
 
     /// Add translation
-    pub fn add_translation(&mut self, language: Language, key: impl Into<String>, value: impl Into<String>) {
+    pub fn add_translation(
+        &mut self,
+        language: Language,
+        key: impl Into<String>,
+        value: impl Into<String>,
+    ) {
         self.translations
             .entry(language)
             .or_insert_with(HashMap::new)
@@ -624,7 +631,11 @@ pub struct HelpTopic {
 
 impl HelpTopic {
     /// Create new help topic
-    pub fn new(id: impl Into<String>, title: impl Into<String>, content: impl Into<String>) -> Self {
+    pub fn new(
+        id: impl Into<String>,
+        title: impl Into<String>,
+        content: impl Into<String>,
+    ) -> Self {
         Self {
             id: id.into(),
             title: title.into(),
@@ -676,7 +687,9 @@ impl HelpSystem {
     /// Get related topics
     pub fn get_related(&self, id: &str) -> Vec<&HelpTopic> {
         if let Some(topic) = self.topics.get(id) {
-            topic.related.iter()
+            topic
+                .related
+                .iter()
                 .filter_map(|rid| self.topics.get(rid))
                 .collect()
         } else {

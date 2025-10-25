@@ -17,7 +17,12 @@ pub struct KeyModifiers {
 impl KeyModifiers {
     /// Create new modifiers
     pub fn new(ctrl: bool, shift: bool, alt: bool, meta: bool) -> Self {
-        Self { ctrl, shift, alt, meta }
+        Self {
+            ctrl,
+            shift,
+            alt,
+            meta,
+        }
     }
 
     /// No modifiers
@@ -38,18 +43,18 @@ pub enum KeyboardAction {
     OpenFile,
     SaveFile,
     ExitApplication,
-    
+
     // Machine control
     HomeAll,
     SoftReset,
     KillAlarmLock,
     CheckMode,
-    
+
     // Streaming control
     StartStream,
     PauseStream,
     StopStream,
-    
+
     // Jogging
     JogXPositive,
     JogXNegative,
@@ -57,19 +62,19 @@ pub enum KeyboardAction {
     JogYNegative,
     JogZPositive,
     JogZNegative,
-    
+
     // View controls
     FitView,
     TopView,
     FrontView,
     SideView,
-    
+
     // UI
     TogglePanel,
     ShowSettings,
     ShowMacros,
     ShowHelp,
-    
+
     // Custom action
     Custom(String),
 }
@@ -98,7 +103,7 @@ impl KeyBinding {
     /// Get display string for binding
     pub fn display(&self) -> String {
         let mut parts = Vec::new();
-        
+
         if self.modifiers.ctrl {
             parts.push("Ctrl");
         }
@@ -111,7 +116,7 @@ impl KeyBinding {
         if self.modifiers.meta {
             parts.push("Meta");
         }
-        
+
         parts.push(&self.key);
         parts.join("+")
     }
@@ -166,64 +171,26 @@ impl KeyboardManager {
         );
 
         // Streaming control
-        self.add_default(
-            KeyboardAction::PauseStream,
-            "Space",
-            KeyModifiers::none(),
-        );
-        self.add_default(
-            KeyboardAction::StopStream,
-            "Escape",
-            KeyModifiers::none(),
-        );
+        self.add_default(KeyboardAction::PauseStream, "Space", KeyModifiers::none());
+        self.add_default(KeyboardAction::StopStream, "Escape", KeyModifiers::none());
 
         // Jogging
-        self.add_default(
-            KeyboardAction::JogXPositive,
-            "d",
-            KeyModifiers::none(),
-        );
-        self.add_default(
-            KeyboardAction::JogXNegative,
-            "a",
-            KeyModifiers::none(),
-        );
-        self.add_default(
-            KeyboardAction::JogYPositive,
-            "w",
-            KeyModifiers::none(),
-        );
-        self.add_default(
-            KeyboardAction::JogYNegative,
-            "s",
-            KeyModifiers::none(),
-        );
-        self.add_default(
-            KeyboardAction::JogZPositive,
-            "q",
-            KeyModifiers::none(),
-        );
-        self.add_default(
-            KeyboardAction::JogZNegative,
-            "z",
-            KeyModifiers::none(),
-        );
+        self.add_default(KeyboardAction::JogXPositive, "d", KeyModifiers::none());
+        self.add_default(KeyboardAction::JogXNegative, "a", KeyModifiers::none());
+        self.add_default(KeyboardAction::JogYPositive, "w", KeyModifiers::none());
+        self.add_default(KeyboardAction::JogYNegative, "s", KeyModifiers::none());
+        self.add_default(KeyboardAction::JogZPositive, "q", KeyModifiers::none());
+        self.add_default(KeyboardAction::JogZNegative, "z", KeyModifiers::none());
 
         // View controls
-        self.add_default(
-            KeyboardAction::FitView,
-            "0",
-            KeyModifiers::none(),
-        );
+        self.add_default(KeyboardAction::FitView, "0", KeyModifiers::none());
     }
 
     /// Add default binding
     fn add_default(&mut self, action: KeyboardAction, key: &str, modifiers: KeyModifiers) {
         let binding_key = format!("{}_{}", action_key(&action), key);
-        self.bindings.insert(
-            binding_key,
-            KeyBinding::new(action, key, modifiers),
-        );
+        self.bindings
+            .insert(binding_key, KeyBinding::new(action, key, modifiers));
     }
 
     /// Add custom binding (overrides default)
@@ -240,14 +207,14 @@ impl KeyboardManager {
                 return Some(binding.clone());
             }
         }
-        
+
         // Fall back to defaults
         for (_, binding) in &self.bindings {
             if &binding.action == action {
                 return Some(binding.clone());
             }
         }
-        
+
         None
     }
 
@@ -259,14 +226,14 @@ impl KeyboardManager {
                 return Some(binding.action.clone());
             }
         }
-        
+
         // Fall back to defaults
         for (_, binding) in &self.bindings {
             if binding.key == key && binding.modifiers == modifiers {
                 return Some(binding.action.clone());
             }
         }
-        
+
         None
     }
 
@@ -275,9 +242,7 @@ impl KeyboardManager {
         let mut bindings: Vec<_> = self.bindings.values().cloned().collect();
         for binding in self.custom_bindings.values() {
             // Remove default if overridden
-            bindings.retain(|b| 
-                !(b.action == binding.action)
-            );
+            bindings.retain(|b| !(b.action == binding.action));
             bindings.push(binding.clone());
         }
         bindings.sort_by(|a, b| a.action.to_string().cmp(&b.action.to_string()));
@@ -420,7 +385,7 @@ mod tests {
             KeyModifiers::new(true, true, false, false),
         ));
         assert_eq!(mgr.custom_count(), 1);
-        
+
         mgr.reset_to_defaults();
         assert_eq!(mgr.custom_count(), 0);
     }

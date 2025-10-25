@@ -68,7 +68,9 @@ impl ProbingSystem {
 
     /// Get average probed height
     pub fn average_height(&self) -> Option<f32> {
-        let successful: Vec<_> = self.results.iter()
+        let successful: Vec<_> = self
+            .results
+            .iter()
             .filter(|r| r.success)
             .map(|r| r.z_position)
             .collect();
@@ -326,9 +328,12 @@ impl SoftLimits {
             return true;
         }
 
-        x >= self.x_min && x <= self.x_max &&
-        y >= self.y_min && y <= self.y_max &&
-        z >= self.z_min && z <= self.z_max
+        x >= self.x_min
+            && x <= self.x_max
+            && y >= self.y_min
+            && y <= self.y_max
+            && z >= self.z_min
+            && z <= self.z_max
     }
 
     /// Get limit violations
@@ -503,7 +508,8 @@ impl StepThroughMode {
 
     /// Check for breakpoint
     pub fn check_breakpoint(&self, line: usize) -> bool {
-        self.breakpoints.iter()
+        self.breakpoints
+            .iter()
             .any(|b| b.line_number == line && b.enabled)
     }
 
@@ -605,10 +611,7 @@ impl PerformanceMetrics {
     pub fn get_report(&self) -> String {
         format!(
             "Performance: {:.1} cmd/s, Buffer: {:.1}% (peak {:.1}%), Latency: {:.1}ms",
-            self.commands_per_second,
-            self.buffer_usage,
-            self.peak_buffer,
-            self.avg_latency
+            self.commands_per_second, self.buffer_usage, self.peak_buffer, self.avg_latency
         )
     }
 }

@@ -4,8 +4,8 @@
 //! command creation, and utilities.
 
 use gcodekit4::firmware::tinyg::{
-    TinyGVersion, TinyGCapabilities, CommandCreator, MotionType, RealTimeCommand,
-    TinyGResponseParser, TinyGResponseType,
+    CommandCreator, MotionType, RealTimeCommand, TinyGCapabilities, TinyGResponseParser,
+    TinyGResponseType, TinyGVersion,
 };
 
 #[test]

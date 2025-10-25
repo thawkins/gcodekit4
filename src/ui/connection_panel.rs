@@ -267,7 +267,8 @@ impl ConnectionPanel {
             ConnectionType::Serial => {
                 format!(
                     "{} @ {} baud",
-                    self.settings.port, self.settings.baud_rate.as_u32()
+                    self.settings.port,
+                    self.settings.baud_rate.as_u32()
                 )
             }
             ConnectionType::TCP => {
@@ -313,8 +314,7 @@ mod tests {
 
     #[test]
     fn test_connection_settings_serial() {
-        let settings = ConnectionSettings::new()
-            .set_serial("COM1", BaudRate::BR115200);
+        let settings = ConnectionSettings::new().set_serial("COM1", BaudRate::BR115200);
         assert_eq!(settings.connection_type, ConnectionType::Serial);
         assert_eq!(settings.port, "COM1");
     }
@@ -323,7 +323,7 @@ mod tests {
     fn test_connection_panel() {
         let mut panel = ConnectionPanel::new();
         assert_eq!(panel.status, ConnectionStatus::Disconnected);
-        
+
         panel.select_port("COM1");
         assert!(panel.can_connect());
     }

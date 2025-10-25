@@ -221,7 +221,11 @@ impl GcodeStreamReader for StringStreamReader {
         } else {
             Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidInput,
-                format!("Line number {} exceeds total lines {}", line_number, self.lines.len()),
+                format!(
+                    "Line number {} exceeds total lines {}",
+                    line_number,
+                    self.lines.len()
+                ),
             ))
         }
     }

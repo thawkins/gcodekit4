@@ -3,8 +3,8 @@
 //! G-Code macro button grid, editor, execution, variable substitution,
 //! and macro import/export functionality
 
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// Macro variable for substitution
 #[derive(Debug, Clone, Serialize, Deserialize)]

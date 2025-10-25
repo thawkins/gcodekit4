@@ -16,7 +16,12 @@ impl SmoothiewareCommandCreator {
 
     /// Create a jog command for Smoothieware
     pub fn jog_command(&self, axis: char, distance: f64, feed_rate: f64) -> String {
-        format!("G1 {}:{:.2} F{:.0}", axis.to_ascii_uppercase(), distance, feed_rate)
+        format!(
+            "G1 {}:{:.2} F{:.0}",
+            axis.to_ascii_uppercase(),
+            distance,
+            feed_rate
+        )
     }
 
     /// Create a move command
@@ -83,7 +88,13 @@ impl SmoothiewareCommandCreator {
     }
 
     /// Create a probe command
-    pub fn probe_command(&self, axis: char, distance: f64, feed_rate: f64, pull_off: f64) -> String {
+    pub fn probe_command(
+        &self,
+        axis: char,
+        distance: f64,
+        feed_rate: f64,
+        pull_off: f64,
+    ) -> String {
         format!(
             "G38.2 {}:{:.2} F{:.0}; G1 {}:{:.2}",
             axis.to_ascii_uppercase(),
@@ -95,13 +106,7 @@ impl SmoothiewareCommandCreator {
     }
 
     /// Create an arc command (clockwise)
-    pub fn arc_cw(
-        &self,
-        end: &Position,
-        center_x: f64,
-        center_y: f64,
-        feed_rate: f64,
-    ) -> String {
+    pub fn arc_cw(&self, end: &Position, center_x: f64, center_y: f64, feed_rate: f64) -> String {
         let mut cmd = String::from("G2");
         cmd.push_str(&format!(" X{:.2}", end.x));
         cmd.push_str(&format!(" Y{:.2}", end.y));
@@ -111,13 +116,7 @@ impl SmoothiewareCommandCreator {
     }
 
     /// Create an arc command (counter-clockwise)
-    pub fn arc_ccw(
-        &self,
-        end: &Position,
-        center_x: f64,
-        center_y: f64,
-        feed_rate: f64,
-    ) -> String {
+    pub fn arc_ccw(&self, end: &Position, center_x: f64, center_y: f64, feed_rate: f64) -> String {
         let mut cmd = String::from("G3");
         cmd.push_str(&format!(" X{:.2}", end.x));
         cmd.push_str(&format!(" Y{:.2}", end.y));

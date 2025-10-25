@@ -253,8 +253,11 @@ impl GcodeFileReader {
 
             // Check for potential issues
             if trimmed.len() > 256 {
-                validation.warnings
-                    .push(format!("Line {} is very long ({})", validation.total_lines, trimmed.len()));
+                validation.warnings.push(format!(
+                    "Line {} is very long ({})",
+                    validation.total_lines,
+                    trimmed.len()
+                ));
             }
 
             if trimmed.contains("G00") || trimmed.contains("G0 ") {
@@ -263,7 +266,9 @@ impl GcodeFileReader {
             if trimmed.contains("G01") || trimmed.contains("G1 ") {
                 validation.linear_moves += 1;
             }
-            if trimmed.contains("G02") || trimmed.contains("G2 ") || trimmed.contains("G03")
+            if trimmed.contains("G02")
+                || trimmed.contains("G2 ")
+                || trimmed.contains("G03")
                 || trimmed.contains("G3 ")
             {
                 validation.arc_moves += 1;

@@ -19,11 +19,11 @@
 //! Task 119: Data logging
 //! Task 120: Alarms and notifications
 
+use anyhow::Result;
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
-use anyhow::Result;
-use serde::{Deserialize, Serialize};
 
 // ============================================================================
 // TASK 103: AUTO-LEVELING PROBE MESH
@@ -81,7 +81,9 @@ impl ProbeMesh {
         }
 
         // Find 4 nearest points for bilinear interpolation
-        let mut nearest = self.points.iter()
+        let mut nearest = self
+            .points
+            .iter()
             .map(|p| (p, (p.x - x).powi(2) + (p.y - y).powi(2)))
             .collect::<Vec<_>>();
         nearest.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
@@ -344,7 +346,10 @@ impl WorkCoordinateSystem {
 
     /// Get current offset
     pub fn current_offset(&self) -> WorkOffset {
-        self.systems.get(&self.current_system).copied().unwrap_or(WorkOffset::zero())
+        self.systems
+            .get(&self.current_system)
+            .copied()
+            .unwrap_or(WorkOffset::zero())
     }
 }
 
@@ -397,9 +402,12 @@ impl SoftLimits {
             return true;
         }
 
-        x >= self.x_min && x <= self.x_max
-            && y >= self.y_min && y <= self.y_max
-            && z >= self.z_min && z <= self.z_max
+        x >= self.x_min
+            && x <= self.x_max
+            && y >= self.y_min
+            && y <= self.y_max
+            && z >= self.z_min
+            && z <= self.z_max
     }
 
     /// Get violations
@@ -410,12 +418,24 @@ impl SoftLimits {
             return violations;
         }
 
-        if x < self.x_min { violations.push(format!("X too low: {} < {}", x, self.x_min)); }
-        if x > self.x_max { violations.push(format!("X too high: {} > {}", x, self.x_max)); }
-        if y < self.y_min { violations.push(format!("Y too low: {} < {}", y, self.y_min)); }
-        if y > self.y_max { violations.push(format!("Y too high: {} > {}", y, self.y_max)); }
-        if z < self.z_min { violations.push(format!("Z too low: {} < {}", z, self.z_min)); }
-        if z > self.z_max { violations.push(format!("Z too high: {} > {}", z, self.z_max)); }
+        if x < self.x_min {
+            violations.push(format!("X too low: {} < {}", x, self.x_min));
+        }
+        if x > self.x_max {
+            violations.push(format!("X too high: {} > {}", x, self.x_max));
+        }
+        if y < self.y_min {
+            violations.push(format!("Y too low: {} < {}", y, self.y_min));
+        }
+        if y > self.y_max {
+            violations.push(format!("Y too high: {} > {}", y, self.y_max));
+        }
+        if z < self.z_min {
+            violations.push(format!("Z too low: {} < {}", z, self.z_min));
+        }
+        if z > self.z_max {
+            violations.push(format!("Z too high: {} > {}", z, self.z_max));
+        }
 
         violations
     }
@@ -456,7 +476,11 @@ impl Simulator {
     /// Create new simulator
     pub fn new() -> Self {
         Self {
-            position: SimulationPosition { x: 0.0, y: 0.0, z: 0.0 },
+            position: SimulationPosition {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
             commands_executed: 0,
             active: false,
         }
@@ -591,20 +615,26 @@ impl BookmarkManager {
 
     /// Add bookmark
     pub fn add_bookmark(&mut self, line: u32, name: impl Into<String>) {
-        self.bookmarks.insert(line, Bookmark {
+        self.bookmarks.insert(
             line,
-            name: name.into(),
-            is_breakpoint: false,
-        });
+            Bookmark {
+                line,
+                name: name.into(),
+                is_breakpoint: false,
+            },
+        );
     }
 
     /// Add breakpoint
     pub fn add_breakpoint(&mut self, line: u32, name: impl Into<String>) {
-        self.bookmarks.insert(line, Bookmark {
+        self.bookmarks.insert(
             line,
-            name: name.into(),
-            is_breakpoint: true,
-        });
+            Bookmark {
+                line,
+                name: name.into(),
+                is_breakpoint: true,
+            },
+        );
     }
 
     /// Remove bookmark
@@ -624,7 +654,10 @@ impl BookmarkManager {
 
     /// List breakpoints
     pub fn list_breakpoints(&self) -> Vec<&Bookmark> {
-        self.bookmarks.values().filter(|b| b.is_breakpoint).collect()
+        self.bookmarks
+            .values()
+            .filter(|b| b.is_breakpoint)
+            .collect()
     }
 }
 
@@ -1173,8 +1206,16 @@ mod tests {
     #[test]
     fn test_probe_mesh() {
         let mut mesh = ProbeMesh::new(1.0, 1.0);
-        mesh.add_point(HeightPoint { x: 0.0, y: 0.0, z: 0.5 });
-        mesh.add_point(HeightPoint { x: 1.0, y: 1.0, z: 0.7 });
+        mesh.add_point(HeightPoint {
+            x: 0.0,
+            y: 0.0,
+            z: 0.5,
+        });
+        mesh.add_point(HeightPoint {
+            x: 1.0,
+            y: 1.0,
+            z: 0.7,
+        });
 
         let (count, min, max) = mesh.stats();
         assert_eq!(count, 2);

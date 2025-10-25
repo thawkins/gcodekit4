@@ -34,11 +34,11 @@ mod tests {
     fn test_grbl_communicator_ready_to_send() {
         let config = GrblCommunicatorConfig::default();
         let communicator = GrblCommunicator::new(Box::new(NoOpCommunicator::new()), config);
-        
+
         // Should be ready to send a command within buffer
         assert!(communicator.is_ready_to_send(50));
         assert!(communicator.is_ready_to_send(128));
-        
+
         // Should not be ready for oversized command
         assert!(!communicator.is_ready_to_send(129));
     }
@@ -47,11 +47,11 @@ mod tests {
     fn test_grbl_communicator_character_counting() {
         let config = GrblCommunicatorConfig::default();
         let communicator = GrblCommunicator::new(Box::new(NoOpCommunicator::new()), config);
-        
+
         // Acknowledge some characters
         communicator.acknowledge_chars(50);
         assert_eq!(communicator.get_pending_chars(), 0);
-        
+
         // After acknowledging, buffer should be fully available
         assert_eq!(communicator.get_available_buffer(), 128);
     }
@@ -70,7 +70,7 @@ mod tests {
     fn test_grbl_communicator_running_state() {
         let config = GrblCommunicatorConfig::default();
         let communicator = GrblCommunicator::new(Box::new(NoOpCommunicator::new()), config);
-        
+
         assert!(!communicator.is_running());
     }
 }

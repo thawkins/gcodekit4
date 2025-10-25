@@ -288,7 +288,8 @@ impl LayoutManager {
     /// Save current layout
     pub fn save_current(&mut self, name: impl Into<String>) {
         let name_str = name.into();
-        self.saved_layouts.insert(name_str, self.current_layout.clone());
+        self.saved_layouts
+            .insert(name_str, self.current_layout.clone());
     }
 
     /// Get saved layout names
@@ -454,10 +455,10 @@ mod tests {
         let mut mgr = LayoutManager::new();
         let original_name = mgr.current().name.clone();
         mgr.save_current("my_custom_layout");
-        
+
         mgr.load_preset(LayoutPreset::Programming);
         assert_ne!(mgr.current().name, original_name);
-        
+
         mgr.load_layout("my_custom_layout");
         assert_eq!(mgr.current().name, original_name);
     }

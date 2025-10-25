@@ -12,8 +12,8 @@
 //! - Handle drop events
 
 use gcodekit4::utils::{
-    DropEvent, DropFileType, DropIndicatorState, DropTarget, DropZone, ExportOptions,
-    FileExporter, FileFormat,
+    DropEvent, DropFileType, DropIndicatorState, DropTarget, DropZone, ExportOptions, FileExporter,
+    FileFormat,
 };
 use std::fs;
 use std::path::PathBuf;
@@ -265,9 +265,15 @@ fn test_task_96_multiple_drop_zones() {
 
     let gcode_event = DropEvent::new(vec![PathBuf::from("test.nc")], DropTarget::Editor);
 
-    assert!(editor_zone.file_type.matches(gcode_event.first_file().unwrap()));
-    assert!(browser_zone.file_type.matches(gcode_event.first_file().unwrap()));
-    assert!(!canvas_zone.file_type.matches(gcode_event.first_file().unwrap()));
+    assert!(editor_zone
+        .file_type
+        .matches(gcode_event.first_file().unwrap()));
+    assert!(browser_zone
+        .file_type
+        .matches(gcode_event.first_file().unwrap()));
+    assert!(!canvas_zone
+        .file_type
+        .matches(gcode_event.first_file().unwrap()));
 }
 
 #[test]
@@ -278,8 +284,8 @@ fn test_task_95_96_combined_workflow() {
     let files = vec![temp_dir.path().join("input.nc")];
     fs::write(&files[0], "G0 X10\nG1 Y20\n").expect("Failed to write input file");
 
-    let drop_event = DropEvent::new(files.clone(), DropTarget::FileBrowser)
-        .with_position(100.0, 200.0);
+    let drop_event =
+        DropEvent::new(files.clone(), DropTarget::FileBrowser).with_position(100.0, 200.0);
 
     // Verify drop event
     assert!(drop_event.is_valid_for_target(DropFileType::GCode));
@@ -354,14 +360,8 @@ fn test_task_96_drop_zone_multiple_files() {
 
 #[test]
 fn test_task_95_file_format_detection() {
-    assert_eq!(
-        FileFormat::from_extension("nc"),
-        Some(FileFormat::GCode)
-    );
-    assert_eq!(
-        FileFormat::from_extension("NGC"),
-        Some(FileFormat::NGC)
-    );
+    assert_eq!(FileFormat::from_extension("nc"), Some(FileFormat::GCode));
+    assert_eq!(FileFormat::from_extension("NGC"), Some(FileFormat::NGC));
     assert_eq!(FileFormat::from_extension("unknown"), None);
 }
 

@@ -2,10 +2,10 @@
 //! Phase 6 Extended Features
 
 use gcodekit4::utils::{
-    ProbeMesh, HeightPoint, ToolLibrary, ToolInfo, ToolOffsetManager, ToolOffset,
-    WorkCoordinateSystem, WorkOffset, SoftLimits, Simulator, Stepper,
-    BookmarkManager, CommandHistory, CustomMacro, CustomAction, AlarmManager, Alarm,
-    AlarmType, DataLogger, PendantConfig, AutoConnectConfig, NetworkConfig,
+    Alarm, AlarmManager, AlarmType, AutoConnectConfig, BookmarkManager, CommandHistory,
+    CustomAction, CustomMacro, DataLogger, HeightPoint, NetworkConfig, PendantConfig, ProbeMesh,
+    Simulator, SoftLimits, Stepper, ToolInfo, ToolLibrary, ToolOffset, ToolOffsetManager,
+    WorkCoordinateSystem, WorkOffset,
 };
 
 // ============================================================================
@@ -22,9 +22,21 @@ fn test_task_103_probe_mesh_creation() {
 #[test]
 fn test_task_103_probe_mesh_add_points() {
     let mut mesh = ProbeMesh::new(1.0, 1.0);
-    mesh.add_point(HeightPoint { x: 0.0, y: 0.0, z: 0.5 });
-    mesh.add_point(HeightPoint { x: 1.0, y: 1.0, z: 0.7 });
-    mesh.add_point(HeightPoint { x: 2.0, y: 2.0, z: 0.6 });
+    mesh.add_point(HeightPoint {
+        x: 0.0,
+        y: 0.0,
+        z: 0.5,
+    });
+    mesh.add_point(HeightPoint {
+        x: 1.0,
+        y: 1.0,
+        z: 0.7,
+    });
+    mesh.add_point(HeightPoint {
+        x: 2.0,
+        y: 2.0,
+        z: 0.6,
+    });
 
     assert_eq!(mesh.points.len(), 3);
 }
@@ -32,8 +44,16 @@ fn test_task_103_probe_mesh_add_points() {
 #[test]
 fn test_task_103_probe_mesh_stats() {
     let mut mesh = ProbeMesh::new(1.0, 1.0);
-    mesh.add_point(HeightPoint { x: 0.0, y: 0.0, z: 0.5 });
-    mesh.add_point(HeightPoint { x: 1.0, y: 1.0, z: 0.8 });
+    mesh.add_point(HeightPoint {
+        x: 0.0,
+        y: 0.0,
+        z: 0.5,
+    });
+    mesh.add_point(HeightPoint {
+        x: 1.0,
+        y: 1.0,
+        z: 0.8,
+    });
 
     let (count, min, max) = mesh.stats();
     assert_eq!(count, 2);
@@ -44,10 +64,26 @@ fn test_task_103_probe_mesh_stats() {
 #[test]
 fn test_task_103_probe_mesh_z_offset() {
     let mut mesh = ProbeMesh::new(1.0, 1.0);
-    mesh.add_point(HeightPoint { x: 0.0, y: 0.0, z: 0.5 });
-    mesh.add_point(HeightPoint { x: 1.0, y: 0.0, z: 0.6 });
-    mesh.add_point(HeightPoint { x: 0.0, y: 1.0, z: 0.7 });
-    mesh.add_point(HeightPoint { x: 1.0, y: 1.0, z: 0.8 });
+    mesh.add_point(HeightPoint {
+        x: 0.0,
+        y: 0.0,
+        z: 0.5,
+    });
+    mesh.add_point(HeightPoint {
+        x: 1.0,
+        y: 0.0,
+        z: 0.6,
+    });
+    mesh.add_point(HeightPoint {
+        x: 0.0,
+        y: 1.0,
+        z: 0.7,
+    });
+    mesh.add_point(HeightPoint {
+        x: 1.0,
+        y: 1.0,
+        z: 0.8,
+    });
 
     let offset = mesh.get_z_offset(0.5, 0.5);
     assert!(offset.is_some());

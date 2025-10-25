@@ -20,7 +20,11 @@ pub struct HelpTopic {
 
 impl HelpTopic {
     /// Create new help topic
-    pub fn new(id: impl Into<String>, title: impl Into<String>, content: impl Into<String>) -> Self {
+    pub fn new(
+        id: impl Into<String>,
+        title: impl Into<String>,
+        content: impl Into<String>,
+    ) -> Self {
         Self {
             id: id.into(),
             title: title.into(),
@@ -102,10 +106,7 @@ impl HelpSystem {
 
     /// Get all shortcut categories
     pub fn shortcut_categories(&self) -> Vec<String> {
-        let mut categories: Vec<_> = self.shortcuts
-            .iter()
-            .map(|s| s.category.clone())
-            .collect();
+        let mut categories: Vec<_> = self.shortcuts.iter().map(|s| s.category.clone()).collect();
         categories.sort();
         categories.dedup();
         categories
@@ -119,11 +120,10 @@ impl HelpSystem {
     /// Initialize default help content
     pub fn init_defaults(&mut self) {
         // Connection Help
-        self.add_topic(
-            HelpTopic::new(
-                "connection",
-                "Connecting to Your Machine",
-                r#"# Connecting to Your Machine
+        self.add_topic(HelpTopic::new(
+            "connection",
+            "Connecting to Your Machine",
+            r#"# Connecting to Your Machine
 
 ## Serial Connection
 1. Select your serial port from the dropdown
@@ -143,16 +143,14 @@ impl HelpSystem {
 - Check that the cable is properly connected
 - Verify the correct port is selected
 - Ensure baud rate matches your controller
-- Check device permissions on Linux/Mac"#
-            )
-        );
+- Check device permissions on Linux/Mac"#,
+        ));
 
         // Jogging Help
-        self.add_topic(
-            HelpTopic::new(
-                "jogging",
-                "Jogging the Machine",
-                r#"# Jogging Controls
+        self.add_topic(HelpTopic::new(
+            "jogging",
+            "Jogging the Machine",
+            r#"# Jogging Controls
 
 ## Keyboard Jogging
 - W/Up Arrow: +Y
@@ -171,16 +169,14 @@ impl HelpSystem {
 1. Select feed rate
 2. Hold direction button
 3. Machine moves continuously
-4. Release button to stop"#
-            )
-        );
+4. Release button to stop"#,
+        ));
 
         // File Operations Help
-        self.add_topic(
-            HelpTopic::new(
-                "file_operations",
-                "File Operations",
-                r#"# Working with G-Code Files
+        self.add_topic(HelpTopic::new(
+            "file_operations",
+            "File Operations",
+            r#"# Working with G-Code Files
 
 ## Opening Files
 - Click File → Open
@@ -201,37 +197,16 @@ impl HelpSystem {
 - Click Start to begin streaming
 - Click Pause to hold machine
 - Click Stop to cancel
-- Progress shows in status bar"#
-            )
-        );
+- Progress shows in status bar"#,
+        ));
 
         // Add default shortcuts
-        self.add_shortcut(ShortcutReference::new(
-            "Open File",
-            "Ctrl+O",
-            "File",
-        ));
-        self.add_shortcut(ShortcutReference::new(
-            "Save File",
-            "Ctrl+S",
-            "File",
-        ));
-        self.add_shortcut(ShortcutReference::new(
-            "Exit Application",
-            "Ctrl+Q",
-            "File",
-        ));
+        self.add_shortcut(ShortcutReference::new("Open File", "Ctrl+O", "File"));
+        self.add_shortcut(ShortcutReference::new("Save File", "Ctrl+S", "File"));
+        self.add_shortcut(ShortcutReference::new("Exit Application", "Ctrl+Q", "File"));
 
-        self.add_shortcut(ShortcutReference::new(
-            "Home All Axes",
-            "Ctrl+H",
-            "Machine",
-        ));
-        self.add_shortcut(ShortcutReference::new(
-            "Soft Reset",
-            "Ctrl+R",
-            "Machine",
-        ));
+        self.add_shortcut(ShortcutReference::new("Home All Axes", "Ctrl+H", "Machine"));
+        self.add_shortcut(ShortcutReference::new("Soft Reset", "Ctrl+R", "Machine"));
         self.add_shortcut(ShortcutReference::new(
             "Kill Alarm Lock",
             "Ctrl+L",
@@ -243,11 +218,7 @@ impl HelpSystem {
             "Space",
             "Streaming",
         ));
-        self.add_shortcut(ShortcutReference::new(
-            "Stop Stream",
-            "Escape",
-            "Streaming",
-        ));
+        self.add_shortcut(ShortcutReference::new("Stop Stream", "Escape", "Streaming"));
 
         self.add_shortcut(ShortcutReference::new("Jog +X", "D", "Jog"));
         self.add_shortcut(ShortcutReference::new("Jog -X", "A", "Jog"));

@@ -69,10 +69,7 @@ pub struct TinyGController {
 
 impl TinyGController {
     /// Create a new TinyG controller
-    pub fn new(
-        connection_params: ConnectionParams,
-        name: Option<String>,
-    ) -> anyhow::Result<Self> {
+    pub fn new(connection_params: ConnectionParams, name: Option<String>) -> anyhow::Result<Self> {
         debug!("Creating TinyG controller");
 
         Ok(Self {
@@ -149,7 +146,10 @@ impl ControllerTrait for TinyGController {
     }
 
     async fn connect(&mut self) -> anyhow::Result<()> {
-        info!("Connecting to TinyG controller on {}", self.connection_params.port);
+        info!(
+            "Connecting to TinyG controller on {}",
+            self.connection_params.port
+        );
 
         // Update state to connecting
         {
@@ -250,7 +250,12 @@ impl ControllerTrait for TinyGController {
         Ok(())
     }
 
-    async fn jog_start(&mut self, _axis: char, _direction: i32, _feed_rate: f64) -> anyhow::Result<()> {
+    async fn jog_start(
+        &mut self,
+        _axis: char,
+        _direction: i32,
+        _feed_rate: f64,
+    ) -> anyhow::Result<()> {
         debug!("Starting TinyG jog");
 
         if !self.is_connected() {
@@ -476,7 +481,10 @@ impl ControllerTrait for TinyGController {
         Ok(())
     }
 
-    fn register_listener(&mut self, _listener: std::sync::Arc<dyn crate::core::ControllerListener>) -> crate::core::ControllerListenerHandle {
+    fn register_listener(
+        &mut self,
+        _listener: std::sync::Arc<dyn crate::core::ControllerListener>,
+    ) -> crate::core::ControllerListenerHandle {
         crate::core::ControllerListenerHandle("tinyg_listener".to_string())
     }
 

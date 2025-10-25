@@ -456,7 +456,7 @@ fn test_processor_chain_with_expansion() {
 
 // Task 15 Tests: Advanced Preprocessors
 
-use gcodekit4::gcode::{PatternRemover, M30Processor};
+use gcodekit4::gcode::{M30Processor, PatternRemover};
 
 #[test]
 fn test_arc_expander_basic() {
@@ -492,7 +492,10 @@ fn test_arc_expander_non_arc_passthrough() {
 fn test_line_splitter_long_line() {
     use gcodekit4::gcode::LineSplitter;
     let mut splitter = LineSplitter::new();
-    splitter.config.options.insert("max_length".to_string(), "20".to_string());
+    splitter
+        .config
+        .options
+        .insert("max_length".to_string(), "20".to_string());
 
     let state = GcodeState::new();
     let long_command = GcodeCommand::new("G01 X100 Y200 Z50 F1000");
@@ -579,7 +582,9 @@ fn test_m30_processor_without_spindle_stop() {
 #[test]
 fn test_m30_processor_with_spindle_stop_enabled() {
     let mut m30 = M30Processor::new();
-    m30.config.options.insert("add_spindle_stop".to_string(), "true".to_string());
+    m30.config
+        .options
+        .insert("add_spindle_stop".to_string(), "true".to_string());
 
     let state = GcodeState::new();
     let command = GcodeCommand::new("M30");

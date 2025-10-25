@@ -1,5 +1,5 @@
 /// Tests for ConsoleListener integration with DeviceConsoleManager
-use gcodekit4::{DeviceConsoleManager, ConsoleListener, CommunicatorListener};
+use gcodekit4::{CommunicatorListener, ConsoleListener, DeviceConsoleManager};
 use std::sync::Arc;
 
 #[test]

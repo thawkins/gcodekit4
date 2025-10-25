@@ -119,16 +119,13 @@ impl ProgressDisplay {
     pub fn from_progress(progress: &StreamProgress) -> Self {
         let elapsed = progress.elapsed();
         let elapsed_str = format_duration(elapsed);
-        
+
         let remaining_str = progress
             .estimated_remaining()
             .map(format_duration)
             .unwrap_or_else(|| "-- :-- ".to_string());
 
-        let lines_display = format!(
-            "{} / {}",
-            progress.lines_sent, progress.total_lines
-        );
+        let lines_display = format!("{} / {}", progress.lines_sent, progress.total_lines);
 
         let status = if progress.is_complete() {
             "Complete".to_string()

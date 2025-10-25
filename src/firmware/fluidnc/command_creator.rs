@@ -16,7 +16,12 @@ impl FluidNCCommandCreator {
 
     /// Create a jog command for FluidNC
     pub fn jog_command(&self, axis: char, distance: f64, feed_rate: f64) -> String {
-        format!("$J=G91G21{}{}F{}", axis.to_ascii_uppercase(), distance, feed_rate)
+        format!(
+            "$J=G91G21{}{}F{}",
+            axis.to_ascii_uppercase(),
+            distance,
+            feed_rate
+        )
     }
 
     /// Create a move command
@@ -83,7 +88,13 @@ impl FluidNCCommandCreator {
     }
 
     /// Create a probe command
-    pub fn probe_command(&self, axis: char, distance: f64, feed_rate: f64, pull_off: f64) -> String {
+    pub fn probe_command(
+        &self,
+        axis: char,
+        distance: f64,
+        feed_rate: f64,
+        pull_off: f64,
+    ) -> String {
         format!(
             "G38.2 {}:{:.4} F{:.0}; G1 {}:{:.4}",
             axis.to_ascii_uppercase(),
@@ -95,13 +106,7 @@ impl FluidNCCommandCreator {
     }
 
     /// Create an arc command (clockwise)
-    pub fn arc_cw(
-        &self,
-        end: &Position,
-        center_x: f64,
-        center_y: f64,
-        feed_rate: f64,
-    ) -> String {
+    pub fn arc_cw(&self, end: &Position, center_x: f64, center_y: f64, feed_rate: f64) -> String {
         let mut cmd = String::from("G2");
         cmd.push_str(&format!(" X{:.4}", end.x));
         cmd.push_str(&format!(" Y{:.4}", end.y));
@@ -111,13 +116,7 @@ impl FluidNCCommandCreator {
     }
 
     /// Create an arc command (counter-clockwise)
-    pub fn arc_ccw(
-        &self,
-        end: &Position,
-        center_x: f64,
-        center_y: f64,
-        feed_rate: f64,
-    ) -> String {
+    pub fn arc_ccw(&self, end: &Position, center_x: f64, center_y: f64, feed_rate: f64) -> String {
         let mut cmd = String::from("G3");
         cmd.push_str(&format!(" X{:.4}", end.x));
         cmd.push_str(&format!(" Y{:.4}", end.y));

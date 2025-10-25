@@ -104,7 +104,10 @@ impl ConnectionWatcher {
                 };
 
                 if *current_state != new_state {
-                    debug!("Connection state changed: {:?} -> {:?}", *current_state, new_state);
+                    debug!(
+                        "Connection state changed: {:?} -> {:?}",
+                        *current_state, new_state
+                    );
                     *current_state = new_state;
                 } else if new_state == ConnectionWatchState::Lost {
                     warn!("Connection timeout detected");

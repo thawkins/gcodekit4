@@ -46,7 +46,7 @@ impl ArcExpander {
         is_clockwise: bool,
     ) -> Vec<(f64, f64)> {
         let mut segments = Vec::new();
-        
+
         // Calculate radius
         let radius_x = start_x - center_x;
         let radius_y = start_y - center_y;

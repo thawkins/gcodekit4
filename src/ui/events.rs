@@ -2,8 +2,8 @@
 //!
 //! Event system for inter-component communication
 
+use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex};
-use std::sync::mpsc::{channel, Sender, Receiver};
 
 /// UI event types
 #[derive(Debug, Clone)]
@@ -112,11 +112,11 @@ impl UiEventBus {
             id: id.clone(),
             subscriber: subscriber.into(),
         };
-        
+
         if let Ok(mut subs) = self.subscriptions.lock() {
             subs.push(subscription);
         }
-        
+
         id
     }
 

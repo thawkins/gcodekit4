@@ -12,10 +12,10 @@
 //! - Show drop indicators
 //! - Handle drop events
 
-use std::path::{Path, PathBuf};
-use std::fs;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use std::fs;
+use std::path::{Path, PathBuf};
 
 /// File format options for export
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -131,9 +131,7 @@ impl FileExporter {
             }
 
             // Skip comments if not including them
-            if !options.include_comments
-                && (trimmed.starts_with(';') || trimmed.starts_with('('))
-            {
+            if !options.include_comments && (trimmed.starts_with(';') || trimmed.starts_with('(')) {
                 continue;
             }
 
@@ -163,15 +161,28 @@ impl FileExporter {
 
         if options.add_timestamp {
             let now = chrono::Local::now();
-            header.push_str(&format!("; Exported: {}\n", now.format("%Y-%m-%d %H:%M:%S")));
+            header.push_str(&format!(
+                "; Exported: {}\n",
+                now.format("%Y-%m-%d %H:%M:%S")
+            ));
         }
 
         header.push_str("; Format options:\n");
-        header.push_str(&format!(";   Include comments: {}\n", options.include_comments));
-        header.push_str(&format!(";   Include empty lines: {}\n", options.include_empty_lines));
+        header.push_str(&format!(
+            ";   Include comments: {}\n",
+            options.include_comments
+        ));
+        header.push_str(&format!(
+            ";   Include empty lines: {}\n",
+            options.include_empty_lines
+        ));
         header.push_str(&format!(
             ";   Line endings: {}\n",
-            if options.unix_line_endings { "Unix" } else { "Windows" }
+            if options.unix_line_endings {
+                "Unix"
+            } else {
+                "Windows"
+            }
         ));
         header.push_str(";\n");
 
@@ -436,10 +447,7 @@ mod tests {
 
     #[test]
     fn test_drop_event_first_file() {
-        let files = vec![
-            PathBuf::from("test1.nc"),
-            PathBuf::from("test2.nc"),
-        ];
+        let files = vec![PathBuf::from("test1.nc"), PathBuf::from("test2.nc")];
         let event = DropEvent::new(files, DropTarget::Editor);
         assert_eq!(event.first_file(), Some(Path::new("test1.nc")));
     }

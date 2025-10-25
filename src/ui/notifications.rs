@@ -165,7 +165,8 @@ impl NotificationManager {
     /// Get notifications by level
     pub fn by_level(&self, level: NotificationLevel) -> Vec<Notification> {
         if let Ok(notifs) = self.notifications.lock() {
-            notifs.iter()
+            notifs
+                .iter()
                 .filter(|n| n.level == level)
                 .cloned()
                 .collect()
@@ -204,12 +205,8 @@ mod tests {
     fn test_notification_auto_dismiss() {
         let notif = Notification::new("Test", NotificationLevel::Info);
         assert!(!notif.should_dismiss());
-        
-        let notif_no_dismiss = Notification::with_duration(
-            "Test",
-            NotificationLevel::Info,
-            None,
-        );
+
+        let notif_no_dismiss = Notification::with_duration("Test", NotificationLevel::Info, None);
         assert!(!notif_no_dismiss.should_dismiss());
     }
 
@@ -232,7 +229,7 @@ mod tests {
         let mgr = NotificationManager::new();
         mgr.success("Test");
         assert_eq!(mgr.count(), 1);
-        
+
         let notifs = mgr.get_all();
         if let Some(notif) = notifs.first() {
             mgr.dismiss(&notif.id);
@@ -247,7 +244,7 @@ mod tests {
         mgr.success("Test 2");
         mgr.success("Test 3");
         assert_eq!(mgr.count(), 3);
-        
+
         mgr.clear_all();
         assert_eq!(mgr.count(), 0);
     }
@@ -258,10 +255,10 @@ mod tests {
         mgr.success("Success");
         mgr.error("Error");
         mgr.success("Success 2");
-        
+
         let successes = mgr.by_level(NotificationLevel::Success);
         assert_eq!(successes.len(), 2);
-        
+
         let errors = mgr.by_level(NotificationLevel::Error);
         assert_eq!(errors.len(), 1);
     }
@@ -270,7 +267,7 @@ mod tests {
     fn test_manager_clone() {
         let mgr1 = NotificationManager::new();
         mgr1.success("Test");
-        
+
         let mgr2 = mgr1.clone();
         assert_eq!(mgr2.count(), 1);
     }

@@ -21,22 +21,38 @@ impl Vector3 {
 
     /// Zero vector
     pub fn zero() -> Self {
-        Self { x: 0.0, y: 0.0, z: 0.0 }
+        Self {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        }
     }
 
     /// Unit X vector
     pub fn unit_x() -> Self {
-        Self { x: 1.0, y: 0.0, z: 0.0 }
+        Self {
+            x: 1.0,
+            y: 0.0,
+            z: 0.0,
+        }
     }
 
     /// Unit Y vector
     pub fn unit_y() -> Self {
-        Self { x: 0.0, y: 1.0, z: 0.0 }
+        Self {
+            x: 0.0,
+            y: 1.0,
+            z: 0.0,
+        }
     }
 
     /// Unit Z vector
     pub fn unit_z() -> Self {
-        Self { x: 0.0, y: 0.0, z: 1.0 }
+        Self {
+            x: 0.0,
+            y: 0.0,
+            z: 1.0,
+        }
     }
 
     /// Calculate magnitude
@@ -117,32 +133,62 @@ impl Color {
 
     /// White color
     pub fn white() -> Self {
-        Self { r: 1.0, g: 1.0, b: 1.0, a: 1.0 }
+        Self {
+            r: 1.0,
+            g: 1.0,
+            b: 1.0,
+            a: 1.0,
+        }
     }
 
     /// Black color
     pub fn black() -> Self {
-        Self { r: 0.0, g: 0.0, b: 0.0, a: 1.0 }
+        Self {
+            r: 0.0,
+            g: 0.0,
+            b: 0.0,
+            a: 1.0,
+        }
     }
 
     /// Red color
     pub fn red() -> Self {
-        Self { r: 1.0, g: 0.0, b: 0.0, a: 1.0 }
+        Self {
+            r: 1.0,
+            g: 0.0,
+            b: 0.0,
+            a: 1.0,
+        }
     }
 
     /// Green color
     pub fn green() -> Self {
-        Self { r: 0.0, g: 1.0, b: 0.0, a: 1.0 }
+        Self {
+            r: 0.0,
+            g: 1.0,
+            b: 0.0,
+            a: 1.0,
+        }
     }
 
     /// Blue color
     pub fn blue() -> Self {
-        Self { r: 0.0, g: 0.0, b: 1.0, a: 1.0 }
+        Self {
+            r: 0.0,
+            g: 0.0,
+            b: 1.0,
+            a: 1.0,
+        }
     }
 
     /// Gray color
     pub fn gray() -> Self {
-        Self { r: 0.5, g: 0.5, b: 0.5, a: 1.0 }
+        Self {
+            r: 0.5,
+            g: 0.5,
+            b: 0.5,
+            a: 1.0,
+        }
     }
 }
 
@@ -221,7 +267,7 @@ impl Camera {
     /// Rotate camera around target
     pub fn rotate(&mut self, pitch: f32, yaw: f32) {
         let mut direction = self.position.subtract(self.target);
-        
+
         let cos_yaw = yaw.cos();
         let sin_yaw = yaw.sin();
         direction = Vector3::new(
@@ -247,7 +293,7 @@ impl Camera {
         let distance = direction.magnitude();
         let new_distance = (distance * factor).max(0.1);
         let normalized = direction.normalize();
-        
+
         self.position = self.target.add(Vector3::new(
             normalized.x * new_distance,
             normalized.y * new_distance,
@@ -450,7 +496,7 @@ mod tests {
     fn test_vector3_operations() {
         let v1 = Vector3::new(1.0, 2.0, 3.0);
         let v2 = Vector3::new(4.0, 5.0, 6.0);
-        
+
         let sum = v1.add(v2);
         assert_eq!(sum, Vector3::new(5.0, 7.0, 9.0));
 

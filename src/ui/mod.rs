@@ -13,66 +13,75 @@
 //! - Firmware Settings Panel (Task 79)
 //! - Additional UI features (Tasks 80-90)
 
+pub mod advanced_features_panel;
 pub mod architecture;
 pub mod components;
-pub mod state;
-pub mod events;
-pub mod main_window;
 pub mod connection_panel;
-pub mod dro_panel;
-pub mod jog_controller;
-pub mod file_operations;
-pub mod gcode_editor;
 pub mod console_panel;
-pub mod device_console_manager;
 pub mod control_buttons;
-pub mod overrides_panel;
 pub mod coordinate_system;
+pub mod device_console_manager;
+pub mod dro_panel;
+pub mod events;
+pub mod file_management;
+pub mod file_operations;
+pub mod file_validation_panel;
+pub mod firmware_integration;
+pub mod firmware_settings_panel;
+pub mod gcode_editor;
+pub mod help_system;
+pub mod jog_controller;
+pub mod keyboard_shortcuts;
+pub mod layout_manager;
 pub mod macros_panel;
+pub mod main_window;
+pub mod notifications;
+pub mod overrides_panel;
+pub mod progress_indicators;
+pub mod safety_diagnostics_panel;
 pub mod settings_dialog;
 pub mod settings_persistence;
-pub mod firmware_settings_panel;
-pub mod firmware_integration;
-pub mod ui_polish;
-pub mod file_management;
-pub mod progress_indicators;
-pub mod notifications;
-pub mod keyboard_shortcuts;
+pub mod state;
 pub mod themes;
-pub mod layout_manager;
-pub mod help_system;
-pub mod file_validation_panel;
-pub mod advanced_features_panel;
-pub mod safety_diagnostics_panel;
+pub mod ui_polish;
 
+pub use advanced_features_panel::{
+    AdvancedFeaturesPanel, PerformanceMetrics, SimulationState, SoftLimits, Tool, ToolChangeMode,
+    WorkCoordinateSystem,
+};
 pub use architecture::UiArchitecture;
-pub use state::UiState;
-pub use events::{UiEvent, UiEventBus};
-pub use main_window::MainWindow;
 pub use connection_panel::ConnectionPanel;
-pub use dro_panel::DROPanel;
-pub use jog_controller::JogControllerPanel;
-pub use file_operations::FileOperationsPanel;
-pub use gcode_editor::{GcodeEditor, GcodeLine, Token, TokenType};
 pub use console_panel::ConsolePanel;
-pub use device_console_manager::{DeviceConsoleManager, DeviceMessageType, ConsoleEvent, ConsoleListener};
 pub use control_buttons::ControlButtonsPanel;
-pub use overrides_panel::OverridesPanel;
 pub use coordinate_system::CoordinateSystemPanel;
-pub use macros_panel::{MacrosPanel, GcodeMacro, MacroVariable};
-pub use settings_dialog::{SettingsDialog, Setting, SettingValue, SettingsCategory, KeyboardShortcut};
-pub use settings_persistence::SettingsPersistence;
-pub use firmware_settings_panel::{FirmwareSettingsPanel, FirmwareParameter, ParameterType};
-pub use firmware_integration::FirmwareSettingsIntegration;
-pub use ui_polish::{ProgressIndicator, NotificationManager, KeyboardShortcutManager, I18nManager};
-pub use file_management::{FileReader, RecentFilesManager, FileStatistics, TemplateLibrary};
-pub use progress_indicators::{StreamProgress, ProgressDisplay};
-pub use notifications::{Notification, NotificationLevel, NotificationManager as NotificationMgr};
-pub use keyboard_shortcuts::{KeyboardManager, KeyboardAction, KeyBinding, KeyModifiers};
-pub use themes::{Theme, ThemeId, ThemeManager, Color, ThemeColors, FontConfig};
-pub use layout_manager::{LayoutManager, Layout, PanelId, PanelLocation, PanelState, LayoutPreset};
-pub use help_system::{HelpSystem, HelpTopic, AppInfo, TooltipProvider, ShortcutReference};
+pub use device_console_manager::{
+    ConsoleEvent, ConsoleListener, DeviceConsoleManager, DeviceMessageType,
+};
+pub use dro_panel::DROPanel;
+pub use events::{UiEvent, UiEventBus};
+pub use file_management::{FileReader, FileStatistics, RecentFilesManager, TemplateLibrary};
+pub use file_operations::FileOperationsPanel;
 pub use file_validation_panel::{FileValidationPanel, ValidationIssue, ValidationSeverity};
-pub use advanced_features_panel::{AdvancedFeaturesPanel, SoftLimits, WorkCoordinateSystem, Tool, ToolChangeMode, SimulationState, PerformanceMetrics};
-pub use safety_diagnostics_panel::{SafetyDiagnosticsPanel, EmergencyStopDisplay, MotionInterlockState, FeedHoldState, CommunicationDiagnostics, BufferDiagnostics, PerformanceDiagnostics, DiagnosticEvent};
-
+pub use firmware_integration::FirmwareSettingsIntegration;
+pub use firmware_settings_panel::{FirmwareParameter, FirmwareSettingsPanel, ParameterType};
+pub use gcode_editor::{GcodeEditor, GcodeLine, Token, TokenType};
+pub use help_system::{AppInfo, HelpSystem, HelpTopic, ShortcutReference, TooltipProvider};
+pub use jog_controller::JogControllerPanel;
+pub use keyboard_shortcuts::{KeyBinding, KeyModifiers, KeyboardAction, KeyboardManager};
+pub use layout_manager::{Layout, LayoutManager, LayoutPreset, PanelId, PanelLocation, PanelState};
+pub use macros_panel::{GcodeMacro, MacroVariable, MacrosPanel};
+pub use main_window::MainWindow;
+pub use notifications::{Notification, NotificationLevel, NotificationManager as NotificationMgr};
+pub use overrides_panel::OverridesPanel;
+pub use progress_indicators::{ProgressDisplay, StreamProgress};
+pub use safety_diagnostics_panel::{
+    BufferDiagnostics, CommunicationDiagnostics, DiagnosticEvent, EmergencyStopDisplay,
+    FeedHoldState, MotionInterlockState, PerformanceDiagnostics, SafetyDiagnosticsPanel,
+};
+pub use settings_dialog::{
+    KeyboardShortcut, Setting, SettingValue, SettingsCategory, SettingsDialog,
+};
+pub use settings_persistence::SettingsPersistence;
+pub use state::UiState;
+pub use themes::{Color, FontConfig, Theme, ThemeColors, ThemeId, ThemeManager};
+pub use ui_polish::{I18nManager, KeyboardShortcutManager, NotificationManager, ProgressIndicator};

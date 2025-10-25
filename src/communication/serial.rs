@@ -294,5 +294,3 @@ impl SerialPort for RealSerialPort {
         Ok(())
     }
 }
-
-

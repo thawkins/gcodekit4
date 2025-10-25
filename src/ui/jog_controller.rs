@@ -154,12 +154,12 @@ impl ShortcutMap {
     pub fn default_shortcuts() -> Self {
         let mut map = std::collections::HashMap::new();
         // Arrow keys
-        map.insert('8', JogDirection::YPos);  // Up
-        map.insert('2', JogDirection::YNeg);  // Down
-        map.insert('4', JogDirection::XNeg);  // Left
-        map.insert('6', JogDirection::XPos);  // Right
-        map.insert('9', JogDirection::ZPos);  // Page Up
-        map.insert('3', JogDirection::ZNeg);  // Page Down
+        map.insert('8', JogDirection::YPos); // Up
+        map.insert('2', JogDirection::YNeg); // Down
+        map.insert('4', JogDirection::XNeg); // Left
+        map.insert('6', JogDirection::XPos); // Right
+        map.insert('9', JogDirection::ZPos); // Page Up
+        map.insert('3', JogDirection::ZNeg); // Page Down
 
         Self { shortcuts: map }
     }
@@ -273,7 +273,11 @@ impl JogControllerPanel {
     /// Get next pending jog command
     pub fn next_jog_command(&mut self) -> Option<(char, f64, f64)> {
         self.pending_jogs.pop().map(|(direction, increment)| {
-            (direction.axis(), increment * direction.multiplier(), self.jog_feed_rate)
+            (
+                direction.axis(),
+                increment * direction.multiplier(),
+                self.jog_feed_rate,
+            )
         })
     }
 

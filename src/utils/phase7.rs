@@ -80,7 +80,8 @@ impl EmergencyStopManager {
 
     /// Reset emergency stop
     pub fn reset(&mut self) -> Result<()> {
-        if self.state != EmergencyStopState::Triggered && self.state != EmergencyStopState::Stopped {
+        if self.state != EmergencyStopState::Triggered && self.state != EmergencyStopState::Stopped
+        {
             return Err(anyhow!("Cannot reset from current state"));
         }
         self.state = EmergencyStopState::Resetting;
@@ -142,7 +143,11 @@ impl MotionInterlock {
         }
 
         if z_pos < self.min_safe_z {
-            return Err(SafetyError::SoftLimitExceeded(format!("Z position {} below safe height", z_pos)).into());
+            return Err(SafetyError::SoftLimitExceeded(format!(
+                "Z position {} below safe height",
+                z_pos
+            ))
+            .into());
         }
 
         Ok(())
@@ -594,24 +599,20 @@ impl CalibrationWizard {
                     tolerance: 0.1,
                 },
             ],
-            CalibrationStepType::SquarenessCheck => vec![
-                CalibrationStep {
-                    step_type,
-                    axis: "XY".to_string(),
-                    description: "Check XY squareness".to_string(),
-                    target_value: 90.0,
-                    tolerance: 0.1,
-                },
-            ],
-            CalibrationStepType::TlmCalibration => vec![
-                CalibrationStep {
-                    step_type,
-                    axis: "Z".to_string(),
-                    description: "Calibrate tool length offset".to_string(),
-                    target_value: 0.0,
-                    tolerance: 0.01,
-                },
-            ],
+            CalibrationStepType::SquarenessCheck => vec![CalibrationStep {
+                step_type,
+                axis: "XY".to_string(),
+                description: "Check XY squareness".to_string(),
+                target_value: 90.0,
+                tolerance: 0.1,
+            }],
+            CalibrationStepType::TlmCalibration => vec![CalibrationStep {
+                step_type,
+                axis: "Z".to_string(),
+                description: "Calibrate tool length offset".to_string(),
+                target_value: 0.0,
+                tolerance: 0.01,
+            }],
         };
 
         Self {
@@ -737,7 +738,10 @@ impl BufferDiagnostics {
     /// Create buffer diagnostics
     pub fn new(buffer_size: usize, used_space: usize) -> Result<Self> {
         if used_space > buffer_size {
-            return Err(DiagnosticError::BufferStateInvalid("Used space exceeds buffer size".into()).into());
+            return Err(DiagnosticError::BufferStateInvalid(
+                "Used space exceeds buffer size".into(),
+            )
+            .into());
         }
 
         let available_space = buffer_size - used_space;
@@ -834,11 +838,26 @@ impl DiagnosticReport {
 
         report.push_str("--- Communication ---\n");
         report.push_str(&format!("Connected: {}\n", self.communication.connected));
-        report.push_str(&format!("Commands Sent: {}\n", self.communication.total_commands_sent));
-        report.push_str(&format!("Responses Received: {}\n", self.communication.total_responses_received));
-        report.push_str(&format!("Failed Commands: {}\n", self.communication.failed_commands));
-        report.push_str(&format!("Avg Response Time: {:.2}ms\n", self.communication.average_response_time_ms));
-        report.push_str(&format!("Uptime: {}s\n\n", self.communication.connection_uptime_seconds));
+        report.push_str(&format!(
+            "Commands Sent: {}\n",
+            self.communication.total_commands_sent
+        ));
+        report.push_str(&format!(
+            "Responses Received: {}\n",
+            self.communication.total_responses_received
+        ));
+        report.push_str(&format!(
+            "Failed Commands: {}\n",
+            self.communication.failed_commands
+        ));
+        report.push_str(&format!(
+            "Avg Response Time: {:.2}ms\n",
+            self.communication.average_response_time_ms
+        ));
+        report.push_str(&format!(
+            "Uptime: {}s\n\n",
+            self.communication.connection_uptime_seconds
+        ));
 
         if let Some(buffer) = &self.buffer {
             report.push_str("--- Buffer ---\n");

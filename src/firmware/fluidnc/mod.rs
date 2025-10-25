@@ -3,16 +3,16 @@
 //! Provides protocol implementation, response parsing, and command creation
 //! for FluidNC CNC control systems.
 
-pub mod constants;
 pub mod capabilities;
-pub mod response_parser;
 pub mod command_creator;
+pub mod constants;
 pub mod controller;
+pub mod response_parser;
 
 pub use capabilities::FluidNCCapabilities;
-pub use response_parser::FluidNCResponseParser;
 pub use command_creator::FluidNCCommandCreator;
 pub use controller::FluidNCController;
+pub use response_parser::FluidNCResponseParser;
 
 /// FluidNC version information
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -76,8 +76,9 @@ impl FileValidationPanel {
         *self.severity_counts.entry(severity_key).or_insert(0) += 1;
 
         // Check if validation still passes
-        if issue.severity == ValidationSeverity::Error ||
-           issue.severity == ValidationSeverity::Critical {
+        if issue.severity == ValidationSeverity::Error
+            || issue.severity == ValidationSeverity::Critical
+        {
             self.validation_passed = false;
         }
 

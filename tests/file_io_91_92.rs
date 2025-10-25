@@ -158,9 +158,7 @@ fn test_task_92_recent_files_add() {
     let file_path = create_test_gcode_file(&temp_dir, "recent1.nc", "G0 X10");
 
     let mut manager = RecentFilesManager::new(10);
-    manager
-        .add(&file_path)
-        .expect("Failed to add recent file");
+    manager.add(&file_path).expect("Failed to add recent file");
 
     assert_eq!(manager.count(), 1);
     let list = manager.list();
@@ -257,9 +255,7 @@ fn test_task_92_recent_files_find() {
     let file_path = create_test_gcode_file(&temp_dir, "find.nc", "G0 X10");
 
     let mut manager = RecentFilesManager::new(10);
-    manager
-        .add(&file_path)
-        .expect("Failed to add recent file");
+    manager.add(&file_path).expect("Failed to add recent file");
 
     let found = manager.find_by_path(&file_path);
     assert!(found.is_some());
@@ -298,9 +294,7 @@ fn test_task_92_recent_files_persistence() {
     {
         let mut manager = RecentFilesManager::new(10);
         manager.set_persist_path(&persist_path);
-        manager
-            .add(&file_path)
-            .expect("Failed to add recent file");
+        manager.add(&file_path).expect("Failed to add recent file");
     }
 
     assert!(persist_path.exists(), "Persist file should exist");
@@ -337,9 +331,7 @@ fn test_task_91_file_read_stats() {
     let file_path = create_test_gcode_file(&temp_dir, "stats.nc", content);
 
     let reader = GcodeFileReader::new(&file_path).expect("Failed to create reader");
-    let stats = reader
-        .read_lines(|_| Ok(()))
-        .expect("Failed to read lines");
+    let stats = reader.read_lines(|_| Ok(())).expect("Failed to read lines");
 
     assert!(stats.bytes_read > 0);
     assert_eq!(stats.lines_read, 3);

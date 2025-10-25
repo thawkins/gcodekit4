@@ -3,9 +3,9 @@
 //! File I/O, recent files, processing pipeline, statistics,
 //! export, drag/drop, validation, comparison, backup, templates
 
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
-use std::collections::HashMap;
 
 // ============================================================================
 // Task 91: File I/O - Reading
@@ -26,15 +26,14 @@ pub struct FileReader;
 impl FileReader {
     /// Read file with encoding detection
     pub fn read_file(path: &Path, _encoding: FileEncoding) -> Result<String, String> {
-        std::fs::read_to_string(path)
-            .map_err(|e| format!("Failed to read file: {}", e))
+        std::fs::read_to_string(path).map_err(|e| format!("Failed to read file: {}", e))
     }
 
     /// Read file in chunks (for large files)
     pub fn read_file_chunked(path: &Path, chunk_size: usize) -> Result<Vec<String>, String> {
-        let content = std::fs::read_to_string(path)
-            .map_err(|e| format!("Failed to read file: {}", e))?;
-        
+        let content =
+            std::fs::read_to_string(path).map_err(|e| format!("Failed to read file: {}", e))?;
+
         Ok(content
             .lines()
             .collect::<Vec<_>>()
@@ -52,8 +51,8 @@ impl FileReader {
 
     /// Get file line count
     pub fn get_line_count(path: &Path) -> Result<usize, String> {
-        let content = std::fs::read_to_string(path)
-            .map_err(|e| format!("Failed to read file: {}", e))?;
+        let content =
+            std::fs::read_to_string(path).map_err(|e| format!("Failed to read file: {}", e))?;
         Ok(content.lines().count())
     }
 }
@@ -78,13 +77,14 @@ pub struct RecentFile {
 impl RecentFile {
     /// Create new recent file entry
     pub fn new(path: PathBuf) -> Result<Self, String> {
-        let name = path.file_name()
+        let name = path
+            .file_name()
             .and_then(|n| n.to_str())
             .map(|s| s.to_string())
             .unwrap_or_else(|| "Unknown".to_string());
 
-        let metadata = std::fs::metadata(&path)
-            .map_err(|e| format!("Failed to get file metadata: {}", e))?;
+        let metadata =
+            std::fs::metadata(&path).map_err(|e| format!("Failed to get file metadata: {}", e))?;
 
         Ok(Self {
             path,
@@ -265,8 +265,7 @@ impl FileExporter {
     pub fn export(content: &str, path: &Path, format: ExportFormat) -> Result<(), String> {
         match format {
             ExportFormat::GCode => {
-                std::fs::write(path, content)
-                    .map_err(|e| format!("Failed to export: {}", e))?;
+                std::fs::write(path, content).map_err(|e| format!("Failed to export: {}", e))?;
             }
             ExportFormat::CSV => {
                 let csv_content = Self::to_csv(content);
@@ -363,10 +362,10 @@ impl FileValidator {
     /// Validate G-code file
     pub fn validate(content: &str) -> Vec<ValidationError> {
         let mut errors = Vec::new();
-        
+
         for (line_num, line) in content.lines().enumerate() {
             let trimmed = line.trim();
-            
+
             if trimmed.is_empty() {
                 continue;
             }
@@ -374,7 +373,7 @@ impl FileValidator {
             if !trimmed.starts_with('G') && !trimmed.starts_with('M') && !trimmed.starts_with('T') {
                 errors.push(
                     ValidationError::new(line_num + 1, "Line does not start with G, M, or T")
-                        .with_suggestion("Add valid G-code command at the beginning")
+                        .with_suggestion("Add valid G-code command at the beginning"),
                 );
             }
         }
@@ -435,7 +434,9 @@ impl FileComparison {
         }
 
         for i in mod_lines.len()..orig_lines.len() {
-            comparison.lines.push(DiffLine::Removed(orig_lines[i].to_string()));
+            comparison
+                .lines
+                .push(DiffLine::Removed(orig_lines[i].to_string()));
             comparison.removed_count += 1;
         }
 
@@ -498,7 +499,10 @@ impl BackupManager {
 
     /// Create backup
     pub fn create_backup(&mut self, original: &Path) -> Result<BackupEntry, String> {
-        let backup_path = self.backup_dir.join(format!("{}_backup", original.file_name().unwrap_or_default().to_string_lossy()));
+        let backup_path = self.backup_dir.join(format!(
+            "{}_backup",
+            original.file_name().unwrap_or_default().to_string_lossy()
+        ));
         std::fs::copy(original, &backup_path)
             .map_err(|e| format!("Failed to create backup: {}", e))?;
 

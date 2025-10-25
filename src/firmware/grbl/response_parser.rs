@@ -333,7 +333,13 @@ mod tests {
 
         if let Some(GrblResponse::Status(status)) = response {
             assert_eq!(status.state, "Run");
-            assert_eq!(status.buffer_state, Some(BufferState { plan: 15, exec: 128 }));
+            assert_eq!(
+                status.buffer_state,
+                Some(BufferState {
+                    plan: 15,
+                    exec: 128
+                })
+            );
         }
     }
 
@@ -393,10 +399,7 @@ mod tests {
             GrblResponseParser::alarm_description(1),
             "Hard limit triggered"
         );
-        assert_eq!(
-            GrblResponseParser::alarm_description(6),
-            "Homing fail"
-        );
+        assert_eq!(GrblResponseParser::alarm_description(6), "Homing fail");
     }
 
     #[test]

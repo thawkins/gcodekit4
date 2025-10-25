@@ -83,7 +83,10 @@ impl GCodeValidator {
             if x_pos < self.config.min_x || x_pos > self.config.max_x {
                 errors.push(ValidationError {
                     line: line_num,
-                    message: format!("X {} out of range [{}, {}]", x_pos, self.config.min_x, self.config.max_x),
+                    message: format!(
+                        "X {} out of range [{}, {}]",
+                        x_pos, self.config.min_x, self.config.max_x
+                    ),
                 });
             }
         }
@@ -92,7 +95,10 @@ impl GCodeValidator {
             if y_pos < self.config.min_y || y_pos > self.config.max_y {
                 errors.push(ValidationError {
                     line: line_num,
-                    message: format!("Y {} out of range [{}, {}]", y_pos, self.config.min_y, self.config.max_y),
+                    message: format!(
+                        "Y {} out of range [{}, {}]",
+                        y_pos, self.config.min_y, self.config.max_y
+                    ),
                 });
             }
         }
@@ -101,7 +107,10 @@ impl GCodeValidator {
             if z_pos < self.config.min_z || z_pos > self.config.max_z {
                 errors.push(ValidationError {
                     line: line_num,
-                    message: format!("Z {} out of range [{}, {}]", z_pos, self.config.min_z, self.config.max_z),
+                    message: format!(
+                        "Z {} out of range [{}, {}]",
+                        z_pos, self.config.min_z, self.config.max_z
+                    ),
                 });
             }
         }

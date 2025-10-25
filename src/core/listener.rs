@@ -2,9 +2,9 @@
 //!
 //! Defines the listener trait for controller events
 
-use async_trait::async_trait;
 use crate::core::ControllerState;
 use crate::data::ControllerStatus;
+use async_trait::async_trait;
 
 /// Handle for a registered listener
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

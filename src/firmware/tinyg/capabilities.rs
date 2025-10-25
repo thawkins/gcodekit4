@@ -162,5 +162,3 @@ impl VersionComparison {
         matches!(self, Self::Compatible | Self::Newer)
     }
 }
-
-

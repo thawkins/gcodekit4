@@ -199,8 +199,7 @@ impl StatusParser {
 
     /// Parse work position from status report
     pub fn parse_wpos(status_line: &str) -> Option<WorkPosition> {
-        Self::extract_field(status_line, "WPos:")
-            .and_then(|pos_str| WorkPosition::parse(pos_str))
+        Self::extract_field(status_line, "WPos:").and_then(|pos_str| WorkPosition::parse(pos_str))
     }
 
     /// Parse work coordinate offset from status report
@@ -211,8 +210,7 @@ impl StatusParser {
 
     /// Parse buffer state from status report
     pub fn parse_buffer(status_line: &str) -> Option<BufferRxState> {
-        Self::extract_field(status_line, "Buf:")
-            .and_then(|buf_str| BufferRxState::parse(buf_str))
+        Self::extract_field(status_line, "Buf:").and_then(|buf_str| BufferRxState::parse(buf_str))
     }
 
     /// Parse feed rate from status report

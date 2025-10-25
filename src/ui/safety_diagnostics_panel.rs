@@ -306,14 +306,16 @@ impl SafetyDiagnosticsPanel {
 
         summary.push_str(&format!("Safety Status:\n"));
         summary.push_str(&format!("  E-Stop: {}\n", self.estop_state));
-        summary.push_str(&format!("  Motion: {}\n", 
+        summary.push_str(&format!(
+            "  Motion: {}\n",
             match self.motion_interlock {
                 MotionInterlockState::Enabled => "ENABLED",
                 MotionInterlockState::Disabled => "DISABLED",
                 MotionInterlockState::Waiting => "WAITING",
             }
         ));
-        summary.push_str(&format!("  Feed Hold: {}\n",
+        summary.push_str(&format!(
+            "  Feed Hold: {}\n",
             match self.feed_hold_state {
                 FeedHoldState::Normal => "NORMAL",
                 FeedHoldState::Held => "HELD",
@@ -322,14 +324,21 @@ impl SafetyDiagnosticsPanel {
         ));
 
         summary.push_str(&format!("\nDiagnostics:\n"));
-        summary.push_str(&format!("  Comm: {} ({}% errors in 1min)\n",
-            if self.comm_diagnostics.connected { "Connected" } else { "Disconnected" },
+        summary.push_str(&format!(
+            "  Comm: {} ({}% errors in 1min)\n",
+            if self.comm_diagnostics.connected {
+                "Connected"
+            } else {
+                "Disconnected"
+            },
             self.comm_diagnostics.error_count_1min
         ));
-        summary.push_str(&format!("  Buffer: {:.1}% used\n",
+        summary.push_str(&format!(
+            "  Buffer: {:.1}% used\n",
             self.buffer_diagnostics.usage_percent
         ));
-        summary.push_str(&format!("  Performance: {:.1} cmd/s\n",
+        summary.push_str(&format!(
+            "  Performance: {:.1} cmd/s\n",
             self.perf_diagnostics.commands_per_second
         ));
 
@@ -417,7 +426,7 @@ mod tests {
         let mut panel = SafetyDiagnosticsPanel::new();
         let mut diag = CommunicationDiagnostics::default();
         diag.last_error = Some("Connection timeout".to_string());
-        
+
         panel.update_comm_diagnostics(diag.clone());
         assert_eq!(panel.event_log.len(), 1);
     }
@@ -427,7 +436,7 @@ mod tests {
         let mut panel = SafetyDiagnosticsPanel::new();
         let mut diag = BufferDiagnostics::default();
         diag.overflow_count = 1;
-        
+
         panel.update_buffer_diagnostics(diag);
         assert_eq!(panel.event_log.len(), 1);
         assert!(panel.event_log[0].message.contains("Buffer overflow"));

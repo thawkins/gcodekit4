@@ -2,8 +2,8 @@
 //!
 //! This module provides parsing of TinyG JSON responses and status reports.
 
-use serde_json::Value;
 use crate::data::Position;
+use serde_json::Value;
 use std::collections::HashMap;
 
 /// TinyG response types
@@ -160,10 +160,7 @@ impl TinyGResponseParser {
         if json_obj.contains_key("sr") {
             return Ok(TinyGResponse {
                 response_type: TinyGResponseType::StatusReport,
-                line_number: json_obj
-                    .get("n")
-                    .and_then(Value::as_u64)
-                    .map(|n| n as u32),
+                line_number: json_obj.get("n").and_then(Value::as_u64).map(|n| n as u32),
                 value: Some(json.clone()),
                 error_code: None,
                 error_message: None,
@@ -199,10 +196,7 @@ impl TinyGResponseParser {
         if json_obj.get("ok").and_then(Value::as_bool).unwrap_or(false) {
             return Ok(TinyGResponse {
                 response_type: TinyGResponseType::Ok,
-                line_number: json_obj
-                    .get("n")
-                    .and_then(Value::as_u64)
-                    .map(|n| n as u32),
+                line_number: json_obj.get("n").and_then(Value::as_u64).map(|n| n as u32),
                 value: Some(json.clone()),
                 error_code: None,
                 error_message: None,
@@ -305,5 +299,3 @@ impl TinyGResponseParser {
         Ok(status)
     }
 }
-
-

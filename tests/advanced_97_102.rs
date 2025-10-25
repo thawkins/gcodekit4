@@ -8,8 +8,8 @@
 //! Task 102: Probing - Advanced
 
 use gcodekit4::utils::{
-    AdvancedProber, BasicProber, BackupManager, FileComparison, GcodeTemplate, TemplateLibrary,
-    TemplateVariable, ValidationIssue, ValidationResult, ValidationSeverity, ProbePoint,
+    AdvancedProber, BackupManager, BasicProber, FileComparison, GcodeTemplate, ProbePoint,
+    TemplateLibrary, TemplateVariable, ValidationIssue, ValidationResult, ValidationSeverity,
 };
 use std::collections::HashMap;
 use std::fs;
@@ -49,9 +49,21 @@ fn test_task_97_validation_result_single_issue() {
 #[test]
 fn test_task_97_validation_result_multiple_issues() {
     let mut result = ValidationResult::new();
-    result.add_issue(ValidationIssue::new(1, ValidationSeverity::Error, "Error 1"));
-    result.add_issue(ValidationIssue::new(2, ValidationSeverity::Error, "Error 2"));
-    result.add_issue(ValidationIssue::new(3, ValidationSeverity::Warning, "Warning"));
+    result.add_issue(ValidationIssue::new(
+        1,
+        ValidationSeverity::Error,
+        "Error 1",
+    ));
+    result.add_issue(ValidationIssue::new(
+        2,
+        ValidationSeverity::Error,
+        "Error 2",
+    ));
+    result.add_issue(ValidationIssue::new(
+        3,
+        ValidationSeverity::Warning,
+        "Warning",
+    ));
     result.add_issue(ValidationIssue::new(4, ValidationSeverity::Info, "Info"));
 
     assert_eq!(result.error_count, 2);
@@ -64,7 +76,11 @@ fn test_task_97_validation_result_multiple_issues() {
 fn test_task_97_validation_result_summary() {
     let mut result = ValidationResult::new();
     result.add_issue(ValidationIssue::new(1, ValidationSeverity::Error, "Error"));
-    result.add_issue(ValidationIssue::new(2, ValidationSeverity::Warning, "Warning"));
+    result.add_issue(ValidationIssue::new(
+        2,
+        ValidationSeverity::Warning,
+        "Warning",
+    ));
 
     let summary = result.summary();
     assert!(summary.contains("Errors: 1"));
@@ -74,9 +90,21 @@ fn test_task_97_validation_result_summary() {
 #[test]
 fn test_task_97_issues_at_line() {
     let mut result = ValidationResult::new();
-    result.add_issue(ValidationIssue::new(5, ValidationSeverity::Error, "Error 1"));
-    result.add_issue(ValidationIssue::new(5, ValidationSeverity::Warning, "Warning"));
-    result.add_issue(ValidationIssue::new(6, ValidationSeverity::Error, "Error 2"));
+    result.add_issue(ValidationIssue::new(
+        5,
+        ValidationSeverity::Error,
+        "Error 1",
+    ));
+    result.add_issue(ValidationIssue::new(
+        5,
+        ValidationSeverity::Warning,
+        "Warning",
+    ));
+    result.add_issue(ValidationIssue::new(
+        6,
+        ValidationSeverity::Error,
+        "Error 2",
+    ));
 
     let issues_at_5 = result.issues_at_line(5);
     assert_eq!(issues_at_5.len(), 2);
@@ -90,7 +118,11 @@ fn test_task_97_issues_by_severity() {
     let mut result = ValidationResult::new();
     result.add_issue(ValidationIssue::new(1, ValidationSeverity::Error, "Error"));
     result.add_issue(ValidationIssue::new(2, ValidationSeverity::Error, "Error"));
-    result.add_issue(ValidationIssue::new(3, ValidationSeverity::Warning, "Warning"));
+    result.add_issue(ValidationIssue::new(
+        3,
+        ValidationSeverity::Warning,
+        "Warning",
+    ));
 
     let errors = result.issues_by_severity(ValidationSeverity::Error);
     assert_eq!(errors.len(), 2);
@@ -180,7 +212,9 @@ fn test_task_99_backup_creation() {
     let backup_dir = temp_dir.path().join("backups");
     let manager = BackupManager::new(&backup_dir);
 
-    let backup = manager.backup(&source, "Test backup").expect("Backup failed");
+    let backup = manager
+        .backup(&source, "Test backup")
+        .expect("Backup failed");
 
     assert!(backup.backup_path.exists());
     assert_eq!(backup.description, "Test backup");
@@ -214,9 +248,13 @@ fn test_task_99_backup_listing() {
     let backup_dir = temp_dir.path().join("backups");
     let manager = BackupManager::new(&backup_dir);
 
-    manager.backup(&source, "Backup 1").expect("Backup 1 failed");
+    manager
+        .backup(&source, "Backup 1")
+        .expect("Backup 1 failed");
     std::thread::sleep(std::time::Duration::from_millis(10)); // Ensure different timestamps
-    manager.backup(&source, "Backup 2").expect("Backup 2 failed");
+    manager
+        .backup(&source, "Backup 2")
+        .expect("Backup 2 failed");
 
     let backups = manager.list_backups().expect("List failed");
     assert!(backups.len() >= 1); // At least one backup

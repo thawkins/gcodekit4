@@ -341,7 +341,9 @@ impl OverridesPanel {
     pub fn status_string(&self) -> String {
         format!(
             "Feed: {}% | Spindle: {}% | Rapid: {}%",
-            self.feed_rate.percentage, self.spindle_speed.percentage, self.rapid_feed.percentage()
+            self.feed_rate.percentage,
+            self.spindle_speed.percentage,
+            self.rapid_feed.percentage()
         )
     }
 }

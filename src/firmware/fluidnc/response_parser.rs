@@ -58,10 +58,7 @@ impl FluidNCResponseParser {
         if line.starts_with("error:") {
             let error_part = line.strip_prefix("error:").unwrap_or(line).trim();
             let (code, message) = self.parse_error(error_part);
-            return Some(FluidNCResponse::Error {
-                code,
-                message,
-            });
+            return Some(FluidNCResponse::Error { code, message });
         }
 
         // Check for version

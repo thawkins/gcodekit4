@@ -5,8 +5,8 @@
 //! - Event dispatcher for publishing events to subscribers
 //! - Listener registration and management
 
+use crate::data::{ControllerState, ControllerStatus};
 use tokio::sync::broadcast;
-use crate::data::{ControllerStatus, ControllerState};
 
 /// Controller event types
 #[derive(Debug, Clone)]
@@ -46,8 +46,15 @@ impl std::fmt::Display for ControllerEvent {
             ControllerEvent::Alarm(code, desc) => write!(f, "Alarm {} ({})", code, desc),
             ControllerEvent::Error(msg) => write!(f, "Error: {}", msg),
             ControllerEvent::CommandComplete(cmd) => write!(f, "Command complete: {}", cmd),
-            ControllerEvent::PositionChanged { machine_pos, work_pos } => {
-                write!(f, "Position - Machine: {:?}, Work: {:?}", machine_pos, work_pos)
+            ControllerEvent::PositionChanged {
+                machine_pos,
+                work_pos,
+            } => {
+                write!(
+                    f,
+                    "Position - Machine: {:?}, Work: {:?}",
+                    machine_pos, work_pos
+                )
             }
             ControllerEvent::SpindleSpeedChanged(speed) => write!(f, "Spindle: {} RPM", speed),
             ControllerEvent::FeedRateChanged(rate) => write!(f, "Feed rate: {} mm/min", rate),
@@ -81,7 +88,10 @@ impl EventDispatcher {
     }
 
     /// Publish an event to all subscribers
-    pub fn publish(&self, event: ControllerEvent) -> Result<usize, broadcast::error::SendError<ControllerEvent>> {
+    pub fn publish(
+        &self,
+        event: ControllerEvent,
+    ) -> Result<usize, broadcast::error::SendError<ControllerEvent>> {
         tracing::trace!("Publishing event: {}", event);
         self.tx.send(event)
     }

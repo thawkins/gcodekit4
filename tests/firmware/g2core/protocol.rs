@@ -4,8 +4,8 @@
 //! command creation with 6-axis support, and advanced features.
 
 use gcodekit4::firmware::g2core::{
-    G2CoreVersion, G2CoreCapabilities, CommandCreator, MotionType, RealTimeCommand, KinematicMode,
-    G2CoreResponseParser, G2CoreResponseType,
+    CommandCreator, G2CoreCapabilities, G2CoreResponseParser, G2CoreResponseType, G2CoreVersion,
+    KinematicMode, MotionType, RealTimeCommand,
 };
 
 #[test]

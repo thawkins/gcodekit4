@@ -9,8 +9,8 @@ use super::common;
 use gcodekit4::communication::{
     serial::{SerialPort, SerialPortError, SerialPortInfo},
     tcp::{TcpConnectionInfo, TcpPort},
-    Communicator, CommunicatorListenerHandle,
-    ConnectionDriver, ConnectionParams, NoOpCommunicator, SerialCommunicator, TcpCommunicator,
+    Communicator, CommunicatorListenerHandle, ConnectionDriver, ConnectionParams, NoOpCommunicator,
+    SerialCommunicator, TcpCommunicator,
 };
 use std::sync::Arc;
 use std::time::Duration;

@@ -68,10 +68,7 @@ pub struct GrblController {
 
 impl GrblController {
     /// Create a new GRBL controller
-    pub fn new(
-        connection_params: ConnectionParams,
-        name: Option<String>,
-    ) -> anyhow::Result<Self> {
+    pub fn new(connection_params: ConnectionParams, name: Option<String>) -> anyhow::Result<Self> {
         debug!("Creating GRBL controller");
 
         let communicator = Arc::new(GrblCommunicator::new(
@@ -274,7 +271,12 @@ impl ControllerTrait for GrblController {
         Ok(())
     }
 
-    async fn jog_start(&mut self, axis: char, direction: i32, feed_rate: f64) -> anyhow::Result<()> {
+    async fn jog_start(
+        &mut self,
+        axis: char,
+        direction: i32,
+        feed_rate: f64,
+    ) -> anyhow::Result<()> {
         debug!(
             "GRBL: Starting jog - axis: {}, direction: {}, feed_rate: {}",
             axis, direction, feed_rate
@@ -412,9 +414,7 @@ impl ControllerTrait for GrblController {
         debug!("GRBL: Setting rapid override to {}%", percentage);
 
         if ![25, 50, 100].contains(&percentage) {
-            return Err(anyhow::anyhow!(
-                "Rapid override must be 25, 50, or 100"
-            ));
+            return Err(anyhow::anyhow!("Rapid override must be 25, 50, or 100"));
         }
 
         self.state.write().override_state.rapid_override = percentage;
@@ -461,9 +461,7 @@ impl ControllerTrait for GrblController {
         debug!("GRBL: Setting work coordinate system: {}", wcs);
 
         if wcs < 54 || wcs > 59 {
-            return Err(anyhow::anyhow!(
-                "Work coordinate system must be 54-59"
-            ));
+            return Err(anyhow::anyhow!("Work coordinate system must be 54-59"));
         }
 
         let cmd = format!("G{}", wcs);

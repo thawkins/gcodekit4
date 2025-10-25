@@ -79,10 +79,7 @@ pub struct G2CoreController {
 
 impl G2CoreController {
     /// Create a new g2core controller
-    pub fn new(
-        connection_params: ConnectionParams,
-        name: Option<String>,
-    ) -> anyhow::Result<Self> {
+    pub fn new(connection_params: ConnectionParams, name: Option<String>) -> anyhow::Result<Self> {
         debug!("Creating g2core controller");
 
         Ok(Self {
@@ -180,7 +177,10 @@ impl ControllerTrait for G2CoreController {
     }
 
     async fn connect(&mut self) -> anyhow::Result<()> {
-        info!("Connecting to g2core controller on {}", self.connection_params.port);
+        info!(
+            "Connecting to g2core controller on {}",
+            self.connection_params.port
+        );
 
         // Update state to connecting
         {
@@ -281,7 +281,12 @@ impl ControllerTrait for G2CoreController {
         Ok(())
     }
 
-    async fn jog_start(&mut self, _axis: char, _direction: i32, _feed_rate: f64) -> anyhow::Result<()> {
+    async fn jog_start(
+        &mut self,
+        _axis: char,
+        _direction: i32,
+        _feed_rate: f64,
+    ) -> anyhow::Result<()> {
         debug!("Starting g2core jog");
 
         if !self.is_connected() {
@@ -507,7 +512,10 @@ impl ControllerTrait for G2CoreController {
         Ok(())
     }
 
-    fn register_listener(&mut self, _listener: std::sync::Arc<dyn crate::core::ControllerListener>) -> crate::core::ControllerListenerHandle {
+    fn register_listener(
+        &mut self,
+        _listener: std::sync::Arc<dyn crate::core::ControllerListener>,
+    ) -> crate::core::ControllerListenerHandle {
         crate::core::ControllerListenerHandle("g2core_listener".to_string())
     }
 

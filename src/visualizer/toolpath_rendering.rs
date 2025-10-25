@@ -3,7 +3,7 @@
 //! Render G-code toolpath with color-coding by movement type,
 //! current position indicator, and arc rendering support
 
-use crate::visualizer::setup::{Vector3, Color};
+use crate::visualizer::setup::{Color, Vector3};
 
 /// Movement type for toolpath segments
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -68,10 +68,10 @@ impl LineSegment {
             color
         } else {
             match self.movement_type {
-                MovementType::Rapid => Color::new(1.0, 0.5, 0.0),  // Orange
-                MovementType::Feed => Color::new(0.0, 1.0, 0.0),   // Green
-                MovementType::ArcClockwise => Color::new(0.0, 0.5, 1.0),  // Light blue
-                MovementType::ArcCounterClockwise => Color::new(1.0, 0.0, 1.0),  // Magenta
+                MovementType::Rapid => Color::new(1.0, 0.5, 0.0), // Orange
+                MovementType::Feed => Color::new(0.0, 1.0, 0.0),  // Green
+                MovementType::ArcClockwise => Color::new(0.0, 0.5, 1.0), // Light blue
+                MovementType::ArcCounterClockwise => Color::new(1.0, 0.0, 1.0), // Magenta
             }
         }
     }
@@ -98,12 +98,7 @@ pub struct ArcSegment {
 
 impl ArcSegment {
     /// Create new arc segment
-    pub fn new(
-        start: Vector3,
-        end: Vector3,
-        center: Vector3,
-        clockwise: bool,
-    ) -> Self {
+    pub fn new(start: Vector3, end: Vector3, center: Vector3, clockwise: bool) -> Self {
         let radius = start.subtract(center).magnitude();
         Self {
             start,
@@ -143,7 +138,7 @@ impl ArcSegment {
         for i in 1..=self.segments {
             let t = step * i as f32;
             let next = self.interpolate_arc(t);
-            
+
             let mut segment = LineSegment::new(current, next, movement_type);
             if let Some(feed_rate) = self.feed_rate {
                 segment = segment.with_feed_rate(feed_rate);
@@ -159,19 +154,19 @@ impl ArcSegment {
     fn interpolate_arc(&self, t: f32) -> Vector3 {
         let start_dir = self.start.subtract(self.center).normalize();
         let end_dir = self.end.subtract(self.center).normalize();
-        
+
         let angle_start = start_dir.y.atan2(start_dir.x);
         let angle_end = end_dir.y.atan2(end_dir.x);
-        
+
         let mut angle_diff = angle_end - angle_start;
         if self.clockwise && angle_diff > 0.0 {
             angle_diff -= std::f32::consts::TAU;
         } else if !self.clockwise && angle_diff < 0.0 {
             angle_diff += std::f32::consts::TAU;
         }
-        
+
         let angle = angle_start + angle_diff * t;
-        
+
         Vector3::new(
             self.center.x + self.radius * angle.cos(),
             self.center.y + self.radius * angle.sin(),
@@ -292,8 +287,14 @@ impl Toolpath {
     /// Get statistics
     pub fn get_statistics(&self) -> ToolpathStats {
         let segments = self.get_all_line_segments();
-        let rapid_count = segments.iter().filter(|s| s.movement_type == MovementType::Rapid).count();
-        let feed_count = segments.iter().filter(|s| s.movement_type == MovementType::Feed).count();
+        let rapid_count = segments
+            .iter()
+            .filter(|s| s.movement_type == MovementType::Rapid)
+            .count();
+        let feed_count = segments
+            .iter()
+            .filter(|s| s.movement_type == MovementType::Feed)
+            .count();
 
         ToolpathStats {
             total_segments: segments.len(),
@@ -358,8 +359,9 @@ mod tests {
             Vector3::new(0.0, 10.0, 0.0),
             Vector3::zero(),
             false,
-        ).with_segments(4);
-        
+        )
+        .with_segments(4);
+
         let lines = arc.to_line_segments();
         assert_eq!(lines.len(), 4);
     }

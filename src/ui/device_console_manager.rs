@@ -4,8 +4,8 @@
 //! handling command input, and maintaining console state. Inspired by UGS
 //! ConsolePanel and CommandPanel architecture.
 
-use crate::ui::console_panel::{ConsolePanel, MessageLevel};
 use crate::communication::CommunicatorListener;
+use crate::ui::console_panel::{ConsolePanel, MessageLevel};
 use std::sync::{Arc, Mutex};
 use tracing::debug;
 
@@ -89,10 +89,7 @@ impl DeviceConsoleManager {
             console.add_message(level, &content);
         }
 
-        self.emit_event(ConsoleEvent::MessageReceived {
-            msg_type,
-            content,
-        });
+        self.emit_event(ConsoleEvent::MessageReceived { msg_type, content });
     }
 
     /// Add command to history
@@ -155,7 +152,7 @@ impl DeviceConsoleManager {
             console.max_messages = max_lines;
         }
     }
-    
+
     /// Get maximum number of console lines
     pub fn get_max_lines(&self) -> usize {
         if let Ok(console) = self.console.lock() {
@@ -225,14 +222,11 @@ impl Default for DeviceConsoleManager {
 }
 
 /// Global console manager instance
-static CONSOLE_MANAGER: std::sync::OnceLock<Arc<DeviceConsoleManager>> =
-    std::sync::OnceLock::new();
+static CONSOLE_MANAGER: std::sync::OnceLock<Arc<DeviceConsoleManager>> = std::sync::OnceLock::new();
 
 /// Get or initialize global console manager
 pub fn get_console_manager() -> Arc<DeviceConsoleManager> {
-    Arc::clone(
-        CONSOLE_MANAGER.get_or_init(|| Arc::new(DeviceConsoleManager::new())),
-    )
+    Arc::clone(CONSOLE_MANAGER.get_or_init(|| Arc::new(DeviceConsoleManager::new())))
 }
 
 /// Listener that connects communicator events to the device console

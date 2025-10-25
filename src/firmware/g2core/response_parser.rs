@@ -3,8 +3,8 @@
 //! This module provides parsing of g2core JSON responses and status reports.
 //! g2core supports extended status reports with 6-axis support and advanced features.
 
-use serde_json::Value;
 use crate::data::Position;
+use serde_json::Value;
 use std::collections::HashMap;
 
 /// g2core response types
@@ -163,10 +163,7 @@ impl G2CoreResponseParser {
         if json_obj.contains_key("sr") {
             return Ok(G2CoreResponse {
                 response_type: G2CoreResponseType::StatusReport,
-                line_number: json_obj
-                    .get("n")
-                    .and_then(Value::as_u64)
-                    .map(|n| n as u32),
+                line_number: json_obj.get("n").and_then(Value::as_u64).map(|n| n as u32),
                 value: Some(json.clone()),
                 error_code: None,
                 error_message: None,
@@ -202,10 +199,7 @@ impl G2CoreResponseParser {
         if json_obj.get("ok").and_then(Value::as_bool).unwrap_or(false) {
             return Ok(G2CoreResponse {
                 response_type: G2CoreResponseType::Ok,
-                line_number: json_obj
-                    .get("n")
-                    .and_then(Value::as_u64)
-                    .map(|n| n as u32),
+                line_number: json_obj.get("n").and_then(Value::as_u64).map(|n| n as u32),
                 value: Some(json.clone()),
                 error_code: None,
                 error_message: None,

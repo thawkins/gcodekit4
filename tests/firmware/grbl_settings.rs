@@ -143,11 +143,7 @@ mod tests {
         manager.set_setting(setting);
         let result = manager.validate_setting(110, "456");
         assert!(result.is_err());
-        assert!(result
-            .err()
-            .unwrap()
-            .to_string()
-            .contains("read-only"));
+        assert!(result.err().unwrap().to_string().contains("read-only"));
     }
 
     #[test]

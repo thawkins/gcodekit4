@@ -52,10 +52,7 @@ pub struct SmoothiewareController {
 
 impl SmoothiewareController {
     /// Create a new Smoothieware controller
-    pub fn new(
-        connection_params: ConnectionParams,
-        name: Option<String>,
-    ) -> anyhow::Result<Self> {
+    pub fn new(connection_params: ConnectionParams, name: Option<String>) -> anyhow::Result<Self> {
         debug!("Creating Smoothieware controller");
 
         Ok(Self {

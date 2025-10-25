@@ -25,12 +25,11 @@ impl FileFilter {
     /// Check if file matches this filter
     pub fn matches(&self, path: &Path) -> bool {
         match self {
-            Self::GCode => {
-                path.extension()
-                    .and_then(|ext| ext.to_str())
-                    .map(|ext| self.extensions().contains(&ext))
-                    .unwrap_or(false)
-            }
+            Self::GCode => path
+                .extension()
+                .and_then(|ext| ext.to_str())
+                .map(|ext| self.extensions().contains(&ext))
+                .unwrap_or(false),
             Self::All => true,
         }
     }

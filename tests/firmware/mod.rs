@@ -1,12 +1,12 @@
 //! firmware module integration tests
 
+pub mod g2core;
 pub mod grbl;
 pub mod grbl_communicator;
 pub mod grbl_controller;
-pub mod grbl_settings;
 pub mod grbl_override_manager;
+pub mod grbl_settings;
 pub mod tinyg;
-pub mod g2core;
 
 use gcodekit4::firmware::*;
 

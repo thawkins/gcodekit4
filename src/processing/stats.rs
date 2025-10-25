@@ -120,10 +120,7 @@ mod tests {
 
     #[test]
     fn test_stats_calculation() {
-        let lines = vec![
-            "G0 X10 Y20".to_string(),
-            "G1 X30 Y40 F100".to_string(),
-        ];
+        let lines = vec!["G0 X10 Y20".to_string(), "G1 X30 Y40 F100".to_string()];
         let stats = StatsCalculator::calculate(&lines);
         assert_eq!(stats.total_commands, 2);
         assert_eq!(stats.rapid_count, 1);

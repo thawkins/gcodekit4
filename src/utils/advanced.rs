@@ -7,12 +7,12 @@
 //! Task 101: Probing - Basic - Z-axis probing
 //! Task 102: Probing - Advanced - Multi-point probing
 
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
-use std::fs;
-use std::time::{SystemTime, UNIX_EPOCH};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 // ============================================================================
 // TASK 97: FILE VALIDATION UI
@@ -44,11 +44,7 @@ pub struct ValidationIssue {
 
 impl ValidationIssue {
     /// Create new validation issue
-    pub fn new(
-        line_number: u32,
-        severity: ValidationSeverity,
-        message: impl Into<String>,
-    ) -> Self {
+    pub fn new(line_number: u32, severity: ValidationSeverity, message: impl Into<String>) -> Self {
         Self {
             line_number,
             severity,
@@ -300,14 +296,12 @@ impl BackupManager {
     /// Create backup
     pub fn backup(&self, source: impl AsRef<Path>, description: &str) -> Result<BackupEntry> {
         let source = source.as_ref();
-        
+
         // Create backup directory
         fs::create_dir_all(&self.backup_dir)?;
 
         // Generate backup ID
-        let timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)?
-            .as_secs();
+        let timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
         let id = format!("{}", timestamp);
 
         // Create backup
@@ -536,10 +530,7 @@ impl BasicProber {
 
     /// Generate offset command
     pub fn generate_offset_command(&self, work_offset: f64) -> String {
-        format!(
-            "; Set work offset\nG92 Z{}\n",
-            work_offset
-        )
+        format!("; Set work offset\nG92 Z{}\n", work_offset)
     }
 }
 
@@ -644,7 +635,9 @@ impl AdvancedProber {
 
             sequence.push_str(&format!(
                 "G0 X{:.3} Y{:.3}\n; Probe point {}\n",
-                x, y, i + 1
+                x,
+                y,
+                i + 1
             ));
             sequence.push_str(&self.base.generate_probe_command(-50.0));
         }
@@ -685,7 +678,11 @@ mod tests {
     fn test_validation_result() {
         let mut result = ValidationResult::new();
         result.add_issue(ValidationIssue::new(1, ValidationSeverity::Error, "Error"));
-        result.add_issue(ValidationIssue::new(2, ValidationSeverity::Warning, "Warning"));
+        result.add_issue(ValidationIssue::new(
+            2,
+            ValidationSeverity::Warning,
+            "Warning",
+        ));
 
         assert_eq!(result.error_count, 1);
         assert_eq!(result.warning_count, 1);

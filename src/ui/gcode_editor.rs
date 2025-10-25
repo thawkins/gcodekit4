@@ -10,7 +10,7 @@
 //!
 //! This module merges functionality from both gcode_editor and gcode_viewer
 //! into a unified, comprehensive editor implementation.
-//! 
+//!
 //! File operations use the `rfd` crate for cross-platform file dialogs.
 
 use std::path::{Path, PathBuf};
@@ -146,7 +146,10 @@ impl GcodeLine {
             TokenType::GCommand
         } else if upper.starts_with('M') {
             TokenType::MCommand
-        } else if matches!(upper.chars().next(), Some('X' | 'Y' | 'Z' | 'A' | 'B' | 'C')) {
+        } else if matches!(
+            upper.chars().next(),
+            Some('X' | 'Y' | 'Z' | 'A' | 'B' | 'C')
+        ) {
             TokenType::Coordinate
         } else if matches!(upper.chars().next(), Some('F' | 'S' | 'T' | 'H' | 'P')) {
             TokenType::Parameter
@@ -271,7 +274,11 @@ impl GcodeFile {
 
     /// Get plain text content (without line numbers or markers)
     pub fn get_plain_content(&self) -> String {
-        self.lines.iter().map(|l| l.text.as_str()).collect::<Vec<_>>().join("\n")
+        self.lines
+            .iter()
+            .map(|l| l.text.as_str())
+            .collect::<Vec<_>>()
+            .join("\n")
     }
 }
 
@@ -397,11 +404,11 @@ impl GcodeEditor {
     /// Replace occurrence at specific line and position
     pub fn replace_at(&self, line_number: usize, position: usize, old: &str, new: &str) -> bool {
         let mut file = self.file.lock().unwrap();
-        
+
         if line_number > 0 && line_number <= file.lines.len() {
             let line = &mut file.lines[line_number - 1];
             let end = position + old.len();
-            
+
             if end <= line.text.len() && &line.text[position..end] == old {
                 let mut new_text = line.text.clone();
                 new_text.replace_range(position..end, new);
@@ -420,7 +427,7 @@ impl GcodeEditor {
         }
 
         let mut file = self.file.lock().unwrap();
-        
+
         if line_number > 0 && line_number <= file.lines.len() {
             let line = &mut file.lines[line_number - 1];
             if position <= line.text.len() {
@@ -439,7 +446,7 @@ impl GcodeEditor {
         }
 
         let mut file = self.file.lock().unwrap();
-        
+
         if line_number > 0 && line_number <= file.lines.len() {
             let line = &mut file.lines[line_number - 1];
             if position < line.text.len() {
@@ -454,7 +461,7 @@ impl GcodeEditor {
     /// Get a specific line's text
     pub fn get_line_text(&self, line_number: usize) -> Option<String> {
         let file = self.file.lock().unwrap();
-        
+
         if line_number > 0 && line_number <= file.lines.len() {
             Some(file.lines[line_number - 1].text.clone())
         } else {
@@ -486,7 +493,7 @@ impl GcodeEditor {
             .add_filter("All files", &["*"])
             .pick_file()
             .ok_or_else(|| anyhow::anyhow!("File dialog cancelled"))?;
-        
+
         info!("Selected file: {:?}", file);
         Ok(file)
     }
@@ -495,7 +502,7 @@ impl GcodeEditor {
     pub fn load_file(&self, path: &Path) -> anyhow::Result<()> {
         let content = std::fs::read_to_string(path)?;
         self.load_content(&content)?;
-        
+
         let mut file = self.file.lock().unwrap();
         file.path = Some(path.to_string_lossy().to_string());
         info!("Loaded file from: {:?}", path);
@@ -512,7 +519,7 @@ impl GcodeEditor {
     /// Save file to disk with given content
     pub fn save_file_with_content(&self, content: &str) -> anyhow::Result<()> {
         let file = self.file.lock().unwrap();
-        
+
         if let Some(path) = &file.path {
             std::fs::write(path, content)?;
             info!("Saved file to: {}", path);
@@ -525,7 +532,7 @@ impl GcodeEditor {
     /// Save file to disk (uses internal content)
     pub fn save_file(&self) -> anyhow::Result<()> {
         let file = self.file.lock().unwrap();
-        
+
         if let Some(path) = &file.path {
             let content = file.get_plain_content();
             std::fs::write(path, content)?;
@@ -545,7 +552,7 @@ impl GcodeEditor {
             .set_file_name("untitled.gcode")
             .save_file()
             .ok_or_else(|| anyhow::anyhow!("Save dialog cancelled"))?;
-        
+
         info!("Save as: {:?}", file);
         Ok(file)
     }
@@ -556,9 +563,9 @@ impl GcodeEditor {
             let file = self.file.lock().unwrap();
             file.get_plain_content()
         };
-        
+
         std::fs::write(path, content)?;
-        
+
         let mut file = self.file.lock().unwrap();
         file.path = Some(path.to_string_lossy().to_string());
         info!("Saved as: {:?}", path);
@@ -568,7 +575,7 @@ impl GcodeEditor {
     /// Save with a new name and provided content
     pub fn save_as_with_content(&self, path: &Path, content: &str) -> anyhow::Result<()> {
         std::fs::write(path, content)?;
-        
+
         let mut file = self.file.lock().unwrap();
         file.path = Some(path.to_string_lossy().to_string());
         info!("Saved as: {:?}", path);
@@ -667,7 +674,7 @@ mod tests {
         editor.set_current_line(1);
         let content = editor.get_display_content();
         assert!(content.contains("▶")); // Current line marker shows for current line
-        
+
         // Now test executed marker on a different line
         editor.set_current_line(2);
         editor.mark_line_executed(1);
@@ -697,7 +704,7 @@ mod tests {
         editor.load_content("X10 Y10\nX20 Y10").unwrap();
         let count = editor.replace_all("Y10", "Y30");
         assert_eq!(count, 2);
-        
+
         let content = editor.get_plain_content();
         assert!(content.contains("Y30"));
         assert!(!content.contains("Y10"));
@@ -708,10 +715,10 @@ mod tests {
         let editor = GcodeEditor::new();
         editor.load_content("G00 X10").unwrap();
         editor.set_editable(true);
-        
+
         let result = editor.insert_text(1, 4, " Y20");
         assert!(result);
-        
+
         let text = editor.get_line_text(1);
         assert_eq!(text, Some("G00  Y20X10".to_string()));
     }
@@ -721,10 +728,10 @@ mod tests {
         let editor = GcodeEditor::new();
         editor.load_content("G00 X10").unwrap();
         editor.set_editable(true);
-        
+
         let result = editor.delete_char(1, 3);
         assert!(result);
-        
+
         let text = editor.get_line_text(1);
         assert_eq!(text, Some("G00X10".to_string()));
     }
@@ -734,10 +741,10 @@ mod tests {
         let editor = GcodeEditor::new();
         editor.load_content("G00 X10").unwrap();
         editor.set_read_only(true);
-        
+
         let result = editor.insert_text(1, 0, "test");
         assert!(!result);
-        
+
         let text = editor.get_line_text(1);
         assert_eq!(text, Some("G00 X10".to_string()));
     }
@@ -746,26 +753,26 @@ mod tests {
     fn test_file_path_tracking() {
         let editor = GcodeEditor::new();
         editor.load_content("G00 X10").unwrap();
-        
+
         let path = Some("/path/to/file.gcode".to_string());
         editor.set_file_path(path.clone());
-        
+
         assert_eq!(editor.get_file_path(), path);
     }
 
     #[test]
     fn test_export_content() {
         use tempfile::NamedTempFile;
-        
+
         let editor = GcodeEditor::new();
         editor.load_content("G00 X10\nG01 Y20").unwrap();
-        
+
         let temp_file = NamedTempFile::new().unwrap();
         let path = temp_file.path();
-        
+
         let result = editor.export_to(path);
         assert!(result.is_ok());
-        
+
         let content = std::fs::read_to_string(path).unwrap();
         assert_eq!(content, "G00 X10\nG01 Y20");
     }
@@ -773,17 +780,20 @@ mod tests {
     #[test]
     fn test_save_as_file() {
         use tempfile::NamedTempFile;
-        
+
         let editor = GcodeEditor::new();
         editor.load_content("G00 X10").unwrap();
-        
+
         let temp_file = NamedTempFile::new().unwrap();
         let path = temp_file.path();
-        
+
         let result = editor.save_as(path);
         assert!(result.is_ok());
-        assert_eq!(editor.get_file_path(), Some(path.to_string_lossy().to_string()));
-        
+        assert_eq!(
+            editor.get_file_path(),
+            Some(path.to_string_lossy().to_string())
+        );
+
         let content = std::fs::read_to_string(path).unwrap();
         assert_eq!(content, "G00 X10");
     }

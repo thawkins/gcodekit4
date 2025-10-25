@@ -122,7 +122,9 @@ impl CameraController {
         let right = self.camera.get_right();
         let up = self.camera.up;
 
-        let pan_delta = right.scale(dx * self.pan_speed).add(up.scale(dy * self.pan_speed));
+        let pan_delta = right
+            .scale(dx * self.pan_speed)
+            .add(up.scale(dy * self.pan_speed));
         self.camera.move_camera(pan_delta);
         self.current_view = ViewPreset::Custom;
     }
@@ -134,7 +136,11 @@ impl CameraController {
 
     /// Set view to preset
     pub fn set_view_preset(&mut self, preset: ViewPreset) {
-        let distance = self.camera.position.subtract(self.camera.target).magnitude();
+        let distance = self
+            .camera
+            .position
+            .subtract(self.camera.target)
+            .magnitude();
         let target = self.camera.target;
 
         self.camera.position = match preset {
@@ -172,11 +178,7 @@ impl CameraController {
                 (min.z + max.z) / 2.0,
             );
 
-            let size = Vector3::new(
-                max.x - min.x,
-                max.y - min.y,
-                max.z - min.z,
-            );
+            let size = Vector3::new(max.x - min.x, max.y - min.y, max.z - min.z);
 
             let max_dim = size.x.max(size.y).max(size.z);
             let distance = max_dim / (2.0 * (45.0_f32.to_radians() / 2.0).tan());
@@ -316,10 +318,10 @@ mod tests {
         let camera = Camera::new(Vector3::new(100.0, 100.0, 100.0), Vector3::zero());
         let mut controller = CameraController::new(camera);
         let initial_distance = controller.camera.position.magnitude();
-        
+
         controller.on_mouse_wheel(1.0);
         let new_distance = controller.camera.position.magnitude();
-        
+
         assert!(new_distance < initial_distance);
     }
 
@@ -328,9 +330,9 @@ mod tests {
         let camera = Camera::new(Vector3::new(100.0, 100.0, 100.0), Vector3::zero());
         let mut controller = CameraController::new(camera);
         let initial_target = controller.camera.target;
-        
+
         controller.on_pan(10.0, 10.0);
-        
+
         assert_ne!(controller.camera.target, initial_target);
     }
 
@@ -338,7 +340,7 @@ mod tests {
     fn test_set_view_preset() {
         let camera = Camera::new(Vector3::new(100.0, 100.0, 100.0), Vector3::zero());
         let mut controller = CameraController::new(camera);
-        
+
         controller.set_view_preset(ViewPreset::Front);
         assert_eq!(controller.current_view, ViewPreset::Front);
     }
@@ -347,7 +349,7 @@ mod tests {
     fn test_visualizer_controls() {
         let camera = Camera::new(Vector3::new(100.0, 100.0, 100.0), Vector3::zero());
         let mut controls = VisualizerControls::new(camera);
-        
+
         assert!(controls.show_grid);
         controls.toggle_grid();
         assert!(!controls.show_grid);

@@ -147,20 +147,12 @@ impl WorkCoordinateSystem {
 
     /// Get current position with offset
     pub fn apply_offset(&self, x: f64, y: f64, z: f64) -> (f64, f64, f64) {
-        (
-            x + self.offset.x,
-            y + self.offset.y,
-            z + self.offset.z,
-        )
+        (x + self.offset.x, y + self.offset.y, z + self.offset.z)
     }
 
     /// Remove offset from position
     pub fn remove_offset(&self, x: f64, y: f64, z: f64) -> (f64, f64, f64) {
-        (
-            x - self.offset.x,
-            y - self.offset.y,
-            z - self.offset.z,
-        )
+        (x - self.offset.x, y - self.offset.y, z - self.offset.z)
     }
 }
 
@@ -294,7 +286,11 @@ impl CoordinateSystemPanel {
     /// Get work position from machine position
     pub fn get_work_position(&self) -> (f64, f64, f64) {
         if let Some(system) = self.get_active_system() {
-            system.remove_offset(self.current_position.0, self.current_position.1, self.current_position.2)
+            system.remove_offset(
+                self.current_position.0,
+                self.current_position.1,
+                self.current_position.2,
+            )
         } else {
             self.current_position
         }
@@ -319,7 +315,11 @@ impl CoordinateSystemPanel {
     }
 
     /// Set system description
-    pub fn set_description(&mut self, id: CoordinateSystemId, description: impl Into<String>) -> bool {
+    pub fn set_description(
+        &mut self,
+        id: CoordinateSystemId,
+        description: impl Into<String>,
+    ) -> bool {
         if let Some(system) = self.systems.get_mut(&id) {
             system.description = description.into();
             true
@@ -341,8 +341,15 @@ impl CoordinateSystemPanel {
     pub fn get_systems_list(&self) -> Vec<(CoordinateSystemId, String)> {
         CoordinateSystemId::all()
             .iter()
-            .map(|id| (*id, self.systems.get(id).map(|s| s.description.clone())
-                .unwrap_or_else(|| format!("WCS {}", id.number()))))
+            .map(|id| {
+                (
+                    *id,
+                    self.systems
+                        .get(id)
+                        .map(|s| s.description.clone())
+                        .unwrap_or_else(|| format!("WCS {}", id.number())),
+                )
+            })
             .collect()
     }
 }

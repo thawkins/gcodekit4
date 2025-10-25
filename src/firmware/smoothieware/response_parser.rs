@@ -54,7 +54,11 @@ impl SmoothiewareResponseParser {
 
         // Check for error
         if line.starts_with("Error:") {
-            let error_msg = line.strip_prefix("Error:").unwrap_or(line).trim().to_string();
+            let error_msg = line
+                .strip_prefix("Error:")
+                .unwrap_or(line)
+                .trim()
+                .to_string();
             return Some(SmoothiewareResponse::Error(error_msg));
         }
 
@@ -150,7 +154,8 @@ mod tests {
     #[test]
     fn test_parse_error() {
         let mut parser = SmoothiewareResponseParser::new();
-        if let Some(SmoothiewareResponse::Error(msg)) = parser.parse_line("Error: Invalid command") {
+        if let Some(SmoothiewareResponse::Error(msg)) = parser.parse_line("Error: Invalid command")
+        {
             assert!(msg.contains("Invalid"));
         } else {
             panic!("Should parse error");

@@ -52,10 +52,7 @@ pub struct FluidNCController {
 
 impl FluidNCController {
     /// Create a new FluidNC controller
-    pub fn new(
-        connection_params: ConnectionParams,
-        name: Option<String>,
-    ) -> anyhow::Result<Self> {
+    pub fn new(connection_params: ConnectionParams, name: Option<String>) -> anyhow::Result<Self> {
         debug!("Creating FluidNC controller");
 
         Ok(Self {

@@ -62,10 +62,7 @@ pub struct GrblCommunicator {
 
 impl GrblCommunicator {
     /// Create a new GRBL communicator from an existing communicator
-    pub fn new(
-        communicator: Box<dyn Communicator>,
-        config: GrblCommunicatorConfig,
-    ) -> Self {
+    pub fn new(communicator: Box<dyn Communicator>, config: GrblCommunicatorConfig) -> Self {
         debug!(
             "Creating GRBL communicator with RX buffer: {}, TX buffer: {}",
             config.rx_buffer_size, config.tx_buffer_size
@@ -174,7 +171,10 @@ impl GrblCommunicator {
     /// Get available buffer space (for character counting protocol)
     pub fn get_available_buffer(&self) -> usize {
         let counting = self.char_counting.read();
-        let available = self.config.rx_buffer_size.saturating_sub(counting.pending_chars);
+        let available = self
+            .config
+            .rx_buffer_size
+            .saturating_sub(counting.pending_chars);
         trace!("Available buffer: {} bytes", available);
         available
     }
@@ -229,4 +229,3 @@ mod tests {
         assert_eq!(config.tx_buffer_size, 128);
     }
 }
-

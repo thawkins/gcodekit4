@@ -117,7 +117,8 @@ impl UiArchitecture {
     /// Initialize component hierarchy
     fn initialize_hierarchy(&mut self) {
         // Main window is root
-        self.components.insert("MainWindow".to_string(), self.root.clone());
+        self.components
+            .insert("MainWindow".to_string(), self.root.clone());
 
         // Add main panels
         let panels = vec![
@@ -141,7 +142,12 @@ impl UiArchitecture {
     }
 
     /// Register a communication channel between components
-    pub fn register_channel(&mut self, source: ComponentType, target: ComponentType, name: impl Into<String>) {
+    pub fn register_channel(
+        &mut self,
+        source: ComponentType,
+        target: ComponentType,
+        name: impl Into<String>,
+    ) {
         let channel = ComponentChannel {
             source,
             target,
@@ -152,12 +158,16 @@ impl UiArchitecture {
 
     /// Get component by type
     pub fn get_component(&self, comp_type: ComponentType) -> Option<&UiComponent> {
-        self.components.values().find(|c| c.component_type == comp_type)
+        self.components
+            .values()
+            .find(|c| c.component_type == comp_type)
     }
 
     /// Get mutable component by type
     pub fn get_component_mut(&mut self, comp_type: ComponentType) -> Option<&mut UiComponent> {
-        self.components.values_mut().find(|c| c.component_type == comp_type)
+        self.components
+            .values_mut()
+            .find(|c| c.component_type == comp_type)
     }
 
     /// Get all components

@@ -291,13 +291,13 @@ impl CodeQualityMetrics {
     /// Get quality score (0-100)
     pub fn quality_score(&self) -> f32 {
         let mut score = 100.0;
-        
+
         // Reduce for complexity
         score -= (self.cyclomatic_complexity * 2.0).min(30.0);
-        
+
         // Reward for test coverage
         score += (self.test_coverage / 100.0) * 20.0;
-        
+
         score.max(0.0).min(100.0)
     }
 

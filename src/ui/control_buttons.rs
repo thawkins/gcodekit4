@@ -245,7 +245,11 @@ impl ControlButtonsPanel {
     pub fn keyboard_input(&mut self, key: char) -> Option<String> {
         for button_type in ButtonType::all() {
             if let Some(button) = self.buttons.get(&button_type) {
-                if button.shortcut().to_lowercase().starts_with(key.to_lowercase().to_string().as_str()) {
+                if button
+                    .shortcut()
+                    .to_lowercase()
+                    .starts_with(key.to_lowercase().to_string().as_str())
+                {
                     return self.click_button(button_type);
                 }
             }
@@ -478,6 +482,9 @@ mod tests {
     fn test_button_loading() {
         let mut panel = ControlButtonsPanel::new();
         panel.set_button_loading(ButtonType::Start);
-        assert_eq!(panel.get_button(ButtonType::Start).unwrap().state, ButtonState::Loading);
+        assert_eq!(
+            panel.get_button(ButtonType::Start).unwrap().state,
+            ButtonState::Loading
+        );
     }
 }

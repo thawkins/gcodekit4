@@ -19,8 +19,17 @@ impl Point2D {
 /// Movement command
 #[derive(Debug, Clone)]
 pub enum GCodeCommand {
-    Move { from: Point2D, to: Point2D, rapid: bool },
-    Arc { from: Point2D, to: Point2D, center: Point2D, clockwise: bool },
+    Move {
+        from: Point2D,
+        to: Point2D,
+        rapid: bool,
+    },
+    Arc {
+        from: Point2D,
+        to: Point2D,
+        center: Point2D,
+        clockwise: bool,
+    },
 }
 
 /// 2D Visualizer state
@@ -58,7 +67,7 @@ impl Visualizer2D {
 
         for line in gcode.lines() {
             let line = line.trim();
-            
+
             // Skip comments and empty lines
             if line.is_empty() || line.starts_with(';') || line.starts_with('(') {
                 continue;
@@ -68,7 +77,7 @@ impl Visualizer2D {
             if line.starts_with("G0") || line.starts_with("G1") {
                 let is_rapid = line.starts_with("G0");
                 let (x, y) = Self::extract_xy(line);
-                
+
                 if let (Some(new_x), Some(new_y)) = (x, y) {
                     let to = Point2D::new(new_x, new_y);
                     self.commands.push(GCodeCommand::Move {
@@ -94,7 +103,7 @@ impl Visualizer2D {
                 if let (Some(new_x), Some(new_y), Some(offset_x), Some(offset_y)) = (x, y, i, j) {
                     let to = Point2D::new(new_x, new_y);
                     let center = Point2D::new(current_pos.x + offset_x, current_pos.y + offset_y);
-                    
+
                     self.commands.push(GCodeCommand::Arc {
                         from: current_pos,
                         to,
@@ -116,10 +125,26 @@ impl Visualizer2D {
         let padding_x = (max_x - min_x) * 0.1;
         let padding_y = (max_y - min_y) * 0.1;
 
-        self.min_x = if min_x == f32::MAX { 0.0 } else { min_x - padding_x };
-        self.max_x = if max_x == f32::MIN { 100.0 } else { max_x + padding_x };
-        self.min_y = if min_y == f32::MAX { 0.0 } else { min_y - padding_y };
-        self.max_y = if max_y == f32::MIN { 100.0 } else { max_y + padding_y };
+        self.min_x = if min_x == f32::MAX {
+            0.0
+        } else {
+            min_x - padding_x
+        };
+        self.max_x = if max_x == f32::MIN {
+            100.0
+        } else {
+            max_x + padding_x
+        };
+        self.min_y = if min_y == f32::MAX {
+            0.0
+        } else {
+            min_y - padding_y
+        };
+        self.max_y = if max_y == f32::MIN {
+            100.0
+        } else {
+            max_y + padding_y
+        };
 
         self.current_pos = current_pos;
     }
@@ -171,7 +196,7 @@ impl Visualizer2D {
     /// Render the 2D visualization to an image
     pub fn render(&self, width: u32, height: u32) -> Vec<u8> {
         let mut img: RgbaImage = ImageBuffer::new(width, height);
-        
+
         // Fill background with white
         for pixel in img.pixels_mut() {
             *pixel = Rgba([255, 255, 255, 255]);
@@ -184,13 +209,13 @@ impl Visualizer2D {
         // Calculate scale to fit bounds into image
         let x_range = self.max_x - self.min_x;
         let y_range = self.max_y - self.min_y;
-        
+
         let scale_x = if x_range > 0.0 && x_range.is_finite() {
             (width as f32 - 40.0) / x_range
         } else {
             1.0
         };
-        
+
         let scale_y = if y_range > 0.0 && y_range.is_finite() {
             (height as f32 - 40.0) / y_range
         } else {
@@ -249,19 +274,33 @@ impl Visualizer2D {
         }
 
         // Draw start point
-        let start_x = safe_to_i32((self.commands.get(0).and_then(|cmd| match cmd {
-            GCodeCommand::Move { from, .. } => Some(from.x),
-            GCodeCommand::Arc { from, .. } => Some(from.x),
-        }).unwrap_or(self.min_x) - self.min_x)
-            * scale
-            + 20.0);
-        let start_y = safe_to_i32(height as f32
-            - (self.commands.get(0).and_then(|cmd| match cmd {
-                GCodeCommand::Move { from, .. } => Some(from.y),
-                GCodeCommand::Arc { from, .. } => Some(from.y),
-            }).unwrap_or(self.min_y) - self.min_y)
+        let start_x = safe_to_i32(
+            (self
+                .commands
+                .get(0)
+                .and_then(|cmd| match cmd {
+                    GCodeCommand::Move { from, .. } => Some(from.x),
+                    GCodeCommand::Arc { from, .. } => Some(from.x),
+                })
+                .unwrap_or(self.min_x)
+                - self.min_x)
                 * scale
-            - 20.0);
+                + 20.0,
+        );
+        let start_y = safe_to_i32(
+            height as f32
+                - (self
+                    .commands
+                    .get(0)
+                    .and_then(|cmd| match cmd {
+                        GCodeCommand::Move { from, .. } => Some(from.y),
+                        GCodeCommand::Arc { from, .. } => Some(from.y),
+                    })
+                    .unwrap_or(self.min_y)
+                    - self.min_y)
+                    * scale
+                - 20.0,
+        );
         draw_circle(&mut img, start_x, start_y, 4, Rgba([0, 200, 0, 255]));
 
         // Draw end point
@@ -290,13 +329,13 @@ fn safe_to_i32(value: f32) -> i32 {
 /// Draw a line using Bresenham's line algorithm
 fn draw_line(img: &mut RgbaImage, x0: i32, y0: i32, x1: i32, y1: i32, color: Rgba<u8>) {
     let (width, height) = img.dimensions();
-    
+
     // Clamp coordinates to image bounds
     let x0 = x0.max(i32::MIN + 1).min(i32::MAX - 1);
     let y0 = y0.max(i32::MIN + 1).min(i32::MAX - 1);
     let x1 = x1.max(i32::MIN + 1).min(i32::MAX - 1);
     let y1 = y1.max(i32::MIN + 1).min(i32::MAX - 1);
-    
+
     let mut x = x0;
     let mut y = y0;
     let dx = ((x1 - x0).abs() as i64).min(width as i64);
@@ -304,7 +343,7 @@ fn draw_line(img: &mut RgbaImage, x0: i32, y0: i32, x1: i32, y1: i32, color: Rgb
     let sx = if x0 < x1 { 1i32 } else { -1i32 };
     let sy = if y0 < y1 { 1i32 } else { -1i32 };
     let mut err = if dx > dy { dx - dy } else { dy - dx };
-    
+
     // Safety: limit iterations to prevent infinite loops
     let max_iterations = (dx + dy).min(100000) as usize;
     let mut iterations = 0;
@@ -317,7 +356,7 @@ fn draw_line(img: &mut RgbaImage, x0: i32, y0: i32, x1: i32, y1: i32, color: Rgb
         if x == x1 && y == y1 {
             break;
         }
-        
+
         iterations += 1;
         if iterations > max_iterations {
             break; // Safety exit
@@ -363,30 +402,23 @@ fn draw_cross(img: &mut RgbaImage, cx: i32, cy: i32, size: i32, color: Rgba<u8>)
 
 /// Draw a simple grid
 #[allow(dead_code)]
-fn draw_grid(
-    img: &mut RgbaImage,
-    width: u32,
-    height: u32,
-    min_x: f32,
-    min_y: f32,
-    scale: f32,
-) {
+fn draw_grid(img: &mut RgbaImage, width: u32, height: u32, min_x: f32, min_y: f32, scale: f32) {
     if scale <= 0.0 || !scale.is_finite() {
         return;
     }
-    
+
     let grid_color = Rgba([220, 220, 220, 128]);
     let step = 10.0; // Grid step in model units
-    
+
     // Limit to reasonable grid density
     let max_iterations = 200; // Max 200 lines in each direction
-    
+
     // Vertical lines
     let mut x = (min_x.ceil() / step) * step;
     let mut iterations = 0;
     let screen_width = (width as f32 - 40.0).max(1.0);
     let max_x = min_x + (screen_width / scale).abs();
-    
+
     while x <= max_x && iterations < max_iterations {
         let screen_x = safe_to_i32((x - min_x) * scale + 20.0);
         if screen_x >= 0 && screen_x < width as i32 {
@@ -403,7 +435,7 @@ fn draw_grid(
     let mut iterations = 0;
     let screen_height = (height as f32 - 40.0).max(1.0);
     let max_y = min_y + (screen_height / scale).abs();
-    
+
     while y <= max_y && iterations < max_iterations {
         let screen_y = safe_to_i32(height as f32 - (y - min_y) * scale - 20.0);
         if screen_y >= 0 && screen_y < height as i32 {
@@ -439,7 +471,7 @@ fn draw_arc(
 
     let start_angle = (from.y - center.y).atan2(from.x - center.x);
     let end_angle = (to.y - center.y).atan2(to.x - center.x);
-    
+
     let angle_diff = (end_angle - start_angle).abs();
 
     // Cap the number of segments to prevent hang

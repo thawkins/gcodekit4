@@ -1,6 +1,6 @@
 //! Tests for message service
 
-use gcodekit4::{Message, MessageLevel, MessageDispatcher};
+use gcodekit4::{Message, MessageDispatcher, MessageLevel};
 
 #[test]
 fn test_message_level_display() {
@@ -78,13 +78,10 @@ async fn test_message_dispatcher_publish() {
     let msg = Message::info("system", "Test publish");
     assert!(dispatcher.publish(msg.clone()).is_ok());
 
-    let received = tokio::time::timeout(
-        std::time::Duration::from_secs(1),
-        rx.recv(),
-    )
-    .await
-    .unwrap()
-    .unwrap();
+    let received = tokio::time::timeout(std::time::Duration::from_secs(1), rx.recv())
+        .await
+        .unwrap()
+        .unwrap();
 
     assert_eq!(received.source, "system");
     assert_eq!(received.text, "Test publish");
@@ -117,13 +114,10 @@ async fn test_message_dispatcher_filtering() {
     assert!(result_warn.is_ok());
 
     // Receive the warning
-    let received = tokio::time::timeout(
-        std::time::Duration::from_secs(1),
-        rx.recv(),
-    )
-    .await
-    .unwrap()
-    .unwrap();
+    let received = tokio::time::timeout(std::time::Duration::from_secs(1), rx.recv())
+        .await
+        .unwrap()
+        .unwrap();
 
     assert_eq!(received.level, MessageLevel::Warning);
 }
@@ -169,12 +163,9 @@ async fn test_message_dispatcher_all_levels() {
 
     let mut messages = Vec::new();
     for _ in 0..4 {
-        if let Ok(Some(msg)) = tokio::time::timeout(
-            std::time::Duration::from_millis(100),
-            async {
-                Some(rx.recv().await.ok())
-            },
-        )
+        if let Ok(Some(msg)) = tokio::time::timeout(std::time::Duration::from_millis(100), async {
+            Some(rx.recv().await.ok())
+        })
         .await
         {
             if let Some(msg) = msg {

@@ -7,27 +7,29 @@
 //! - Smoothieware: CNC control software
 //! - FluidNC: Powerful open-source CNC control
 
-pub mod grbl;
-pub mod tinyg;
-pub mod g2core;
-pub mod smoothieware;
-pub mod fluidnc;
-pub mod settings;
-pub mod override_manager;
 pub mod capabilities;
-pub mod file_service;
 pub mod connection_watch;
+pub mod file_service;
+pub mod fluidnc;
+pub mod g2core;
+pub mod grbl;
+pub mod override_manager;
+pub mod settings;
+pub mod smoothieware;
+pub mod tinyg;
 
+pub use capabilities::{CapabilitiesTrait, Capability, DefaultCapabilities};
+pub use connection_watch::{ConnectionWatchConfig, ConnectionWatchState, ConnectionWatcher};
+pub use file_service::{FileInfo, FileServiceTrait, NoOpFileService, StorageInfo};
+pub use fluidnc::{FluidNCCapabilities, FluidNCController, FluidNCVersion};
+pub use g2core::{G2CoreCapabilities, G2CoreController, G2CoreVersion as G2CoreVer};
 pub use grbl::GrblCapabilities;
-pub use tinyg::{TinyGCapabilities, TinyGVersion as TinyGVer, TinyGController};
-pub use g2core::{G2CoreCapabilities, G2CoreVersion as G2CoreVer, G2CoreController};
-pub use smoothieware::{SmoothiewareCapabilities, SmoothiewareVersion, SmoothiewareController};
-pub use fluidnc::{FluidNCCapabilities, FluidNCVersion, FluidNCController};
-pub use settings::{FirmwareSetting, FirmwareSettingsTrait, DefaultFirmwareSettings, SettingType};
-pub use override_manager::{OverrideState, OverrideManagerTrait, DefaultOverrideManager, RapidOverrideLevel};
-pub use capabilities::{Capability, CapabilitiesTrait, DefaultCapabilities};
-pub use file_service::{FileInfo, FileServiceTrait, StorageInfo, NoOpFileService};
-pub use connection_watch::{ConnectionWatcher, ConnectionWatchConfig, ConnectionWatchState};
+pub use override_manager::{
+    DefaultOverrideManager, OverrideManagerTrait, OverrideState, RapidOverrideLevel,
+};
+pub use settings::{DefaultFirmwareSettings, FirmwareSetting, FirmwareSettingsTrait, SettingType};
+pub use smoothieware::{SmoothiewareCapabilities, SmoothiewareController, SmoothiewareVersion};
+pub use tinyg::{TinyGCapabilities, TinyGController, TinyGVersion as TinyGVer};
 
 /// Supported CNC controller types
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
