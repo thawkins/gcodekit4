@@ -77,6 +77,14 @@ export component MainWindow inherits Window {
     callback machine-jog-home();
     callback machine-jog-x-positive(float);
     callback machine-jog-x-negative(float);
+    callback machine-jog-y-positive(float);
+    callback machine-jog-y-negative(float);
+    callback machine-jog-z-positive(float);
+    callback machine-jog-z-negative(float);
+    callback machine-jog-a-positive(float);
+    callback machine-jog-a-negative(float);
+    callback machine-jog-b-positive(float);
+    callback machine-jog-b-negative(float);
     callback menu-edit-preferences();
     callback menu-settings-save();
     callback menu-settings-cancel();
@@ -560,6 +568,30 @@ export component MainWindow inherits Window {
                     }
                     jog-x-negative(step) => {
                         root.machine-jog-x-negative(step);
+                    }
+                    jog-y-positive(step) => {
+                        root.machine-jog-y-positive(step);
+                    }
+                    jog-y-negative(step) => {
+                        root.machine-jog-y-negative(step);
+                    }
+                    jog-z-positive(step) => {
+                        root.machine-jog-z-positive(step);
+                    }
+                    jog-z-negative(step) => {
+                        root.machine-jog-z-negative(step);
+                    }
+                    jog-a-positive(step) => {
+                        root.machine-jog-a-positive(step);
+                    }
+                    jog-a-negative(step) => {
+                        root.machine-jog-a-negative(step);
+                    }
+                    jog-b-positive(step) => {
+                        root.machine-jog-b-positive(step);
+                    }
+                    jog-b-negative(step) => {
+                        root.machine-jog-b-negative(step);
                     }
                 }
                 

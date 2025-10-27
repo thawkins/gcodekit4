@@ -49,6 +49,14 @@ export component MachineControlPanel inherits VerticalBox {
     callback jog-home-clicked();
     callback jog-x-positive(float);
     callback jog-x-negative(float);
+    callback jog-y-positive(float);
+    callback jog-y-negative(float);
+    callback jog-z-positive(float);
+    callback jog-z-negative(float);
+    callback jog-a-positive(float);
+    callback jog-a-negative(float);
+    callback jog-b-positive(float);
+    callback jog-b-negative(float);
     
     private property <float> step-size: 1.0;
     private property <int> step-index: 1;
@@ -245,21 +253,45 @@ export component MachineControlPanel inherits VerticalBox {
                         // rotate A axis left
                         JogButton {
                             connected: root.connected;
-                            text: "⟲";
+                            step-size: root.step-size;
+                            text: "A ⟲";
+                            clicked(step) => {
+                                root.jog-a-negative(step);
+                            }
                         }
 
                         // Jog Y axis up (+)
                         JogButton {
                             connected: root.connected;
-                            text: "▲";
+                            step-size: root.step-size;
+                            text: "Y ▲";
+                            clicked(step) => {
+                                root.jog-y-positive(step);
+                            }
                         }
 
-                        // Rotate B axis Right
+                        // Rotate B axis left
                         JogButton {
                             connected: root.connected;
-                            text: "⟳";
+                            step-size: root.step-size;
+                            text: "B ⟲";
+                            clicked(step) => {
+                                root.jog-b-negative(step);
+                            }
                         }
                         
+
+                        // Jog Z Axis up (+)
+                        JogButton {
+                            connected: root.connected;
+                            step-size: root.step-size;
+                            text: "Z ▲";
+                            clicked(step) => {
+                                root.jog-z-positive(step);
+                            }
+                        }
+                        
+
                         Rectangle {
                             width: 5%;
                             height: 65px;
@@ -272,19 +304,19 @@ export component MachineControlPanel inherits VerticalBox {
                         // Zero X axis
                         JogButton {
                             connected: root.connected;
-                            text: "X⊙";
+                            text: "X ⊙";
                         }
 
                         // Zero Y axis
                         JogButton {
                             connected: root.connected;
-                            text: "Y⊙";
+                            text: "Y ⊙";
                         }
 
                         // Zero Z axis
                         JogButton {
                             connected: root.connected;
-                            text: "Z⊙";
+                            text: "Z ⊙";
                         }
 
                     }
@@ -296,7 +328,7 @@ export component MachineControlPanel inherits VerticalBox {
                         JogButton {
                             connected: root.connected;
                             step-size: root.step-size;
-                            text: "◀";
+                            text: "◀ X";
                             clicked(step) => {
                                 root.jog-x-negative(step);
                             }
@@ -315,16 +347,21 @@ export component MachineControlPanel inherits VerticalBox {
                         JogButton {
                             connected: root.connected;
                             step-size: root.step-size;
-                            text: "▶";
+                            text: "X ▶";
                             clicked(step) => {
                                 root.jog-x-positive(step);
                             }
                         }
 
-                        Rectangle {
+                       Rectangle {
                             width: 5%;
                             height: 65px;
                         }
+                        Rectangle {
+                            width: 10%;
+                            height: 65px;
+                        }
+
                         JogButton {
                             connected: root.connected;
                             text: "G54";
@@ -341,22 +378,45 @@ export component MachineControlPanel inherits VerticalBox {
                     
                     HorizontalBox {
                         spacing: 6px;
-                        
+ 
+                        // rotate A Axis Right
                         JogButton {
                             connected: root.connected;
-                            text: "⟲";
+                            step-size: root.step-size;
+                            text: "A ⟳";
+                            clicked(step) => {
+                                root.jog-a-positive(step);
+                            }
                         }
+
+                        // Jog Y Axis down (-)
                         JogButton {
                             connected: root.connected;
-                            text: "▼";
+                            step-size: root.step-size;
+                            text: "Y ▼";
+                            clicked(step) => {
+                                root.jog-y-negative(step);
+                            }
                         }
+
+                        // Jog B Axis Right (+)
                         JogButton {
                             connected: root.connected;
-                            text: "⟳";
+                            step-size: root.step-size;
+                            text: "B ⟳";
+                            clicked(step) => {
+                                root.jog-b-positive(step);
+                            }
                         }
+
+                        // Jog Z Axis down (-)
                         JogButton {
                             connected: root.connected;
-                            text: "▼";
+                            step-size: root.step-size;
+                            text: "Z ▼";
+                            clicked(step) => {
+                                root.jog-z-negative(step);
+                            }
                         }
                         Rectangle {
                             width: 5%;

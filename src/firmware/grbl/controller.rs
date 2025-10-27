@@ -286,9 +286,9 @@ impl ControllerTrait for GrblController {
             return Err(anyhow::anyhow!("Direction must be non-zero"));
         }
 
-        // Create a jog command using G91 (relative) and G0 (rapid)
+        // Create a jog command using $J= syntax with G91 (relative) and G0 (rapid)
         let direction_str = if direction > 0 { "+" } else { "-" };
-        let cmd = format!("G91G0{}{}F{}", axis, direction_str, feed_rate);
+        let cmd = format!("$J=G91 G0 {}{} F{:.0}", axis, direction_str, feed_rate);
         self.send_command(&cmd).await?;
 
         Ok(())
@@ -311,8 +311,9 @@ impl ControllerTrait for GrblController {
             axis, distance, feed_rate
         );
 
-        let abs_distance = distance.abs();
-        let cmd = format!("G91G0{}{}F{}", axis, abs_distance, feed_rate);
+        // Format: $J=G91 G0 X{signed_distance} F{feed_rate}
+        // distance already includes sign from the caller
+        let cmd = format!("$J=G91 G0 {}{:.3} F{:.0}", axis, distance, feed_rate);
         self.send_command(&cmd).await?;
 
         Ok(())

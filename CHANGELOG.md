@@ -39,6 +39,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Cleaner, more professional appearance
 
 ### Fixed
+- **UI Timeout Dialogs During File Transmission (RESOLVED)**
+  - Completely eliminated UI freezing and window manager timeout dialogs during G-code transmission
+  - Converted blocking synchronous send operation to non-blocking timer-based state machine
+  - Uses Slint Timer API with 1ms intervals to process sends without blocking UI event loop
+  - UI remains fully responsive - can interact with all controls during file transmission
+  - GRBL Character-Counting Protocol flow control preserved for reliable transmission
+  - Incremental line sending with proper buffer tracking and acknowledgment handling
+  - State machine tracks: line index, send count, pending bytes, line lengths, and error conditions
+  - Automatic timeout handling with graceful error reporting
+  - Solution provides clean separation between UI responsiveness and device communication
+
 - **G-Code Send Buffer Overflow** 
   - Fixed issue where not all lines were being received by device when sending files
   - Implemented GRBL Character-Counting Protocol per official GRBL wiki recommendations
@@ -47,7 +58,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Maintains list of sent line lengths and subtracts them when receiving `ok` responses
   - No arbitrary delays - flow control is deterministic based on buffer capacity
   - Handles multiple `ok` responses in single receive() call
-  - Up to 5-second timeout for final acknowledgments with detailed logging
+  - Up to 30-second timeout for final acknowledgments with detailed logging
+  - Fully complies with official GRBL streaming protocol specification
   - Fully complies with official GRBL streaming protocol specification
 
 - **Communicator State Management**

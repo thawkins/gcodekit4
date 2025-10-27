@@ -1,10 +1,11 @@
 # GCodeKit4 - Specification Document
 
 **Version**: 0.24.1-alpha  
-**Last Updated**: 2025-10-25  
+**Last Updated**: 2025-10-27  
 **Status**: COMPLETE (All 7 Phases Complete - 150/150 Tasks)
 
 ### Latest Release (v0.24.1-alpha)
+- ✅ **UI Timeout Fix** - Non-blocking G-code transmission with timer-based state machine
 - ✅ **Settings Dialog Fixes** - Config directory creation and state management
 - ✅ **2D G-Code Visualizer** - Complete implementation
 - ✅ **Zero Compiler Warnings** - Production-ready code

@@ -1,3 +1,4 @@
+$H
 ; 15mm square cut test for laser cutter
 ; Square centered at X20 Y20
 ; Laser intensity S255, feed rate F500
@@ -130,3 +131,6 @@ G1 X12.5 Y27.5 F500
 G1 X12.5 Y12.5 F500
 
 M5 ; Laser off
+
+$H
+
