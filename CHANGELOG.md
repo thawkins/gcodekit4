@@ -5,7 +5,75 @@ All notable changes to this project should be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.24.1] - 2025-10-25
+## [0.24.1] - 2025-10-27
+
+### Added
+- **Send to Device Function**
+  - Send button in G-Code editor now sends editor contents to connected device
+  - Implements flow control with 10ms delay between commands to prevent buffer overflow
+  - Validates device connection before sending
+  - Provides detailed console feedback for each sent command
+  - Gracefully handles errors with detailed error reporting
+
+- **Home Command**
+  - Home button in Machine Control panel sends $H command to device
+  - Validates device connection before sending
+  - Provides console feedback and status updates
+
+- **Jog X Axis Controls**
+  - X+ button sends $J=X{step_size} F2000 jog command
+  - X- button sends $J=X-{step_size} F2000 jog command
+  - Uses configurable step size from dropdown (0.1, 1.0, 10, 50 mm)
+  - Feedrate set to 2000 mm/min for all jog operations
+  - Both buttons only enabled when device is connected
+
+- **JogButton Component**
+  - New unified button component for all jog controls in machine view
+  - Consistent styling and disabled state when disconnected
+  - Support for touch feedback with press animation
+  - Proper parameter passing for step size values
+
+- **Visualizer Display Cleanup**
+  - Removed placeholder text and loading messages from visualizer
+  - Display now shows only the actual visualization image
+  - Cleaner, more professional appearance
+
+### Fixed
+- **Communicator State Management**
+  - Fixed communicator not resetting after disconnect/reconnect cycle
+  - New SerialCommunicator instance created after disconnect with console listener re-registered
+  - Proper memory cleanup of old communicator instance
+  - No memory leaks on repeated connect/disconnect operations
+
+- **Jog Button Callback Wiring**
+  - Fixed jog buttons not responding to clicks
+  - Properly implemented callback parameter passing in JogButton component
+  - X+ and X- buttons now correctly receive step-size parameter
+
+- **Device Communication Flow**
+  - Removed blocking receive() calls that were freezing the UI
+  - Device responses properly handled by async ConsoleListener
+  - Communication no longer blocks the main UI thread
+
+### Changed
+- Increased flow control delay from 5ms to 10ms for send operations
+- Enhanced error reporting with connection status and detailed messages
+- Improved console output with operation-specific status messages
+
+### Technical Details
+- Modified: `src/main.rs` - Added send, jog, and communicator management handlers
+- Modified: `src/ui.slint` - Added callbacks for send and jog operations
+- Modified: `src/ui_panels/machine_control.slint` - Converted all buttons to JogButton component
+- Modified: `src/ui_panels/gcode_editor.slint` - Added send callback trigger
+- Modified: `src/ui_panels/gcode_visualizer.slint` - Removed placeholder UI elements
+- All changes backward compatible
+- No database schema changes
+
+### Known Issues
+- Connect -> Home -> LoadFile -> Send workflow has remaining issues to be addressed
+- Will be resolved in next development session
+
+## [0.24.0] - 2025-10-25
 
 ### Fixed
 - **Settings Dialog Config Directory Creation**

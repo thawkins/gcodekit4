@@ -154,62 +154,6 @@ export component GcodeVisualizerPanel inherits VerticalBox {
                         border-color: #ddd;
                         border-radius: 4px;
                         
-                        if root.gcode-content == "" : VerticalBox {
-                            alignment: center;
-                            spacing: 8px;
-                            
-                            Text {
-                                text: "2D G-Code Visualizer";
-                                font-size: 14px;
-                                font-weight: 700;
-                                color: #333;
-                            }
-                            
-                            Text {
-                                text: "Load G-Code to view visualization";
-                                font-size: 12px;
-                                color: #666;
-                            }
-                            
-                            Rectangle {
-                                width: 60px;
-                                height: 60px;
-                                background: #ddd;
-                                border-radius: 4px;
-                                
-                                Text {
-                                    text: "📐";
-                                    font-size: 36px;
-                                    horizontal-alignment: center;
-                                    vertical-alignment: center;
-                                }
-                            }
-                        }
-                        
-                        if root.gcode-content != "" && root.visualization-image.width == 0 : VerticalBox {
-                            alignment: center;
-                            spacing: 8px;
-                            
-                            Text {
-                                text: "📊 2D G-Code Visualization";
-                                font-size: 14px;
-                                font-weight: 700;
-                                color: #333;
-                            }
-                            
-                            Text {
-                                text: "File: " + root.gcode-filename;
-                                font-size: 11px;
-                                color: #666;
-                            }
-                            
-                            Text {
-                                text: "(Rendering...)";
-                                font-size: 10px;
-                                color: #999;
-                            }
-                        }
-                        
                         if root.gcode-content != "" && root.visualization-image.width > 0 : Image {
                             source: root.visualization-image;
                             width: 100%;

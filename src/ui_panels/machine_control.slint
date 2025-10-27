@@ -3,6 +3,33 @@
 
 import { Button, ComboBox, LineEdit, VerticalBox, HorizontalBox, ScrollView } from "std-widgets.slint";
 
+export component JogButton inherits Rectangle {
+    in property <bool> connected: false;
+    in property <float> step-size: 1.0;
+    in-out property text <=> txt.text;
+    callback clicked(float);
+    width: 10%;
+    height: 65px;
+    background: #ecf0f1;
+    border-width: 2px;
+    border-color: root.connected ? #34495e : #bdc3c7;
+    border-radius: 5px;
+    opacity: root.connected ? 1.0 : 0.5;
+    txt := Text {
+        x: (parent.width - self.width)/2 + (touch.pressed ? 2px : 0);
+        y: (parent.height - self.height)/2 + (touch.pressed ? 1px : 0);
+        font-size: 28px;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+        color: touch.pressed ? #fff : #333;
+    }
+    touch := TouchArea {
+        clicked => {
+            root.clicked(root.step-size);
+        }
+    }
+}
+
 export component MachineControlPanel inherits VerticalBox {
     spacing: 0px;
     padding: 10px;
@@ -18,6 +45,10 @@ export component MachineControlPanel inherits VerticalBox {
     in property <float> position-c: 0.0;
     in property <float> feed-rate: 0.0;
     in property <float> spindle-speed: 0.0;
+    
+    callback jog-home-clicked();
+    callback jog-x-positive(float);
+    callback jog-x-negative(float);
     
     private property <float> step-size: 1.0;
     private property <int> step-index: 1;
@@ -210,65 +241,50 @@ export component MachineControlPanel inherits VerticalBox {
                     /// Row 1-3: Jog Buttons Grid
                     HorizontalBox {
                         spacing: 6px;
-                        
-                        Rectangle {
-                            width: 10%;
-                            height: 65px;
-                            background: #ecf0f1;
-                            border-width: 2px;
-                            border-color: root.connected ? #34495e : #bdc3c7;
-                            border-radius: 5px;
-                            opacity: root.connected ? 1.0 : 0.5;
-                            Text { text: "⟲"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
-                        }
-                        Rectangle {
-                            width: 10%;
-                            height: 65px;
-                            background: #ecf0f1;
-                            border-width: 2px;
-                            border-color: root.connected ? #34495e : #bdc3c7;
-                            border-radius: 5px;
-                            opacity: root.connected ? 1.0 : 0.5;
-                            Text { text: "▲"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
+
+                        // rotate A axis left
+                        JogButton {
+                            connected: root.connected;
+                            text: "⟲";
                         }
 
+                        // Jog Y axis up (+)
+                        JogButton {
+                            connected: root.connected;
+                            text: "▲";
+                        }
+
+                        // Rotate B axis Right
+                        JogButton {
+                            connected: root.connected;
+                            text: "⟳";
+                        }
+                        
                         Rectangle {
                             width: 5%;
                             height: 65px;
                         }
-                         Rectangle {
-                            width: 10%;
-                            height: 65px;
-                        }
                         Rectangle {
                             width: 10%;
                             height: 65px;
-                            background: #ecf0f1;
-                            border-width: 2px;
-                            border-color: root.connected ? #34495e : #bdc3c7;
-                            border-radius: 5px;
-                            opacity: root.connected ? 1.0 : 0.5;
-                            Text { text: "X⊙"; font-size: 28px; horizontal-alignment: center; vertical-alignment: center; }
                         }
-                        Rectangle {
-                            width: 10%;
-                            height: 65px;
-                            background: #ecf0f1;
-                            border-width: 2px;
-                            border-color: root.connected ? #34495e : #bdc3c7;
-                            border-radius: 5px;
-                            opacity: root.connected ? 1.0 : 0.5;
-                            Text { text: "Y⊙"; font-size: 28px; horizontal-alignment: center; vertical-alignment: center; }
+
+                        // Zero X axis
+                        JogButton {
+                            connected: root.connected;
+                            text: "X⊙";
                         }
-                        Rectangle {
-                            width: 10%;
-                            height: 65px;
-                            background: #ecf0f1;
-                            border-width: 2px;
-                            border-color: root.connected ? #34495e : #bdc3c7;
-                            border-radius: 5px;
-                            opacity: root.connected ? 1.0 : 0.5;
-                            Text { text: "Z⊙"; font-size: 28px; horizontal-alignment: center; vertical-alignment: center; }
+
+                        // Zero Y axis
+                        JogButton {
+                            connected: root.connected;
+                            text: "Y⊙";
+                        }
+
+                        // Zero Z axis
+                        JogButton {
+                            connected: root.connected;
+                            text: "Z⊙";
                         }
 
                     }
@@ -276,150 +292,88 @@ export component MachineControlPanel inherits VerticalBox {
                     HorizontalBox {
                         spacing: 6px;
                         
-                        Rectangle {
-                            width: 10%;
-                            height: 65px;
-                            background: #ecf0f1;
-                            border-width: 2px;
-                            border-color: root.connected ? #34495e : #bdc3c7;
-                            border-radius: 5px;
-                            opacity: root.connected ? 1.0 : 0.5;
-                            Text { text: "◀"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
+                        // Jog X left (-)
+                        JogButton {
+                            connected: root.connected;
+                            step-size: root.step-size;
+                            text: "◀";
+                            clicked(step) => {
+                                root.jog-x-negative(step);
+                            }
                         }
-                        Rectangle {
-                            width: 10%;
-                            height: 65px;
-                            background: #ecf0f1;
-                            border-width: 2px;
-                            border-color: root.connected ? #34495e : #bdc3c7;
-                            border-radius: 5px;
-                            opacity: root.connected ? 1.0 : 0.5;
-                            Text { text: "⌂"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
+
+                        // Jog Home 
+                        JogButton {
+                            connected: root.connected;
+                            text: "⌂";
+                            clicked => {
+                                root.jog-home-clicked();
+                            }
                         }
-                        Rectangle {
-                            width: 10%;
-                            height: 65px;
-                            background: #ecf0f1;
-                            border-width: 2px;
-                            border-color: root.connected ? #34495e : #bdc3c7;
-                            border-radius: 5px;
-                            opacity: root.connected ? 1.0 : 0.5;
-                            Text { text: "▶"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
+
+                        // Jog X axis right (+)
+                        JogButton {
+                            connected: root.connected;
+                            step-size: root.step-size;
+                            text: "▶";
+                            clicked(step) => {
+                                root.jog-x-positive(step);
+                            }
                         }
 
                         Rectangle {
                             width: 5%;
                             height: 65px;
                         }
-                        Rectangle {
-                            width: 10%;
-                            height: 65px;
-                            background: #ecf0f1;
-                            border-width: 2px;
-                            border-color: root.connected ? #34495e : #bdc3c7;
-                            border-radius: 5px;
-                            opacity: root.connected ? 1.0 : 0.5;
-                            Text { text: "G54"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
+                        JogButton {
+                            connected: root.connected;
+                            text: "G54";
                         }
-                        Rectangle {
-                            width: 10%;
-                            height: 65px;
-                            background: #ecf0f1;
-                            border-width: 2px;
-                            border-color: root.connected ? #34495e : #bdc3c7;
-                            border-radius: 5px;
-                            opacity: root.connected ? 1.0 : 0.5;
-                            Text { text: "G55"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
+                        JogButton {
+                            connected: root.connected;
+                            text: "G55";
                         }
-                        Rectangle {
-                            width: 10%;
-                            height: 65px;
-                            background: #ecf0f1;
-                            border-width: 2px;
-                            border-color: root.connected ? #34495e : #bdc3c7;
-                            border-radius: 5px;
-                            opacity: root.connected ? 1.0 : 0.5;
-                            Text { text: "G56"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
+                        JogButton {
+                            connected: root.connected;
+                            text: "G56";
                         }
                     }
                     
                     HorizontalBox {
                         spacing: 6px;
                         
-                        Rectangle {
-                            width: 10%;
-                            height: 65px;
-                            background: #ecf0f1;
-                            border-width: 2px;
-                            border-color: root.connected ? #34495e : #bdc3c7;
-                            border-radius: 5px;
-                            opacity: root.connected ? 1.0 : 0.5;
-                            Text { text: "⟲"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
+                        JogButton {
+                            connected: root.connected;
+                            text: "⟲";
                         }
-                        Rectangle {
-                            width: 10%;
-                            height: 65px;
-                            background: #ecf0f1;
-                            border-width: 2px;
-                            border-color: root.connected ? #34495e : #bdc3c7;
-                            border-radius: 5px;
-                            opacity: root.connected ? 1.0 : 0.5;
-                            Text { text: "▼"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
+                        JogButton {
+                            connected: root.connected;
+                            text: "▼";
                         }
-                        Rectangle {
-                            width: 10%;
-                            height: 65px;
-                            background: #ecf0f1;
-                            border-width: 2px;
-                            border-color: root.connected ? #34495e : #bdc3c7;
-                            border-radius: 5px;
-                            opacity: root.connected ? 1.0 : 0.5;
-                            Text { text: "⟳"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
+                        JogButton {
+                            connected: root.connected;
+                            text: "⟳";
                         }
-                        Rectangle {
-                            width: 10%;
-                            height: 65px;
-                            background: #ecf0f1;
-                            border-width: 2px;
-                            border-color: root.connected ? #34495e : #bdc3c7;
-                            border-radius: 5px;
-                            opacity: root.connected ? 1.0 : 0.5;
-                            Text { text: "▼"; font-size: 36px; horizontal-alignment: center; vertical-alignment: center; }
+                        JogButton {
+                            connected: root.connected;
+                            text: "▼";
                         }
                         Rectangle {
                             width: 5%;
                             height: 65px;
                         }
 
-                        Rectangle {
-                            width: 10%;
-                            height: 65px;
-                            background: #ecf0f1;
-                            border-width: 2px;
-                            border-color: root.connected ? #34495e : #bdc3c7;
-                            border-radius: 5px;
-                            opacity: root.connected ? 1.0 : 0.5;
-                            Text { text: "G57"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
+                        JogButton {
+                            connected: root.connected;
+                            text: "G57";
                         }
-                        Rectangle {
-                            width: 10%;
-                            height: 65px;
-                            background: #ecf0f1;
-                            border-width: 2px;
-                            border-color: root.connected ? #34495e : #bdc3c7;
-                            border-radius: 5px;
-                            opacity: root.connected ? 1.0 : 0.5;
-                            Text { text: "G58"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
+                        JogButton {
+                            connected: root.connected;
+                            text: "G58";
                         }
-                        Rectangle {
-                            width: 10%;
-                            height: 65px;
-                            background: #ecf0f1;
-                            border-width: 2px;
-                            border-color: root.connected ? #34495e : #bdc3c7;
-                            border-radius: 5px;
-                            opacity: root.connected ? 1.0 : 0.5;
-                            Text { text: "G59"; font-size: 26px; horizontal-alignment: center; vertical-alignment: center; }
+                        JogButton {
+                            connected: root.connected;
+                            text: "G59";
                         }
                     }
                 }

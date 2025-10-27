@@ -275,6 +275,14 @@ fn main() -> anyhow::Result<()> {
         match comm.disconnect() {
             Ok(()) => {
                 info!("Successfully disconnected");
+                // Reset the communicator to a fresh state by replacing with a new instance
+                drop(comm);
+                let mut new_comm = SerialCommunicator::new();
+                // Re-register the console listener with the new communicator
+                let console_listener = ConsoleListener::new(console_manager_clone.clone());
+                new_comm.add_listener(console_listener);
+                *communicator_clone.borrow_mut() = new_comm;
+                
                 console_manager_clone
                     .add_message(DeviceMessageType::Success, "Successfully disconnected");
                 if let Some(window) = window_weak.upgrade() {
@@ -303,10 +311,11 @@ fn main() -> anyhow::Result<()> {
     });
 
     // Set up menu-file-exit callback
+    let communicator_clone = communicator.clone();
     main_window.on_menu_file_exit(move || {
         info!("Menu: File > Exit selected");
         // Disconnect if connected before exiting
-        let mut comm = communicator.borrow_mut();
+        let mut comm = communicator_clone.borrow_mut();
         if let Err(e) = comm.disconnect() {
             info!("Warning: Failed to disconnect during exit: {}", e);
         }
@@ -607,6 +616,108 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
+    // Set up menu-send-to-device callback
+    let window_weak = main_window.as_weak();
+    let communicator_clone = communicator.clone();
+    let console_manager_clone = console_manager.clone();
+    main_window.on_menu_send_to_device(move || {
+        info!("Send to Device: User clicked Send button");
+
+        if let Some(window) = window_weak.upgrade() {
+            let current_content = window.get_gcode_content().to_string();
+
+            // Check if device is connected
+            let mut comm = communicator_clone.borrow_mut();
+            if !comm.is_connected() {
+                warn!("Send failed: Device not connected");
+                console_manager_clone.add_message(
+                    DeviceMessageType::Error,
+                    "✗ Device not connected. Please connect before sending G-Code.",
+                );
+                window.set_connection_status(slint::SharedString::from(
+                    "Error: Device not connected",
+                ));
+            } else if current_content.is_empty() {
+                warn!("Send failed: No G-Code to send");
+                console_manager_clone.add_message(
+                    DeviceMessageType::Error,
+                    "✗ No G-Code content to send.",
+                );
+                window.set_connection_status(slint::SharedString::from(
+                    "Error: No G-Code content",
+                ));
+            } else {
+                // Send G-Code content to device with flow control
+                info!(
+                    "Sending {} bytes of G-Code to device",
+                    current_content.len()
+                );
+                console_manager_clone.add_message(
+                    DeviceMessageType::Output,
+                    format!("Sending G-Code to device ({} bytes)...", current_content.len()),
+                );
+
+                // Send each line of G-Code
+                let lines: Vec<&str> = current_content.lines().collect();
+                let mut send_count = 0;
+                let mut error_occurred = false;
+                let mut error_msg = String::new();
+
+                for (_, line) in lines.iter().enumerate() {
+                    // Skip empty lines
+                    let trimmed = line.trim();
+                    if trimmed.is_empty() {
+                        continue;
+                    }
+
+                    // Send command to device - use raw send with explicit newline
+                    let command_bytes = format!("{}\n", trimmed);
+                    match comm.send(command_bytes.as_bytes()) {
+                        Ok(bytes_sent) => {
+                            send_count += 1;
+                            info!("Sent line {} ({} bytes): {}", send_count, bytes_sent, trimmed);
+                            debug!("Communic status: connected={}", comm.is_connected());
+                            
+                            // Add delay to allow device to process and send responses
+                            // This prevents buffer overflow on the device
+                            std::thread::sleep(std::time::Duration::from_millis(10));
+                        }
+                        Err(e) => {
+                            error_msg = format!("{}", e);
+                            warn!("Failed to send line {}: {}", send_count + 1, e);
+                            warn!("Line content: {}", trimmed);
+                            warn!("Connected: {}", comm.is_connected());
+                            console_manager_clone.add_message(
+                                DeviceMessageType::Error,
+                                format!("✗ Failed to send line {}: {}", send_count + 1, e),
+                            );
+                            error_occurred = true;
+                            break;
+                        }
+                    }
+                }
+
+                if !error_occurred {
+                    info!("Successfully sent {} lines to device", send_count);
+                    console_manager_clone.add_message(
+                        DeviceMessageType::Success,
+                        format!("✓ Successfully sent {} lines to device", send_count),
+                    );
+                    window.set_connection_status(slint::SharedString::from(
+                        format!("Sent: {} lines", send_count),
+                    ));
+                } else {
+                    window.set_connection_status(slint::SharedString::from(
+                        format!("Send stopped at line {} ({})", send_count + 1, error_msg),
+                    ));
+                }
+            }
+
+            let console_output = console_manager_clone.get_output();
+            window.set_console_output(slint::SharedString::from(console_output));
+        }
+    });
+
     // Set up menu-edit-preferences callback
     let window_weak = main_window.as_weak();
     let settings_dialog_clone = settings_dialog.clone();
@@ -855,6 +966,146 @@ fn main() -> anyhow::Result<()> {
         info!("Menu: View > Machine Control selected");
         if let Some(window) = window_weak.upgrade() {
             window.set_connection_status(slint::SharedString::from("Machine Control activated"));
+        }
+    });
+
+    // Set up machine-jog-home callback
+    let window_weak = main_window.as_weak();
+    let communicator_clone = communicator.clone();
+    let console_manager_clone = console_manager.clone();
+    main_window.on_machine_jog_home(move || {
+        info!("Machine: Jog Home button clicked - sending $H command");
+
+        if let Some(window) = window_weak.upgrade() {
+            // Check if device is connected
+            let mut comm = communicator_clone.borrow_mut();
+            if !comm.is_connected() {
+                warn!("Jog Home failed: Device not connected");
+                console_manager_clone.add_message(
+                    DeviceMessageType::Error,
+                    "✗ Device not connected. Please connect before sending commands.",
+                );
+                window.set_connection_status(slint::SharedString::from(
+                    "Error: Device not connected",
+                ));
+            } else {
+                // Send the Home command ($H)
+                info!("Sending Home command: $H");
+                console_manager_clone.add_message(
+                    DeviceMessageType::Output,
+                    "Sending Home command...",
+                );
+
+                match comm.send_command("$H") {
+                    Ok(_) => {
+                        info!("Home command sent successfully");
+                        console_manager_clone.add_message(
+                            DeviceMessageType::Success,
+                            "✓ Home command sent to device",
+                        );
+                        window.set_connection_status(slint::SharedString::from("Homing..."));
+                    }
+                    Err(e) => {
+                        warn!("Failed to send Home command: {}", e);
+                        console_manager_clone.add_message(
+                            DeviceMessageType::Error,
+                            format!("✗ Failed to send Home command: {}", e),
+                        );
+                        window.set_connection_status(slint::SharedString::from(
+                            format!("Error sending Home command: {}", e),
+                        ));
+                    }
+                }
+            }
+
+            let console_output = console_manager_clone.get_output();
+            window.set_console_output(slint::SharedString::from(console_output));
+        }
+    });
+
+    // Set up machine-jog-x-positive callback
+    let window_weak = main_window.as_weak();
+    let communicator_clone = communicator.clone();
+    let console_manager_clone = console_manager.clone();
+    main_window.on_machine_jog_x_positive(move |step_size: f32| {
+        info!("Machine: Jog X+ button clicked - sending jog command with step size {}", step_size);
+
+        if let Some(window) = window_weak.upgrade() {
+            let mut comm = communicator_clone.borrow_mut();
+            if !comm.is_connected() {
+                warn!("Jog X+ failed: Device not connected");
+                console_manager_clone.add_message(
+                    DeviceMessageType::Error,
+                    "✗ Device not connected.",
+                );
+            } else {
+                // Send jog command in positive X direction using step size and 2000mm/min feedrate
+                let jog_cmd = format!("$J=X{} F2000", step_size);
+                info!("Sending jog command: {}", jog_cmd);
+                console_manager_clone.add_message(
+                    DeviceMessageType::Output,
+                    format!("Jogging X+ ({} mm)...", step_size),
+                );
+
+                match comm.send(format!("{}\n", jog_cmd).as_bytes()) {
+                    Ok(_) => {
+                        info!("Jog X+ command sent successfully");
+                    }
+                    Err(e) => {
+                        warn!("Failed to send Jog X+ command: {}", e);
+                        console_manager_clone.add_message(
+                            DeviceMessageType::Error,
+                            format!("✗ Jog X+ failed: {}", e),
+                        );
+                    }
+                }
+            }
+
+            let console_output = console_manager_clone.get_output();
+            window.set_console_output(slint::SharedString::from(console_output));
+        }
+    });
+
+    // Set up machine-jog-x-negative callback
+    let window_weak = main_window.as_weak();
+    let communicator_clone = communicator.clone();
+    let console_manager_clone = console_manager.clone();
+    main_window.on_machine_jog_x_negative(move |step_size: f32| {
+        info!("Machine: Jog X- button clicked - sending jog command with step size {}", step_size);
+
+        if let Some(window) = window_weak.upgrade() {
+            let mut comm = communicator_clone.borrow_mut();
+            if !comm.is_connected() {
+                warn!("Jog X- failed: Device not connected");
+                console_manager_clone.add_message(
+                    DeviceMessageType::Error,
+                    "✗ Device not connected.",
+                );
+            } else {
+                // Send jog command in negative X direction using step size and 2000mm/min feedrate
+                let jog_cmd = format!("$J=X-{} F2000", step_size);
+                info!("Sending jog command: {}", jog_cmd);
+                console_manager_clone.add_message(
+                    DeviceMessageType::Output,
+                    format!("Jogging X- ({} mm)...", step_size),
+                );
+
+                match comm.send(format!("{}\n", jog_cmd).as_bytes()) {
+                    Ok(_) => {
+                        info!("Jog X- command sent successfully");
+                    }
+                    Err(e) => {
+                        warn!("Failed to send Jog X- command: {}", e);
+                        console_manager_clone.add_message(
+                            DeviceMessageType::Error,
+                            format!("✗ Jog X- failed: {}", e),
+                        );
+                    }
+                }
+            }
+
+            let console_output = console_manager_clone.get_output();
+            window.set_console_output(slint::SharedString::from(console_output));
         }
     });
 

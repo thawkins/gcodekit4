@@ -72,7 +72,11 @@ export component MainWindow inherits Window {
     callback menu-file-open();
     callback menu-file-save();
     callback menu-file-save-as();
+    callback menu-send-to-device();
     callback menu-file-exit();
+    callback machine-jog-home();
+    callback machine-jog-x-positive(float);
+    callback machine-jog-x-negative(float);
     callback menu-edit-preferences();
     callback menu-settings-save();
     callback menu-settings-cancel();
@@ -520,6 +524,9 @@ export component MainWindow inherits Window {
                     menu-file-save-as => {
                         root.menu-file-save-as();
                     }
+                    menu-send-to-device => {
+                        root.menu-send-to-device();
+                    }
                 }
                 
                 // Device Console View
@@ -545,6 +552,15 @@ export component MainWindow inherits Window {
                     position-c: root.position-c;
                     feed-rate: root.feed-rate;
                     spindle-speed: root.spindle-speed;
+                    jog-home-clicked => {
+                        root.machine-jog-home();
+                    }
+                    jog-x-positive(step) => {
+                        root.machine-jog-x-positive(step);
+                    }
+                    jog-x-negative(step) => {
+                        root.machine-jog-x-negative(step);
+                    }
                 }
                 
                 // File Validation View

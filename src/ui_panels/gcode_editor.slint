@@ -14,6 +14,7 @@ export component GcodeEditorPanel inherits VerticalBox {
     callback menu-file-open();
     callback menu-file-save();
     callback menu-file-save-as();
+    callback menu-send-to-device();
     
     // File Operations Toolbar
     Rectangle {
@@ -51,7 +52,7 @@ export component GcodeEditorPanel inherits VerticalBox {
                     text: "Send";
                     enabled: root.gcode-content != "";
                     clicked => {
-                        // Will implement send to machine
+                        root.menu-send-to-device();
                     }
                 }
             }
