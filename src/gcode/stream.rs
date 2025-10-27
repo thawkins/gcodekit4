@@ -193,7 +193,7 @@ impl StringStreamReader {
 impl GcodeStreamReader for StringStreamReader {
     fn read_line(&mut self) -> Option<String> {
         if self.current_index < self.lines.len() {
-            let line = self.lines[self.current_index].clone();
+            let line = std::mem::take(&mut self.lines[self.current_index]);
             self.current_index += 1;
             Some(line)
         } else {
