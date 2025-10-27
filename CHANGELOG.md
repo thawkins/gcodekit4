@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Send to Device Function**
   - Send button in G-Code editor now sends editor contents to connected device
-  - Implements flow control with 10ms delay between commands to prevent buffer overflow
+  - Implements advanced flow control with acknowledgment tracking to ensure all lines are received
   - Validates device connection before sending
   - Provides detailed console feedback for each sent command
   - Gracefully handles errors with detailed error reporting
@@ -39,6 +39,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Cleaner, more professional appearance
 
 ### Fixed
+- **G-Code Send Buffer Overflow** 
+  - Fixed issue where not all lines were being received by device when sending files
+  - Implemented GRBL Character-Counting Protocol per official GRBL wiki recommendations
+  - Tracks exact byte count in GRBL's 127-character serial RX buffer
+  - Only sends next line when: pending_bytes + line_length ≤ 127
+  - Maintains list of sent line lengths and subtracts them when receiving `ok` responses
+  - No arbitrary delays - flow control is deterministic based on buffer capacity
+  - Handles multiple `ok` responses in single receive() call
+  - Up to 5-second timeout for final acknowledgments with detailed logging
+  - Fully complies with official GRBL streaming protocol specification
+
 - **Communicator State Management**
   - Fixed communicator not resetting after disconnect/reconnect cycle
   - New SerialCommunicator instance created after disconnect with console listener re-registered

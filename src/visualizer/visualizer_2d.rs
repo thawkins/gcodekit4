@@ -374,7 +374,8 @@ impl Visualizer2D {
 
         // Draw origin
         let origin_x = safe_to_i32((0.0 - self.min_x) * scale + 20.0 + self.x_offset);
-        let origin_y = safe_to_i32(height as f32 - (0.0 - self.min_y) * scale - 20.0 + self.y_offset);
+        let origin_y =
+            safe_to_i32(height as f32 - (0.0 - self.min_y) * scale - 20.0 + self.y_offset);
         draw_cross(&mut img, origin_x, origin_y, 5, Rgba([100, 100, 100, 200]));
 
         // Draw commands
@@ -382,9 +383,13 @@ impl Visualizer2D {
             match cmd {
                 GCodeCommand::Move { from, to, rapid } => {
                     let x1 = safe_to_i32((from.x - self.min_x) * scale + 20.0 + self.x_offset);
-                    let y1 = safe_to_i32(height as f32 - (from.y - self.min_y) * scale - 20.0 + self.y_offset);
+                    let y1 = safe_to_i32(
+                        height as f32 - (from.y - self.min_y) * scale - 20.0 + self.y_offset,
+                    );
                     let x2 = safe_to_i32((to.x - self.min_x) * scale + 20.0 + self.x_offset);
-                    let y2 = safe_to_i32(height as f32 - (to.y - self.min_y) * scale - 20.0 + self.y_offset);
+                    let y2 = safe_to_i32(
+                        height as f32 - (to.y - self.min_y) * scale - 20.0 + self.y_offset,
+                    );
 
                     let color = if *rapid {
                         Rgba([150, 150, 150, 200]) // Gray for rapid moves
@@ -453,7 +458,9 @@ impl Visualizer2D {
 
         // Draw end point
         let end_x = safe_to_i32((self.current_pos.x - self.min_x) * scale + 20.0 + self.x_offset);
-        let end_y = safe_to_i32(height as f32 - (self.current_pos.y - self.min_y) * scale - 20.0 + self.y_offset);
+        let end_y = safe_to_i32(
+            height as f32 - (self.current_pos.y - self.min_y) * scale - 20.0 + self.y_offset,
+        );
         draw_circle(&mut img, end_x, end_y, 4, Rgba([200, 0, 0, 255]));
 
         encode_image_to_bytes(&img)

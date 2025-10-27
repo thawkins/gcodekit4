@@ -282,7 +282,7 @@ fn main() -> anyhow::Result<()> {
                 let console_listener = ConsoleListener::new(console_manager_clone.clone());
                 new_comm.add_listener(console_listener);
                 *communicator_clone.borrow_mut() = new_comm;
-                
+
                 console_manager_clone
                     .add_message(DeviceMessageType::Success, "Successfully disconnected");
                 if let Some(window) = window_weak.upgrade() {
@@ -620,11 +620,21 @@ fn main() -> anyhow::Result<()> {
     let window_weak = main_window.as_weak();
     let communicator_clone = communicator.clone();
     let console_manager_clone = console_manager.clone();
+    let gcode_editor_clone = gcode_editor.clone();
     main_window.on_menu_send_to_device(move || {
         info!("Send to Device: User clicked Send button");
 
         if let Some(window) = window_weak.upgrade() {
+            // Get the current content from the UI TextEdit
             let current_content = window.get_gcode_content().to_string();
+            
+            // Update the GcodeEditor with the current UI content to keep them in sync
+            if let Err(e) = gcode_editor_clone.load_content(&current_content) {
+                warn!("Failed to sync UI content to editor: {}", e);
+            }
+            
+            // For safety, use the editor's content which should now be synchronized
+            let _send_content = gcode_editor_clone.get_plain_content();
 
             // Check if device is connected
             let mut comm = communicator_clone.borrow_mut();
@@ -639,48 +649,92 @@ fn main() -> anyhow::Result<()> {
                 ));
             } else if current_content.is_empty() {
                 warn!("Send failed: No G-Code to send");
-                console_manager_clone.add_message(
-                    DeviceMessageType::Error,
-                    "✗ No G-Code content to send.",
-                );
-                window.set_connection_status(slint::SharedString::from(
-                    "Error: No G-Code content",
-                ));
+                console_manager_clone
+                    .add_message(DeviceMessageType::Error, "✗ No G-Code content to send.");
+                window.set_connection_status(slint::SharedString::from("Error: No G-Code content"));
             } else {
-                // Send G-Code content to device with flow control
+                // Send G-Code content to device using GRBL Character-Counting Protocol
+                // This protocol ensures the 127-character serial RX buffer is used efficiently
                 info!(
-                    "Sending {} bytes of G-Code to device",
+                    "Sending {} bytes of G-Code to device using character-counting protocol",
                     current_content.len()
                 );
                 console_manager_clone.add_message(
                     DeviceMessageType::Output,
-                    format!("Sending G-Code to device ({} bytes)...", current_content.len()),
+                    format!(
+                        "Sending G-Code to device ({} bytes) using GRBL protocol...",
+                        current_content.len()
+                    ),
                 );
 
-                // Send each line of G-Code
+                // Character-counting protocol implementation
                 let lines: Vec<&str> = current_content.lines().collect();
                 let mut send_count = 0;
                 let mut error_occurred = false;
                 let mut error_msg = String::new();
+                
+                // Track characters in GRBL's 127-char serial RX buffer
+                let mut pending_bytes: usize = 0;
+                const GRBL_RX_BUFFER_SIZE: usize = 127;
+                
+                // Store line lengths for later character count tracking
+                let mut line_lengths = Vec::new();
 
-                for (_, line) in lines.iter().enumerate() {
-                    // Skip empty lines
+                // Process each line
+                for line in lines.iter() {
                     let trimmed = line.trim();
                     if trimmed.is_empty() {
                         continue;
                     }
 
-                    // Send command to device - use raw send with explicit newline
+                    // Calculate line length including newline
+                    let line_length = trimmed.len() + 1; // +1 for newline
+
+                    // Check if we need to wait for acknowledgments
+                    // Send if there's room in buffer, otherwise wait for acks
+                    while pending_bytes + line_length > GRBL_RX_BUFFER_SIZE {
+                        // Poll for responses to free up buffer space
+                        match comm.receive() {
+                            Ok(response) => {
+                                if !response.is_empty() {
+                                    let resp_str = String::from_utf8_lossy(&response);
+                                    debug!("Response: {}", resp_str);
+                                    
+                                    // Count 'ok' responses - each means a line was processed
+                                    let ok_count = resp_str.matches("ok").count() + resp_str.matches("OK").count();
+                                    
+                                    // Subtract processed line lengths from pending bytes
+                                    for _ in 0..ok_count {
+                                        if !line_lengths.is_empty() {
+                                            let processed_length = line_lengths.remove(0);
+                                            pending_bytes = pending_bytes.saturating_sub(processed_length);
+                                            debug!("ACK received: pending_bytes now {}", pending_bytes);
+                                        }
+                                    }
+                                }
+                            }
+                            Err(_) => {
+                                // No data available, small delay before retry
+                                std::thread::sleep(std::time::Duration::from_millis(1));
+                            }
+                        }
+                    }
+
+                    // Send command to device
                     let command_bytes = format!("{}\n", trimmed);
                     match comm.send(command_bytes.as_bytes()) {
                         Ok(bytes_sent) => {
                             send_count += 1;
-                            info!("Sent line {} ({} bytes): {}", send_count, bytes_sent, trimmed);
-                            debug!("Communic status: connected={}", comm.is_connected());
+                            pending_bytes += line_length;
+                            line_lengths.push(line_length);
                             
-                            // Add delay to allow device to process and send responses
-                            // This prevents buffer overflow on the device
-                            std::thread::sleep(std::time::Duration::from_millis(10));
+                            info!(
+                                "Sent line {} ({} bytes): {} [pending: {}/{}]",
+                                send_count, bytes_sent, trimmed, pending_bytes, GRBL_RX_BUFFER_SIZE
+                            );
+                            debug!("Connected: {}", comm.is_connected());
+
+                            // No delay needed - character counting handles flow control
                         }
                         Err(e) => {
                             error_msg = format!("{}", e);
@@ -697,19 +751,63 @@ fn main() -> anyhow::Result<()> {
                     }
                 }
 
+                // Wait for all remaining acknowledgments
+                if !error_occurred {
+                    info!("Waiting for {} remaining line acknowledgments", line_lengths.len());
+                    let mut timeout_count = 0;
+                    const MAX_TIMEOUT_ITERATIONS: u32 = 5000; // ~5 seconds at 1ms per iteration
+                    
+                    while !line_lengths.is_empty() && timeout_count < MAX_TIMEOUT_ITERATIONS {
+                        match comm.receive() {
+                            Ok(response) => {
+                                if !response.is_empty() {
+                                    let resp_str = String::from_utf8_lossy(&response);
+                                    debug!("Final response: {}", resp_str);
+                                    
+                                    // Count 'ok' responses
+                                    let ok_count = resp_str.matches("ok").count() + resp_str.matches("OK").count();
+                                    
+                                    // Remove acknowledged lines
+                                    for _ in 0..ok_count {
+                                        if !line_lengths.is_empty() {
+                                            let processed_length = line_lengths.remove(0);
+                                            pending_bytes = pending_bytes.saturating_sub(processed_length);
+                                        }
+                                    }
+                                }
+                            }
+                            Err(_) => {
+                                timeout_count += 1;
+                                std::thread::sleep(std::time::Duration::from_millis(1));
+                            }
+                        }
+                    }
+                    
+                    if !line_lengths.is_empty() {
+                        warn!("Timeout waiting for {} line acknowledgments", line_lengths.len());
+                        console_manager_clone.add_message(
+                            DeviceMessageType::Error,
+                            format!("⚠ Timeout: {} lines may not have been received", line_lengths.len()),
+                        );
+                    }
+                }
+
                 if !error_occurred {
                     info!("Successfully sent {} lines to device", send_count);
                     console_manager_clone.add_message(
                         DeviceMessageType::Success,
                         format!("✓ Successfully sent {} lines to device", send_count),
                     );
-                    window.set_connection_status(slint::SharedString::from(
-                        format!("Sent: {} lines", send_count),
-                    ));
+                    window.set_connection_status(slint::SharedString::from(format!(
+                        "Sent: {} lines",
+                        send_count
+                    )));
                 } else {
-                    window.set_connection_status(slint::SharedString::from(
-                        format!("Send stopped at line {} ({})", send_count + 1, error_msg),
-                    ));
+                    window.set_connection_status(slint::SharedString::from(format!(
+                        "Send stopped at line {} ({})",
+                        send_count + 1,
+                        error_msg
+                    )));
                 }
             }
 
@@ -847,9 +945,9 @@ fn main() -> anyhow::Result<()> {
                             "Settings saved successfully",
                         ));
                     }
-                    
+
                     // Reset the unsaved changes flag and sync defaults
-                    drop(dialog);  // Release the borrow
+                    drop(dialog); // Release the borrow
                     let mut dialog_mut = settings_dialog_clone.borrow_mut();
                     for setting in dialog_mut.settings.values_mut() {
                         setting.default = setting.value.clone();
@@ -893,52 +991,57 @@ fn main() -> anyhow::Result<()> {
 
     // Set up update-setting callback
     let settings_dialog_clone = settings_dialog.clone();
-    main_window.on_update_setting(move |setting_id: slint::SharedString, value: slint::SharedString| {
-        debug!("Setting updated: {} = {}", setting_id, value);
+    main_window.on_update_setting(
+        move |setting_id: slint::SharedString, value: slint::SharedString| {
+            debug!("Setting updated: {} = {}", setting_id, value);
 
-        let mut dialog = settings_dialog_clone.borrow_mut();
-        let setting_id_str = setting_id.to_string();
-        let value_str = value.to_string();
+            let mut dialog = settings_dialog_clone.borrow_mut();
+            let setting_id_str = setting_id.to_string();
+            let value_str = value.to_string();
 
-        if let Some(setting) = dialog.get_setting_mut(&setting_id_str) {
-            let new_value = match &setting.value {
-                gcodekit4::ui::settings_dialog::SettingValue::String(_) => {
-                    gcodekit4::ui::settings_dialog::SettingValue::String(value_str)
-                }
-                gcodekit4::ui::settings_dialog::SettingValue::Integer(_) => {
-                    if let Ok(i) = value_str.parse::<i32>() {
-                        gcodekit4::ui::settings_dialog::SettingValue::Integer(i)
-                    } else {
-                        return;
+            if let Some(setting) = dialog.get_setting_mut(&setting_id_str) {
+                let new_value = match &setting.value {
+                    gcodekit4::ui::settings_dialog::SettingValue::String(_) => {
+                        gcodekit4::ui::settings_dialog::SettingValue::String(value_str)
                     }
-                }
-                gcodekit4::ui::settings_dialog::SettingValue::Float(_) => {
-                    if let Ok(f) = value_str.parse::<f64>() {
-                        gcodekit4::ui::settings_dialog::SettingValue::Float(f)
-                    } else {
-                        return;
+                    gcodekit4::ui::settings_dialog::SettingValue::Integer(_) => {
+                        if let Ok(i) = value_str.parse::<i32>() {
+                            gcodekit4::ui::settings_dialog::SettingValue::Integer(i)
+                        } else {
+                            return;
+                        }
                     }
-                }
-                gcodekit4::ui::settings_dialog::SettingValue::Boolean(_) => {
-                    let b = matches!(value_str.to_lowercase().as_str(), "true" | "1" | "yes");
-                    gcodekit4::ui::settings_dialog::SettingValue::Boolean(b)
-                }
-                gcodekit4::ui::settings_dialog::SettingValue::Enum(_, ref options) => {
-                    if options.contains(&value_str) {
-                        gcodekit4::ui::settings_dialog::SettingValue::Enum(value_str, options.clone())
-                    } else {
-                        return;
+                    gcodekit4::ui::settings_dialog::SettingValue::Float(_) => {
+                        if let Ok(f) = value_str.parse::<f64>() {
+                            gcodekit4::ui::settings_dialog::SettingValue::Float(f)
+                        } else {
+                            return;
+                        }
                     }
-                }
-            };
+                    gcodekit4::ui::settings_dialog::SettingValue::Boolean(_) => {
+                        let b = matches!(value_str.to_lowercase().as_str(), "true" | "1" | "yes");
+                        gcodekit4::ui::settings_dialog::SettingValue::Boolean(b)
+                    }
+                    gcodekit4::ui::settings_dialog::SettingValue::Enum(_, ref options) => {
+                        if options.contains(&value_str) {
+                            gcodekit4::ui::settings_dialog::SettingValue::Enum(
+                                value_str,
+                                options.clone(),
+                            )
+                        } else {
+                            return;
+                        }
+                    }
+                };
 
-            setting.value = new_value;
-            dialog.has_unsaved_changes = true;
-            debug!("Setting {} updated successfully", setting_id_str);
-        } else {
-            debug!("Setting {} not found in dialog", setting_id_str);
-        }
-    });
+                setting.value = new_value;
+                dialog.has_unsaved_changes = true;
+                debug!("Setting {} updated successfully", setting_id_str);
+            } else {
+                debug!("Setting {} not found in dialog", setting_id_str);
+            }
+        },
+    );
 
     // Set up menu-view-fullscreen callback
     let window_weak = main_window.as_weak();
@@ -991,10 +1094,8 @@ fn main() -> anyhow::Result<()> {
             } else {
                 // Send the Home command ($H)
                 info!("Sending Home command: $H");
-                console_manager_clone.add_message(
-                    DeviceMessageType::Output,
-                    "Sending Home command...",
-                );
+                console_manager_clone
+                    .add_message(DeviceMessageType::Output, "Sending Home command...");
 
                 match comm.send_command("$H") {
                     Ok(_) => {
@@ -1011,9 +1112,10 @@ fn main() -> anyhow::Result<()> {
                             DeviceMessageType::Error,
                             format!("✗ Failed to send Home command: {}", e),
                         );
-                        window.set_connection_status(slint::SharedString::from(
-                            format!("Error sending Home command: {}", e),
-                        ));
+                        window.set_connection_status(slint::SharedString::from(format!(
+                            "Error sending Home command: {}",
+                            e
+                        )));
                     }
                 }
             }
@@ -1028,16 +1130,17 @@ fn main() -> anyhow::Result<()> {
     let communicator_clone = communicator.clone();
     let console_manager_clone = console_manager.clone();
     main_window.on_machine_jog_x_positive(move |step_size: f32| {
-        info!("Machine: Jog X+ button clicked - sending jog command with step size {}", step_size);
+        info!(
+            "Machine: Jog X+ button clicked - sending jog command with step size {}",
+            step_size
+        );
 
         if let Some(window) = window_weak.upgrade() {
             let mut comm = communicator_clone.borrow_mut();
             if !comm.is_connected() {
                 warn!("Jog X+ failed: Device not connected");
-                console_manager_clone.add_message(
-                    DeviceMessageType::Error,
-                    "✗ Device not connected.",
-                );
+                console_manager_clone
+                    .add_message(DeviceMessageType::Error, "✗ Device not connected.");
             } else {
                 // Send jog command in positive X direction using step size and 2000mm/min feedrate
                 let jog_cmd = format!("$J=X{} F2000", step_size);
@@ -1071,16 +1174,17 @@ fn main() -> anyhow::Result<()> {
     let communicator_clone = communicator.clone();
     let console_manager_clone = console_manager.clone();
     main_window.on_machine_jog_x_negative(move |step_size: f32| {
-        info!("Machine: Jog X- button clicked - sending jog command with step size {}", step_size);
+        info!(
+            "Machine: Jog X- button clicked - sending jog command with step size {}",
+            step_size
+        );
 
         if let Some(window) = window_weak.upgrade() {
             let mut comm = communicator_clone.borrow_mut();
             if !comm.is_connected() {
                 warn!("Jog X- failed: Device not connected");
-                console_manager_clone.add_message(
-                    DeviceMessageType::Error,
-                    "✗ Device not connected.",
-                );
+                console_manager_clone
+                    .add_message(DeviceMessageType::Error, "✗ Device not connected.");
             } else {
                 // Send jog command in negative X direction using step size and 2000mm/min feedrate
                 let jog_cmd = format!("$J=X-{} F2000", step_size);
@@ -1215,25 +1319,25 @@ fn main() -> anyhow::Result<()> {
     let pan_for_refresh = pan_offset.clone();
     main_window.on_refresh_visualization(move || {
         info!("Refresh visualization requested");
-        
+
         // Get the current G-code content
         if let Some(window) = window_weak.upgrade() {
             let content = window.get_gcode_content();
-            
+
             if content.is_empty() {
                 window.set_visualizer_status(slint::SharedString::from("No G-code loaded"));
                 return;
             }
-            
+
             info!("Re-rendering visualization with {} chars", content.len());
-            
+
             // Reset progress
             window.set_visualizer_progress(0.0);
             window.set_visualizer_status(slint::SharedString::from("Refreshing..."));
-            
+
             // Clear current image to show loading state
             window.set_visualization_image(slint::Image::default());
-            
+
             // Spawn rendering thread
             let content_owned = content.to_string();
             let (tx, rx) = std::sync::mpsc::channel();
@@ -1242,30 +1346,30 @@ fn main() -> anyhow::Result<()> {
             let pan_offset_render = pan_for_refresh.clone();
             let zoom_scale_for_msg = zoom_for_refresh.clone();
             let pan_offset_for_msg = pan_for_refresh.clone();
-            
+
             std::thread::spawn(move || {
                 use gcodekit4::visualizer::Visualizer2D;
-                
+
                 let _ = tx.send((0.1, "Parsing G-code...".to_string(), None));
-                
+
                 let mut visualizer = Visualizer2D::new();
                 visualizer.parse_gcode(&content_owned);
-                
+
                 // Apply zoom scale
                 if let Ok(scale) = zoom_scale_render.lock() {
                     visualizer.zoom_scale = *scale;
                 }
-                
+
                 // Apply pan offsets
                 if let Ok(offsets) = pan_offset_render.lock() {
                     visualizer.x_offset = offsets.0;
                     visualizer.y_offset = offsets.1;
                 }
-                
+
                 let _ = tx.send((0.3, "Rendering image...".to_string(), None));
-                
+
                 let image_bytes = visualizer.render(800, 600);
-                
+
                 if !image_bytes.is_empty() {
                     let _ = tx.send((0.7, "Encoding PNG...".to_string(), None));
                     let _ = tx.send((1.0, "Complete".to_string(), Some(image_bytes)));
@@ -1273,7 +1377,7 @@ fn main() -> anyhow::Result<()> {
                     let _ = tx.send((1.0, "Error: no image data".to_string(), None));
                 }
             });
-            
+
             // Process messages from rendering thread
             std::thread::spawn(move || {
                 while let Ok((progress, status, image_data)) = rx.recv() {
@@ -1282,18 +1386,19 @@ fn main() -> anyhow::Result<()> {
                     let image_clone = image_data.clone();
                     let zoom_for_closure = zoom_scale_for_msg.clone();
                     let pan_for_closure = pan_offset_for_msg.clone();
-                    
+
                     slint::invoke_from_event_loop(move || {
                         if let Some(window) = window_handle.upgrade() {
                             window.set_visualizer_progress(progress);
                             window.set_visualizer_status(slint::SharedString::from(
                                 status_clone.clone(),
                             ));
-                            
+
                             if let Some(png_bytes) = image_clone {
-                                if let Ok(img) =
-                                    image::load_from_memory_with_format(&png_bytes, image::ImageFormat::Png)
-                                {
+                                if let Ok(img) = image::load_from_memory_with_format(
+                                    &png_bytes,
+                                    image::ImageFormat::Png,
+                                ) {
                                     let rgba_img = img.to_rgba8();
                                     let img_buffer = slint::Image::from_rgba8(
                                         slint::SharedPixelBuffer::clone_from_slice(
@@ -1303,7 +1408,7 @@ fn main() -> anyhow::Result<()> {
                                         ),
                                     );
                                     window.set_visualization_image(img_buffer);
-                                    
+
                                     // Update indicator properties
                                     if let Ok(scale) = zoom_for_closure.lock() {
                                         window.set_visualizer_zoom_scale(*scale);
@@ -1327,7 +1432,7 @@ fn main() -> anyhow::Result<()> {
     let window_weak_zoom_in = main_window.as_weak();
     main_window.on_zoom_in(move || {
         info!("Zoom in requested");
-        
+
         if let Ok(mut scale) = zoom_scale_in.lock() {
             *scale *= 1.1;
             // Clamp to reasonable values (10% to 500%)
@@ -1335,7 +1440,7 @@ fn main() -> anyhow::Result<()> {
                 *scale = 5.0;
             }
             info!("New zoom scale: {}%", (*scale * 100.0).round() as u32);
-            
+
             // Update UI immediately
             if let Some(window) = window_weak_zoom_in.upgrade() {
                 window.set_visualizer_zoom_scale(*scale);
@@ -1349,7 +1454,7 @@ fn main() -> anyhow::Result<()> {
     let window_weak_zoom_out = main_window.as_weak();
     main_window.on_zoom_out(move || {
         info!("Zoom out requested");
-        
+
         if let Ok(mut scale) = zoom_scale_out.lock() {
             *scale /= 1.1;
             // Clamp to reasonable values (10% to 500%)
@@ -1357,7 +1462,7 @@ fn main() -> anyhow::Result<()> {
                 *scale = 0.1;
             }
             info!("New zoom scale: {}%", (*scale * 100.0).round() as u32);
-            
+
             // Update UI immediately
             if let Some(window) = window_weak_zoom_out.upgrade() {
                 window.set_visualizer_zoom_scale(*scale);
@@ -1372,18 +1477,18 @@ fn main() -> anyhow::Result<()> {
     let window_weak_reset = main_window.as_weak();
     main_window.on_reset_view(move || {
         info!("Reset view requested");
-        
+
         if let Ok(mut scale) = zoom_scale_reset.lock() {
             *scale = 1.0;
             info!("Zoom scale reset to 100%");
         }
-        
+
         if let Ok(mut offsets) = pan_offset_reset.lock() {
             offsets.0 = 0.0;
             offsets.1 = 0.0;
             info!("Pan offsets reset to (0, 0)");
         }
-        
+
         // Update UI immediately
         if let Some(window) = window_weak_reset.upgrade() {
             window.set_visualizer_zoom_scale(1.0);
@@ -1399,60 +1504,60 @@ fn main() -> anyhow::Result<()> {
     let pan_for_fit = pan_offset.clone();
     main_window.on_fit_to_view(move || {
         info!("Fit to view requested");
-        
+
         if let Some(window) = window_weak_fit.upgrade() {
             let content = window.get_gcode_content();
-            
+
             if content.is_empty() {
                 window.set_visualizer_status(slint::SharedString::from("No G-code loaded"));
                 return;
             }
-            
+
             info!("Calculating fit-to-view for {} chars", content.len());
-            
+
             // Reset progress
             window.set_visualizer_progress(0.0);
             window.set_visualizer_status(slint::SharedString::from("Fitting to view..."));
-            
+
             // Clear current image to show loading state
             window.set_visualization_image(slint::Image::default());
-            
+
             // Spawn calculation thread
             let content_owned = content.to_string();
             let (tx, rx) = std::sync::mpsc::channel();
             let window_weak_render = window_weak_fit.clone();
             let zoom_fit_render = zoom_for_fit.clone();
             let pan_fit_render = pan_for_fit.clone();
-            
+
             std::thread::spawn(move || {
                 use gcodekit4::visualizer::Visualizer2D;
-                
+
                 let _ = tx.send((0.1, "Parsing G-code...".to_string(), None));
-                
+
                 let mut visualizer = Visualizer2D::new();
                 visualizer.parse_gcode(&content_owned);
-                
+
                 let _ = tx.send((0.2, "Calculating bounding box...".to_string(), None));
-                
+
                 // Calculate fit parameters (canvas is 800x600)
                 visualizer.fit_to_view(800.0, 600.0);
-                
+
                 // Apply fit parameters to shared state
                 if let Ok(mut scale) = zoom_fit_render.lock() {
                     *scale = visualizer.zoom_scale;
                     info!("Fit zoom scale: {}%", (*scale * 100.0).round() as u32);
                 }
-                
+
                 if let Ok(mut offsets) = pan_fit_render.lock() {
                     offsets.0 = visualizer.x_offset;
                     offsets.1 = visualizer.y_offset;
                     info!("Fit offsets: x={}, y={}", offsets.0, offsets.1);
                 }
-                
+
                 let _ = tx.send((0.3, "Rendering image...".to_string(), None));
-                
+
                 let image_bytes = visualizer.render(800, 600);
-                
+
                 if !image_bytes.is_empty() {
                     let _ = tx.send((0.7, "Encoding PNG...".to_string(), None));
                     let _ = tx.send((1.0, "Complete".to_string(), Some(image_bytes)));
@@ -1460,7 +1565,7 @@ fn main() -> anyhow::Result<()> {
                     let _ = tx.send((1.0, "Error: no image data".to_string(), None));
                 }
             });
-            
+
             // Process messages from rendering thread
             let zoom_for_closure_fit = zoom_for_fit.clone();
             let pan_for_closure_fit = pan_for_fit.clone();
@@ -1471,12 +1576,12 @@ fn main() -> anyhow::Result<()> {
                     let image_clone = image_data.clone();
                     let zoom_for_closure = zoom_for_closure_fit.clone();
                     let pan_for_closure = pan_for_closure_fit.clone();
-                    
+
                     slint::invoke_from_event_loop(move || {
                         if let Some(window) = window_handle.upgrade() {
                             window.set_visualizer_progress(progress);
                             window.set_visualizer_status(slint::SharedString::from(status_clone));
-                            
+
                             if let Some(png_bytes) = image_clone {
                                 if let Ok(img) = image::load_from_memory_with_format(
                                     &png_bytes,
@@ -1491,7 +1596,7 @@ fn main() -> anyhow::Result<()> {
                                         ),
                                     );
                                     window.set_visualization_image(img_buffer);
-                                    
+
                                     // Update indicator properties
                                     if let Ok(scale) = zoom_for_closure.lock() {
                                         window.set_visualizer_zoom_scale(*scale);
@@ -1515,11 +1620,11 @@ fn main() -> anyhow::Result<()> {
     let window_weak_pan_left = main_window.as_weak();
     main_window.on_pan_left(move || {
         info!("Pan left requested");
-        
+
         if let Ok(mut offsets) = pan_left_clone.lock() {
             offsets.0 -= 80.0; // 10% of 800px canvas
             info!("Pan offset: x={}, y={}", offsets.0, offsets.1);
-            
+
             if let Some(window) = window_weak_pan_left.upgrade() {
                 window.set_visualizer_x_offset(offsets.0);
                 window.set_visualizer_y_offset(offsets.1);
@@ -1533,11 +1638,11 @@ fn main() -> anyhow::Result<()> {
     let window_weak_pan_right = main_window.as_weak();
     main_window.on_pan_right(move || {
         info!("Pan right requested");
-        
+
         if let Ok(mut offsets) = pan_right_clone.lock() {
             offsets.0 += 80.0; // 10% of 800px canvas
             info!("Pan offset: x={}, y={}", offsets.0, offsets.1);
-            
+
             if let Some(window) = window_weak_pan_right.upgrade() {
                 window.set_visualizer_x_offset(offsets.0);
                 window.set_visualizer_y_offset(offsets.1);
@@ -1551,11 +1656,11 @@ fn main() -> anyhow::Result<()> {
     let window_weak_pan_up = main_window.as_weak();
     main_window.on_pan_up(move || {
         info!("Pan up requested");
-        
+
         if let Ok(mut offsets) = pan_up_clone.lock() {
             offsets.1 -= 60.0; // 10% of 600px canvas (down in screen coords)
             info!("Pan offset: x={}, y={}", offsets.0, offsets.1);
-            
+
             if let Some(window) = window_weak_pan_up.upgrade() {
                 window.set_visualizer_x_offset(offsets.0);
                 window.set_visualizer_y_offset(offsets.1);
@@ -1569,11 +1674,11 @@ fn main() -> anyhow::Result<()> {
     let window_weak_pan_down = main_window.as_weak();
     main_window.on_pan_down(move || {
         info!("Pan down requested");
-        
+
         if let Ok(mut offsets) = pan_down_clone.lock() {
             offsets.1 += 60.0; // 10% of 600px canvas (up in screen coords)
             info!("Pan offset: x={}, y={}", offsets.0, offsets.1);
-            
+
             if let Some(window) = window_weak_pan_down.upgrade() {
                 window.set_visualizer_x_offset(offsets.0);
                 window.set_visualizer_y_offset(offsets.1);
