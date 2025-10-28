@@ -1,5 +1,6 @@
 //! firmware module integration tests
 
+pub mod capabilities;
 pub mod g2core;
 pub mod grbl;
 pub mod grbl_communicator;
