@@ -38,102 +38,113 @@ export component GcodeVisualizerPanel inherits VerticalBox {
         spacing: 8px;
         padding: 12px;
 
-        // Toolbar
+        // Toolbar - all controls on one line
         HorizontalBox {
             height: 40px;
             spacing: 8px;
-            alignment: start;
 
-            Text {
-                text: "Visualization Controls:";
-                font-weight: 700;
-                font-size: 12px;
-                color: #2c3e50;
-            }
+            // Left side - main controls
+            HorizontalBox {
+                spacing: 8px;
+                alignment: start;
 
-            Button {
-                text: "🔄 Refresh";
-                width: 100px;
-                clicked => {
-                    root.refresh-visualization();
+                Text {
+                    text: "Visualization Controls:";
+                    font-weight: 700;
+                    font-size: 12px;
+                    color: #2c3e50;
+                    vertical-alignment: center;
+                }
+
+                Button {
+                    text: "🔄 Refresh";
+                    width: 100px;
+                    clicked => {
+                        root.refresh-visualization();
+                    }
+                }
+
+                Button {
+                    text: "🔍+ Zoom In";
+                    width: 100px;
+                    clicked => {
+                        root.zoom-in();
+                    }
+                }
+
+                Button {
+                    text: "🔍- Zoom Out";
+                    width: 100px;
+                    clicked => {
+                        root.zoom-out();
+                    }
+                }
+
+                Button {
+                    text: "⊡ Fit";
+                    width: 80px;
+                    clicked => {
+                        root.fit-to-view();
+                    }
+                }
+
+                Button {
+                    text: "↺ Reset";
+                    width: 80px;
+                    clicked => {
+                        root.reset-view();
+                    }
                 }
             }
 
-            Button {
-                text: "🔍+ Zoom In";
-                width: 100px;
-                clicked => {
-                    root.zoom-in();
+            // Spacer to push pan controls to the right
+            Rectangle {
+                horizontal-stretch: 1.0;
+            }
+
+            // Right side - pan controls
+            HorizontalBox {
+                spacing: 8px;
+                alignment: end;
+
+                Text {
+                    text: "Pan:";
+                    font-weight: 700;
+                    font-size: 12px;
+                    color: #2c3e50;
+                    vertical-alignment: center;
                 }
-            }
 
-            Button {
-                text: "🔍- Zoom Out";
-                width: 100px;
-                clicked => {
-                    root.zoom-out();
+                Button {
+                    text: "← Left";
+                    width: 80px;
+                    clicked => {
+                        root.pan-left();
+                    }
                 }
-            }
 
-            Button {
-                text: "⊡ Fit";
-                width: 80px;
-                clicked => {
-                    root.fit-to-view();
+                Button {
+                    text: "→ Right";
+                    width: 80px;
+                    clicked => {
+                        root.pan-right();
+                    }
                 }
-            }
 
-            Button {
-                text: "↺ Reset";
-                width: 80px;
-                clicked => {
-                    root.reset-view();
+                Button {
+                    text: "↑ Up";
+                    width: 80px;
+                    clicked => {
+                        root.pan-up();
+                    }
                 }
-            }
-        }
 
-        // Pan controls toolbar
-        HorizontalBox {
-            height: 40px;
-            spacing: 8px;
-            alignment: start;
-
-            Text {
-                text: "Pan:";
-                font-weight: 700;
-                font-size: 12px;
-                color: #2c3e50;
-            }
-
-            Button {
-                text: "← Left";
-                width: 80px;
-                clicked => {
-                    root.pan-left();
-                }
-            }
-
-            Button {
-                text: "→ Right";
-                width: 80px;
-                clicked => {
-                    root.pan-right();
-                }
-            }
-
-            Button {
-                text: "↑ Up";
-                width: 80px;
-                clicked => {
-                    root.pan-up();
-                }
-            }
-
-            Button {
-                text: "↓ Down";
-                width: 80px;
-                clicked => {
-                    root.pan-down();
+                Button {
+                    text: "↓ Down";
+                    width: 80px;
+                    clicked => {
+                        root.pan-down();
+                    }
                 }
             }
         }
