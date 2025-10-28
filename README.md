@@ -24,7 +24,11 @@ GCodeKit4 is a Rust-based implementation of Universal G-Code Sender, providing a
 - Connection panel with auto-detect and auto-reconnect
 - Digital Readout (DRO) with machine and work coordinates
 - Jog controller with keyboard shortcuts
-- Real-time 3D visualizer with multiple view modes
+- **2D G-Code Visualizer** with interactive controls
+  - Two-level grid system (1cm + 1mm sub-grid)
+  - Zoom, pan, and fit-to-view controls
+  - Real-time position tracking
+  - Distance displays in mm (1px=1mm at 1x scale)
 - G-Code editor with syntax highlighting
 - Console with color-coded messages
 - Firmware settings management

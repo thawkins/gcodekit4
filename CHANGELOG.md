@@ -5,6 +5,50 @@ All notable changes to this project should be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.1] - 2025-10-28
+
+### Added
+- **Two-Level Grid System in Visualizer**
+  - 1cm major grid (light gray, 2px width) visible at 30%+ zoom
+  - 1mm minor sub-grid (light blue, 1px width) visible at 150%+ zoom
+  - Grid automatically shows/hides based on zoom thresholds
+  - "Show Grid" checkbox in status bar to toggle grid on/off
+  - New draw_thick_line() function for rendering 2-pixel wide grid lines
+
+- **Issue Tracking with bd (beads)**
+  - Integrated bd (beads) for all issue tracking
+  - Added comprehensive documentation to AGENTS.md
+  - Auto-syncs to .beads/issues.jsonl for version control
+  - Dependency-aware tracking with blockers and relationships
+
+### Changed
+- **Visualizer UI Reorganization**
+  - Consolidated toolbar: All controls now on single horizontal row
+  - Pan controls (Left, Right, Up, Down) positioned on right side
+  - Removed Machine Position and Work Position displays
+  - Removed Execution Progress bar
+  - Status indicators converted to single line: Zoom, X Offset, Y Offset (all in mm)
+  - Distance displays now use mm units (1px=1mm at 1x scale)
+  - Visualizer border changed to 2px black for better visibility
+  - UI spacing reduced by 50% throughout
+  - Status indicators positioned above visualization, left-aligned
+
+- **Test Organization**
+  - Moved all visualizer tests from inline to tests/visualizer/ directory
+  - Created 5 comprehensive test modules with 102 integration tests
+  - Tests now focus on public API instead of internal implementation
+  - Complies with AGENTS.md guidelines for test organization
+  - Test coverage increased from 28 to 102 tests (365% increase)
+
+### Fixed
+- **Visualizer Border Visibility**
+  - Border now properly visible when G-code file is loaded
+  - Image inset adjusted to accommodate 2px border width
+  
+- **Grid Visibility Logic**
+  - Grid now properly hides when zoom scale is below threshold
+  - Fixed effective_zoom calculation to use self.zoom_scale directly
+
 ## [0.24.1] - 2025-10-27
 
 ### Added

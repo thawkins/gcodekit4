@@ -1,13 +1,16 @@
 # GCodeKit4 - Specification Document
 
 **Version**: 0.24.1-alpha  
-**Last Updated**: 2025-10-27  
+**Last Updated**: 2025-10-28  
 **Status**: COMPLETE (All 7 Phases Complete - 150/150 Tasks)
 
 ### Latest Release (v0.24.1-alpha)
+- ✅ **Visualizer UI Improvements** - Consolidated toolbar, two-level grid system, enhanced controls
+- ✅ **Test Reorganization** - 102 visualizer integration tests, AGENTS.md compliant
+- ✅ **Issue Tracking Integration** - bd (beads) for dependency-aware task management
 - ✅ **UI Timeout Fix** - Non-blocking G-code transmission with timer-based state machine
 - ✅ **Settings Dialog Fixes** - Config directory creation and state management
-- ✅ **2D G-Code Visualizer** - Complete implementation
+- ✅ **2D G-Code Visualizer** - Complete implementation with interactive controls
 - ✅ **Zero Compiler Warnings** - Production-ready code
 - ✅ **100% Public API Documented** - Comprehensive docblocks
 - ✅ **Thread-Safe UI Updates** - Proper Slint event loop integration
