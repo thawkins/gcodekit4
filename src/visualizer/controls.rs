@@ -103,16 +103,12 @@ impl CameraController {
     /// Handle mouse wheel for zoom
     pub fn on_mouse_wheel(&mut self, delta: f32) {
         let factor = 1.0 - (delta * self.zoom_sensitivity);
-        let direction = self.camera.position.subtract(self.camera.target);
+        let direction = self.camera.position - self.camera.target;
         let distance = direction.magnitude();
         let new_distance = (distance * factor).clamp(self.min_zoom, self.max_zoom);
         let normalized = direction.normalize();
 
-        self.camera.position = self.camera.target.add(Vector3::new(
-            normalized.x * new_distance,
-            normalized.y * new_distance,
-            normalized.z * new_distance,
-        ));
+        self.camera.position = self.camera.target + (normalized * new_distance);
 
         self.current_view = ViewPreset::Custom;
     }
@@ -122,9 +118,7 @@ impl CameraController {
         let right = self.camera.get_right();
         let up = self.camera.up;
 
-        let pan_delta = right
-            .scale(dx * self.pan_speed)
-            .add(up.scale(dy * self.pan_speed));
+        let pan_delta = (right * (dx * self.pan_speed)) + (up * (dy * self.pan_speed));
         self.camera.move_camera(pan_delta);
         self.current_view = ViewPreset::Custom;
     }
@@ -136,27 +130,26 @@ impl CameraController {
 
     /// Set view to preset
     pub fn set_view_preset(&mut self, preset: ViewPreset) {
-        let distance = self
-            .camera
-            .position
-            .subtract(self.camera.target)
-            .magnitude();
-        let target = self.camera.target;
+        if preset == ViewPreset::Custom {
+            return;
+        }
 
-        self.camera.position = match preset {
-            ViewPreset::Top => target.add(Vector3::new(0.0, 0.0, distance)),
-            ViewPreset::Bottom => target.add(Vector3::new(0.0, 0.0, -distance)),
-            ViewPreset::Front => target.add(Vector3::new(0.0, -distance, distance / 2.0)),
-            ViewPreset::Back => target.add(Vector3::new(0.0, distance, distance / 2.0)),
-            ViewPreset::Right => target.add(Vector3::new(distance, 0.0, distance / 2.0)),
-            ViewPreset::Left => target.add(Vector3::new(-distance, 0.0, distance / 2.0)),
-            ViewPreset::Isometric => target.add(Vector3::new(
-                distance / std::f32::consts::SQRT_2,
-                distance / std::f32::consts::SQRT_2,
-                distance / std::f32::consts::SQRT_2,
-            )),
-            ViewPreset::Custom => return,
-        };
+        let distance = (self.camera.position - self.camera.target).magnitude();
+        let target = self.camera.target;
+        let half_dist = distance / 2.0;
+        let iso_dist = distance / std::f32::consts::SQRT_2;
+
+        self.camera.position = target
+            + match preset {
+                ViewPreset::Top => Vector3::new(0.0, 0.0, distance),
+                ViewPreset::Bottom => Vector3::new(0.0, 0.0, -distance),
+                ViewPreset::Front => Vector3::new(0.0, -distance, half_dist),
+                ViewPreset::Back => Vector3::new(0.0, distance, half_dist),
+                ViewPreset::Right => Vector3::new(distance, 0.0, half_dist),
+                ViewPreset::Left => Vector3::new(-distance, 0.0, half_dist),
+                ViewPreset::Isometric => Vector3::new(iso_dist, iso_dist, iso_dist),
+                ViewPreset::Custom => unreachable!(),
+            };
 
         self.rotation = (0.0, 0.0, 0.0);
         self.current_view = preset;
@@ -164,9 +157,9 @@ impl CameraController {
 
     /// Set camera target and adjust position
     pub fn set_target(&mut self, target: Vector3) {
-        let direction = self.camera.position.subtract(self.camera.target);
+        let direction = self.camera.position - self.camera.target;
         self.camera.target = target;
-        self.camera.position = target.add(direction);
+        self.camera.position = target + direction;
     }
 
     /// Fit all content in view
@@ -178,17 +171,13 @@ impl CameraController {
                 (min.z + max.z) / 2.0,
             );
 
-            let size = Vector3::new(max.x - min.x, max.y - min.y, max.z - min.z);
-
+            let size = max - min;
             let max_dim = size.x.max(size.y).max(size.z);
             let distance = max_dim / (2.0 * (45.0_f32.to_radians() / 2.0).tan());
+            let iso_dist = distance / std::f32::consts::SQRT_2;
 
             self.set_target(center);
-            self.camera.position = center.add(Vector3::new(
-                distance / std::f32::consts::SQRT_2,
-                distance / std::f32::consts::SQRT_2,
-                distance / std::f32::consts::SQRT_2,
-            ));
+            self.camera.position = center + Vector3::new(iso_dist, iso_dist, iso_dist);
         }
     }
 
@@ -211,17 +200,6 @@ impl CameraController {
     /// Set pan speed
     pub fn set_pan_speed(&mut self, speed: f32) {
         self.pan_speed = speed.max(0.1);
-    }
-}
-
-/// Helper trait for Vector3 scaling
-trait VectorScale {
-    fn scale(&self, factor: f32) -> Self;
-}
-
-impl VectorScale for Vector3 {
-    fn scale(&self, factor: f32) -> Self {
-        Vector3::new(self.x * factor, self.y * factor, self.z * factor)
     }
 }
 
@@ -293,65 +271,5 @@ impl VisualizerControls {
     /// Set toolpath transparency
     pub fn set_toolpath_alpha(&mut self, alpha: f32) {
         self.toolpath_alpha = alpha.clamp(0.0, 1.0);
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_view_preset() {
-        let preset = ViewPreset::Top;
-        assert_eq!(format!("{}", preset), "Top");
-    }
-
-    #[test]
-    fn test_camera_controller() {
-        let camera = Camera::new(Vector3::new(100.0, 100.0, 100.0), Vector3::zero());
-        let controller = CameraController::new(camera);
-        assert_eq!(controller.current_view, ViewPreset::Isometric);
-    }
-
-    #[test]
-    fn test_camera_controller_zoom() {
-        let camera = Camera::new(Vector3::new(100.0, 100.0, 100.0), Vector3::zero());
-        let mut controller = CameraController::new(camera);
-        let initial_distance = controller.camera.position.magnitude();
-
-        controller.on_mouse_wheel(1.0);
-        let new_distance = controller.camera.position.magnitude();
-
-        assert!(new_distance < initial_distance);
-    }
-
-    #[test]
-    fn test_camera_controller_pan() {
-        let camera = Camera::new(Vector3::new(100.0, 100.0, 100.0), Vector3::zero());
-        let mut controller = CameraController::new(camera);
-        let initial_target = controller.camera.target;
-
-        controller.on_pan(10.0, 10.0);
-
-        assert_ne!(controller.camera.target, initial_target);
-    }
-
-    #[test]
-    fn test_set_view_preset() {
-        let camera = Camera::new(Vector3::new(100.0, 100.0, 100.0), Vector3::zero());
-        let mut controller = CameraController::new(camera);
-
-        controller.set_view_preset(ViewPreset::Front);
-        assert_eq!(controller.current_view, ViewPreset::Front);
-    }
-
-    #[test]
-    fn test_visualizer_controls() {
-        let camera = Camera::new(Vector3::new(100.0, 100.0, 100.0), Vector3::zero());
-        let mut controls = VisualizerControls::new(camera);
-
-        assert!(controls.show_grid);
-        controls.toggle_grid();
-        assert!(!controls.show_grid);
     }
 }

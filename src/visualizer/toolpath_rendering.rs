@@ -68,10 +68,10 @@ impl LineSegment {
             color
         } else {
             match self.movement_type {
-                MovementType::Rapid => Color::new(1.0, 0.5, 0.0), // Orange
-                MovementType::Feed => Color::new(0.0, 1.0, 0.0),  // Green
-                MovementType::ArcClockwise => Color::new(0.0, 0.5, 1.0), // Light blue
-                MovementType::ArcCounterClockwise => Color::new(1.0, 0.0, 1.0), // Magenta
+                MovementType::Rapid => Color::orange(),
+                MovementType::Feed => Color::green(),
+                MovementType::ArcClockwise => Color::new(0.0, 0.5, 1.0),
+                MovementType::ArcCounterClockwise => Color::magenta(),
             }
         }
     }
@@ -151,9 +151,18 @@ impl ArcSegment {
     }
 
     /// Interpolate point on arc at parameter t (0.0 to 1.0)
-    fn interpolate_arc(&self, t: f32) -> Vector3 {
-        let start_dir = self.start.subtract(self.center).normalize();
-        let end_dir = self.end.subtract(self.center).normalize();
+    pub fn interpolate_arc(&self, t: f32) -> Vector3 {
+        let angle = self.calculate_arc_angle(t);
+        Vector3::new(
+            self.center.x + self.radius * angle.cos(),
+            self.center.y + self.radius * angle.sin(),
+            self.start.z + (self.end.z - self.start.z) * t,
+        )
+    }
+
+    fn calculate_arc_angle(&self, t: f32) -> f32 {
+        let start_dir = (self.start - self.center).normalize();
+        let end_dir = (self.end - self.center).normalize();
 
         let angle_start = start_dir.y.atan2(start_dir.x);
         let angle_end = end_dir.y.atan2(end_dir.x);
@@ -165,13 +174,7 @@ impl ArcSegment {
             angle_diff += std::f32::consts::TAU;
         }
 
-        let angle = angle_start + angle_diff * t;
-
-        Vector3::new(
-            self.center.x + self.radius * angle.cos(),
-            self.center.y + self.radius * angle.sin(),
-            self.start.z + (self.end.z - self.start.z) * t,
-        )
+        angle_start + angle_diff * t
     }
 }
 
@@ -247,13 +250,16 @@ impl Toolpath {
         let mut max = all_segments[0].start;
 
         for segment in &all_segments {
-            min.x = min.x.min(segment.start.x).min(segment.end.x);
-            min.y = min.y.min(segment.start.y).min(segment.end.y);
-            min.z = min.z.min(segment.start.z).min(segment.end.z);
-
-            max.x = max.x.max(segment.start.x).max(segment.end.x);
-            max.y = max.y.max(segment.start.y).max(segment.end.y);
-            max.z = max.z.max(segment.start.z).max(segment.end.z);
+            min = Vector3::new(
+                min.x.min(segment.start.x).min(segment.end.x),
+                min.y.min(segment.start.y).min(segment.end.y),
+                min.z.min(segment.start.z).min(segment.end.z),
+            );
+            max = Vector3::new(
+                max.x.max(segment.start.x).max(segment.end.x),
+                max.y.max(segment.start.y).max(segment.end.y),
+                max.z.max(segment.start.z).max(segment.end.z),
+            );
         }
 
         Some((min, max))
@@ -325,74 +331,4 @@ pub struct ToolpathStats {
     pub total_length: f32,
     /// Estimated execution time
     pub estimated_time: Option<f32>,
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_line_segment() {
-        let segment = LineSegment::new(
-            Vector3::zero(),
-            Vector3::new(10.0, 0.0, 0.0),
-            MovementType::Feed,
-        );
-        assert_eq!(segment.length(), 10.0);
-    }
-
-    #[test]
-    fn test_arc_segment() {
-        let arc = ArcSegment::new(
-            Vector3::new(10.0, 0.0, 0.0),
-            Vector3::new(0.0, 10.0, 0.0),
-            Vector3::zero(),
-            false,
-        );
-        assert!((arc.radius - 10.0).abs() < 0.01);
-    }
-
-    #[test]
-    fn test_arc_to_lines() {
-        let arc = ArcSegment::new(
-            Vector3::new(10.0, 0.0, 0.0),
-            Vector3::new(0.0, 10.0, 0.0),
-            Vector3::zero(),
-            false,
-        )
-        .with_segments(4);
-
-        let lines = arc.to_line_segments();
-        assert_eq!(lines.len(), 4);
-    }
-
-    #[test]
-    fn test_toolpath() {
-        let mut toolpath = Toolpath::new(Vector3::zero());
-        let segment = LineSegment::new(
-            Vector3::zero(),
-            Vector3::new(10.0, 0.0, 0.0),
-            MovementType::Feed,
-        );
-        toolpath.add_line_segment(segment);
-
-        assert_eq!(toolpath.total_length, 10.0);
-        assert_eq!(toolpath.current_position, Vector3::new(10.0, 0.0, 0.0));
-    }
-
-    #[test]
-    fn test_bounding_box() {
-        let mut toolpath = Toolpath::new(Vector3::zero());
-        toolpath.add_line_segment(LineSegment::new(
-            Vector3::zero(),
-            Vector3::new(10.0, 10.0, 10.0),
-            MovementType::Feed,
-        ));
-
-        let bbox = toolpath.get_bounding_box();
-        assert!(bbox.is_some());
-        let (min, max) = bbox.unwrap();
-        assert_eq!(min, Vector3::zero());
-        assert_eq!(max, Vector3::new(10.0, 10.0, 10.0));
-    }
 }

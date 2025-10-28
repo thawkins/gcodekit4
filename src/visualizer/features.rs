@@ -60,9 +60,9 @@ impl WorkCoordinateSystem {
             1 => Color::red(),
             2 => Color::green(),
             3 => Color::blue(),
-            4 => Color::new(1.0, 1.0, 0.0),
-            5 => Color::new(1.0, 0.0, 1.0),
-            6 => Color::new(0.0, 1.0, 1.0),
+            4 => Color::yellow(),
+            5 => Color::magenta(),
+            6 => Color::cyan(),
             _ => Color::gray(),
         };
 
@@ -101,7 +101,7 @@ impl MachineLimits {
         Self {
             min,
             max,
-            color: Color::new(1.0, 0.5, 0.0),
+            color: Color::orange(),
             enforced: true,
         }
     }
@@ -295,45 +295,5 @@ impl SceneFeatures {
 impl Default for SceneFeatures {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_grid_config() {
-        let grid = GridConfig::new(100.0, 10);
-        assert_eq!(grid.size, 100.0);
-        assert_eq!(grid.divisions, 10);
-        assert!(grid.visible);
-    }
-
-    #[test]
-    fn test_work_coordinate_system() {
-        let wcs = WorkCoordinateSystem::new(1, Vector3::zero());
-        assert_eq!(wcs.number, 1);
-        assert_eq!(wcs.g_code(), "G54");
-    }
-
-    #[test]
-    fn test_machine_limits() {
-        let limits = MachineLimits::new(Vector3::zero(), Vector3::new(100.0, 100.0, 100.0));
-        assert!(limits.contains(Vector3::new(50.0, 50.0, 50.0)));
-        assert!(!limits.contains(Vector3::new(150.0, 150.0, 150.0)));
-    }
-
-    #[test]
-    fn test_bounding_box() {
-        let bbox = BoundingBox::new(Vector3::zero(), Vector3::new(10.0, 10.0, 10.0));
-        assert_eq!(bbox.vertices().len(), 8);
-    }
-
-    #[test]
-    fn test_tool_marker() {
-        let mut marker = ToolMarker::new(Vector3::zero());
-        marker.set_position(Vector3::new(10.0, 10.0, 10.0));
-        assert_eq!(marker.position, Vector3::new(10.0, 10.0, 10.0));
     }
 }

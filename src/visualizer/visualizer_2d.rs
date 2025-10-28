@@ -2,6 +2,25 @@
 //! Renders G-Code toolpaths as 2D images using image crate
 
 use image::{ImageBuffer, Rgba, RgbaImage};
+use std::collections::HashMap;
+
+const CANVAS_PADDING: f32 = 20.0;
+const CANVAS_PADDING_2X: f32 = 40.0;
+const MIN_ZOOM: f32 = 0.1;
+const MAX_ZOOM: f32 = 5.0;
+const ZOOM_STEP: f32 = 1.1;
+const PAN_PERCENTAGE: f32 = 0.1;
+const BOUNDS_PADDING_FACTOR: f32 = 0.1;
+const FIT_MARGIN_FACTOR: f32 = 0.05;
+const ORIGIN_CROSS_SIZE: i32 = 5;
+const MARKER_RADIUS: i32 = 4;
+const MAX_GRID_ITERATIONS: usize = 500;
+const MAX_SCALE: f32 = 100.0;
+const MIN_SCALE: f32 = 0.1;
+const DEFAULT_SCALE_FACTOR: f32 = 1.0;
+const GRID_MAJOR_STEP_MM: f32 = 10.0;
+const GRID_MINOR_STEP_MM: f32 = 1.0;
+const GRID_MINOR_VISIBILITY_SCALE: f32 = 5.0;
 
 /// 2D Point for visualization
 #[derive(Debug, Clone, Copy)]
@@ -13,6 +32,60 @@ pub struct Point2D {
 impl Point2D {
     pub fn new(x: f32, y: f32) -> Self {
         Self { x, y }
+    }
+}
+
+/// Bounding box with validation
+#[derive(Debug, Clone, Copy)]
+struct Bounds {
+    min_x: f32,
+    max_x: f32,
+    min_y: f32,
+    max_y: f32,
+}
+
+impl Bounds {
+    fn new() -> Self {
+        Self {
+            min_x: f32::MAX,
+            max_x: f32::MIN,
+            min_y: f32::MAX,
+            max_y: f32::MIN,
+        }
+    }
+
+    fn update(&mut self, x: f32, y: f32) {
+        self.min_x = self.min_x.min(x);
+        self.max_x = self.max_x.max(x);
+        self.min_y = self.min_y.min(y);
+        self.max_y = self.max_y.max(y);
+    }
+
+    fn is_valid(&self) -> bool {
+        self.min_x != f32::MAX
+            && self.max_x != f32::MIN
+            && self.min_y != f32::MAX
+            && self.max_y != f32::MIN
+            && self.min_x.is_finite()
+            && self.max_x.is_finite()
+            && self.min_y.is_finite()
+            && self.max_y.is_finite()
+    }
+
+    fn finalize_with_padding(self, padding_factor: f32) -> (f32, f32, f32, f32) {
+        if !self.is_valid() {
+            return (0.0, 100.0, 0.0, 100.0);
+        }
+
+        let padding_x = (self.max_x - self.min_x) * padding_factor;
+        let padding_y = (self.max_y - self.min_y) * padding_factor;
+
+        (
+            self.min_x - padding_x,
+            self.max_x + padding_x,
+            self.min_y - padding_y,
+            self.max_y + padding_y,
+        )
     }
 }
 
@@ -32,6 +105,39 @@ pub enum GCodeCommand {
     },
 }
 
+/// Coordinate transformation helper
+struct CoordTransform {
+    min_x: f32,
+    min_y: f32,
+    scale: f32,
+    height: f32,
+    x_offset: f32,
+    y_offset: f32,
+}
+
+impl CoordTransform {
+    fn new(min_x: f32, min_y: f32, scale: f32, height: f32, x_offset: f32, y_offset: f32) -> Self {
+        Self {
+            min_x,
+            min_y,
+            scale,
+            height,
+            x_offset,
+            y_offset,
+        }
+    }
+
+    fn world_to_screen(&self, x: f32, y: f32) -> (i32, i32) {
+        let screen_x = (x - self.min_x) * self.scale + CANVAS_PADDING + self.x_offset;
+        let screen_y = self.height - (y - self.min_y) * self.scale - CANVAS_PADDING + self.y_offset;
+        (safe_to_i32(screen_x), safe_to_i32(screen_y))
+    }
+
+    fn point_to_screen(&self, point: Point2D) -> (i32, i32) {
+        self.world_to_screen(point.x, point.y)
+    }
+}
+
 /// 2D Visualizer state
 #[derive(Debug, Clone)]
 pub struct Visualizer2D {
@@ -47,6 +153,10 @@ pub struct Visualizer2D {
     pub x_offset: f32,
     /// Y-offset for panning the view (in pixels)
     pub y_offset: f32,
+    /// Grid visibility flag
+    pub show_grid: bool,
+    /// Scale factor: pixels per mm (default 1.0 = 1px:1mm)
+    pub scale_factor: f32,
 }
 
 impl Visualizer2D {
@@ -62,132 +172,122 @@ impl Visualizer2D {
             zoom_scale: 1.0,
             x_offset: 0.0,
             y_offset: 0.0,
+            show_grid: false,
+            scale_factor: DEFAULT_SCALE_FACTOR,
         }
+    }
+
+    /// Toggle grid visibility
+    pub fn toggle_grid(&mut self) {
+        self.show_grid = !self.show_grid;
+    }
+
+    /// Set grid visibility
+    pub fn set_grid_visible(&mut self, visible: bool) {
+        self.show_grid = visible;
+    }
+
+    /// Get grid visibility
+    pub fn is_grid_visible(&self) -> bool {
+        self.show_grid
+    }
+
+    /// Set scale factor (pixels per mm)
+    pub fn set_scale_factor(&mut self, factor: f32) {
+        self.scale_factor = factor.clamp(0.1, 100.0);
+    }
+
+    /// Get scale factor
+    pub fn get_scale_factor(&self) -> f32 {
+        self.scale_factor
     }
 
     /// Parse G-Code and extract movement commands
     pub fn parse_gcode(&mut self, gcode: &str) {
         self.commands.clear();
         let mut current_pos = Point2D::new(0.0, 0.0);
-        let mut min_x = f32::MAX;
-        let mut max_x = f32::MIN;
-        let mut min_y = f32::MAX;
-        let mut max_y = f32::MIN;
+        let mut bounds = Bounds::new();
 
         for line in gcode.lines() {
             let line = line.trim();
 
-            // Skip comments and empty lines
             if line.is_empty() || line.starts_with(';') || line.starts_with('(') {
                 continue;
             }
 
-            // Parse G0/G1 (linear moves)
             if line.starts_with("G0") || line.starts_with("G1") {
-                let is_rapid = line.starts_with("G0");
-                let (x, y) = Self::extract_xy(line);
-
-                if let (Some(new_x), Some(new_y)) = (x, y) {
-                    let to = Point2D::new(new_x, new_y);
-                    self.commands.push(GCodeCommand::Move {
-                        from: current_pos,
-                        to,
-                        rapid: is_rapid,
-                    });
-
-                    min_x = min_x.min(new_x).min(current_pos.x);
-                    max_x = max_x.max(new_x).max(current_pos.x);
-                    min_y = min_y.min(new_y).min(current_pos.y);
-                    max_y = max_y.max(new_y).max(current_pos.y);
-
-                    current_pos = to;
-                }
-            }
-            // Parse G2/G3 (arc moves)
-            else if line.starts_with("G2") || line.starts_with("G3") {
-                let clockwise = line.starts_with("G2");
-                let (x, y) = Self::extract_xy(line);
-                let (i, j) = Self::extract_ij(line);
-
-                if let (Some(new_x), Some(new_y), Some(offset_x), Some(offset_y)) = (x, y, i, j) {
-                    let to = Point2D::new(new_x, new_y);
-                    let center = Point2D::new(current_pos.x + offset_x, current_pos.y + offset_y);
-
-                    self.commands.push(GCodeCommand::Arc {
-                        from: current_pos,
-                        to,
-                        center,
-                        clockwise,
-                    });
-
-                    min_x = min_x.min(new_x).min(current_pos.x);
-                    max_x = max_x.max(new_x).max(current_pos.x);
-                    min_y = min_y.min(new_y).min(current_pos.y);
-                    max_y = max_y.max(new_y).max(current_pos.y);
-
-                    current_pos = to;
-                }
+                self.parse_linear_move(line, &mut current_pos, &mut bounds);
+            } else if line.starts_with("G2") || line.starts_with("G3") {
+                self.parse_arc_move(line, &mut current_pos, &mut bounds);
             }
         }
 
-        // Add padding to bounds
-        let padding_x = (max_x - min_x) * 0.1;
-        let padding_y = (max_y - min_y) * 0.1;
-
-        self.min_x = if min_x == f32::MAX {
-            0.0
-        } else {
-            min_x - padding_x
-        };
-        self.max_x = if max_x == f32::MIN {
-            100.0
-        } else {
-            max_x + padding_x
-        };
-        self.min_y = if min_y == f32::MAX {
-            0.0
-        } else {
-            min_y - padding_y
-        };
-        self.max_y = if max_y == f32::MIN {
-            100.0
-        } else {
-            max_y + padding_y
-        };
-
+        (self.min_x, self.max_x, self.min_y, self.max_y) =
+            bounds.finalize_with_padding(BOUNDS_PADDING_FACTOR);
         self.current_pos = current_pos;
     }
 
-    /// Extract X and Y coordinates from G-Code line
-    fn extract_xy(line: &str) -> (Option<f32>, Option<f32>) {
-        let mut x = None;
-        let mut y = None;
+    fn parse_linear_move(&mut self, line: &str, current_pos: &mut Point2D, bounds: &mut Bounds) {
+        let is_rapid = line.starts_with("G0");
+        let params = Self::extract_params(line, &['X', 'Y']);
 
-        for part in line.split_whitespace() {
-            if part.starts_with('X') {
-                x = part[1..].parse().ok();
-            } else if part.starts_with('Y') {
-                y = part[1..].parse().ok();
-            }
+        if let (Some(&new_x), Some(&new_y)) = (params.get(&'X'), params.get(&'Y')) {
+            let to = Point2D::new(new_x, new_y);
+            self.commands.push(GCodeCommand::Move {
+                from: *current_pos,
+                to,
+                rapid: is_rapid,
+            });
+
+            bounds.update(current_pos.x, current_pos.y);
+            bounds.update(new_x, new_y);
+            *current_pos = to;
         }
-
-        (x, y)
     }
 
-    /// Extract I and J (arc offsets) from G-Code line
-    fn extract_ij(line: &str) -> (Option<f32>, Option<f32>) {
-        let mut i = None;
-        let mut j = None;
+    fn parse_arc_move(&mut self, line: &str, current_pos: &mut Point2D, bounds: &mut Bounds) {
+        let clockwise = line.starts_with("G2");
+        let params = Self::extract_params(line, &['X', 'Y', 'I', 'J']);
+
+        if let (Some(&new_x), Some(&new_y), Some(&offset_x), Some(&offset_y)) = (
+            params.get(&'X'),
+            params.get(&'Y'),
+            params.get(&'I'),
+            params.get(&'J'),
+        ) {
+            let to = Point2D::new(new_x, new_y);
+            let center = Point2D::new(current_pos.x + offset_x, current_pos.y + offset_y);
+
+            self.commands.push(GCodeCommand::Arc {
+                from: *current_pos,
+                to,
+                center,
+                clockwise,
+            });
+
+            bounds.update(current_pos.x, current_pos.y);
+            bounds.update(new_x, new_y);
+            *current_pos = to;
+        }
+    }
+
+    /// Extract multiple parameters from G-Code line
+    fn extract_params(line: &str, param_names: &[char]) -> HashMap<char, f32> {
+        let mut params = HashMap::new();
 
         for part in line.split_whitespace() {
-            if part.starts_with('I') {
-                i = part[1..].parse().ok();
-            } else if part.starts_with('J') {
-                j = part[1..].parse().ok();
+            if part.len() < 2 {
+                continue;
+            }
+            let first_char = part.chars().next().unwrap();
+            if param_names.contains(&first_char) {
+                if let Ok(value) = part[1..].parse::<f32>() {
+                    params.insert(first_char, value);
+                }
             }
         }
 
-        (i, j)
+        params
     }
 
     /// Get number of commands parsed
@@ -202,20 +302,12 @@ impl Visualizer2D {
 
     /// Increase zoom by 10%
     pub fn zoom_in(&mut self) {
-        self.zoom_scale *= 1.1;
-        // Clamp to reasonable values (10% to 500%)
-        if self.zoom_scale > 5.0 {
-            self.zoom_scale = 5.0;
-        }
+        self.zoom_scale = (self.zoom_scale * ZOOM_STEP).min(MAX_ZOOM);
     }
 
     /// Decrease zoom by 10%
     pub fn zoom_out(&mut self) {
-        self.zoom_scale /= 1.1;
-        // Clamp to reasonable values (10% to 500%)
-        if self.zoom_scale < 0.1 {
-            self.zoom_scale = 0.1;
-        }
+        self.zoom_scale = (self.zoom_scale / ZOOM_STEP).max(MIN_ZOOM);
     }
 
     /// Reset zoom to default (100%)
@@ -230,22 +322,22 @@ impl Visualizer2D {
 
     /// Pan view to the right by 10% of canvas width
     pub fn pan_right(&mut self, canvas_width: f32) {
-        self.x_offset += canvas_width * 0.1;
+        self.x_offset += canvas_width * PAN_PERCENTAGE;
     }
 
     /// Pan view to the left by 10% of canvas width
     pub fn pan_left(&mut self, canvas_width: f32) {
-        self.x_offset -= canvas_width * 0.1;
+        self.x_offset -= canvas_width * PAN_PERCENTAGE;
     }
 
     /// Pan view down by 10% of canvas height
     pub fn pan_down(&mut self, canvas_height: f32) {
-        self.y_offset -= canvas_height * 0.1;
+        self.y_offset -= canvas_height * PAN_PERCENTAGE;
     }
 
     /// Pan view up by 10% of canvas height
     pub fn pan_up(&mut self, canvas_height: f32) {
-        self.y_offset += canvas_height * 0.1;
+        self.y_offset += canvas_height * PAN_PERCENTAGE;
     }
 
     /// Reset pan to center (offset = 0)
@@ -256,89 +348,54 @@ impl Visualizer2D {
 
     /// Calculate zoom and offset to fit all cutting commands in view with 5% margin
     pub fn fit_to_view(&mut self, canvas_width: f32, canvas_height: f32) {
-        // Calculate bounding box of all non-rapid moves (cutting commands)
-        let mut min_x = f32::MAX;
-        let mut max_x = f32::MIN;
-        let mut min_y = f32::MAX;
-        let mut max_y = f32::MIN;
+        let mut bounds = Bounds::new();
 
         for cmd in &self.commands {
             match cmd {
                 GCodeCommand::Move { to, rapid, .. } => {
                     if !rapid {
-                        // Only consider cutting moves, not rapid moves
-                        min_x = min_x.min(to.x);
-                        max_x = max_x.max(to.x);
-                        min_y = min_y.min(to.y);
-                        max_y = max_y.max(to.y);
+                        bounds.update(to.x, to.y);
                     }
                 }
                 GCodeCommand::Arc { to, .. } => {
-                    // Arcs are always cutting
-                    min_x = min_x.min(to.x);
-                    max_x = max_x.max(to.x);
-                    min_y = min_y.min(to.y);
-                    max_y = max_y.max(to.y);
+                    bounds.update(to.x, to.y);
                 }
             }
         }
 
-        // If no cutting commands found, reset to default
-        if min_x == f32::MAX || max_x == f32::MIN || min_y == f32::MAX || max_y == f32::MIN {
+        if !bounds.is_valid() {
             self.zoom_scale = 1.0;
             self.x_offset = 0.0;
             self.y_offset = 0.0;
             return;
         }
 
-        // Calculate dimensions
-        let bbox_width = max_x - min_x;
-        let bbox_height = max_y - min_y;
+        let bbox_width = bounds.max_x - bounds.min_x;
+        let bbox_height = bounds.max_y - bounds.min_y;
 
-        // Add 5% margin on each side (total 10% added)
-        let margin_factor = 0.05;
-        let padded_width = bbox_width * (1.0 + 2.0 * margin_factor);
-        let padded_height = bbox_height * (1.0 + 2.0 * margin_factor);
+        let padded_width = bbox_width * (1.0 + 2.0 * FIT_MARGIN_FACTOR);
+        let padded_height = bbox_height * (1.0 + 2.0 * FIT_MARGIN_FACTOR);
 
-        // Calculate scale to fit within canvas (leaving 20px padding on sides)
-        let padding = 20.0;
-        let available_width = canvas_width - 2.0 * padding;
-        let available_height = canvas_height - 2.0 * padding;
+        let available_width = canvas_width - 2.0 * CANVAS_PADDING;
+        let available_height = canvas_height - 2.0 * CANVAS_PADDING;
 
-        let scale_x = available_width / padded_width;
-        let scale_y = available_height / padded_height;
+        let scale = (available_width / padded_width).min(available_height / padded_height);
 
-        // Use the smaller scale to fit in both dimensions
-        let scale = scale_x.min(scale_y);
+        let bbox_min_x_padded = bounds.min_x - bbox_width * FIT_MARGIN_FACTOR;
+        let bbox_min_y_padded = bounds.min_y - bbox_height * FIT_MARGIN_FACTOR;
 
-        // Calculate position to center the bounding box with margin
-        let bbox_min_x_padded = min_x - bbox_width * margin_factor;
-        let bbox_min_y_padded = min_y - bbox_height * margin_factor;
+        let center_x = (canvas_width - padded_width * scale) / 2.0;
+        let center_y = (canvas_height - padded_height * scale) / 2.0;
 
-        // Center the scaled content
-        let scaled_bbox_width = padded_width * scale;
-        let scaled_bbox_height = padded_height * scale;
-
-        let center_x = (canvas_width - scaled_bbox_width) / 2.0;
-        let center_y = (canvas_height - scaled_bbox_height) / 2.0;
-
-        // Calculate offsets
-        let offset_x = center_x - (bbox_min_x_padded * scale) - padding;
-        let offset_y = center_y + (bbox_min_y_padded * scale) + padding;
-
-        // Apply calculated values
         self.zoom_scale = scale;
-        self.x_offset = offset_x;
-        self.y_offset = offset_y;
+        self.x_offset = center_x - (bbox_min_x_padded * scale) - CANVAS_PADDING;
+        self.y_offset = center_y + (bbox_min_y_padded * scale) + CANVAS_PADDING;
     }
-}
 
-impl Visualizer2D {
     /// Render the 2D visualization to an image
     pub fn render(&self, width: u32, height: u32) -> Vec<u8> {
         let mut img: RgbaImage = ImageBuffer::new(width, height);
 
-        // Fill background with white
         for pixel in img.pixels_mut() {
             *pixel = Rgba([255, 255, 255, 255]);
         }
@@ -347,57 +404,152 @@ impl Visualizer2D {
             return encode_image_to_bytes(&img);
         }
 
-        // Calculate scale to fit bounds into image
+        let scale = self.calculate_scale(width, height);
+        let transform = CoordTransform::new(
+            self.min_x,
+            self.min_y,
+            scale,
+            height as f32,
+            self.x_offset,
+            self.y_offset,
+        );
+
+        if self.show_grid {
+            self.draw_grid(&mut img, width, height, &transform, scale);
+        }
+
+        self.draw_origin(&mut img, &transform);
+        self.draw_commands(&mut img, &transform);
+        self.draw_markers(&mut img, &transform);
+
+        encode_image_to_bytes(&img)
+    }
+
+    fn calculate_scale(&self, width: u32, height: u32) -> f32 {
         let x_range = self.max_x - self.min_x;
         let y_range = self.max_y - self.min_y;
 
         let scale_x = if x_range > 0.0 && x_range.is_finite() {
-            (width as f32 - 40.0) / x_range
+            (width as f32 - CANVAS_PADDING_2X) / x_range
         } else {
-            1.0
+            self.scale_factor
         };
 
         let scale_y = if y_range > 0.0 && y_range.is_finite() {
-            (height as f32 - 40.0) / y_range
+            (height as f32 - CANVAS_PADDING_2X) / y_range
         } else {
-            1.0
+            self.scale_factor
         };
 
-        // Use uniform scaling to maintain aspect ratio, clamp to reasonable values
-        let scale = scale_x.min(scale_y).min(100.0).max(0.1);
+        scale_x.min(scale_y).clamp(MIN_SCALE, MAX_SCALE) * self.zoom_scale * self.scale_factor
+    }
 
-        // Apply zoom scale factor
-        let scale = scale * self.zoom_scale;
+    fn draw_grid(
+        &self,
+        img: &mut RgbaImage,
+        width: u32,
+        height: u32,
+        transform: &CoordTransform,
+        effective_scale: f32,
+    ) {
+        let major_color = Rgba([200, 200, 200, 255]);
+        let minor_color = Rgba([230, 230, 230, 180]);
 
-        // Draw grid - disabled for now due to performance issues
-        // draw_grid(&mut img, width, height, self.min_x, self.min_y, scale);
+        let effective_zoom = effective_scale / self.scale_factor;
+        let show_minor = effective_zoom >= GRID_MINOR_VISIBILITY_SCALE;
 
-        // Draw origin
-        let origin_x = safe_to_i32((0.0 - self.min_x) * scale + 20.0 + self.x_offset);
-        let origin_y =
-            safe_to_i32(height as f32 - (0.0 - self.min_y) * scale - 20.0 + self.y_offset);
-        draw_cross(&mut img, origin_x, origin_y, 5, Rgba([100, 100, 100, 200]));
+        let screen_width = width as f32 - CANVAS_PADDING_2X;
+        let screen_height = height as f32 - CANVAS_PADDING_2X;
 
-        // Draw commands
+        let view_min_x = transform.min_x - CANVAS_PADDING / effective_scale;
+        let view_max_x = view_min_x + screen_width / effective_scale;
+        let view_min_y = transform.min_y - CANVAS_PADDING / effective_scale;
+        let view_max_y = view_min_y + screen_height / effective_scale;
+
+        if show_minor {
+            let start_x = (view_min_x / GRID_MINOR_STEP_MM).floor() * GRID_MINOR_STEP_MM;
+            let mut x = start_x;
+            let mut iterations = 0;
+
+            while x <= view_max_x && iterations < MAX_GRID_ITERATIONS {
+                if (x / GRID_MAJOR_STEP_MM).fract().abs() > 0.01 {
+                    let (screen_x, _) = transform.world_to_screen(x, 0.0);
+                    if screen_x >= 0 && screen_x < width as i32 {
+                        draw_line(img, screen_x, 0, screen_x, height as i32, minor_color);
+                    }
+                }
+                x += GRID_MINOR_STEP_MM;
+                iterations += 1;
+            }
+
+            let start_y = (view_min_y / GRID_MINOR_STEP_MM).floor() * GRID_MINOR_STEP_MM;
+            let mut y = start_y;
+            iterations = 0;
+
+            while y <= view_max_y && iterations < MAX_GRID_ITERATIONS {
+                if (y / GRID_MAJOR_STEP_MM).fract().abs() > 0.01 {
+                    let (_, screen_y) = transform.world_to_screen(0.0, y);
+                    if screen_y >= 0 && screen_y < height as i32 {
+                        draw_line(img, 0, screen_y, width as i32, screen_y, minor_color);
+                    }
+                }
+                y += GRID_MINOR_STEP_MM;
+                iterations += 1;
+            }
+        }
+
+        let start_x = (view_min_x / GRID_MAJOR_STEP_MM).floor() * GRID_MAJOR_STEP_MM;
+        let mut x = start_x;
+        let mut iterations = 0;
+
+        while x <= view_max_x && iterations < MAX_GRID_ITERATIONS {
+            let (screen_x, _) = transform.world_to_screen(x, 0.0);
+            if screen_x >= 0 && screen_x < width as i32 {
+                draw_line(img, screen_x, 0, screen_x, height as i32, major_color);
+            }
+            x += GRID_MAJOR_STEP_MM;
+            iterations += 1;
+        }
+
+        let start_y = (view_min_y / GRID_MAJOR_STEP_MM).floor() * GRID_MAJOR_STEP_MM;
+        let mut y = start_y;
+        iterations = 0;
+
+        while y <= view_max_y && iterations < MAX_GRID_ITERATIONS {
+            let (_, screen_y) = transform.world_to_screen(0.0, y);
+            if screen_y >= 0 && screen_y < height as i32 {
+                draw_line(img, 0, screen_y, width as i32, screen_y, major_color);
+            }
+            y += GRID_MAJOR_STEP_MM;
+            iterations += 1;
+        }
+    }
+
+    fn draw_origin(&self, img: &mut RgbaImage, transform: &CoordTransform) {
+        let (origin_x, origin_y) = transform.world_to_screen(0.0, 0.0);
+        draw_cross(
+            img,
+            origin_x,
+            origin_y,
+            ORIGIN_CROSS_SIZE,
+            Rgba([100, 100, 100, 200]),
+        );
+    }
+
+    fn draw_commands(&self, img: &mut RgbaImage, transform: &CoordTransform) {
         for cmd in &self.commands {
             match cmd {
                 GCodeCommand::Move { from, to, rapid } => {
-                    let x1 = safe_to_i32((from.x - self.min_x) * scale + 20.0 + self.x_offset);
-                    let y1 = safe_to_i32(
-                        height as f32 - (from.y - self.min_y) * scale - 20.0 + self.y_offset,
-                    );
-                    let x2 = safe_to_i32((to.x - self.min_x) * scale + 20.0 + self.x_offset);
-                    let y2 = safe_to_i32(
-                        height as f32 - (to.y - self.min_y) * scale - 20.0 + self.y_offset,
-                    );
+                    let (x1, y1) = transform.point_to_screen(*from);
+                    let (x2, y2) = transform.point_to_screen(*to);
 
                     let color = if *rapid {
-                        Rgba([150, 150, 150, 200]) // Gray for rapid moves
+                        Rgba([150, 150, 150, 200])
                     } else {
-                        Rgba([0, 100, 200, 255]) // Blue for cutting moves
+                        Rgba([0, 100, 200, 255])
                     };
 
-                    draw_line(&mut img, x1, y1, x2, y2, color);
+                    draw_line(img, x1, y1, x2, y2, color);
                 }
                 GCodeCommand::Arc {
                     from,
@@ -405,65 +557,35 @@ impl Visualizer2D {
                     center,
                     clockwise,
                 } => {
-                    let color = Rgba([200, 50, 50, 255]); // Red for arcs
                     draw_arc(
-                        &mut img,
+                        img,
                         *from,
                         *to,
                         *center,
                         *clockwise,
-                        self.min_x,
-                        self.min_y,
-                        scale,
-                        height as f32,
-                        self.x_offset,
-                        self.y_offset,
-                        color,
+                        transform,
+                        Rgba([200, 50, 50, 255]),
                     );
                 }
             }
         }
+    }
 
-        // Draw start point
-        let start_x = safe_to_i32(
-            (self
-                .commands
-                .get(0)
-                .and_then(|cmd| match cmd {
-                    GCodeCommand::Move { from, .. } => Some(from.x),
-                    GCodeCommand::Arc { from, .. } => Some(from.x),
-                })
-                .unwrap_or(self.min_x)
-                - self.min_x)
-                * scale
-                + 20.0
-                + self.x_offset,
-        );
-        let start_y = safe_to_i32(
-            height as f32
-                - (self
-                    .commands
-                    .get(0)
-                    .and_then(|cmd| match cmd {
-                        GCodeCommand::Move { from, .. } => Some(from.y),
-                        GCodeCommand::Arc { from, .. } => Some(from.y),
-                    })
-                    .unwrap_or(self.min_y)
-                    - self.min_y)
-                    * scale
-                - 20.0
-                + self.y_offset,
-        );
-        draw_circle(&mut img, start_x, start_y, 4, Rgba([0, 200, 0, 255]));
+    fn draw_markers(&self, img: &mut RgbaImage, transform: &CoordTransform) {
+        if let Some(start_point) = self.get_start_point() {
+            let (start_x, start_y) = transform.point_to_screen(start_point);
+            draw_circle(img, start_x, start_y, MARKER_RADIUS, Rgba([0, 200, 0, 255]));
+        }
 
-        // Draw end point
-        let end_x = safe_to_i32((self.current_pos.x - self.min_x) * scale + 20.0 + self.x_offset);
-        let end_y = safe_to_i32(
-            height as f32 - (self.current_pos.y - self.min_y) * scale - 20.0 + self.y_offset,
-        );
-        draw_circle(&mut img, end_x, end_y, 4, Rgba([200, 0, 0, 255]));
+        let (end_x, end_y) = transform.point_to_screen(self.current_pos);
+        draw_circle(img, end_x, end_y, MARKER_RADIUS, Rgba([200, 0, 0, 255]));
+    }
 
-        encode_image_to_bytes(&img)
+    fn get_start_point(&self) -> Option<Point2D> {
+        self.commands.first().map(|cmd| match cmd {
+            GCodeCommand::Move { from, .. } => *from,
+            GCodeCommand::Arc { from, .. } => *from,
+        })
     }
 }
 
@@ -485,11 +607,10 @@ fn safe_to_i32(value: f32) -> i32 {
 fn draw_line(img: &mut RgbaImage, x0: i32, y0: i32, x1: i32, y1: i32, color: Rgba<u8>) {
     let (width, height) = img.dimensions();
 
-    // Clamp coordinates to image bounds
-    let x0 = x0.max(i32::MIN + 1).min(i32::MAX - 1);
-    let y0 = y0.max(i32::MIN + 1).min(i32::MAX - 1);
-    let x1 = x1.max(i32::MIN + 1).min(i32::MAX - 1);
-    let y1 = y1.max(i32::MIN + 1).min(i32::MAX - 1);
+    let x0 = x0.clamp(i32::MIN + 1, i32::MAX - 1);
+    let y0 = y0.clamp(i32::MIN + 1, i32::MAX - 1);
+    let x1 = x1.clamp(i32::MIN + 1, i32::MAX - 1);
+    let y1 = y1.clamp(i32::MIN + 1, i32::MAX - 1);
 
     let mut x = x0;
     let mut y = y0;
@@ -555,54 +676,6 @@ fn draw_cross(img: &mut RgbaImage, cx: i32, cy: i32, size: i32, color: Rgba<u8>)
     }
 }
 
-/// Draw a simple grid
-#[allow(dead_code)]
-fn draw_grid(img: &mut RgbaImage, width: u32, height: u32, min_x: f32, min_y: f32, scale: f32) {
-    if scale <= 0.0 || !scale.is_finite() {
-        return;
-    }
-
-    let grid_color = Rgba([220, 220, 220, 128]);
-    let step = 10.0; // Grid step in model units
-
-    // Limit to reasonable grid density
-    let max_iterations = 200; // Max 200 lines in each direction
-
-    // Vertical lines
-    let mut x = (min_x.ceil() / step) * step;
-    let mut iterations = 0;
-    let screen_width = (width as f32 - 40.0).max(1.0);
-    let max_x = min_x + (screen_width / scale).abs();
-
-    while x <= max_x && iterations < max_iterations {
-        let screen_x = safe_to_i32((x - min_x) * scale + 20.0);
-        if screen_x >= 0 && screen_x < width as i32 {
-            draw_line(img, screen_x, 0, screen_x, height as i32, grid_color);
-        } else if screen_x > width as i32 {
-            break; // No more lines will be visible
-        }
-        x += step;
-        iterations += 1;
-    }
-
-    // Horizontal lines
-    let mut y = (min_y.ceil() / step) * step;
-    let mut iterations = 0;
-    let screen_height = (height as f32 - 40.0).max(1.0);
-    let max_y = min_y + (screen_height / scale).abs();
-
-    while y <= max_y && iterations < max_iterations {
-        let screen_y = safe_to_i32(height as f32 - (y - min_y) * scale - 20.0);
-        if screen_y >= 0 && screen_y < height as i32 {
-            draw_line(img, 0, screen_y, width as i32, screen_y, grid_color);
-        } else if screen_y < 0 {
-            break; // No more lines will be visible
-        }
-        y += step;
-        iterations += 1;
-    }
-}
-
 /// Draw an arc segment
 fn draw_arc(
     img: &mut RgbaImage,
@@ -610,32 +683,22 @@ fn draw_arc(
     to: Point2D,
     center: Point2D,
     _clockwise: bool,
-    min_x: f32,
-    min_y: f32,
-    scale: f32,
-    height: f32,
-    x_offset: f32,
-    y_offset: f32,
+    transform: &CoordTransform,
     color: Rgba<u8>,
 ) {
-    // Draw arc as multiple line segments for simplicity
     let radius = ((from.x - center.x).powi(2) + (from.y - center.y).powi(2)).sqrt();
 
-    // Safety checks
     if !radius.is_finite() || radius < 0.001 {
-        return; // Skip invalid arcs
+        return;
     }
 
     let start_angle = (from.y - center.y).atan2(from.x - center.x);
     let end_angle = (to.y - center.y).atan2(to.x - center.x);
-
     let angle_diff = (end_angle - start_angle).abs();
 
-    // Cap the number of segments to prevent hang
-    let steps = ((radius * angle_diff) as i32).max(10).min(1000) as usize;
+    let steps = ((radius * angle_diff) as i32).clamp(10, 1000) as usize;
 
-    let mut prev_x = (from.x - min_x) * scale + 20.0 + x_offset;
-    let mut prev_y = height - (from.y - min_y) * scale - 20.0 + y_offset;
+    let (mut prev_x, mut prev_y) = transform.point_to_screen(from);
 
     for i in 1..=steps {
         let t = i as f32 / steps as f32;
@@ -644,22 +707,9 @@ fn draw_arc(
         let x = center.x + radius * angle.cos();
         let y = center.y + radius * angle.sin();
 
-        let screen_x = (x - min_x) * scale + 20.0 + x_offset;
-        let screen_y = height - (y - min_y) * scale - 20.0 + y_offset;
+        let (screen_x, screen_y) = transform.world_to_screen(x, y);
 
-        let prev_x_i32 = safe_to_i32(prev_x);
-        let prev_y_i32 = safe_to_i32(prev_y);
-        let screen_x_i32 = safe_to_i32(screen_x);
-        let screen_y_i32 = safe_to_i32(screen_y);
-
-        draw_line(
-            img,
-            prev_x_i32,
-            prev_y_i32,
-            screen_x_i32,
-            screen_y_i32,
-            color,
-        );
+        draw_line(img, prev_x, prev_y, screen_x, screen_y, color);
 
         prev_x = screen_x;
         prev_y = screen_y;

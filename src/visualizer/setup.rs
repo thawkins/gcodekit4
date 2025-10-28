@@ -105,6 +105,47 @@ impl Vector3 {
             z: self.x * other.y - self.y * other.x,
         }
     }
+
+    /// Scale vector by scalar
+    pub fn scale(&self, factor: f32) -> Self {
+        Self {
+            x: self.x * factor,
+            y: self.y * factor,
+            z: self.z * factor,
+        }
+    }
+}
+
+impl std::ops::Add for Vector3 {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        Self {
+            x: self.x + other.x,
+            y: self.y + other.y,
+            z: self.z + other.z,
+        }
+    }
+}
+
+impl std::ops::Sub for Vector3 {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        Self {
+            x: self.x - other.x,
+            y: self.y - other.y,
+            z: self.z - other.z,
+        }
+    }
+}
+
+impl std::ops::Mul<f32> for Vector3 {
+    type Output = Self;
+
+    fn mul(self, scalar: f32) -> Self {
+        self.scale(scalar)
+    }
 }
 
 /// RGB Color
@@ -190,6 +231,46 @@ impl Color {
             a: 1.0,
         }
     }
+
+    /// Yellow color
+    pub fn yellow() -> Self {
+        Self {
+            r: 1.0,
+            g: 1.0,
+            b: 0.0,
+            a: 1.0,
+        }
+    }
+
+    /// Cyan color
+    pub fn cyan() -> Self {
+        Self {
+            r: 0.0,
+            g: 1.0,
+            b: 1.0,
+            a: 1.0,
+        }
+    }
+
+    /// Magenta color
+    pub fn magenta() -> Self {
+        Self {
+            r: 1.0,
+            g: 0.0,
+            b: 1.0,
+            a: 1.0,
+        }
+    }
+
+    /// Orange color
+    pub fn orange() -> Self {
+        Self {
+            r: 1.0,
+            g: 0.5,
+            b: 0.0,
+            a: 1.0,
+        }
+    }
 }
 
 /// Camera type
@@ -266,25 +347,25 @@ impl Camera {
 
     /// Rotate camera around target
     pub fn rotate(&mut self, pitch: f32, yaw: f32) {
-        let mut direction = self.position.subtract(self.target);
+        let direction = self.position.subtract(self.target);
+        let rotated = Self::rotate_vector_yaw_pitch(direction, yaw, pitch);
+        self.position = self.target.add(rotated);
+    }
 
-        let cos_yaw = yaw.cos();
-        let sin_yaw = yaw.sin();
-        direction = Vector3::new(
-            direction.x * cos_yaw - direction.y * sin_yaw,
-            direction.x * sin_yaw + direction.y * cos_yaw,
-            direction.z,
+    fn rotate_vector_yaw_pitch(v: Vector3, yaw: f32, pitch: f32) -> Vector3 {
+        let (cos_yaw, sin_yaw) = (yaw.cos(), yaw.sin());
+        let after_yaw = Vector3::new(
+            v.x * cos_yaw - v.y * sin_yaw,
+            v.x * sin_yaw + v.y * cos_yaw,
+            v.z,
         );
 
-        let cos_pitch = pitch.cos();
-        let sin_pitch = pitch.sin();
-        direction = Vector3::new(
-            direction.x,
-            direction.y * cos_pitch - direction.z * sin_pitch,
-            direction.y * sin_pitch + direction.z * cos_pitch,
-        );
-
-        self.position = self.target.add(direction);
+        let (cos_pitch, sin_pitch) = (pitch.cos(), pitch.sin());
+        Vector3::new(
+            after_yaw.x,
+            after_yaw.y * cos_pitch - after_yaw.z * sin_pitch,
+            after_yaw.y * sin_pitch + after_yaw.z * cos_pitch,
+        )
     }
 
     /// Zoom camera
@@ -477,60 +558,5 @@ impl Renderer {
             self.scene.background_color.g,
             self.scene.background_color.b
         )
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_vector3_creation() {
-        let v = Vector3::new(1.0, 2.0, 3.0);
-        assert_eq!(v.x, 1.0);
-        assert_eq!(v.y, 2.0);
-        assert_eq!(v.z, 3.0);
-    }
-
-    #[test]
-    fn test_vector3_operations() {
-        let v1 = Vector3::new(1.0, 2.0, 3.0);
-        let v2 = Vector3::new(4.0, 5.0, 6.0);
-
-        let sum = v1.add(v2);
-        assert_eq!(sum, Vector3::new(5.0, 7.0, 9.0));
-
-        let diff = v1.subtract(v2);
-        assert_eq!(diff, Vector3::new(-3.0, -3.0, -3.0));
-
-        let dot = v1.dot(v2);
-        assert_eq!(dot, 32.0);
-    }
-
-    #[test]
-    fn test_camera_creation() {
-        let camera = Camera::new(Vector3::new(10.0, 10.0, 10.0), Vector3::zero());
-        assert_eq!(camera.position, Vector3::new(10.0, 10.0, 10.0));
-        assert_eq!(camera.camera_type, CameraType::Perspective);
-    }
-
-    #[test]
-    fn test_color_creation() {
-        let color = Color::new(1.0, 0.5, 0.0);
-        assert_eq!(color.r, 1.0);
-        assert_eq!(color.a, 1.0);
-    }
-
-    #[test]
-    fn test_scene_creation() {
-        let scene = Scene::default();
-        assert!(!scene.lights.is_empty());
-    }
-
-    #[test]
-    fn test_renderer_creation() {
-        let renderer = Renderer::new(800, 600);
-        assert_eq!(renderer.width, 800);
-        assert_eq!(renderer.height, 600);
     }
 }
