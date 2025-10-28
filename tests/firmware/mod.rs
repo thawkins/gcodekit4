@@ -3,6 +3,7 @@
 pub mod capabilities;
 pub mod g2core;
 pub mod grbl;
+pub mod grbl_capabilities;
 pub mod grbl_communicator;
 pub mod grbl_controller;
 pub mod grbl_override_manager;
