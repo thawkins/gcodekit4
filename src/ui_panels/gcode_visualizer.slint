@@ -2,7 +2,7 @@
 //! Displays a 3D visualization of the loaded G-Code toolpath
 //! Shows machine position, bounding box, and real-time tool movement
 
-import { ScrollView, VerticalBox, HorizontalBox, Button, GridBox } from "std-widgets.slint";
+import { ScrollView, VerticalBox, HorizontalBox, Button, GridBox, CheckBox } from "std-widgets.slint";
 
 export component GcodeVisualizerPanel inherits VerticalBox {
     spacing: 0px;
@@ -23,6 +23,7 @@ export component GcodeVisualizerPanel inherits VerticalBox {
     in property <float> x-offset: 0.0;
     in property <float> y-offset: 0.0;
     in property <float> zoom-scale: 1.0;
+    in-out property <bool> show-grid: true;
     
     callback refresh-visualization();
     callback zoom-in();
@@ -33,20 +34,23 @@ export component GcodeVisualizerPanel inherits VerticalBox {
     callback pan-right();
     callback pan-up();
     callback pan-down();
+    callback toggle-grid();
 
     VerticalBox {
-        spacing: 8px;
-        padding: 12px;
+        spacing: 4px;
+        padding: 6px;
 
         // Toolbar - all controls on one line
         HorizontalBox {
-            height: 40px;
+            min-height: 50px;
             spacing: 8px;
+            vertical-stretch: 0;
 
             // Left side - main controls
             HorizontalBox {
                 spacing: 8px;
                 alignment: start;
+                vertical-stretch: 0;
 
                 Text {
                     text: "Visualization Controls:";
@@ -106,6 +110,7 @@ export component GcodeVisualizerPanel inherits VerticalBox {
             HorizontalBox {
                 spacing: 8px;
                 alignment: end;
+                vertical-stretch: 0;
 
                 Text {
                     text: "Pan:";
@@ -149,11 +154,117 @@ export component GcodeVisualizerPanel inherits VerticalBox {
             }
         }
 
+        // Status display - single line (outside ScrollView)
+        HorizontalBox {
+            spacing: 12px;
+            padding-left: 10px;
+            padding-right: 10px;
+            padding-top: 4px;
+            padding-bottom: 4px;
+            alignment: start;
+            min-height: 25px;
+            vertical-stretch: 0;
+
+            // Zoom Scale
+            HorizontalBox {
+                spacing: 6px;
+                
+                Text {
+                    text: "Zoom:";
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: #2e7d32;
+                }
+
+                Text {
+                    text: Math.round(root.zoom-scale * 1000.0) / 10.0 + "%";
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: #1b5e20;
+                }
+
+                Text {
+                    text: "(" + Math.round(root.zoom-scale * 100.0) / 100.0 + "x)";
+                    font-size: 10px;
+                    color: #2e7d32;
+                }
+            }
+
+            Text {
+                text: "|";
+                font-size: 11px;
+                color: #ccc;
+            }
+
+            // X Offset
+            HorizontalBox {
+                spacing: 6px;
+
+                Text {
+                    text: "X Offset:";
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: #1565c0;
+                }
+
+                Text {
+                    text: Math.round(root.x-offset * 10.0) / 10.0 + " mm";
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: #0d47a1;
+                }
+            }
+
+            Text {
+                text: "|";
+                font-size: 11px;
+                color: #ccc;
+            }
+
+            // Y Offset
+            HorizontalBox {
+                spacing: 6px;
+
+                Text {
+                    text: "Y Offset:";
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: #6a1b9a;
+                }
+
+                Text {
+                    text: Math.round(root.y-offset * 10.0) / 10.0 + " mm";
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: #4a148c;
+                }
+            }
+
+            // Spacer to push grid checkbox to the right
+            Rectangle {
+                horizontal-stretch: 1.0;
+            }
+
+            // Grid toggle checkbox
+            HorizontalBox {
+                spacing: 6px;
+                alignment: end;
+
+                CheckBox {
+                    text: "Show Grid";
+                    checked <=> root.show-grid;
+                    toggled => {
+                        root.toggle-grid();
+                    }
+                }
+            }
+        }
+
         // Main visualization area with scrollview
         ScrollView {
             VerticalBox {
-                padding: 20px;
-                spacing: 12px;
+                padding: 10px;
+                spacing: 6px;
                 alignment: center;
 
                     // 2D Visualizer - Rendered Toolpath
@@ -162,277 +273,15 @@ export component GcodeVisualizerPanel inherits VerticalBox {
                         height: 500px;
                         background: #f5f5f5;
                         border-width: 2px;
-                        border-color: #ddd;
+                        border-color: #000;
                         border-radius: 4px;
                         
                         if root.gcode-content != "" && root.visualization-image.width > 0 : Image {
                             source: root.visualization-image;
-                            width: 100%;
-                            height: 100%;
-                        }
-                    }
-
-                    // Progress indicator
-                    VerticalBox {
-                        width: 100%;
-                        spacing: 4px;
-
-                        HorizontalBox {
-                            spacing: 8px;
-                            alignment: space-between;
-
-                            Text {
-                                text: "Execution Progress:";
-                                font-size: 11px;
-                                font-weight: 700;
-                                color: #34495e;
-                            }
-
-                            Text {
-                                text: Math.round(root.progress * 100) + "%";
-                                font-size: 11px;
-                                font-weight: 700;
-                                color: #e74c3c;
-                            }
-                        }
-
-                        Rectangle {
-                            height: 20px;
-                            background: #ecf0f1;
-                            border-width: 1px;
-                            border-color: #bdc3c7;
-                            border-radius: 2px;
-
-                            Rectangle {
-                                width: (root.progress * 100%) * 1px;
-                                height: 100%;
-                                background: #27ae60;
-                                border-radius: 1px;
-                            }
-
-                            Text {
-                                text: Math.round(root.progress * 100) + "%";
-                                font-size: 10px;
-                                color: #2c3e50;
-                                horizontal-alignment: center;
-                                vertical-alignment: center;
-                            }
-                        }
-                    }
-
-                    // Position display
-                    GridBox {
-                        spacing: 12px;
-                        width: 100%;
-
-                        Rectangle {
-                            col: 0;
-                            row: 0;
-                            background: #f8f9fa;
-                            border-width: 1px;
-                            border-color: #dee2e6;
-                            border-radius: 2px;
-                            width: 120px;
-                            height: 70px;
-
-                            VerticalBox {
-                                alignment: center;
-                                spacing: 4px;
-                                padding-left: 8px;
-                                padding-right: 8px;
-                                padding-top: 8px;
-                                padding-bottom: 8px;
-
-                                Text {
-                                    text: "Machine Position";
-                                    font-size: 10px;
-                                    font-weight: 700;
-                                    color: #34495e;
-                                }
-
-                                Text {
-                                    text: "X: " + root.machine-x;
-                                    font-size: 10px;
-                                    color: #2c3e50;
-                                }
-
-                                Text {
-                                    text: "Y: " + root.machine-y;
-                                    font-size: 10px;
-                                    color: #2c3e50;
-                                }
-
-                                Text {
-                                    text: "Z: " + root.machine-z;
-                                    font-size: 10px;
-                                    color: #2c3e50;
-                                }
-                            }
-                        }
-
-                        Rectangle {
-                            col: 1;
-                            row: 0;
-                            background: #f8f9fa;
-                            border-width: 1px;
-                            border-color: #dee2e6;
-                            border-radius: 2px;
-                            width: 120px;
-                            height: 70px;
-
-                            VerticalBox {
-                                alignment: center;
-                                spacing: 4px;
-                                padding-left: 8px;
-                                padding-right: 8px;
-                                padding-top: 8px;
-                                padding-bottom: 8px;
-
-                                Text {
-                                    text: "Work Position";
-                                    font-size: 10px;
-                                    font-weight: 700;
-                                    color: #34495e;
-                                }
-
-                                Text {
-                                    text: "X: " + root.work-x;
-                                    font-size: 10px;
-                                    color: #2c3e50;
-                                }
-
-                                Text {
-                                    text: "Y: " + root.work-y;
-                                    font-size: 10px;
-                                    color: #2c3e50;
-                                }
-
-                                Text {
-                                    text: "Z: " + root.work-z;
-                                    font-size: 10px;
-                                    color: #2c3e50;
-                                }
-                            }
-                        }
-
-                        Rectangle {
-                            col: 2;
-                            row: 0;
-                            background: #e8f5e9;
-                            border-width: 1px;
-                            border-color: #4caf50;
-                            border-radius: 2px;
-                            width: 120px;
-                            height: 70px;
-
-                            VerticalBox {
-                                alignment: center;
-                                spacing: 4px;
-                                padding-left: 8px;
-                                padding-right: 8px;
-                                padding-top: 8px;
-                                padding-bottom: 8px;
-
-                                Text {
-                                    text: "Zoom Scale";
-                                    font-size: 10px;
-                                    font-weight: 700;
-                                    color: #2e7d32;
-                                }
-
-                                Text {
-                                    text: Math.round(root.zoom-scale * 1000.0) / 10.0 + "%";
-                                    font-size: 11px;
-                                    font-weight: 700;
-                                    color: #1b5e20;
-                                }
-
-                                Text {
-                                    text: "(" + Math.round(root.zoom-scale * 100.0) / 100.0 + "x)";
-                                    font-size: 9px;
-                                    color: #2e7d32;
-                                }
-                            }
-                        }
-
-                        Rectangle {
-                            col: 3;
-                            row: 0;
-                            background: #e3f2fd;
-                            border-width: 1px;
-                            border-color: #2196f3;
-                            border-radius: 2px;
-                            width: 120px;
-                            height: 70px;
-
-                            VerticalBox {
-                                alignment: center;
-                                spacing: 4px;
-                                padding-left: 8px;
-                                padding-right: 8px;
-                                padding-top: 8px;
-                                padding-bottom: 8px;
-
-                                Text {
-                                    text: "X Offset";
-                                    font-size: 10px;
-                                    font-weight: 700;
-                                    color: #1565c0;
-                                }
-
-                                Text {
-                                    text: Math.round(root.x-offset * 10.0) / 10.0;
-                                    font-size: 11px;
-                                    font-weight: 700;
-                                    color: #0d47a1;
-                                }
-
-                                Text {
-                                    text: "px";
-                                    font-size: 9px;
-                                    color: #1565c0;
-                                }
-                            }
-                        }
-
-                        Rectangle {
-                            col: 4;
-                            row: 0;
-                            background: #f3e5f5;
-                            border-width: 1px;
-                            border-color: #9c27b0;
-                            border-radius: 2px;
-                            width: 120px;
-                            height: 70px;
-
-                            VerticalBox {
-                                alignment: center;
-                                spacing: 4px;
-                                padding-left: 8px;
-                                padding-right: 8px;
-                                padding-top: 8px;
-                                padding-bottom: 8px;
-
-                                Text {
-                                    text: "Y Offset";
-                                    font-size: 10px;
-                                    font-weight: 700;
-                                    color: #6a1b9a;
-                                }
-
-                                Text {
-                                    text: Math.round(root.y-offset * 10.0) / 10.0;
-                                    font-size: 11px;
-                                    font-weight: 700;
-                                    color: #4a148c;
-                                }
-
-                                Text {
-                                    text: "px";
-                                    font-size: 9px;
-                                    color: #6a1b9a;
-                                }
-                            }
+                            x: 2px;
+                            y: 2px;
+                            width: parent.width - 4px;
+                            height: parent.height - 4px;
                         }
                     }
                 }

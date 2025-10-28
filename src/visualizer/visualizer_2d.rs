@@ -20,7 +20,8 @@ const MIN_SCALE: f32 = 0.1;
 const DEFAULT_SCALE_FACTOR: f32 = 1.0;
 const GRID_MAJOR_STEP_MM: f32 = 10.0;
 const GRID_MINOR_STEP_MM: f32 = 1.0;
-const GRID_MINOR_VISIBILITY_SCALE: f32 = 5.0;
+const GRID_MAJOR_VISIBILITY_SCALE: f32 = 0.3;
+const GRID_MINOR_VISIBILITY_SCALE: f32 = 1.5;
 
 /// 2D Point for visualization
 #[derive(Debug, Clone, Copy)]
@@ -172,7 +173,7 @@ impl Visualizer2D {
             zoom_scale: 1.0,
             x_offset: 0.0,
             y_offset: 0.0,
-            show_grid: false,
+            show_grid: true,
             scale_factor: DEFAULT_SCALE_FACTOR,
         }
     }
@@ -452,11 +453,13 @@ impl Visualizer2D {
         transform: &CoordTransform,
         effective_scale: f32,
     ) {
-        let major_color = Rgba([200, 200, 200, 255]);
-        let minor_color = Rgba([230, 230, 230, 180]);
+        // Only show major grid (1cm) if zoom scale is greater than 0.3 (30%)
+        if self.zoom_scale < GRID_MAJOR_VISIBILITY_SCALE {
+            return;
+        }
 
-        let effective_zoom = effective_scale / self.scale_factor;
-        let show_minor = effective_zoom >= GRID_MINOR_VISIBILITY_SCALE;
+        let major_color = Rgba([200, 200, 200, 255]); // Light gray for 1cm grid
+        let minor_color = Rgba([173, 216, 230, 255]); // Light blue for 1mm grid
 
         let screen_width = width as f32 - CANVAS_PADDING_2X;
         let screen_height = height as f32 - CANVAS_PADDING_2X;
@@ -466,12 +469,15 @@ impl Visualizer2D {
         let view_min_y = transform.min_y - CANVAS_PADDING / effective_scale;
         let view_max_y = view_min_y + screen_height / effective_scale;
 
-        if show_minor {
+        // Draw minor grid lines (1mm spacing) first if zoom > 3.0 (300%)
+        if self.zoom_scale >= GRID_MINOR_VISIBILITY_SCALE {
+            // Draw vertical 1mm lines
             let start_x = (view_min_x / GRID_MINOR_STEP_MM).floor() * GRID_MINOR_STEP_MM;
             let mut x = start_x;
             let mut iterations = 0;
 
             while x <= view_max_x && iterations < MAX_GRID_ITERATIONS {
+                // Skip lines that coincide with major grid (every 10mm)
                 if (x / GRID_MAJOR_STEP_MM).fract().abs() > 0.01 {
                     let (screen_x, _) = transform.world_to_screen(x, 0.0);
                     if screen_x >= 0 && screen_x < width as i32 {
@@ -482,11 +488,13 @@ impl Visualizer2D {
                 iterations += 1;
             }
 
+            // Draw horizontal 1mm lines
             let start_y = (view_min_y / GRID_MINOR_STEP_MM).floor() * GRID_MINOR_STEP_MM;
             let mut y = start_y;
             iterations = 0;
 
             while y <= view_max_y && iterations < MAX_GRID_ITERATIONS {
+                // Skip lines that coincide with major grid (every 10mm)
                 if (y / GRID_MAJOR_STEP_MM).fract().abs() > 0.01 {
                     let (_, screen_y) = transform.world_to_screen(0.0, y);
                     if screen_y >= 0 && screen_y < height as i32 {
@@ -498,6 +506,7 @@ impl Visualizer2D {
             }
         }
 
+        // Draw major grid lines (1cm spacing) on top with 2px width
         let start_x = (view_min_x / GRID_MAJOR_STEP_MM).floor() * GRID_MAJOR_STEP_MM;
         let mut x = start_x;
         let mut iterations = 0;
@@ -505,7 +514,7 @@ impl Visualizer2D {
         while x <= view_max_x && iterations < MAX_GRID_ITERATIONS {
             let (screen_x, _) = transform.world_to_screen(x, 0.0);
             if screen_x >= 0 && screen_x < width as i32 {
-                draw_line(img, screen_x, 0, screen_x, height as i32, major_color);
+                draw_thick_line(img, screen_x, 0, screen_x, height as i32, major_color);
             }
             x += GRID_MAJOR_STEP_MM;
             iterations += 1;
@@ -518,7 +527,7 @@ impl Visualizer2D {
         while y <= view_max_y && iterations < MAX_GRID_ITERATIONS {
             let (_, screen_y) = transform.world_to_screen(0.0, y);
             if screen_y >= 0 && screen_y < height as i32 {
-                draw_line(img, 0, screen_y, width as i32, screen_y, major_color);
+                draw_thick_line(img, 0, screen_y, width as i32, screen_y, major_color);
             }
             y += GRID_MAJOR_STEP_MM;
             iterations += 1;
@@ -647,6 +656,21 @@ fn draw_line(img: &mut RgbaImage, x0: i32, y0: i32, x1: i32, y1: i32, color: Rgb
             err += dx;
             y = y.saturating_add(sy);
         }
+    }
+}
+
+/// Draw a thick line (2 pixels wide)
+fn draw_thick_line(img: &mut RgbaImage, x0: i32, y0: i32, x1: i32, y1: i32, color: Rgba<u8>) {
+    // Draw the main line
+    draw_line(img, x0, y0, x1, y1, color);
+    
+    // Draw parallel line to make it 2 pixels thick
+    if x0 == x1 {
+        // Vertical line - draw one pixel to the right
+        draw_line(img, x0 + 1, y0, x1 + 1, y1, color);
+    } else if y0 == y1 {
+        // Horizontal line - draw one pixel down
+        draw_line(img, x0, y0 + 1, x1, y1 + 1, color);
     }
 }
 

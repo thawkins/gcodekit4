@@ -1490,12 +1490,17 @@ fn main() -> anyhow::Result<()> {
             let zoom_scale_for_msg = zoom_for_refresh.clone();
             let pan_offset_for_msg = pan_for_refresh.clone();
 
+            // Get show_grid state before spawning thread
+            let show_grid = window.get_visualizer_show_grid();
+
             std::thread::spawn(move || {
                 use gcodekit4::visualizer::Visualizer2D;
 
                 let _ = tx.send((0.1, "Parsing G-code...".to_string(), None));
 
                 let mut visualizer = Visualizer2D::new();
+                visualizer.show_grid = show_grid;
+                
                 visualizer.parse_gcode(&content_owned);
 
                 // Apply zoom scale
@@ -1672,12 +1677,17 @@ fn main() -> anyhow::Result<()> {
             let zoom_fit_render = zoom_for_fit.clone();
             let pan_fit_render = pan_for_fit.clone();
 
+            // Get show_grid state before spawning thread
+            let show_grid = window.get_visualizer_show_grid();
+
             std::thread::spawn(move || {
                 use gcodekit4::visualizer::Visualizer2D;
 
                 let _ = tx.send((0.1, "Parsing G-code...".to_string(), None));
 
                 let mut visualizer = Visualizer2D::new();
+                visualizer.show_grid = show_grid;
+                
                 visualizer.parse_gcode(&content_owned);
 
                 let _ = tx.send((0.2, "Calculating bounding box...".to_string(), None));
@@ -1827,6 +1837,15 @@ fn main() -> anyhow::Result<()> {
                 window.set_visualizer_y_offset(offsets.1);
                 window.invoke_refresh_visualization();
             }
+        }
+    });
+
+    // Toggle grid callback
+    let window_weak_grid = main_window.as_weak();
+    main_window.on_toggle_grid(move || {
+        info!("Toggle grid requested");
+        if let Some(window) = window_weak_grid.upgrade() {
+            window.invoke_refresh_visualization();
         }
     });
 

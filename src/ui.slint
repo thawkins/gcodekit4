@@ -65,6 +65,7 @@ export component MainWindow inherits Window {
     in property <float> visualizer-x-offset: 0.0;
     in property <float> visualizer-y-offset: 0.0;
     in property <float> visualizer-zoom-scale: 1.0;
+    in-out property <bool> visualizer-show-grid: true;
     
     callback refresh-ports();
     callback connect(string, int);
@@ -110,6 +111,7 @@ export component MainWindow inherits Window {
     callback pan-right();
     callback pan-up();
     callback pan-down();
+    callback toggle-grid();
     
     // Internal state for UI selections
     private property <int> port-index: 0;
@@ -635,6 +637,7 @@ if current-view == "safety-diagnostics" : SafetyDiagnosticsPanel {
                     x-offset: root.visualizer-x-offset;
                     y-offset: root.visualizer-y-offset;
                     zoom-scale: root.visualizer-zoom-scale;
+                    show-grid <=> root.visualizer-show-grid;
                     
                     refresh-visualization => {
                         root.refresh-visualization();
@@ -670,6 +673,10 @@ if current-view == "safety-diagnostics" : SafetyDiagnosticsPanel {
                     
                     pan-down => {
                         root.pan-down();
+                    }
+                    
+                    toggle-grid => {
+                        root.toggle-grid();
                     }
                 }
             }
