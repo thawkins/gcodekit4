@@ -35,6 +35,40 @@ fn copy_to_clipboard(text: &str) -> bool {
     }
 }
 
+/// Update designer UI with current shapes from state
+fn update_designer_ui(
+    window: &MainWindow,
+    state: &gcodekit4::DesignerState,
+) {
+    let shapes: Vec<crate::DesignerShape> = state
+        .canvas
+        .shapes()
+        .iter()
+        .map(|obj| {
+            let (x1, y1, x2, y2) = obj.shape.bounding_box();
+            let shape_type = match obj.shape.shape_type() {
+                gcodekit4::ShapeType::Rectangle => 0,
+                gcodekit4::ShapeType::Circle => 1,
+                gcodekit4::ShapeType::Line => 2,
+            };
+            crate::DesignerShape {
+                id: obj.id as i32,
+                x: x1 as f32,
+                y: y1 as f32,
+                width: (x2 - x1).abs() as f32,
+                height: (y2 - y1).abs() as f32,
+                radius: (((x2 - x1).abs() / 2.0).max((y2 - y1).abs() / 2.0)) as f32,
+                x2: x2 as f32,
+                y2: y2 as f32,
+                shape_type,
+                selected: obj.selected,
+            }
+        })
+        .collect();
+    let shapes_model = Rc::new(slint::VecModel::from(shapes));
+    window.set_designer_shapes(slint::ModelRc::from(shapes_model));
+}
+
 /// Parse GRBL status response and extract position
 /// Format: <Idle|MPos:10.000,20.000,0.000|WPos:10.000,20.000,0.000|...>
 fn parse_grbl_status(response: &str) -> Option<(f64, f64, f64)> {
@@ -1617,6 +1651,7 @@ fn main() -> anyhow::Result<()> {
         let mut state = designer_mgr_clone.borrow_mut();
         state.delete_selected();
         if let Some(window) = window_weak.upgrade() {
+            update_designer_ui(&window, &state);
             window.set_connection_status(slint::SharedString::from(
                 format!("Shapes: {}", state.canvas.shapes().len())
             ));
@@ -1631,6 +1666,7 @@ fn main() -> anyhow::Result<()> {
         let mut state = designer_mgr_clone.borrow_mut();
         state.clear_canvas();
         if let Some(window) = window_weak.upgrade() {
+            update_designer_ui(&window, &state);
             window.set_designer_gcode_generated(false);
             window.set_connection_status(slint::SharedString::from("Canvas cleared"));
         }
@@ -1677,6 +1713,7 @@ fn main() -> anyhow::Result<()> {
         let mut state = designer_mgr_clone.borrow_mut();
         state.add_shape_at(x as f64, y as f64);
         if let Some(window) = window_weak.upgrade() {
+            update_designer_ui(&window, &state);
             window.set_connection_status(slint::SharedString::from(
                 format!("Shapes: {}", state.canvas.shapes().len())
             ));

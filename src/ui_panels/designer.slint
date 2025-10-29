@@ -180,6 +180,18 @@ export component DesignerPanel inherits VerticalBox {
                         height: 80%;
                         background: #34495e;
                         
+                        // Render shapes
+                        for shape in shapes: Rectangle {
+                            x: shape.x * 1px;
+                            y: shape.y * 1px;
+                            width: shape.shape_type == 2 ? shape.radius * 2 * 1px : shape.width * 1px;
+                            height: shape.shape_type == 2 ? shape.radius * 2 * 1px : shape.height * 1px;
+                            background: shape.selected ? #e74c3c : #3498db;
+                            border-width: 2px;
+                            border-color: shape.selected ? #c0392b : #2980b9;
+                            border-radius: shape.shape_type == 2 ? shape.radius * 1px : 2px;
+                        }
+                        
                         // Make canvas interactive
                         TouchArea {
                             mouse-cursor: 
