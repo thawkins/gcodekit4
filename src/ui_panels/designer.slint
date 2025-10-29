@@ -34,9 +34,9 @@ component ToolButton inherits Rectangle {
     
     width: 48px;
     height: 48px;
-    background: current_mode == tool_id ? #2980b9 : #34495e;
+    background: current_mode == tool_id ? #34495e : #2c3e50;
     border-width: 2px;
-    border-color: current_mode == tool_id ? white : transparent;
+    border-color: current_mode == tool_id ? transparent : white;
     
     VerticalBox {
         alignment: center;
@@ -44,7 +44,7 @@ component ToolButton inherits Rectangle {
             text: icon_text;
             font-size: 24px;
             horizontal-alignment: center;
-            color: current_mode == tool_id ? white : #bdc3c7;
+            color: current_mode == tool_id ? #34495e : white;
         }
     }
     
@@ -76,12 +76,12 @@ export component DesignerPanel inherits VerticalBox {
     callback export_gcode();
     callback canvas_click(float, float);
     
-    spacing: 10px;
-    padding: 10px;
+    spacing: 5px;
+    padding: 5px;
     
     // Main layout: vertical toolbox on left, canvas and properties on right
     HorizontalBox {
-        spacing: 5px;
+        spacing: 2px;
         
         // ═════════════════════════════════════════════
         // LEFT SIDEBAR: Vertical Tool Icons
@@ -190,8 +190,8 @@ export component DesignerPanel inherits VerticalBox {
                                 default;
                             
                             clicked => {
-                                // Signal a click - coordinates handled in callback
-                                canvas_click(0.0, 0.0);
+                                // Calculate approximate click position from touch area
+                                canvas_click(self.x / 1px, self.y / 1px);
                             }
                         }
                     }
@@ -211,8 +211,8 @@ export component DesignerPanel inherits VerticalBox {
         // RIGHT SIDEBAR: Properties Panel
         // ═════════════════════════════════════════════
         VerticalBox {
-            width: 220px;
-            spacing: 10px;
+            width: 180px;
+            spacing: 8px;
             
             Text {
                 text: "Tool Parameters";
