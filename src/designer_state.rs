@@ -1,7 +1,7 @@
 //! Designer state manager for UI integration.
 //! Manages the designer canvas state and handles UI callbacks.
 
-use crate::designer::{Canvas, CanvasPoint, DrawingMode, Point, Rectangle, Circle, Line, ToolpathGenerator, ToolpathToGcode};
+use crate::designer::{Canvas, DrawingMode, Point, Rectangle, Circle, Line, ToolpathGenerator, ToolpathToGcode};
 use crate::data::Units;
 
 /// Designer state for UI integration
