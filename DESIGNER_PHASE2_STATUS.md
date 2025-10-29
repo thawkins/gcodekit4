@@ -1,8 +1,8 @@
 # Designer Tool Phase 2 - UI Integration Progress
 
-## Current Status: UI Panel Complete, Shape Rendering Implemented
+## Current Status: Shape Rendering & Selection Complete
 
-**Commit**: In Progress (Shape rendering integration)
+**Latest Commit**: e3f3b31 (Add selection handles and bounding box visualization)
 **Date**: 2025-10-29
 
 ## What Was Completed
@@ -29,66 +29,44 @@ The Designer panel follows the established pattern:
 - Callback-driven event handling
 - Properties panel for configuration
 
-## Recent Completion (2025-10-29)
+## Recent Completions
 
-### ✅ Shape Rendering Implementation
-- Added shape rendering loop to Slint canvas (for loop over shapes array)
-- Implemented `update_designer_ui()` helper function in main.rs
-- Converts internal Shape structs to DesignerShape for UI display
-- Wired all UI callbacks to trigger shape updates:
-  - `on_designer_canvas_click()` - adds shapes and updates display
-  - `on_designer_delete_selected()` - removes shapes and refreshes
-  - `on_designer_clear_canvas()` - clears all shapes
-- Shape visual representation:
-  - Rectangles: colored boxes with selection highlight
-  - Circles: rendered with dynamic border-radius
-  - Lines: rendered as thin rectangles
-  - Selected shapes: highlighted in red (#e74c3c)
+### ✅ Phase 2A: Shape Rendering (Completed 2025-10-29)
+- Added shape rendering loop to Slint canvas
+- Fixed shape type mapping (Circle=1, Line=2)
+- Fixed click position tracking to use relative coordinates
+- All shapes render correctly at click position
+
+### ✅ Phase 2B: Selection & Handles (Completed 2025-10-29)
+- Implemented yellow bounding box (#ffeb3b) for selected shapes
+- Added 5 resize handles around selected shapes:
+  * Corners: 12x12 squares with white borders
+  * Center: 12x12 circle for move operations
+- Implemented click-to-select functionality in Select mode:
+  * Select mode (button 0) selects shapes at click point
+  * Drawing modes continue to add new shapes
+- Shape visual hierarchy:
+  * Unselected: blue background, dark blue border
+  * Selected: + yellow bounding box, + 5 handles
+  * Clear visual feedback for user interaction
 
 ## What Remains
 
-### Phase 2B: Additional Rust Backend Features (Next Priority)
-1. **Create Designer State Manager**
-   - Manage canvas state in Rust
-   - Handle shape collection
-   - Track selection and mode
+### Phase 2C: Shape Manipulation (Next Priority)
+1. **Drag to Move**
+   - Detect mouse drag on shape
+   - Move shape to follow cursor
+   - Update position in state
 
-2. **Implement Callback Handlers**
-   ```rust
-   fn on_designer_set_mode(mode: int)
-   fn on_designer_zoom_in/out/fit()
-   fn on_designer_delete_selected()
-   fn on_designer_clear_canvas()
-   fn on_designer_generate_toolpath()
-   fn on_designer_export_gcode()
-   ```
+2. **Drag Handles to Resize**
+   - Detect drag on corner/edge handles
+   - Resize shape maintaining aspect ratio (optional)
+   - Update dimensions in state
 
-3. **Shape Rendering to UI**
-   - Convert internal Shape structs to DesignerShape for UI
-   - Bind shape collection to Slint model
-   - Handle selection state updates
-
-4. **Canvas Interaction**
-   - Mouse event handling for drawing
-   - Shape creation on canvas
-   - Selection by click
-   - Parameter updates
-
-### Phase 2B: Additional Rust Backend Features (Next Priority)
-1. **Canvas Mouse Interaction**
-   - Mouse drag detection for shape positioning
-   - Multi-click vs drag differentiation
-   - Shape movement/transformation
-
-2. **Selection Management**
-   - Click-to-select shapes on canvas
-   - Multiple selection (Shift+Click)
-   - Deselect functionality
-
-3. **Canvas Navigation**
-   - Pan implementation (drag canvas)
-   - Zoom persistence
-   - View bounds calculation
+3. **Shape Deselection**
+   - Click on empty canvas to deselect
+   - Escape key to deselect
+   - Click on different shape to change selection
 
 4. **Property Panel Wiring**
    - Feed rate input binding
@@ -105,14 +83,21 @@ The Designer panel follows the established pattern:
 - [x] Wire toolbar callbacks
 - [x] Test basic mode switching
 
-### Week 2: Canvas Interaction
-- [ ] Implement mouse event handling
-- [ ] Support drawing rectangles
-- [ ] Support drawing circles
-- [ ] Support drawing lines
-- [ ] Selection and deletion
+### Week 2: Canvas Interaction & Selection
+- [x] Implement shape rendering with correct type mapping
+- [x] Fix click position calculation
+- [x] Support drawing rectangles, circles, lines
+- [x] Selection visualization with bounding box
+- [x] Add resize handles (5 positions)
+- [x] Click-to-select functionality
 
-### Week 3: Toolpath & Export
+### Week 3: Shape Manipulation
+- [ ] Implement drag-to-move for selected shapes
+- [ ] Implement handle-based resizing
+- [ ] Add deselection (empty click, escape key)
+- [ ] Test shape manipulation workflows
+
+### Week 4: Toolpath & Export
 - [ ] Integrate toolpath generation
 - [ ] Wire export button to G-Code Editor
 - [ ] Test complete workflows
@@ -278,7 +263,7 @@ window.set_designer_state(DesignerState {
 
 ---
 
-**Status**: Phase 2 Shape Rendering complete, basic canvas interaction functional  
-**Blockers**: None - ready for mouse-based shape manipulation  
-**Estimate to MVP**: 2-3 days to complete Phase 2 core features
+**Status**: Phase 2 Selection & Handles complete, ready for shape manipulation  
+**Blockers**: None - can begin drag-to-move implementation  
+**Estimate to MVP**: 1-2 days to complete Phase 2C (shape manipulation)
 
