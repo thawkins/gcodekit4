@@ -176,6 +176,11 @@ impl DesignerState {
     pub fn resize_selected(&mut self, handle: usize, dx: f64, dy: f64) {
         self.canvas.resize_selected(handle, dx, dy);
     }
+
+    /// Deselects all shapes.
+    pub fn deselect_all(&mut self) {
+        self.canvas.deselect_all();
+    }
 }
 
 impl Default for DesignerState {

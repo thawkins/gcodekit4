@@ -165,6 +165,7 @@ export component MainWindow inherits Window {
     callback designer-canvas-click(float, float);
     callback designer-shape-drag(int, float, float);        // shape_id, dx, dy
     callback designer-handle-drag(int, int, float, float);  // shape_id, handle_index, dx, dy
+    callback designer-deselect-all();
     
     // Internal state for UI selections
     private property <int> port-index: 0;
@@ -820,6 +821,10 @@ if current-view == "safety-diagnostics" : SafetyDiagnosticsPanel {
                     
                     handle_drag(id, handle, dx, dy) => {
                         root.designer-handle-drag(id, handle, dx, dy);
+                    }
+                    
+                    deselect_all => {
+                        root.designer-deselect-all();
                     }
                 }
             }

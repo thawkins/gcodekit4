@@ -77,13 +77,30 @@ export component DesignerPanel inherits VerticalBox {
     callback canvas_click(float, float);
     callback shape_drag(int, float, float);        // shape_id, dx, dy
     callback handle_drag(int, int, float, float);  // shape_id, handle_index, dx, dy
+    callback deselect_all();
     
     spacing: 5px;
     padding: 5px;
     
     // Main layout: vertical toolbox on left, canvas and properties on right
-    HorizontalBox {
-        spacing: 2px;
+    FocusScope {
+        width: 100%;
+        height: 100%;
+        
+        key-pressed(event) => {
+            if event.text == Key.Escape {
+                deselect_all();
+                accept
+            } else if event.text == Key.Delete {
+                delete_selected();
+                accept
+            } else {
+                reject
+            }
+        }
+        
+        HorizontalBox {
+            spacing: 2px;
         
         // ═════════════════════════════════════════════
         // LEFT SIDEBAR: Vertical Tool Icons
@@ -393,5 +410,6 @@ export component DesignerPanel inherits VerticalBox {
             
             VerticalBox { }
         }
+    }
     }
 }

@@ -1749,6 +1749,18 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
+    // Designer: Deselect all callback
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_deselect_all(move || {
+        info!("Designer: Deselect all");
+        let mut state = designer_mgr_clone.borrow_mut();
+        state.deselect_all();
+        if let Some(window) = window_weak.upgrade() {
+            update_designer_ui(&window, &state);
+        }
+    });
+
     // Zoom state tracking (Arc for shared state across closures)
     use std::sync::{Arc, Mutex};
     let zoom_scale = Arc::new(Mutex::new(1.0f32));

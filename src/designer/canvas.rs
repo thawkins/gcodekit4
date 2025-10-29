@@ -168,6 +168,14 @@ impl Canvas {
         }
     }
 
+    /// Deselects all shapes.
+    pub fn deselect_all(&mut self) {
+        for obj in self.shapes.iter_mut() {
+            obj.selected = false;
+        }
+        self.selected_id = None;
+    }
+
     /// Sets zoom level (1.0 = 100%).
     pub fn set_zoom(&mut self, zoom: f64) {
         if zoom > 0.1 && zoom < 10.0 {
