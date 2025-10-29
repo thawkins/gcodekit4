@@ -214,7 +214,7 @@ export component DesignerPanel inherits VerticalBox {
                     // Zoom Scale
                     Text {
                         text: "Scale: " + Math.round(zoom_scale * 1000.0) / 10.0 + "%";
-                        font-size: 11px;
+                        font-size: 13px;
                         font-weight: 700;
                         color: black;
                     }
@@ -222,21 +222,21 @@ export component DesignerPanel inherits VerticalBox {
                     // X Offset
                     Text {
                         text: "X: " + Math.round(x_offset * 10.0) / 10.0;
-                        font-size: 11px;
+                        font-size: 13px;
                         color: black;
                     }
                     
                     // Y Offset
                     Text {
                         text: "Y: " + Math.round(y_offset * 10.0) / 10.0;
-                        font-size: 11px;
+                        font-size: 13px;
                         color: black;
                     }
                     
                     // Zoom multiplier for reference
                     Text {
                         text: "(" + Math.round(zoom_scale * 100.0) / 100.0 + "x)";
-                        font-size: 10px;
+                        font-size: 12px;
                         color: black;
                     }
                 }
@@ -272,7 +272,8 @@ export component DesignerPanel inherits VerticalBox {
                                 height: 100%;
                                 mouse-cursor: grab;
                                 moved => {
-                                    shape_drag(shape.id, (self.mouse_x - self.pressed_x) / 1px, (self.mouse_y - self.pressed_y) / 1px);
+                                    // Convert screen pixels to canvas coordinates by dividing by zoom_scale
+                                    shape_drag(shape.id, (self.mouse_x - self.pressed_x) / 1px / zoom_scale, (self.mouse_y - self.pressed_y) / 1px / zoom_scale);
                                 }
                             }
                             
@@ -298,7 +299,7 @@ export component DesignerPanel inherits VerticalBox {
                                         height: 100%;
                                         mouse-cursor: nwse-resize;
                                         moved => {
-                                            handle_drag(shape.id, 0, (self.mouse_x - self.pressed_x) / 1px, (self.mouse_y - self.pressed_y) / 1px);
+                                            handle_drag(shape.id, 0, (self.mouse_x - self.pressed_x) / 1px / zoom_scale, (self.mouse_y - self.pressed_y) / 1px / zoom_scale);
                                         }
                                     }
                                 }
@@ -317,7 +318,7 @@ export component DesignerPanel inherits VerticalBox {
                                         height: 100%;
                                         mouse-cursor: nesw-resize;
                                         moved => {
-                                            handle_drag(shape.id, 1, (self.mouse_x - self.pressed_x) / 1px, (self.mouse_y - self.pressed_y) / 1px);
+                                            handle_drag(shape.id, 1, (self.mouse_x - self.pressed_x) / 1px / zoom_scale, (self.mouse_y - self.pressed_y) / 1px / zoom_scale);
                                         }
                                     }
                                 }
@@ -336,7 +337,7 @@ export component DesignerPanel inherits VerticalBox {
                                         height: 100%;
                                         mouse-cursor: nesw-resize;
                                         moved => {
-                                            handle_drag(shape.id, 2, (self.mouse_x - self.pressed_x) / 1px, (self.mouse_y - self.pressed_y) / 1px);
+                                            handle_drag(shape.id, 2, (self.mouse_x - self.pressed_x) / 1px / zoom_scale, (self.mouse_y - self.pressed_y) / 1px / zoom_scale);
                                         }
                                     }
                                 }
@@ -355,7 +356,7 @@ export component DesignerPanel inherits VerticalBox {
                                         height: 100%;
                                         mouse-cursor: nwse-resize;
                                         moved => {
-                                            handle_drag(shape.id, 3, (self.mouse_x - self.pressed_x) / 1px, (self.mouse_y - self.pressed_y) / 1px);
+                                            handle_drag(shape.id, 3, (self.mouse_x - self.pressed_x) / 1px / zoom_scale, (self.mouse_y - self.pressed_y) / 1px / zoom_scale);
                                         }
                                     }
                                 }
@@ -375,7 +376,7 @@ export component DesignerPanel inherits VerticalBox {
                                         height: 100%;
                                         mouse-cursor: grab;
                                         moved => {
-                                            handle_drag(shape.id, 4, (self.mouse_x - self.pressed_x) / 1px, (self.mouse_y - self.pressed_y) / 1px);
+                                            handle_drag(shape.id, 4, (self.mouse_x - self.pressed_x) / 1px / zoom_scale, (self.mouse_y - self.pressed_y) / 1px / zoom_scale);
                                         }
                                     }
                                 }
