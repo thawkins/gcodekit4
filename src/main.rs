@@ -120,6 +120,16 @@ fn main() -> anyhow::Result<()> {
     // Initialize Designer state (Phase 2)
     let designer_mgr = Rc::new(RefCell::new(gcodekit4::DesignerState::new()));
     info!("Designer state initialized");
+    
+    // Initialize designer UI state with Select mode (0) as default
+    let initial_designer_state = crate::DesignerState {
+        mode: 0,
+        zoom: 1.0,
+        pan_x: 0.0,
+        pan_y: 0.0,
+        selected_id: -1,
+    };
+    main_window.set_designer_state(initial_designer_state);
 
     // Shared state for settings persistence
     let settings_persistence = Rc::new(RefCell::new(SettingsPersistence::new()));
@@ -1530,6 +1540,14 @@ fn main() -> anyhow::Result<()> {
                     }
                 )
             ));
+            // Update UI state to reflect mode change
+            window.set_designer_state(crate::DesignerState {
+                mode,
+                zoom: state.canvas.zoom() as f32,
+                pan_x: 0.0,
+                pan_y: 0.0,
+                selected_id: -1,
+            });
         }
     });
 

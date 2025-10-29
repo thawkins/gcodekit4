@@ -32,9 +32,9 @@ component ToolButton inherits Rectangle {
     
     callback clicked;
     
-    width: 50px;
-    height: 50px;
-    background: #34495e;
+    width: 48px;
+    height: 48px;
+    background: current_mode == tool_id ? #2980b9 : #34495e;
     border-width: 2px;
     border-color: current_mode == tool_id ? white : transparent;
     
@@ -44,6 +44,7 @@ component ToolButton inherits Rectangle {
             text: icon_text;
             font-size: 24px;
             horizontal-alignment: center;
+            color: current_mode == tool_id ? white : #bdc3c7;
         }
     }
     
@@ -80,14 +81,14 @@ export component DesignerPanel inherits VerticalBox {
     
     // Main layout: vertical toolbox on left, canvas and properties on right
     HorizontalBox {
-        spacing: 10px;
+        spacing: 5px;
         
         // ═════════════════════════════════════════════
         // LEFT SIDEBAR: Vertical Tool Icons
         // ═════════════════════════════════════════════
         VerticalBox {
-            width: 60px;
-            spacing: 5px;
+            width: 54px;
+            spacing: 2px;
             alignment: start;
             
             // Drawing Tools
@@ -165,6 +166,7 @@ export component DesignerPanel inherits VerticalBox {
         // ═════════════════════════════════════════════
         VerticalBox {
             width: 100%;
+            min-width: 300px;
             
             // Canvas with interactive area
             Rectangle {
