@@ -193,7 +193,7 @@ export component DesignerPanel inherits VerticalBox {
             // Canvas Info Indicator
             Rectangle {
                 height: 25px;
-                background: #1e1e1e;
+                background: #2c3e50;
                 border-width: 1px;
                 border-color: #3f3f3f;
                 
@@ -209,28 +209,28 @@ export component DesignerPanel inherits VerticalBox {
                         text: "Scale: " + Math.round(zoom_scale * 1000.0) / 10.0 + "%";
                         font-size: 11px;
                         font-weight: 700;
-                        color: #1b5e20;
+                        color: #4caf50;
                     }
                     
                     // X Offset
                     Text {
                         text: "X: " + Math.round(x_offset * 10.0) / 10.0;
                         font-size: 11px;
-                        color: #0d47a1;
+                        color: #64b5f6;
                     }
                     
                     // Y Offset
                     Text {
                         text: "Y: " + Math.round(y_offset * 10.0) / 10.0;
                         font-size: 11px;
-                        color: #0d47a1;
+                        color: #64b5f6;
                     }
                     
                     // Zoom multiplier for reference
                     Text {
                         text: "(" + Math.round(zoom_scale * 100.0) / 100.0 + "x)";
                         font-size: 10px;
-                        color: #2e7d32;
+                        color: #81c784;
                     }
                 }
             }
