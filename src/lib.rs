@@ -35,6 +35,7 @@ pub mod communication;
 pub mod config;
 pub mod core;
 pub mod data;
+pub mod designer;
 pub mod error;
 pub mod firmware;
 pub mod gcode;
@@ -63,6 +64,10 @@ pub use core::{
 pub use data::{
     CNCPoint, CommunicatorState, ControllerState, ControllerStatus, MachineStatus,
     MachineStatusSnapshot, PartialPosition, Position, Units,
+};
+pub use designer::{
+    Canvas, CanvasPoint, Circle, DrawingMode, Line, Point, Rectangle, Shape, ShapeType,
+    Toolpath, ToolpathGenerator, ToolpathSegment, ToolpathSegmentType, ToolpathToGcode,
 };
 pub use error::{ConnectionError, ControllerError, Error, FirmwareError, GcodeError, Result};
 pub use firmware::ControllerType;
