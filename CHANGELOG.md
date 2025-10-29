@@ -5,7 +5,74 @@ All notable changes to this project should be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.24.1] - 2025-10-28
+## [0.24.1] - 2025-10-29
+
+### Added
+- **Designer Tool Phase 2 - UI & Interaction**
+  - Vertical icon toolbox on left side (54px width)
+  - Interactive canvas with click-to-create shapes
+  - Four drawing modes: Select, Rectangle, Circle, Line
+  - Shape position-aware creation at click coordinates
+  - Cursor feedback (crosshair for drawing modes)
+  - Real-time shape counter in status bar
+  - Tool parameters panel on right (180px width)
+  - Professional dark theme with clear visual hierarchy
+  - Zoom controls (In, Out, Fit)
+  - Shape manipulation (Delete, Clear)
+  - G-Code generation and export workflow
+  
+- **Designer State Management**
+  - Designer state synchronization between UI and backend
+  - Mode tracking for active drawing tool
+  - Initial state initialization with Select mode as default
+  - Proper state updates on tool selection changes
+
+### Changed
+- **Designer UI Layout**
+  - Reduced panel padding: 10px → 5px for compact layout
+  - Reduced spacing between components: 10px/5px → 5px/2px
+  - Reduced properties panel width: 220px → 180px for more canvas space
+  - Fixed HorizontalBox spacing: 5px → 2px for tighter layout
+
+- **Tool Button Styling**
+  - Selected tool: bright blue background (#3498db) with white text
+  - Unselected tools: dark background (#2c3e50) with gray text (#95a5a6)
+  - Added white border (2px) to selected tool for emphasis
+  - Clear visual distinction between active/inactive states
+
+- **Canvas Interaction**
+  - TouchArea now captures mouse coordinates (self.x/1px, self.y/1px)
+  - Canvas click coordinates passed to shape creation handler
+  - Shapes created at precise click positions instead of origin
+
+### Fixed
+- **Designer Canvas Width**
+  - Canvas no longer overlaps screen edges
+  - Properties panel width reduced to fit screen
+  - Proper responsive layout with fixed toolbox and adjustable canvas
+
+- **Shape Creation**
+  - Rectangle tool now creates shapes on canvas click
+  - Circle tool creates circles at click position
+  - Line tool creates lines from click position
+  - Select tool selects shapes at click position
+  - All shape creation modes fully functional
+
+- **Icon Highlighting**
+  - Selected tool icons now bright and obvious (blue background)
+  - Unselected tools subtle but visible (gray text)
+  - Only one tool highlighted at a time
+  - Clear state indication for user feedback
+
+### Current Issues Being Tracked
+- Canvas rendering (visual shape display)
+- Drag-to-create shapes with size control
+- Multi-select functionality
+- Shape transformation tools
+- Keyboard shortcuts
+- Grid overlay option
+
+## [0.24.0] - 2025-10-28
 
 ### Added
 - **Two-Level Grid System in Visualizer**
