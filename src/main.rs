@@ -1651,6 +1651,48 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
+    // Designer: Add Rectangle callback (test)
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_add_rectangle(move || {
+        info!("Designer: Add test rectangle");
+        let mut state = designer_mgr_clone.borrow_mut();
+        state.add_test_rectangle();
+        if let Some(window) = window_weak.upgrade() {
+            window.set_connection_status(slint::SharedString::from(
+                format!("Shapes: {}", state.canvas.shapes().len())
+            ));
+        }
+    });
+
+    // Designer: Add Circle callback (test)
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_add_circle(move || {
+        info!("Designer: Add test circle");
+        let mut state = designer_mgr_clone.borrow_mut();
+        state.add_test_circle();
+        if let Some(window) = window_weak.upgrade() {
+            window.set_connection_status(slint::SharedString::from(
+                format!("Shapes: {}", state.canvas.shapes().len())
+            ));
+        }
+    });
+
+    // Designer: Add Line callback (test)
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_add_line(move || {
+        info!("Designer: Add test line");
+        let mut state = designer_mgr_clone.borrow_mut();
+        state.add_test_line();
+        if let Some(window) = window_weak.upgrade() {
+            window.set_connection_status(slint::SharedString::from(
+                format!("Shapes: {}", state.canvas.shapes().len())
+            ));
+        }
+    });
+
     // Zoom state tracking (Arc for shared state across closures)
     use std::sync::{Arc, Mutex};
     let zoom_scale = Arc::new(Mutex::new(1.0f32));

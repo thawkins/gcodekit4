@@ -1,8 +1,8 @@
 //! visualizer module integration tests
 
-mod setup_tests;
 mod controls_tests;
 mod features_tests;
+mod setup_tests;
 mod toolpath_tests;
 mod visualizer_2d_tests;
 

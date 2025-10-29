@@ -162,6 +162,9 @@ export component MainWindow inherits Window {
     callback designer-clear-canvas();
     callback designer-generate-toolpath();
     callback designer-export-gcode();
+    callback designer-add-rectangle();
+    callback designer-add-circle();
+    callback designer-add-line();
     
     // Internal state for UI selections
     private property <int> port-index: 0;
@@ -805,6 +808,18 @@ if current-view == "safety-diagnostics" : SafetyDiagnosticsPanel {
                     
                     export_gcode => {
                         root.designer-export-gcode();
+                    }
+                    
+                    add_rectangle => {
+                        root.designer-add-rectangle();
+                    }
+                    
+                    add_circle => {
+                        root.designer-add-circle();
+                    }
+                    
+                    add_line => {
+                        root.designer-add-line();
                     }
                 }
             }

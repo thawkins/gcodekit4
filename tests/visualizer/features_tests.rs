@@ -68,7 +68,7 @@ fn test_machine_limits_size_and_center() {
 #[test]
 fn test_machine_limits_enforcement() {
     let mut limits = MachineLimits::new(Vector3::zero(), Vector3::new(100.0, 100.0, 100.0));
-    
+
     limits.enforced = false;
     assert!(limits.contains(Vector3::new(500.0, 500.0, 500.0)));
 }
@@ -86,7 +86,7 @@ fn test_bounding_box_creation() {
 fn test_bounding_box_vertices() {
     let bbox = BoundingBox::new(Vector3::zero(), Vector3::new(10.0, 10.0, 10.0));
     let vertices = bbox.vertices();
-    
+
     assert_eq!(vertices.len(), 8);
     assert!(vertices.contains(&Vector3::zero()));
     assert!(vertices.contains(&Vector3::new(10.0, 10.0, 10.0)));
@@ -157,7 +157,10 @@ fn test_scene_features_set_limits() {
     let mut features = SceneFeatures::new();
     assert!(features.limits.is_none());
 
-    features.set_limits(MachineLimits::new(Vector3::zero(), Vector3::new(100.0, 100.0, 100.0)));
+    features.set_limits(MachineLimits::new(
+        Vector3::zero(),
+        Vector3::new(100.0, 100.0, 100.0),
+    ));
     assert!(features.limits.is_some());
 }
 
@@ -166,7 +169,10 @@ fn test_scene_features_set_bounding_box() {
     let mut features = SceneFeatures::new();
     assert!(features.bounding_box.is_none());
 
-    features.set_bounding_box(BoundingBox::new(Vector3::zero(), Vector3::new(50.0, 50.0, 50.0)));
+    features.set_bounding_box(BoundingBox::new(
+        Vector3::zero(),
+        Vector3::new(50.0, 50.0, 50.0),
+    ));
     assert!(features.bounding_box.is_some());
 }
 

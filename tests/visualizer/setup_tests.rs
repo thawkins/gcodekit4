@@ -1,6 +1,8 @@
 //! Setup module integration tests
 
-use gcodekit4::visualizer::{Camera, CameraType, Color, Light, LightType, Renderer, Scene, Vector3};
+use gcodekit4::visualizer::{
+    Camera, CameraType, Color, Light, LightType, Renderer, Scene, Vector3,
+};
 
 #[test]
 fn test_vector3_creation_and_operations() {
@@ -119,7 +121,7 @@ fn test_camera_aspect_ratio() {
 fn test_camera_view_direction() {
     let camera = Camera::new(Vector3::new(0.0, 0.0, 10.0), Vector3::zero());
     let view_dir = camera.get_view_direction();
-    
+
     assert_eq!(view_dir, Vector3::new(0.0, 0.0, -1.0));
 }
 

@@ -1,8 +1,6 @@
 //! Controls module integration tests
 
-use gcodekit4::visualizer::{
-    Camera, CameraController, Vector3, ViewPreset, VisualizerControls,
-};
+use gcodekit4::visualizer::{Camera, CameraController, Vector3, ViewPreset, VisualizerControls};
 
 #[test]
 fn test_view_preset_display() {
@@ -20,7 +18,7 @@ fn test_view_preset_display() {
 fn test_camera_controller_creation() {
     let camera = Camera::new(Vector3::new(100.0, 100.0, 100.0), Vector3::zero());
     let controller = CameraController::new(camera);
-    
+
     assert_eq!(controller.current_view, ViewPreset::Isometric);
     assert!(controller.rotation_sensitivity > 0.0);
     assert!(controller.zoom_sensitivity > 0.0);
@@ -75,7 +73,7 @@ fn test_camera_controller_pan() {
 fn test_camera_controller_drag() {
     let camera = Camera::new(Vector3::new(100.0, 100.0, 100.0), Vector3::zero());
     let mut controller = CameraController::new(camera);
-    
+
     controller.set_mouse_position(0.0, 0.0);
     let initial_rotation = controller.rotation;
 

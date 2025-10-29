@@ -32,24 +32,24 @@ All tests **MUST** be located in the `tests/` folder organized by module hierarc
 - `cargo fmt` - Format code with rustfmt
 - `cargo fmt --check` - Check formatting without changes
 
-## Github access
-- use "gh" to access all github repositories. 
-- when asked to "push to remote", update the SPEC.md, README.md, STATS.md and CHANGELOG.md files with all recent activity and spec changes, construct a suitable commit message based on recent activity, commit all changes and push the changes to the remote repository.
-- when asked to "push release to remote", update the release number, and then follow the "push to remote" process
-- When initialising a new repo add BUG, FEATURE, TASK and CHANGE issue templates only do this once. 
+## GitHub Access
+- Use "gh" to access all GitHub repositories.
+- When asked to "push to remote", update the SPEC.md, README.md, STATS.md and CHANGELOG.md files with all recent activity and spec changes, construct a suitable commit message based on recent activity, commit all changes and push the changes to the remote repository.
+- When asked to "push release to remote", update the release number, and then follow the "push to remote" process.
+- When initializing a new repo, add BUG, FEATURE, TASK and CHANGE issue templates only do this once. 
 
 ## Changelog Management
 - **CHANGELOG.md**: Maintain a changelog in the root directory documenting all changes before each push to remote.
 - **Format**: Follow Keep a Changelog format (https://keepachangelog.com/)
 - **Update Timing**: Update CHANGELOG.md before each push to remote with the latest changes, features, fixes, and improvements.
-- **Version**: Use semantic versioning (major.minor.patch-prerelease) 
+- **Version**: Use semantic versioning (major.minor.patch-prerelease)
 
-## Documentation standards 
--  For all functions create DOCBLOCK documentation comments above each function that describes the purpose of the function, and documents any arguments and return vaulues
--  For all modules place a DOCBLOCK at the top of the File that describes the purpose of the module, and any dependancies.
--  **Documentation Files**: All documentation markdown files (*.md) **MUST** be located in the `docs/` folder, except for `STATS.md`, `SPEC.md`, `AGENTS.md`, `README.md` , `PLAN.md` and `CHANGELOG.md` which remain in the project root. This includes: implementation guides, architecture documentation, feature specifications, task breakdowns, user guides, API references, and any other markdown documentation. Any future documentation should be created in the docs/ folder following this convention.
--  Do not create explainer documents or other .md files unless specificaly asked to.
--  **Test Organization**: All tests **MUST** be located in the `tests/` folder organized by module hierarchy, mirroring the `src/` directory structure, NOT inline in source files.
+## Documentation Standards
+- For all functions create DOCBLOCK documentation comments above each function that describes the purpose of the function, and documents any arguments and return values.
+- For all modules place a DOCBLOCK at the top of the file that describes the purpose of the module, and any dependencies.
+- **Documentation Files**: All documentation markdown files (*.md) **MUST** be located in the `docs/` folder, except for `STATS.md`, `SPEC.md`, `AGENTS.md`, `README.md`, `PLAN.md` and `CHANGELOG.md` which remain in the project root. This includes: implementation guides, architecture documentation, feature specifications, task breakdowns, user guides, API references, and any other markdown documentation. Any future documentation should be created in the docs/ folder following this convention.
+- Do not create explainer documents or other .md files unless specifically asked to.
+- **Test Organization**: All tests **MUST** be located in the `tests/` folder organized by module hierarchy, mirroring the `src/` directory structure, NOT inline in source files.
 
 ## Code Style Guidelines
 - **Formatting**: 4 spaces, max 100 width, reorder_imports=true, Unix newlines
@@ -57,32 +57,26 @@ All tests **MUST** be located in the `tests/` folder organized by module hierarc
 - **Imports**: Group std, external crates, then local modules; reorder automatically
 - **Error Handling**: Use `Result<T, E>` with `?`, `anyhow::Result` for main, `thiserror` for custom errors
 - **Types**: Prefer explicit types, use type aliases for complex types
--  **Logging**: Use `tracing` with structured logging, avoid `println!` in any phase of development. 
+- **Logging**: Use `tracing` with structured logging, avoid `println!` in any phase of development.
 - **Documentation**: `//!` for crate docs, `///` for public APIs, `//` for internal comments
 - **Linting**: No wildcard imports, cognitive complexity ≤30, warn on missing docs
 - **Best Practices**: Read the best practices at https://www.djamware.com/post/68b2c7c451ce620c6f5efc56/rust-project-structure-and-best-practices-for-clean-scalable-code and apply to the project.
 
-## Issue Handling Process
-When dealing with issues in the remote repository:
-1. **Analyze and Comment**: Place a comment in the issue that records your analysis of the issue and your proposed plan for fixing it
-2. **Implement Fix**: After analysis, implement the proposed solution
-3. **Wait for Confirmation**: Do not close the issue until the reporter has confirmed the fix is working 
+## Workflow
 
-## Work flow
-
-1. When asked "whats next", present a list of the top 9 unimplemented tasks by task number, accept a task number and perform that task. 
-2. Dont suggest features unless asked to 
+1. When asked "whats next", present a list of the top 9 unimplemented tasks by task number, accept a task number and perform that task.
+2. Don't suggest features unless asked to.
 
 ## Versioning
 
-1. During development the release number will have "-alpha" appended to the end as per semantic versioning standards. 
+1. During development the release number will have "-alpha" appended to the end as per semantic versioning standards.
 
-## Tempoary files
+## Temporary Files
 
-1. create a directory called "target" in the project root
-2. create a directory called "temp" in the target folder
+1. Create a directory called "target" in the project root
+2. Create a directory called "temp" in the target folder
 3. Ensure that the target/temp folder is in the .gitignore file
-4. Use target/temp for all tempoary files, scripts and other ephemeral items that are normally placed in /tmp
+4. Use target/temp for all temporary files, scripts and other ephemeral items that are normally placed in /tmp
 
 ## Issue Tracking with bd (beads)
 
@@ -181,5 +175,6 @@ Then use `mcp__beads__*` functions instead of CLI commands.
 - ❌ Do NOT create markdown TODO lists
 - ❌ Do NOT use external issue trackers
 - ❌ Do NOT duplicate tracking systems
+- ❌ **Do NOT close issues by yourself** - Only close issues when explicitly instructed to do so
 
 For more details, see README.md and QUICKSTART.md.

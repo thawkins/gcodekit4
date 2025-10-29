@@ -128,6 +128,21 @@ impl DesignerState {
     pub fn set_cut_depth(&mut self, depth: f64) {
         self.toolpath_generator.set_cut_depth(depth);
     }
+
+    /// Adds a test rectangle to the canvas.
+    pub fn add_test_rectangle(&mut self) {
+        self.canvas.add_rectangle(10.0, 10.0, 50.0, 40.0);
+    }
+
+    /// Adds a test circle to the canvas.
+    pub fn add_test_circle(&mut self) {
+        self.canvas.add_circle(Point::new(75.0, 75.0), 20.0);
+    }
+
+    /// Adds a test line to the canvas.
+    pub fn add_test_line(&mut self) {
+        self.canvas.add_line(Point::new(10.0, 10.0), Point::new(100.0, 100.0));
+    }
 }
 
 impl Default for DesignerState {

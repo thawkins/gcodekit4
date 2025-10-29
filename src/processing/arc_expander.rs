@@ -82,15 +82,3 @@ impl Default for ArcExpander {
         Self::new(ArcExpanderConfig::default())
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_arc_expander() {
-        let expander = ArcExpander::default();
-        let segments = expander.expand_arc(0.0, 1.0, 1.0, 0.0, 0.0, 0.0, false);
-        assert!(!segments.is_empty());
-    }
-}

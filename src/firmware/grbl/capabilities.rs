@@ -429,4 +429,3 @@ fn parse_version_number(chars: &mut std::iter::Peekable<std::str::Chars>) -> Opt
         num_str.parse::<u32>().ok()
     }
 }
-

@@ -9,7 +9,7 @@ fn test_line_segment_creation() {
         Vector3::new(10.0, 0.0, 0.0),
         MovementType::Feed,
     );
-    
+
     assert_eq!(segment.start, Vector3::zero());
     assert_eq!(segment.end, Vector3::new(10.0, 0.0, 0.0));
     assert_eq!(segment.movement_type, MovementType::Feed);
@@ -30,10 +30,26 @@ fn test_line_segment_with_feed_rate() {
 
 #[test]
 fn test_line_segment_colors() {
-    let rapid = LineSegment::new(Vector3::zero(), Vector3::new(10.0, 0.0, 0.0), MovementType::Rapid);
-    let feed = LineSegment::new(Vector3::zero(), Vector3::new(10.0, 0.0, 0.0), MovementType::Feed);
-    let arc_cw = LineSegment::new(Vector3::zero(), Vector3::new(10.0, 0.0, 0.0), MovementType::ArcClockwise);
-    let arc_ccw = LineSegment::new(Vector3::zero(), Vector3::new(10.0, 0.0, 0.0), MovementType::ArcCounterClockwise);
+    let rapid = LineSegment::new(
+        Vector3::zero(),
+        Vector3::new(10.0, 0.0, 0.0),
+        MovementType::Rapid,
+    );
+    let feed = LineSegment::new(
+        Vector3::zero(),
+        Vector3::new(10.0, 0.0, 0.0),
+        MovementType::Feed,
+    );
+    let arc_cw = LineSegment::new(
+        Vector3::zero(),
+        Vector3::new(10.0, 0.0, 0.0),
+        MovementType::ArcClockwise,
+    );
+    let arc_ccw = LineSegment::new(
+        Vector3::zero(),
+        Vector3::new(10.0, 0.0, 0.0),
+        MovementType::ArcCounterClockwise,
+    );
 
     assert_ne!(rapid.get_color(), feed.get_color());
     assert_ne!(arc_cw.get_color(), arc_ccw.get_color());
@@ -122,7 +138,7 @@ fn test_arc_interpolation() {
 #[test]
 fn test_toolpath_creation() {
     let toolpath = Toolpath::new(Vector3::new(5.0, 5.0, 5.0));
-    
+
     assert_eq!(toolpath.start_position, Vector3::new(5.0, 5.0, 5.0));
     assert_eq!(toolpath.current_position, Vector3::new(5.0, 5.0, 5.0));
     assert_eq!(toolpath.total_length, 0.0);
@@ -144,7 +160,7 @@ fn test_toolpath_add_line_segment() {
         Vector3::new(10.0, 0.0, 0.0),
         MovementType::Feed,
     );
-    
+
     toolpath.add_line_segment(segment);
 
     assert_eq!(toolpath.line_segments.len(), 1);
@@ -161,7 +177,7 @@ fn test_toolpath_add_arc_segment() {
         Vector3::zero(),
         false,
     );
-    
+
     toolpath.add_arc_segment(arc);
 
     assert_eq!(toolpath.arc_segments.len(), 1);
@@ -173,20 +189,20 @@ fn test_toolpath_add_arc_segment() {
 fn test_toolpath_update_position() {
     let mut toolpath = Toolpath::new(Vector3::zero());
     toolpath.update_current_position(Vector3::new(5.0, 5.0, 5.0));
-    
+
     assert_eq!(toolpath.current_position, Vector3::new(5.0, 5.0, 5.0));
 }
 
 #[test]
 fn test_toolpath_get_all_line_segments() {
     let mut toolpath = Toolpath::new(Vector3::zero());
-    
+
     toolpath.add_line_segment(LineSegment::new(
         Vector3::zero(),
         Vector3::new(10.0, 0.0, 0.0),
         MovementType::Feed,
     ));
-    
+
     let arc = ArcSegment::new(
         Vector3::new(10.0, 0.0, 0.0),
         Vector3::new(0.0, 10.0, 0.0),
@@ -203,7 +219,7 @@ fn test_toolpath_get_all_line_segments() {
 #[test]
 fn test_toolpath_bounding_box() {
     let mut toolpath = Toolpath::new(Vector3::zero());
-    
+
     assert!(toolpath.get_bounding_box().is_none());
 
     toolpath.add_line_segment(LineSegment::new(
@@ -214,7 +230,7 @@ fn test_toolpath_bounding_box() {
 
     let bbox = toolpath.get_bounding_box();
     assert!(bbox.is_some());
-    
+
     let (min, max) = bbox.unwrap();
     assert_eq!(min, Vector3::zero());
     assert_eq!(max, Vector3::new(10.0, 10.0, 10.0));
@@ -223,7 +239,7 @@ fn test_toolpath_bounding_box() {
 #[test]
 fn test_toolpath_center() {
     let mut toolpath = Toolpath::new(Vector3::zero());
-    
+
     assert!(toolpath.get_center().is_none());
 
     toolpath.add_line_segment(LineSegment::new(
@@ -252,7 +268,7 @@ fn test_toolpath_estimated_time() {
 #[test]
 fn test_toolpath_clear() {
     let mut toolpath = Toolpath::new(Vector3::new(5.0, 5.0, 5.0));
-    
+
     toolpath.add_line_segment(LineSegment::new(
         Vector3::new(5.0, 5.0, 5.0),
         Vector3::new(10.0, 10.0, 10.0),
@@ -275,13 +291,13 @@ fn test_toolpath_clear() {
 #[test]
 fn test_toolpath_statistics() {
     let mut toolpath = Toolpath::new(Vector3::zero());
-    
+
     toolpath.add_line_segment(LineSegment::new(
         Vector3::zero(),
         Vector3::new(10.0, 0.0, 0.0),
         MovementType::Feed,
     ));
-    
+
     toolpath.add_line_segment(LineSegment::new(
         Vector3::new(10.0, 0.0, 0.0),
         Vector3::new(20.0, 0.0, 0.0),

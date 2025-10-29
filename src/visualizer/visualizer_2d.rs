@@ -663,7 +663,7 @@ fn draw_line(img: &mut RgbaImage, x0: i32, y0: i32, x1: i32, y1: i32, color: Rgb
 fn draw_thick_line(img: &mut RgbaImage, x0: i32, y0: i32, x1: i32, y1: i32, color: Rgba<u8>) {
     // Draw the main line
     draw_line(img, x0, y0, x1, y1, color);
-    
+
     // Draw parallel line to make it 2 pixels thick
     if x0 == x1 {
         // Vertical line - draw one pixel to the right

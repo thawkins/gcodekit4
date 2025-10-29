@@ -209,5 +209,3 @@ impl CapabilitiesTrait for DefaultCapabilities {
         self.buffer_size
     }
 }
-
-
