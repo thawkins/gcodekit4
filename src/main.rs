@@ -1651,41 +1651,13 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
-    // Designer: Add Rectangle callback (test)
+    // Designer: Canvas Click callback
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
-    main_window.on_designer_add_rectangle(move || {
-        info!("Designer: Add test rectangle");
+    main_window.on_designer_canvas_click(move |x: f32, y: f32| {
+        info!("Designer: Canvas clicked at ({}, {})", x, y);
         let mut state = designer_mgr_clone.borrow_mut();
-        state.add_test_rectangle();
-        if let Some(window) = window_weak.upgrade() {
-            window.set_connection_status(slint::SharedString::from(
-                format!("Shapes: {}", state.canvas.shapes().len())
-            ));
-        }
-    });
-
-    // Designer: Add Circle callback (test)
-    let designer_mgr_clone = designer_mgr.clone();
-    let window_weak = main_window.as_weak();
-    main_window.on_designer_add_circle(move || {
-        info!("Designer: Add test circle");
-        let mut state = designer_mgr_clone.borrow_mut();
-        state.add_test_circle();
-        if let Some(window) = window_weak.upgrade() {
-            window.set_connection_status(slint::SharedString::from(
-                format!("Shapes: {}", state.canvas.shapes().len())
-            ));
-        }
-    });
-
-    // Designer: Add Line callback (test)
-    let designer_mgr_clone = designer_mgr.clone();
-    let window_weak = main_window.as_weak();
-    main_window.on_designer_add_line(move || {
-        info!("Designer: Add test line");
-        let mut state = designer_mgr_clone.borrow_mut();
-        state.add_test_line();
+        state.add_shape_at(x as f64, y as f64);
         if let Some(window) = window_weak.upgrade() {
             window.set_connection_status(slint::SharedString::from(
                 format!("Shapes: {}", state.canvas.shapes().len())

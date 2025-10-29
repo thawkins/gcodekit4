@@ -143,6 +143,28 @@ impl DesignerState {
     pub fn add_test_line(&mut self) {
         self.canvas.add_line(Point::new(10.0, 10.0), Point::new(100.0, 100.0));
     }
+
+    /// Adds a shape to the canvas at the specified position based on current mode.
+    pub fn add_shape_at(&mut self, x: f64, y: f64) {
+        match self.canvas.mode() {
+            DrawingMode::Select => {
+                // Select mode - just select shape at position
+                self.canvas.select_at(&Point::new(x, y));
+            }
+            DrawingMode::Rectangle => {
+                // Draw 60x40 rectangle starting at click point
+                self.canvas.add_rectangle(x, y, 60.0, 40.0);
+            }
+            DrawingMode::Circle => {
+                // Draw circle with radius 25 centered at click point
+                self.canvas.add_circle(Point::new(x + 25.0, y + 25.0), 25.0);
+            }
+            DrawingMode::Line => {
+                // Draw 50 unit line from click point
+                self.canvas.add_line(Point::new(x, y), Point::new(x + 50.0, y));
+            }
+        }
+    }
 }
 
 impl Default for DesignerState {
