@@ -1,8 +1,8 @@
 # Designer Tool Phase 2 - UI Integration Progress
 
-## Current Status: Shape Rendering & Selection Complete
+## Current Status: Phase 2C Shape Manipulation Complete
 
-**Latest Commit**: e3f3b31 (Add selection handles and bounding box visualization)
+**Latest Commit**: 2b1f9ed (Phase 2C: Implement shape manipulation)
 **Date**: 2025-10-29
 
 ## What Was Completed
@@ -52,28 +52,35 @@ The Designer panel follows the established pattern:
 
 ## What Remains
 
-### Phase 2C: Shape Manipulation (Next Priority)
-1. **Drag to Move**
-   - Detect mouse drag on shape
-   - Move shape to follow cursor
-   - Update position in state
+### ✅ Phase 2C: Shape Manipulation (Completed 2025-10-29)
+- Implemented move_selected(dx, dy) for smooth shape translation
+- Implemented resize_selected(handle, dx, dy) with 5 handle points
+  * Corner handles (4): Resize from opposite corner
+  * Center handle: Acts as move operation
+  * Aspect ratio maintained for circles
+- Added TouchArea drag handlers to selected shapes:
+  * Shape body: grab cursor, drag-to-move
+  * Each handle: appropriate resize cursor, drag-to-resize
+- Real-time visual feedback during manipulation
+- All operations update UI immediately via update_designer_ui()
+- Callback pipeline: Slint UI → main.rs → DesignerState → Canvas
 
-2. **Drag Handles to Resize**
-   - Detect drag on corner/edge handles
-   - Resize shape maintaining aspect ratio (optional)
-   - Update dimensions in state
+## What Remains
 
-3. **Shape Deselection**
-   - Click on empty canvas to deselect
+### Phase 2D: Deselection & Polish (Final)
+1. **Click empty canvas to deselect**
+   - Track if click is on empty area
+   - Clear selected_id if not on shape
+
+2. **Keyboard shortcuts**
    - Escape key to deselect
-   - Click on different shape to change selection
+   - Delete key to remove selected
+   - Ctrl+A to select all (optional)
 
-4. **Property Panel Wiring**
-   - Feed rate input binding
-   - Spindle speed control
-   - Tool diameter configuration
-   - Cut depth settings
-   - Real-time parameter updates
+3. **Edge cases & refinement**
+   - Prevent negative dimensions during resize
+   - Minimum size constraints for shapes
+   - Smooth interaction feedback
 
 ## Implementation Roadmap
 
@@ -92,16 +99,17 @@ The Designer panel follows the established pattern:
 - [x] Click-to-select functionality
 
 ### Week 3: Shape Manipulation
-- [ ] Implement drag-to-move for selected shapes
-- [ ] Implement handle-based resizing
-- [ ] Add deselection (empty click, escape key)
-- [ ] Test shape manipulation workflows
+- [x] Implement drag-to-move for selected shapes
+- [x] Implement handle-based resizing
+- [x] Add proper cursor feedback
+- [x] Real-time UI updates
 
-### Week 4: Toolpath & Export
+### Week 4: Deselection & Export
+- [ ] Implement deselection (empty click, escape key)
+- [ ] Add keyboard shortcuts
+- [ ] Polish edge cases
 - [ ] Integrate toolpath generation
 - [ ] Wire export button to G-Code Editor
-- [ ] Test complete workflows
-- [ ] Performance optimization
 
 ## Current File Structure
 
@@ -263,7 +271,7 @@ window.set_designer_state(DesignerState {
 
 ---
 
-**Status**: Phase 2 Selection & Handles complete, ready for shape manipulation  
-**Blockers**: None - can begin drag-to-move implementation  
-**Estimate to MVP**: 1-2 days to complete Phase 2C (shape manipulation)
+**Status**: Phase 2C Shape Manipulation complete, 3 major phases done  
+**Blockers**: None - ready for Phase 2D deselection and final polish  
+**Estimate to MVP**: 1 day to complete deselection + polish
 
