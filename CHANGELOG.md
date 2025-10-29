@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.24.1] - 2025-10-29
 
 ### Added
-- **Designer Tool Phase 2 - UI & Interaction**
+- **Designer Tool Phase 2 - Complete UI & Interaction Implementation**
   - Vertical icon toolbox on left side (54px width)
   - Interactive canvas with click-to-create shapes
   - Four drawing modes: Select, Rectangle, Circle, Line
@@ -17,22 +17,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Real-time shape counter in status bar
   - Tool parameters panel on right (180px width)
   - Professional dark theme with clear visual hierarchy
-  - Zoom controls (In, Out, Fit)
+  - Zoom controls (In, Out, Fit, Reset View)
   - Shape manipulation (Delete, Clear)
   - G-Code generation and export workflow
+
+- **Shape Selection & Visual Feedback**
+  - Click-to-select in Select mode
+  - Yellow bounding box (#ffeb3b) around selected shapes
+  - 5 resize handles (4 corners + center circle) with white borders
+  - Handles positioned at: TL, TR, BL, BR, and center
+  - Prevents deselection when clicking on already-selected shape
+  - Visual distinction: blue (unselected) vs yellow box (selected)
+
+- **Shape Manipulation**
+  - Drag-to-move selected shapes with grab cursor
+  - 5-point handle-based resizing (drag any corner or edge)
+  - Smart resizing: rectangles resize from opposite corner, circles maintain shape
+  - Real-time visual feedback during all operations
+  - Zoom-aware drag calculations for correct movement at any scale
+  - Line shapes support two-point manipulation
+
+- **Keyboard Shortcuts**
+  - Escape key: Deselect current shape
+  - Delete key: Remove selected shape
+  - Intuitive, standard key mappings
+
+- **Canvas Zoom & Pan Indicator**
+  - White indicator bar above canvas showing real-time state
+  - Displays: Scale percentage, X/Y pan offsets, zoom multiplier
+  - Black text on white background for high visibility
+  - Large text (13px) for readability
+  - Updates automatically as zoom/pan changes
+
+- **View Control**
+  - Zoom In (+) button: Increases scale, redraws canvas
+  - Zoom Out (-) button: Decreases scale, redraws canvas
+  - Zoom Fit (⊡) button: Fits shapes to view
+  - Reset View (⌂) button: Returns to 100% zoom, 0,0 pan offset
   
 - **Designer State Management**
   - Designer state synchronization between UI and backend
   - Mode tracking for active drawing tool
-  - Initial state initialization with Select mode as default
-  - Proper state updates on tool selection changes
+  - Zoom and pan state tracking
+  - Selected shape tracking
+  - Proper state updates on all operations
 
 ### Changed
+- **Canvas Rendering**
+  - Shape rendering now includes zoom/pan transforms
+  - Formula: (shape_coordinate * zoom_scale + offset) * 1px
+  - All shape types (rectangle, circle, line) scale correctly
+  - Border radius scales with zoom for circles
+  - Smooth rendering at any zoom level
+
 - **Designer UI Layout**
   - Reduced panel padding: 10px → 5px for compact layout
   - Reduced spacing between components: 10px/5px → 5px/2px
   - Reduced properties panel width: 220px → 180px for more canvas space
   - Fixed HorizontalBox spacing: 5px → 2px for tighter layout
+  - Added indicator bar above canvas (25px height)
 
 - **Tool Button Styling**
   - Selected tool: bright blue background (#3498db) with white text
@@ -41,11 +84,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Clear visual distinction between active/inactive states
 
 - **Canvas Interaction**
-  - TouchArea now captures mouse coordinates (self.x/1px, self.y/1px)
+  - TouchArea captures mouse coordinates correctly (self.mouse_x/y)
   - Canvas click coordinates passed to shape creation handler
   - Shapes created at precise click positions instead of origin
+  - Shapes can be created and manipulated at any zoom level
 
 ### Fixed
+- **Shape Rendering Issues**
+  - Fixed shape type mapping: Circle=1, Line=2 (was reversed)
+  - Fixed click position calculation using mouse_x/y instead of absolute coords
+  - Shapes now render at correct click positions
+
+- **Shape Interaction**
+  - Fixed drag operations: now scale drag delta by 1/zoom_scale for correct movement
+  - Fixed all 5 resize handles: zoom-aware calculations
+  - Fixed deselection: clicking on already-selected shape keeps it selected
+  - Fixed shape moves and resizing: works correctly at any zoom level
+
+- **Canvas Zoom Rendering**
+  - Shapes now scale and pan based on zoom_scale and offsets
+  - Drag operations account for zoom level
+  - Canvas updates when zoom/pan changes
+
 - **Designer Canvas Width**
   - Canvas no longer overlaps screen edges
   - Properties panel width reduced to fit screen
