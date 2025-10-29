@@ -1714,7 +1714,11 @@ fn main() -> anyhow::Result<()> {
         
         // If in Select mode, try to select a shape; otherwise add a new shape
         if state.canvas.mode() == gcodekit4::DrawingMode::Select {
-            state.canvas.select_at(&gcodekit4::Point::new(x as f64, y as f64));
+            // Check if we clicked on the already selected shape - if so, don't deselect
+            let click_point = gcodekit4::Point::new(x as f64, y as f64);
+            if !state.canvas.is_point_in_selected(&click_point) {
+                state.canvas.select_at(&click_point);
+            }
         } else {
             state.add_shape_at(x as f64, y as f64);
         }

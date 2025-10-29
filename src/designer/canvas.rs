@@ -176,6 +176,16 @@ impl Canvas {
         self.selected_id = None;
     }
 
+    /// Checks if point is inside currently selected shape
+    pub fn is_point_in_selected(&self, point: &Point) -> bool {
+        if let Some(id) = self.selected_id {
+            if let Some(obj) = self.shapes.iter().find(|o| o.id == id) {
+                return obj.shape.contains_point(point);
+            }
+        }
+        false
+    }
+
     /// Sets zoom level (1.0 = 100%).
     pub fn set_zoom(&mut self, zoom: f64) {
         if zoom > 0.1 && zoom < 10.0 {
