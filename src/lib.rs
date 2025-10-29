@@ -36,6 +36,7 @@ pub mod config;
 pub mod core;
 pub mod data;
 pub mod designer;
+pub mod designer_state;
 pub mod error;
 pub mod firmware;
 pub mod gcode;
@@ -69,6 +70,7 @@ pub use designer::{
     Canvas, CanvasPoint, Circle, DrawingMode, Line, Point, Rectangle, Shape, ShapeType,
     Toolpath, ToolpathGenerator, ToolpathSegment, ToolpathSegmentType, ToolpathToGcode,
 };
+pub use designer_state::DesignerState;
 pub use error::{ConnectionError, ControllerError, Error, FirmwareError, GcodeError, Result};
 pub use firmware::ControllerType;
 pub use gcode::{
