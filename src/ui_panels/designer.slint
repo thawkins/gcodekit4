@@ -1,0 +1,158 @@
+//! Designer Tool UI Panel  
+//! Provides 2D CAD drawing interface with shape tools and toolpath generation
+
+import { Button, SpinBox, VerticalBox, HorizontalBox } from "std-widgets.slint";
+
+export struct DesignerShape {
+    id: int,
+    x: float,
+    y: float,
+    width: float,
+    height: float,
+    radius: float,
+    x2: float,
+    y2: float,
+    shape_type: int,
+    selected: bool,
+}
+
+export struct DesignerState {
+    mode: int,
+    zoom: float,
+    pan_x: float,
+    pan_y: float,
+    selected_id: int,
+}
+
+export component DesignerPanel inherits VerticalBox {
+    in property <[DesignerShape]> shapes: [];
+    in property <DesignerState> designer_state;
+    in property <float> feed_rate: 120.0;
+    in property <float> spindle_speed: 3000.0;
+    in property <float> tool_diameter: 3.175;
+    in property <float> cut_depth: -5.0;
+    in property <string> generated_gcode: "";
+    in property <bool> gcode_generated: false;
+    
+    callback set_mode(int);
+    callback zoom_in();
+    callback zoom_out();
+    callback zoom_fit();
+    callback delete_selected();
+    callback clear_canvas();
+    callback generate_toolpath();
+    callback export_gcode();
+    
+    spacing: 10px;
+    padding: 10px;
+    
+    // Toolbar
+    HorizontalBox {
+        spacing: 5px;
+        height: 40px;
+        
+        Button { text: "Select"; clicked => { set_mode(0); } }
+        Button { text: "Rectangle"; clicked => { set_mode(1); } }
+        Button { text: "Circle"; clicked => { set_mode(2); } }
+        Button { text: "Line"; clicked => { set_mode(3); } }
+        HorizontalBox { }
+        Button { text: "Zoom +"; clicked => { zoom_in(); } }
+        Button { text: "Zoom -"; clicked => { zoom_out(); } }
+        Button { text: "Fit"; clicked => { zoom_fit(); } }
+        Button { text: "Delete"; clicked => { delete_selected(); } }
+        Button { text: "Clear"; clicked => { clear_canvas(); } }
+    }
+    
+    // Main content
+    HorizontalBox {
+        spacing: 10px;
+        
+        // Canvas area
+        Rectangle {
+            width: 100%;
+            background: #2c3e50;
+            
+            VerticalBox {
+                Rectangle {
+                    width: 100%;
+                    height: 80%;
+                    background: #34495e;
+                }
+                
+                Text {
+                    text: "Canvas - " + shapes.length + " shapes";
+                    font-size: 11px;
+                }
+            }
+        }
+        
+        // Properties panel
+        VerticalBox {
+            width: 250px;
+            spacing: 10px;
+            
+            Text {
+                text: "Tool Parameters";
+                font-weight: 700;
+            }
+            
+            HorizontalBox {
+                Text { text: "Feed Rate:"; width: 80px; }
+                SpinBox { value: feed_rate; }
+            }
+            HorizontalBox {
+                Text { text: "Spindle:"; width: 80px; }
+                SpinBox { value: spindle_speed; }
+            }
+            HorizontalBox {
+                Text { text: "Tool Ø:"; width: 80px; }
+                SpinBox { value: tool_diameter; }
+            }
+            HorizontalBox {
+                Text { text: "Cut Depth:"; width: 80px; }
+                SpinBox { value: cut_depth; }
+            }
+            
+            Text {
+                text: "Generate";
+                font-weight: 700;
+            }
+            
+            Button {
+                text: "Generate Toolpath";
+                clicked => { generate_toolpath(); }
+            }
+            Button {
+                text: "Export to Editor";
+                clicked => { export_gcode(); }
+            }
+            
+            Text {
+                text: gcode_generated ? "✓ G-Code Ready" : "No G-Code";
+                font-size: 11px;
+            }
+            
+            HorizontalBox { }
+        }
+    }
+    
+    // Status bar
+    HorizontalBox {
+        height: 30px;
+        padding: 5px;
+        spacing: 10px;
+        
+        Text {
+            text: "Zoom: 100%";
+            font-size: 11px;
+        }
+        Text {
+            text: (designer_state.mode == 0 ? "Select" :
+                   designer_state.mode == 1 ? "Rectangle" :
+                   designer_state.mode == 2 ? "Circle" : "Line");
+            font-size: 11px;
+        }
+        HorizontalBox { }
+        Text { text: "Ready"; font-size: 11px; }
+    }
+}

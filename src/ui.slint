@@ -12,12 +12,34 @@ import { FileValidationPanel } from "ui_panels/file_validation.slint";
 import { AdvancedFeaturesPanel } from "ui_panels/advanced_features.slint";
 import { SafetyDiagnosticsPanel } from "ui_panels/safety_diagnostics.slint";
 import { GcodeVisualizerPanel } from "ui_panels/gcode_visualizer.slint";
+import { DesignerPanel } from "ui_panels/designer.slint";
 import { MainMenu } from "ui/ui_components/mainmenu.slint";
 import { SettingsDialog, SettingItem } from "ui/ui_components/settings_dialog.slint";
 
 export struct PortInfo {
     port: string,
     description: string,
+}
+
+export struct DesignerShape {
+    id: int,
+    x: float,
+    y: float,
+    width: float,
+    height: float,
+    radius: float,
+    x2: float,
+    y2: float,
+    shape_type: int,
+    selected: bool,
+}
+
+export struct DesignerState {
+    mode: int,
+    zoom: float,
+    pan_x: float,
+    pan_y: float,
+    selected_id: int,
 }
 
 export component MainWindow inherits Window {
@@ -67,6 +89,23 @@ export component MainWindow inherits Window {
     in property <float> visualizer-zoom-scale: 1.0;
     in-out property <bool> visualizer-show-grid: true;
     
+    // Designer panel properties (Phase 2)
+    in property <[DesignerShape]> designer-shapes: [];
+    in property <DesignerState> designer-state: {
+        mode: 0,
+        zoom: 1.0,
+        pan_x: 0.0,
+        pan_y: 0.0,
+        selected_id: -1,
+    };
+    in property <float> designer-feed-rate: 120.0;
+    in property <float> designer-spindle-speed: 3000.0;
+    in property <float> designer-tool-diameter: 3.175;
+    in property <float> designer-cut-depth: -5.0;
+    in property <float> designer-safe-z: 10.0;
+    in property <string> designer-generated-gcode: "";
+    in property <bool> designer-gcode-generated: false;
+    
     callback refresh-ports();
     callback connect(string, int);
     callback disconnect();
@@ -98,6 +137,7 @@ export component MainWindow inherits Window {
     callback menu-view-advanced-features();
     callback menu-view-safety-diagnostics();
     callback menu-view-gcode-visualizer();
+    callback menu-view-designer();
     callback menu-help-about();
     callback update-setting(string, string);
     callback console-clear-clicked();
@@ -112,6 +152,16 @@ export component MainWindow inherits Window {
     callback pan-up();
     callback pan-down();
     callback toggle-grid();
+    
+    // Designer callbacks (Phase 2)
+    callback designer-set-mode(int);
+    callback designer-zoom-in();
+    callback designer-zoom-out();
+    callback designer-zoom-fit();
+    callback designer-delete-selected();
+    callback designer-clear-canvas();
+    callback designer-generate-toolpath();
+    callback designer-export-gcode();
     
     // Internal state for UI selections
     private property <int> port-index: 0;
@@ -218,6 +268,15 @@ export component MainWindow inherits Window {
                     if (current-view != "gcode-visualizer") {
                         current-view = "gcode-visualizer";
                         root.menu-view-gcode-visualizer();
+                    }
+                }
+            }
+            MenuItem {
+                title: current-view == "designer" ? @tr("✓ Designer") : @tr("Designer");
+                activated => {
+                    if (current-view != "designer") {
+                        current-view = "designer";
+                        root.menu-view-designer();
                     }
                 }
             }
@@ -518,6 +577,31 @@ export component MainWindow inherits Window {
                                 }
                             }
                         }
+
+                        // Designer Tab
+                        Rectangle {
+                            width: 120px;
+                            height: 32px;
+                            background: current-view == "designer" ? #34495e : #3d5470;
+                            border-radius: 3px;
+                            
+                            Text {
+                                text: "Designer";
+                                color: current-view == "designer" ? white : #bdc3c7;
+                                font-size: 12px;
+                                font-weight: current-view == "designer" ? 700 : 400;
+                                vertical-alignment: center;
+                                horizontal-alignment: center;
+                            }
+                            
+                            TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => {
+                                    current-view = "designer";
+                                    root.menu-view-designer();
+                                }
+                            }
+                        }
                     }
                 }
                 
@@ -677,6 +761,50 @@ if current-view == "safety-diagnostics" : SafetyDiagnosticsPanel {
                     
                     toggle-grid => {
                         root.toggle-grid();
+                    }
+                }
+
+                // Designer View
+                if current-view == "designer" : DesignerPanel {
+                    shapes: root.designer-shapes;
+                    designer_state: root.designer-state;
+                    feed_rate: root.designer-feed-rate;
+                    spindle_speed: root.designer-spindle-speed;
+                    tool_diameter: root.designer-tool-diameter;
+                    cut_depth: root.designer-cut-depth;
+                    generated_gcode: root.designer-generated-gcode;
+                    gcode_generated: root.designer-gcode-generated;
+                    
+                    set_mode(m) => {
+                        root.designer-set-mode(m);
+                    }
+                    
+                    zoom_in => {
+                        root.designer-zoom-in();
+                    }
+                    
+                    zoom_out => {
+                        root.designer-zoom-out();
+                    }
+                    
+                    zoom_fit => {
+                        root.designer-zoom-fit();
+                    }
+                    
+                    delete_selected => {
+                        root.designer-delete-selected();
+                    }
+                    
+                    clear_canvas => {
+                        root.designer-clear-canvas();
+                    }
+                    
+                    generate_toolpath => {
+                        root.designer-generate-toolpath();
+                    }
+                    
+                    export_gcode => {
+                        root.designer-export-gcode();
                     }
                 }
             }
