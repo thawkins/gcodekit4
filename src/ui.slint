@@ -158,6 +158,7 @@ export component MainWindow inherits Window {
     callback designer-zoom-in();
     callback designer-zoom-out();
     callback designer-zoom-fit();
+    callback designer-reset-view();
     callback designer-delete-selected();
     callback designer-clear-canvas();
     callback designer-generate-toolpath();
@@ -796,6 +797,10 @@ if current-view == "safety-diagnostics" : SafetyDiagnosticsPanel {
                     
                     zoom_fit => {
                         root.designer-zoom-fit();
+                    }
+                    
+                    reset_view => {
+                        root.designer-reset-view();
                     }
                     
                     delete_selected => {

@@ -1646,6 +1646,30 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
+    // Designer: Reset View callback
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_reset_view(move || {
+        info!("Designer: Reset view");
+        let mut state = designer_mgr_clone.borrow_mut();
+        // Reset zoom to 1.0 (100%)
+        state.canvas.set_zoom(1.0);
+        // Reset pan to 0,0
+        let (pan_x, pan_y) = state.canvas.pan_offset();
+        state.canvas.pan(-pan_x, -pan_y);
+        if let Some(window) = window_weak.upgrade() {
+            update_designer_ui(&window, &state);
+            let ui_state = crate::DesignerState {
+                mode: state.canvas.mode() as i32,
+                zoom: state.canvas.zoom() as f32,
+                pan_x: state.canvas.pan_offset().0 as f32,
+                pan_y: state.canvas.pan_offset().1 as f32,
+                selected_id: state.canvas.selected_id().unwrap_or(0) as i32,
+            };
+            window.set_designer_state(ui_state);
+        }
+    });
+
     // Designer: Delete Selected callback
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();

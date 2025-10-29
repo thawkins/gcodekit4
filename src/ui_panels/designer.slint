@@ -73,6 +73,7 @@ export component DesignerPanel inherits VerticalBox {
     callback zoom_in();
     callback zoom_out();
     callback zoom_fit();
+    callback reset_view();
     callback delete_selected();
     callback clear_canvas();
     callback generate_toolpath();
@@ -167,6 +168,12 @@ export component DesignerPanel inherits VerticalBox {
                 clicked => { zoom_fit(); }
             }
             
+            Button {
+                text: "⌂";
+                width: 50px;
+                clicked => { reset_view(); }
+            }
+            
             VerticalBox { } // Spacer
             
             // Edit Controls
@@ -193,9 +200,9 @@ export component DesignerPanel inherits VerticalBox {
             // Canvas Info Indicator
             Rectangle {
                 height: 25px;
-                background: #2c3e50;
+                background: white;
                 border-width: 1px;
-                border-color: #3f3f3f;
+                border-color: #cccccc;
                 
                 HorizontalBox {
                     padding-left: 8px;
@@ -209,28 +216,28 @@ export component DesignerPanel inherits VerticalBox {
                         text: "Scale: " + Math.round(zoom_scale * 1000.0) / 10.0 + "%";
                         font-size: 11px;
                         font-weight: 700;
-                        color: #4caf50;
+                        color: black;
                     }
                     
                     // X Offset
                     Text {
                         text: "X: " + Math.round(x_offset * 10.0) / 10.0;
                         font-size: 11px;
-                        color: #64b5f6;
+                        color: black;
                     }
                     
                     // Y Offset
                     Text {
                         text: "Y: " + Math.round(y_offset * 10.0) / 10.0;
                         font-size: 11px;
-                        color: #64b5f6;
+                        color: black;
                     }
                     
                     // Zoom multiplier for reference
                     Text {
                         text: "(" + Math.round(zoom_scale * 100.0) / 100.0 + "x)";
                         font-size: 10px;
-                        color: #81c784;
+                        color: black;
                     }
                 }
             }
@@ -248,15 +255,16 @@ export component DesignerPanel inherits VerticalBox {
                         background: #34495e;
                         
                         // Render shapes (shape_type: 0=rect, 1=circle, 2=line)
+                        // Apply zoom scale and pan offset to shape positioning
                         for shape in shapes: Rectangle {
-                            x: shape.x * 1px;
-                            y: shape.y * 1px;
-                            width: shape.shape_type == 1 ? shape.radius * 2 * 1px : shape.width * 1px;
-                            height: shape.shape_type == 1 ? shape.radius * 2 * 1px : shape.height * 1px;
+                            x: (shape.x * zoom_scale + x_offset) * 1px;
+                            y: (shape.y * zoom_scale + y_offset) * 1px;
+                            width: (shape.shape_type == 1 ? shape.radius * 2 : shape.width) * zoom_scale * 1px;
+                            height: (shape.shape_type == 1 ? shape.radius * 2 : shape.height) * zoom_scale * 1px;
                             background: #3498db;
                             border-width: 2px;
                             border-color: #2980b9;
-                            border-radius: shape.shape_type == 1 ? shape.radius * 1px : 2px;
+                            border-radius: shape.shape_type == 1 ? shape.radius * zoom_scale * 1px : 2px;
                             
                             // TouchArea for shape interaction (only when selected)
                             if shape.selected: TouchArea {
