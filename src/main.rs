@@ -117,6 +117,10 @@ fn main() -> anyhow::Result<()> {
     // Shared state for settings dialog
     let settings_dialog = Rc::new(RefCell::new(SettingsDialog::new()));
 
+    // Initialize Designer state (Phase 2)
+    let designer_mgr = Rc::new(RefCell::new(gcodekit4::DesignerState::new()));
+    info!("Designer state initialized");
+
     // Shared state for settings persistence
     let settings_persistence = Rc::new(RefCell::new(SettingsPersistence::new()));
 
@@ -283,7 +287,7 @@ fn main() -> anyhow::Result<()> {
                     polling_active.store(true, std::sync::atomic::Ordering::Relaxed);
                     use gcodekit4::SerialCommunicator;
                     let mut poll_comm = SerialCommunicator::new();
-                    
+
                     // Connect the polling communicator
                     let params = gcodekit4::ConnectionParams {
                         driver: gcodekit4::ConnectionDriver::Serial,
@@ -298,11 +302,11 @@ fn main() -> anyhow::Result<()> {
                         auto_reconnect: true,
                         max_retries: 3,
                     };
-                    
+
                     if let Ok(()) = poll_comm.connect(&params) {
                         while !polling_stop.load(std::sync::atomic::Ordering::Relaxed) {
                             std::thread::sleep(std::time::Duration::from_millis(200));
-                            
+
                             if poll_comm.is_connected() {
                                 // Send status query '?'
                                 if let Ok(_) = poll_comm.send(&[b'?']) {
@@ -311,9 +315,11 @@ fn main() -> anyhow::Result<()> {
                                         if !response.is_empty() {
                                             let response_str = String::from_utf8_lossy(&response);
                                             debug!("Status response: {}", response_str);
-                                            
+
                                             // Parse position from response
-                                            if let Some((x, y, z)) = parse_grbl_status(&response_str) {
+                                            if let Some((x, y, z)) =
+                                                parse_grbl_status(&response_str)
+                                            {
                                                 let window_handle = window_weak_poll.clone();
                                                 slint::invoke_from_event_loop(move || {
                                                     if let Some(window) = window_handle.upgrade() {
@@ -363,10 +369,10 @@ fn main() -> anyhow::Result<()> {
     main_window.on_disconnect(move || {
         info!("Disconnect requested");
         console_manager_clone.add_message(DeviceMessageType::Output, "Disconnecting from device");
-        
+
         // Stop the polling thread
         polling_stop_clone.store(true, std::sync::atomic::Ordering::Relaxed);
-        
+
         let mut comm = communicator_clone.borrow_mut();
         match comm.disconnect() {
             Ok(()) => {
@@ -723,12 +729,12 @@ fn main() -> anyhow::Result<()> {
         if let Some(window) = window_weak.upgrade() {
             // Get the current content from the UI TextEdit
             let current_content = window.get_gcode_content().to_string();
-            
+
             // Update the GcodeEditor with the current UI content to keep them in sync
             if let Err(e) = gcode_editor_clone.load_content(&current_content) {
                 warn!("Failed to sync UI content to editor: {}", e);
             }
-            
+
             // For safety, use the editor's content which should now be synchronized
             let _send_content = gcode_editor_clone.get_plain_content();
 
@@ -746,7 +752,7 @@ fn main() -> anyhow::Result<()> {
                 return;
             }
             drop(comm);
-            
+
             if current_content.is_empty() {
                 warn!("Send failed: No G-Code to send");
                 console_manager_clone
@@ -768,7 +774,7 @@ fn main() -> anyhow::Result<()> {
                     current_content.len()
                 ),
             );
-            
+
             // Update UI to show sending is in progress
             window.set_connection_status(slint::SharedString::from("Sending G-Code..."));
             let console_output = console_manager_clone.get_output();
@@ -778,7 +784,7 @@ fn main() -> anyhow::Result<()> {
             // Store state in shared Rc<RefCell<>> for the timer callback
             use std::cell::RefCell;
             use std::rc::Rc;
-            
+
             struct SendState {
                 lines: Vec<String>,
                 line_index: usize,
@@ -790,7 +796,7 @@ fn main() -> anyhow::Result<()> {
                 waiting_for_acks: bool,
                 timeout_count: u32,
             }
-            
+
             let lines: Vec<String> = current_content.lines().map(|s| s.to_string()).collect();
             let send_state = Rc::new(RefCell::new(SendState {
                 lines,
@@ -803,159 +809,196 @@ fn main() -> anyhow::Result<()> {
                 waiting_for_acks: false,
                 timeout_count: 0,
             }));
-            
+
             let window_weak_timer = window_weak.clone();
             let communicator_timer = communicator_clone.clone();
             let console_manager_timer = console_manager_clone.clone();
             let send_state_timer = send_state.clone();
-            
+
             const GRBL_RX_BUFFER_SIZE: usize = 127;
             const MAX_TIMEOUT_ITERATIONS: u32 = 300000;
-            
+
             // Use a timer that fires every 1ms to process sending without blocking UI
             let timer = Rc::new(slint::Timer::default());
             let timer_clone = timer.clone();
-            
-            timer.start(slint::TimerMode::Repeated, std::time::Duration::from_millis(1), move || {
-                let mut state = send_state_timer.borrow_mut();
-                let mut comm = communicator_timer.borrow_mut();
-                
-                // First, always try to receive and process acknowledgments
-                match comm.receive() {
-                    Ok(response) => {
-                        if !response.is_empty() {
-                            let resp_str = String::from_utf8_lossy(&response);
-                            debug!("Response: {}", resp_str);
-                            
-                            let ok_count = resp_str.matches("ok").count() + resp_str.matches("OK").count();
-                            for _ in 0..ok_count {
-                                if !state.line_lengths.is_empty() {
-                                    let processed_length = state.line_lengths.remove(0);
-                                    state.pending_bytes = state.pending_bytes.saturating_sub(processed_length);
-                                    debug!("ACK received: pending_bytes now {}", state.pending_bytes);
+
+            timer.start(
+                slint::TimerMode::Repeated,
+                std::time::Duration::from_millis(1),
+                move || {
+                    let mut state = send_state_timer.borrow_mut();
+                    let mut comm = communicator_timer.borrow_mut();
+
+                    // First, always try to receive and process acknowledgments
+                    match comm.receive() {
+                        Ok(response) => {
+                            if !response.is_empty() {
+                                let resp_str = String::from_utf8_lossy(&response);
+                                debug!("Response: {}", resp_str);
+
+                                let ok_count =
+                                    resp_str.matches("ok").count() + resp_str.matches("OK").count();
+                                for _ in 0..ok_count {
+                                    if !state.line_lengths.is_empty() {
+                                        let processed_length = state.line_lengths.remove(0);
+                                        state.pending_bytes =
+                                            state.pending_bytes.saturating_sub(processed_length);
+                                        debug!(
+                                            "ACK received: pending_bytes now {}",
+                                            state.pending_bytes
+                                        );
+                                    }
                                 }
+                                state.timeout_count = 0;
                             }
-                            state.timeout_count = 0;
+                        }
+                        Err(_) => {
+                            if state.waiting_for_acks {
+                                state.timeout_count += 1;
+                            }
                         }
                     }
-                    Err(_) => {
-                        if state.waiting_for_acks {
-                            state.timeout_count += 1;
-                        }
-                    }
-                }
-                
-                // Check if we're waiting for final acknowledgments
-                if state.waiting_for_acks {
-                    if state.line_lengths.is_empty() || state.timeout_count >= MAX_TIMEOUT_ITERATIONS {
-                        // Done - update UI
-                        drop(comm);
-                        drop(state);
-                        
-                        let final_state = send_state_timer.borrow();
-                        if let Some(window) = window_weak_timer.upgrade() {
-                            if final_state.timeout_count >= MAX_TIMEOUT_ITERATIONS && !final_state.line_lengths.is_empty() {
-                                warn!("Timeout waiting for {} line acknowledgments", final_state.line_lengths.len());
-                                console_manager_timer.add_message(
-                                    DeviceMessageType::Error,
-                                    format!("⚠ Timeout: {} lines may not have been received", final_state.line_lengths.len()),
-                                );
+
+                    // Check if we're waiting for final acknowledgments
+                    if state.waiting_for_acks {
+                        if state.line_lengths.is_empty()
+                            || state.timeout_count >= MAX_TIMEOUT_ITERATIONS
+                        {
+                            // Done - update UI
+                            drop(comm);
+                            drop(state);
+
+                            let final_state = send_state_timer.borrow();
+                            if let Some(window) = window_weak_timer.upgrade() {
+                                if final_state.timeout_count >= MAX_TIMEOUT_ITERATIONS
+                                    && !final_state.line_lengths.is_empty()
+                                {
+                                    warn!(
+                                        "Timeout waiting for {} line acknowledgments",
+                                        final_state.line_lengths.len()
+                                    );
+                                    console_manager_timer.add_message(
+                                        DeviceMessageType::Error,
+                                        format!(
+                                            "⚠ Timeout: {} lines may not have been received",
+                                            final_state.line_lengths.len()
+                                        ),
+                                    );
+                                }
+
+                                if !final_state.error_occurred {
+                                    info!(
+                                        "Successfully sent {} lines to device",
+                                        final_state.send_count
+                                    );
+                                    console_manager_timer.add_message(
+                                        DeviceMessageType::Success,
+                                        format!(
+                                            "✓ Successfully sent {} lines to device",
+                                            final_state.send_count
+                                        ),
+                                    );
+                                    window.set_connection_status(slint::SharedString::from(
+                                        format!("Sent: {} lines", final_state.send_count),
+                                    ));
+                                } else {
+                                    window.set_connection_status(slint::SharedString::from(
+                                        format!(
+                                            "Send stopped at line {} ({})",
+                                            final_state.send_count + 1,
+                                            final_state.error_msg
+                                        ),
+                                    ));
+                                }
+
+                                let console_output = console_manager_timer.get_output();
+                                window
+                                    .set_console_output(slint::SharedString::from(console_output));
                             }
-                            
-                            if !final_state.error_occurred {
-                                info!("Successfully sent {} lines to device", final_state.send_count);
-                                console_manager_timer.add_message(
-                                    DeviceMessageType::Success,
-                                    format!("✓ Successfully sent {} lines to device", final_state.send_count),
-                                );
-                                window.set_connection_status(slint::SharedString::from(format!(
-                                    "Sent: {} lines",
-                                    final_state.send_count
-                                )));
-                            } else {
-                                window.set_connection_status(slint::SharedString::from(format!(
-                                    "Send stopped at line {} ({})",
-                                    final_state.send_count + 1,
-                                    final_state.error_msg
-                                )));
-                            }
-                            
-                            let console_output = console_manager_timer.get_output();
-                            window.set_console_output(slint::SharedString::from(console_output));
+
+                            timer_clone.stop();
                         }
-                        
-                        timer_clone.stop();
-                    }
-                    return;
-                }
-                
-                // Try to send next line if we have room in buffer
-                if state.line_index < state.lines.len() {
-                    let trimmed = state.lines[state.line_index].trim().to_string();
-                    
-                    if trimmed.is_empty() {
-                        state.line_index += 1;
                         return;
                     }
-                    
-                    let line_length = trimmed.len() + 1;
-                    
-                    // Check if there's room in the buffer
-                    if state.pending_bytes + line_length <= GRBL_RX_BUFFER_SIZE {
-                        let command_bytes = format!("{}\n", trimmed);
-                        let line_num = state.send_count + 1;
-                        let pending_after = state.pending_bytes + line_length;
-                        
-                        match comm.send(command_bytes.as_bytes()) {
-                            Ok(bytes_sent) => {
-                                state.send_count += 1;
-                                state.pending_bytes += line_length;
-                                state.line_lengths.push(line_length);
-                                state.line_index += 1;
-                                
-                                info!(
-                                    "Sent line {} ({} bytes): {} [pending: {}/{}]",
-                                    line_num, bytes_sent, trimmed, pending_after, GRBL_RX_BUFFER_SIZE
-                                );
-                            }
-                            Err(e) => {
-                                let error_msg = format!("{}", e);
-                                let line_count = state.send_count + 1;
-                                warn!("Failed to send line {}: {}", line_count, error_msg);
-                                
-                                state.error_msg = error_msg.clone();
-                                state.error_occurred = true;
-                                
-                                drop(comm);
-                                drop(state);
-                                
-                                console_manager_timer.add_message(
-                                    DeviceMessageType::Error,
-                                    format!("✗ Failed to send line {}: {}", line_count, error_msg),
-                                );
-                                
-                                if let Some(window) = window_weak_timer.upgrade() {
-                                    window.set_connection_status(slint::SharedString::from(format!(
-                                        "Send stopped at line {} ({})",
-                                        line_count,
-                                        error_msg
-                                    )));
-                                    let console_output = console_manager_timer.get_output();
-                                    window.set_console_output(slint::SharedString::from(console_output));
+
+                    // Try to send next line if we have room in buffer
+                    if state.line_index < state.lines.len() {
+                        let trimmed = state.lines[state.line_index].trim().to_string();
+
+                        if trimmed.is_empty() {
+                            state.line_index += 1;
+                            return;
+                        }
+
+                        let line_length = trimmed.len() + 1;
+
+                        // Check if there's room in the buffer
+                        if state.pending_bytes + line_length <= GRBL_RX_BUFFER_SIZE {
+                            let command_bytes = format!("{}\n", trimmed);
+                            let line_num = state.send_count + 1;
+                            let pending_after = state.pending_bytes + line_length;
+
+                            match comm.send(command_bytes.as_bytes()) {
+                                Ok(bytes_sent) => {
+                                    state.send_count += 1;
+                                    state.pending_bytes += line_length;
+                                    state.line_lengths.push(line_length);
+                                    state.line_index += 1;
+
+                                    info!(
+                                        "Sent line {} ({} bytes): {} [pending: {}/{}]",
+                                        line_num,
+                                        bytes_sent,
+                                        trimmed,
+                                        pending_after,
+                                        GRBL_RX_BUFFER_SIZE
+                                    );
                                 }
-                                
-                                timer_clone.stop();
+                                Err(e) => {
+                                    let error_msg = format!("{}", e);
+                                    let line_count = state.send_count + 1;
+                                    warn!("Failed to send line {}: {}", line_count, error_msg);
+
+                                    state.error_msg = error_msg.clone();
+                                    state.error_occurred = true;
+
+                                    drop(comm);
+                                    drop(state);
+
+                                    console_manager_timer.add_message(
+                                        DeviceMessageType::Error,
+                                        format!(
+                                            "✗ Failed to send line {}: {}",
+                                            line_count, error_msg
+                                        ),
+                                    );
+
+                                    if let Some(window) = window_weak_timer.upgrade() {
+                                        window.set_connection_status(slint::SharedString::from(
+                                            format!(
+                                                "Send stopped at line {} ({})",
+                                                line_count, error_msg
+                                            ),
+                                        ));
+                                        let console_output = console_manager_timer.get_output();
+                                        window.set_console_output(slint::SharedString::from(
+                                            console_output,
+                                        ));
+                                    }
+
+                                    timer_clone.stop();
+                                }
                             }
                         }
+                    } else if !state.waiting_for_acks {
+                        // All lines sent, now wait for final acknowledgments
+                        let ack_count = state.line_lengths.len();
+                        info!("All lines sent, waiting for {} acknowledgments", ack_count);
+                        state.waiting_for_acks = true;
+                        state.timeout_count = 0;
                     }
-                } else if !state.waiting_for_acks {
-                    // All lines sent, now wait for final acknowledgments
-                    let ack_count = state.line_lengths.len();
-                    info!("All lines sent, waiting for {} acknowledgments", ack_count);
-                    state.waiting_for_acks = true;
-                    state.timeout_count = 0;
-                }
-            });
+                },
+            );
         }
     });
 
@@ -1403,6 +1446,19 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
+    // Set up menu-view-designer callback (Phase 2)
+    let _designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_menu_view_designer(move || {
+        info!("Menu: View > Designer selected");
+        if let Some(window) = window_weak.upgrade() {
+            window.set_current_view(slint::SharedString::from("designer"));
+            window.set_connection_status(slint::SharedString::from(
+                "Designer tool activated",
+            ));
+        }
+    });
+
     // Set up menu-help-about callback
     let window_weak = main_window.as_weak();
     main_window.on_menu_help_about(move || {
@@ -1448,6 +1504,150 @@ fn main() -> anyhow::Result<()> {
                     "Failed to copy to clipboard",
                 ));
             }
+        }
+    });
+
+    // ═════════════════════════════════════════════════════════════
+    // Designer Tool Callbacks (Phase 2)
+    // ═════════════════════════════════════════════════════════════
+
+    // Designer: Set Mode callback
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_set_mode(move |mode: i32| {
+        info!("Designer: Set mode to {}", mode);
+        let mut state = designer_mgr_clone.borrow_mut();
+        state.set_mode(mode);
+        if let Some(window) = window_weak.upgrade() {
+            window.set_connection_status(slint::SharedString::from(
+                format!("Drawing mode: {}", 
+                    match mode {
+                        0 => "Select",
+                        1 => "Rectangle",
+                        2 => "Circle",
+                        3 => "Line",
+                        _ => "Unknown"
+                    }
+                )
+            ));
+        }
+    });
+
+    // Designer: Zoom In callback
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_zoom_in(move || {
+        info!("Designer: Zoom in");
+        let mut state = designer_mgr_clone.borrow_mut();
+        state.zoom_in();
+        if let Some(window) = window_weak.upgrade() {
+            // Create UI state struct from Rust state
+            let ui_state = crate::DesignerState {
+                mode: 0,
+                zoom: state.canvas.zoom() as f32,
+                pan_x: 0.0,
+                pan_y: 0.0,
+                selected_id: -1,
+            };
+            window.set_designer_state(ui_state);
+        }
+    });
+
+    // Designer: Zoom Out callback
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_zoom_out(move || {
+        info!("Designer: Zoom out");
+        let mut state = designer_mgr_clone.borrow_mut();
+        state.zoom_out();
+        if let Some(window) = window_weak.upgrade() {
+            let ui_state = crate::DesignerState {
+                mode: 0,
+                zoom: state.canvas.zoom() as f32,
+                pan_x: 0.0,
+                pan_y: 0.0,
+                selected_id: -1,
+            };
+            window.set_designer_state(ui_state);
+        }
+    });
+
+    // Designer: Zoom Fit callback
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_zoom_fit(move || {
+        info!("Designer: Zoom fit");
+        let mut state = designer_mgr_clone.borrow_mut();
+        state.zoom_fit();
+        if let Some(window) = window_weak.upgrade() {
+            let ui_state = crate::DesignerState {
+                mode: 0,
+                zoom: state.canvas.zoom() as f32,
+                pan_x: 0.0,
+                pan_y: 0.0,
+                selected_id: -1,
+            };
+            window.set_designer_state(ui_state);
+        }
+    });
+
+    // Designer: Delete Selected callback
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_delete_selected(move || {
+        info!("Designer: Delete selected");
+        let mut state = designer_mgr_clone.borrow_mut();
+        state.delete_selected();
+        if let Some(window) = window_weak.upgrade() {
+            window.set_connection_status(slint::SharedString::from(
+                format!("Shapes: {}", state.canvas.shapes().len())
+            ));
+        }
+    });
+
+    // Designer: Clear Canvas callback
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_clear_canvas(move || {
+        info!("Designer: Clear canvas");
+        let mut state = designer_mgr_clone.borrow_mut();
+        state.clear_canvas();
+        if let Some(window) = window_weak.upgrade() {
+            window.set_designer_gcode_generated(false);
+            window.set_connection_status(slint::SharedString::from("Canvas cleared"));
+        }
+    });
+
+    // Designer: Generate Toolpath callback
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_generate_toolpath(move || {
+        info!("Designer: Generate toolpath");
+        let mut state = designer_mgr_clone.borrow_mut();
+        let gcode = state.generate_gcode();
+        if let Some(window) = window_weak.upgrade() {
+            window.set_designer_generated_gcode(slint::SharedString::from(gcode));
+            window.set_designer_gcode_generated(true);
+            window.set_connection_status(slint::SharedString::from(
+                "G-code generated successfully"
+            ));
+        }
+    });
+
+    // Designer: Export G-code callback
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_export_gcode(move || {
+        info!("Designer: Export G-code to editor");
+        let state = designer_mgr_clone.borrow();
+        if let Some(window) = window_weak.upgrade() {
+            window.set_gcode_content(slint::SharedString::from(
+                state.generated_gcode.clone()
+            ));
+            window.set_current_view(slint::SharedString::from("gcode-editor"));
+            window.set_connection_status(slint::SharedString::from(
+                "G-code exported to editor"
+            ));
         }
     });
 
@@ -1500,7 +1700,7 @@ fn main() -> anyhow::Result<()> {
 
                 let mut visualizer = Visualizer2D::new();
                 visualizer.show_grid = show_grid;
-                
+
                 visualizer.parse_gcode(&content_owned);
 
                 // Apply zoom scale
@@ -1687,7 +1887,7 @@ fn main() -> anyhow::Result<()> {
 
                 let mut visualizer = Visualizer2D::new();
                 visualizer.show_grid = show_grid;
-                
+
                 visualizer.parse_gcode(&content_owned);
 
                 let _ = tx.send((0.2, "Calculating bounding box...".to_string(), None));
