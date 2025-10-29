@@ -1711,7 +1711,14 @@ fn main() -> anyhow::Result<()> {
     main_window.on_designer_canvas_click(move |x: f32, y: f32| {
         info!("Designer: Canvas clicked at ({}, {})", x, y);
         let mut state = designer_mgr_clone.borrow_mut();
-        state.add_shape_at(x as f64, y as f64);
+        
+        // If in Select mode, try to select a shape; otherwise add a new shape
+        if state.canvas.mode() == gcodekit4::DrawingMode::Select {
+            state.canvas.select_at(&gcodekit4::Point::new(x as f64, y as f64));
+        } else {
+            state.add_shape_at(x as f64, y as f64);
+        }
+        
         if let Some(window) = window_weak.upgrade() {
             update_designer_ui(&window, &state);
             window.set_connection_status(slint::SharedString::from(

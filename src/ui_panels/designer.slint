@@ -186,10 +186,75 @@ export component DesignerPanel inherits VerticalBox {
                             y: shape.y * 1px;
                             width: shape.shape_type == 1 ? shape.radius * 2 * 1px : shape.width * 1px;
                             height: shape.shape_type == 1 ? shape.radius * 2 * 1px : shape.height * 1px;
-                            background: shape.selected ? #e74c3c : #3498db;
+                            background: #3498db;
                             border-width: 2px;
-                            border-color: shape.selected ? #c0392b : #2980b9;
+                            border-color: #2980b9;
                             border-radius: shape.shape_type == 1 ? shape.radius * 1px : 2px;
+                            
+                            // Selection bounding box with handles
+                            if shape.selected: Rectangle {
+                                width: 100%;
+                                height: 100%;
+                                background: transparent;
+                                border-width: 2px;
+                                border-color: #ffeb3b;
+                                
+                                // Top-left handle
+                                Rectangle {
+                                    x: -6px;
+                                    y: -6px;
+                                    width: 12px;
+                                    height: 12px;
+                                    background: #ffeb3b;
+                                    border-width: 1px;
+                                    border-color: white;
+                                }
+                                
+                                // Top-right handle
+                                Rectangle {
+                                    x: parent.width - 6px;
+                                    y: -6px;
+                                    width: 12px;
+                                    height: 12px;
+                                    background: #ffeb3b;
+                                    border-width: 1px;
+                                    border-color: white;
+                                }
+                                
+                                // Bottom-left handle
+                                Rectangle {
+                                    x: -6px;
+                                    y: parent.height - 6px;
+                                    width: 12px;
+                                    height: 12px;
+                                    background: #ffeb3b;
+                                    border-width: 1px;
+                                    border-color: white;
+                                }
+                                
+                                // Bottom-right handle
+                                Rectangle {
+                                    x: parent.width - 6px;
+                                    y: parent.height - 6px;
+                                    width: 12px;
+                                    height: 12px;
+                                    background: #ffeb3b;
+                                    border-width: 1px;
+                                    border-color: white;
+                                }
+                                
+                                // Center handle
+                                Rectangle {
+                                    x: parent.width / 2 - 6px;
+                                    y: parent.height / 2 - 6px;
+                                    width: 12px;
+                                    height: 12px;
+                                    background: #ffeb3b;
+                                    border-width: 1px;
+                                    border-color: white;
+                                    border-radius: 6px;
+                                }
+                            }
                         }
                         
                         // Make canvas interactive
