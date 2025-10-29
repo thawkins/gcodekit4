@@ -1593,13 +1593,14 @@ fn main() -> anyhow::Result<()> {
         let mut state = designer_mgr_clone.borrow_mut();
         state.zoom_in();
         if let Some(window) = window_weak.upgrade() {
+            update_designer_ui(&window, &state);
             // Create UI state struct from Rust state
             let ui_state = crate::DesignerState {
-                mode: 0,
+                mode: state.canvas.mode() as i32,
                 zoom: state.canvas.zoom() as f32,
-                pan_x: 0.0,
-                pan_y: 0.0,
-                selected_id: -1,
+                pan_x: state.canvas.pan_offset().0 as f32,
+                pan_y: state.canvas.pan_offset().1 as f32,
+                selected_id: state.canvas.selected_id().unwrap_or(0) as i32,
             };
             window.set_designer_state(ui_state);
         }
@@ -1613,12 +1614,13 @@ fn main() -> anyhow::Result<()> {
         let mut state = designer_mgr_clone.borrow_mut();
         state.zoom_out();
         if let Some(window) = window_weak.upgrade() {
+            update_designer_ui(&window, &state);
             let ui_state = crate::DesignerState {
-                mode: 0,
+                mode: state.canvas.mode() as i32,
                 zoom: state.canvas.zoom() as f32,
-                pan_x: 0.0,
-                pan_y: 0.0,
-                selected_id: -1,
+                pan_x: state.canvas.pan_offset().0 as f32,
+                pan_y: state.canvas.pan_offset().1 as f32,
+                selected_id: state.canvas.selected_id().unwrap_or(0) as i32,
             };
             window.set_designer_state(ui_state);
         }
@@ -1632,12 +1634,13 @@ fn main() -> anyhow::Result<()> {
         let mut state = designer_mgr_clone.borrow_mut();
         state.zoom_fit();
         if let Some(window) = window_weak.upgrade() {
+            update_designer_ui(&window, &state);
             let ui_state = crate::DesignerState {
-                mode: 0,
+                mode: state.canvas.mode() as i32,
                 zoom: state.canvas.zoom() as f32,
-                pan_x: 0.0,
-                pan_y: 0.0,
-                selected_id: -1,
+                pan_x: state.canvas.pan_offset().0 as f32,
+                pan_y: state.canvas.pan_offset().1 as f32,
+                selected_id: state.canvas.selected_id().unwrap_or(0) as i32,
             };
             window.set_designer_state(ui_state);
         }

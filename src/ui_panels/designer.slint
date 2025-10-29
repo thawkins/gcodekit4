@@ -65,6 +65,9 @@ export component DesignerPanel inherits VerticalBox {
     in property <float> cut_depth: -5.0;
     in property <string> generated_gcode: "";
     in property <bool> gcode_generated: false;
+    in property <float> zoom_scale: 1.0;
+    in property <float> x_offset: 0.0;
+    in property <float> y_offset: 0.0;
     
     callback set_mode(int);
     callback zoom_in();
@@ -186,6 +189,51 @@ export component DesignerPanel inherits VerticalBox {
         VerticalBox {
             width: 100%;
             min-width: 300px;
+            
+            // Canvas Info Indicator
+            Rectangle {
+                height: 25px;
+                background: #1e1e1e;
+                border-width: 1px;
+                border-color: #3f3f3f;
+                
+                HorizontalBox {
+                    padding-left: 8px;
+                    padding-right: 8px;
+                    padding-top: 4px;
+                    padding-bottom: 4px;
+                    spacing: 20px;
+                    
+                    // Zoom Scale
+                    Text {
+                        text: "Scale: " + Math.round(zoom_scale * 1000.0) / 10.0 + "%";
+                        font-size: 11px;
+                        font-weight: 700;
+                        color: #1b5e20;
+                    }
+                    
+                    // X Offset
+                    Text {
+                        text: "X: " + Math.round(x_offset * 10.0) / 10.0;
+                        font-size: 11px;
+                        color: #0d47a1;
+                    }
+                    
+                    // Y Offset
+                    Text {
+                        text: "Y: " + Math.round(y_offset * 10.0) / 10.0;
+                        font-size: 11px;
+                        color: #0d47a1;
+                    }
+                    
+                    // Zoom multiplier for reference
+                    Text {
+                        text: "(" + Math.round(zoom_scale * 100.0) / 100.0 + "x)";
+                        font-size: 10px;
+                        color: #2e7d32;
+                    }
+                }
+            }
             
             // Canvas with interactive area
             Rectangle {

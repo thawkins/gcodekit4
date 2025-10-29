@@ -778,6 +778,9 @@ if current-view == "safety-diagnostics" : SafetyDiagnosticsPanel {
                     cut_depth: root.designer-cut-depth;
                     generated_gcode: root.designer-generated-gcode;
                     gcode_generated: root.designer-gcode-generated;
+                    zoom_scale: root.designer-state.zoom;
+                    x_offset: root.designer-state.pan_x;
+                    y_offset: root.designer-state.pan_y;
                     
                     set_mode(m) => {
                         root.designer-set-mode(m);
