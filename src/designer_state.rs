@@ -157,7 +157,7 @@ impl DesignerState {
             }
             DrawingMode::Circle => {
                 // Draw circle with radius 25 centered at click point
-                self.canvas.add_circle(Point::new(x + 25.0, y + 25.0), 25.0);
+                self.canvas.add_circle(Point::new(x, y), 25.0);
             }
             DrawingMode::Line => {
                 // Draw 50 unit line from click point
