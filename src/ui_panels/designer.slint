@@ -34,9 +34,9 @@ component ToolButton inherits Rectangle {
     
     width: 48px;
     height: 48px;
-    background: current_mode == tool_id ? #34495e : #2c3e50;
+    background: current_mode == tool_id ? #3498db : #2c3e50;
     border-width: 2px;
-    border-color: current_mode == tool_id ? transparent : white;
+    border-color: current_mode == tool_id ? white : transparent;
     
     VerticalBox {
         alignment: center;
@@ -44,7 +44,7 @@ component ToolButton inherits Rectangle {
             text: icon_text;
             font-size: 24px;
             horizontal-alignment: center;
-            color: current_mode == tool_id ? #34495e : white;
+            color: current_mode == tool_id ? white : #95a5a6;
         }
     }
     
