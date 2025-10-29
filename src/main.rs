@@ -1727,6 +1727,28 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
+    // Designer: Shape drag callback (move selected shape)
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_shape_drag(move |_shape_id: i32, dx: f32, dy: f32| {
+        let mut state = designer_mgr_clone.borrow_mut();
+        state.move_selected(dx as f64, dy as f64);
+        if let Some(window) = window_weak.upgrade() {
+            update_designer_ui(&window, &state);
+        }
+    });
+
+    // Designer: Handle drag callback (resize via handles)
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_handle_drag(move |_shape_id: i32, handle: i32, dx: f32, dy: f32| {
+        let mut state = designer_mgr_clone.borrow_mut();
+        state.resize_selected(handle as usize, dx as f64, dy as f64);
+        if let Some(window) = window_weak.upgrade() {
+            update_designer_ui(&window, &state);
+        }
+    });
+
     // Zoom state tracking (Arc for shared state across closures)
     use std::sync::{Arc, Mutex};
     let zoom_scale = Arc::new(Mutex::new(1.0f32));

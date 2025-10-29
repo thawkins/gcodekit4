@@ -165,6 +165,17 @@ impl DesignerState {
             }
         }
     }
+
+    /// Moves the selected shape by (dx, dy).
+    pub fn move_selected(&mut self, dx: f64, dy: f64) {
+        self.canvas.move_selected(dx, dy);
+    }
+
+    /// Resizes the selected shape via handle drag.
+    /// handle: 0=TL, 1=TR, 2=BL, 3=BR, 4=Center (move)
+    pub fn resize_selected(&mut self, handle: usize, dx: f64, dy: f64) {
+        self.canvas.resize_selected(handle, dx, dy);
+    }
 }
 
 impl Default for DesignerState {

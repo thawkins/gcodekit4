@@ -75,6 +75,8 @@ export component DesignerPanel inherits VerticalBox {
     callback generate_toolpath();
     callback export_gcode();
     callback canvas_click(float, float);
+    callback shape_drag(int, float, float);        // shape_id, dx, dy
+    callback handle_drag(int, int, float, float);  // shape_id, handle_index, dx, dy
     
     spacing: 5px;
     padding: 5px;
@@ -191,6 +193,16 @@ export component DesignerPanel inherits VerticalBox {
                             border-color: #2980b9;
                             border-radius: shape.shape_type == 1 ? shape.radius * 1px : 2px;
                             
+                            // Drag handler for moving shape
+                            if shape.selected: TouchArea {
+                                width: 100%;
+                                height: 100%;
+                                mouse-cursor: grab;
+                                moved => {
+                                    shape_drag(shape.id, (self.mouse_x - self.pressed_x) / 1px, (self.mouse_y - self.pressed_y) / 1px);
+                                }
+                            }
+                            
                             // Selection bounding box with handles
                             if shape.selected: Rectangle {
                                 width: 100%;
@@ -199,7 +211,7 @@ export component DesignerPanel inherits VerticalBox {
                                 border-width: 2px;
                                 border-color: #ffeb3b;
                                 
-                                // Top-left handle
+                                // Top-left handle (0)
                                 Rectangle {
                                     x: -6px;
                                     y: -6px;
@@ -208,9 +220,17 @@ export component DesignerPanel inherits VerticalBox {
                                     background: #ffeb3b;
                                     border-width: 1px;
                                     border-color: white;
+                                    TouchArea {
+                                        width: 100%;
+                                        height: 100%;
+                                        mouse-cursor: nwse-resize;
+                                        moved => {
+                                            handle_drag(shape.id, 0, (self.mouse_x - self.pressed_x) / 1px, (self.mouse_y - self.pressed_y) / 1px);
+                                        }
+                                    }
                                 }
                                 
-                                // Top-right handle
+                                // Top-right handle (1)
                                 Rectangle {
                                     x: parent.width - 6px;
                                     y: -6px;
@@ -219,9 +239,17 @@ export component DesignerPanel inherits VerticalBox {
                                     background: #ffeb3b;
                                     border-width: 1px;
                                     border-color: white;
+                                    TouchArea {
+                                        width: 100%;
+                                        height: 100%;
+                                        mouse-cursor: nesw-resize;
+                                        moved => {
+                                            handle_drag(shape.id, 1, (self.mouse_x - self.pressed_x) / 1px, (self.mouse_y - self.pressed_y) / 1px);
+                                        }
+                                    }
                                 }
                                 
-                                // Bottom-left handle
+                                // Bottom-left handle (2)
                                 Rectangle {
                                     x: -6px;
                                     y: parent.height - 6px;
@@ -230,9 +258,17 @@ export component DesignerPanel inherits VerticalBox {
                                     background: #ffeb3b;
                                     border-width: 1px;
                                     border-color: white;
+                                    TouchArea {
+                                        width: 100%;
+                                        height: 100%;
+                                        mouse-cursor: nesw-resize;
+                                        moved => {
+                                            handle_drag(shape.id, 2, (self.mouse_x - self.pressed_x) / 1px, (self.mouse_y - self.pressed_y) / 1px);
+                                        }
+                                    }
                                 }
                                 
-                                // Bottom-right handle
+                                // Bottom-right handle (3)
                                 Rectangle {
                                     x: parent.width - 6px;
                                     y: parent.height - 6px;
@@ -241,9 +277,17 @@ export component DesignerPanel inherits VerticalBox {
                                     background: #ffeb3b;
                                     border-width: 1px;
                                     border-color: white;
+                                    TouchArea {
+                                        width: 100%;
+                                        height: 100%;
+                                        mouse-cursor: nwse-resize;
+                                        moved => {
+                                            handle_drag(shape.id, 3, (self.mouse_x - self.pressed_x) / 1px, (self.mouse_y - self.pressed_y) / 1px);
+                                        }
+                                    }
                                 }
                                 
-                                // Center handle
+                                // Center handle (4)
                                 Rectangle {
                                     x: parent.width / 2 - 6px;
                                     y: parent.height / 2 - 6px;
@@ -253,6 +297,14 @@ export component DesignerPanel inherits VerticalBox {
                                     border-width: 1px;
                                     border-color: white;
                                     border-radius: 6px;
+                                    TouchArea {
+                                        width: 100%;
+                                        height: 100%;
+                                        mouse-cursor: grab;
+                                        moved => {
+                                            handle_drag(shape.id, 4, (self.mouse_x - self.pressed_x) / 1px, (self.mouse_y - self.pressed_y) / 1px);
+                                        }
+                                    }
                                 }
                             }
                         }

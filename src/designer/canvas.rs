@@ -1,6 +1,6 @@
 //! Canvas for drawing and manipulating shapes.
 
-use super::shapes::{Circle, Line, Point, Rectangle, Shape};
+use super::shapes::{Circle, Line, Point, Rectangle, Shape, ShapeType};
 
 /// Canvas coordinates for drawing.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -196,6 +196,107 @@ impl Canvas {
         self.shapes.clear();
         self.selected_id = None;
         self.next_id = 1;
+    }
+
+    /// Moves the selected shape by (dx, dy).
+    pub fn move_selected(&mut self, dx: f64, dy: f64) {
+        if let Some(id) = self.selected_id {
+            if let Some(obj) = self.shapes.iter_mut().find(|o| o.id == id) {
+                // Get current bounding box
+                let (x1, y1, x2, y2) = obj.shape.bounding_box();
+                
+                // Replace the shape with a moved version
+                let shape = &*obj.shape;
+                let new_shape: Box<dyn Shape> = match shape.shape_type() {
+                    ShapeType::Rectangle => {
+                        let width = x2 - x1;
+                        let height = y2 - y1;
+                        Box::new(Rectangle::new(x1 + dx, y1 + dy, width, height))
+                    }
+                    ShapeType::Circle => {
+                        let center_x = (x1 + x2) / 2.0;
+                        let center_y = (y1 + y2) / 2.0;
+                        let radius = (x2 - x1) / 2.0;
+                        Box::new(Circle::new(Point::new(center_x + dx, center_y + dy), radius))
+                    }
+                    ShapeType::Line => {
+                        Box::new(Line::new(
+                            Point::new(x1 + dx, y1 + dy),
+                            Point::new(x2 + dx, y2 + dy),
+                        ))
+                    }
+                };
+                obj.shape = new_shape;
+            }
+        }
+    }
+
+    /// Resizes the selected shape. Handles: 0=TL, 1=TR, 2=BL, 3=BR, 4=Center (moves)
+    pub fn resize_selected(&mut self, handle: usize, dx: f64, dy: f64) {
+        if let Some(id) = self.selected_id {
+            if let Some(obj) = self.shapes.iter_mut().find(|o| o.id == id) {
+                let (x1, y1, x2, y2) = obj.shape.bounding_box();
+                let shape = &*obj.shape;
+                
+                let new_shape: Box<dyn Shape> = match shape.shape_type() {
+                    ShapeType::Rectangle => {
+                        let (new_x1, new_y1, new_x2, new_y2) = match handle {
+                            0 => (x1 + dx, y1 + dy, x2, y2),           // Top-left
+                            1 => (x1, y1 + dy, x2 + dx, y2),           // Top-right
+                            2 => (x1 + dx, y1, x2, y2 + dy),           // Bottom-left
+                            3 => (x1, y1, x2 + dx, y2 + dy),           // Bottom-right
+                            4 => (x1 + dx, y1 + dy, x2 + dx, y2 + dy), // Center (move)
+                            _ => (x1, y1, x2, y2),
+                        };
+                        
+                        let width = (new_x2 - new_x1).abs();
+                        let height = (new_y2 - new_y1).abs();
+                        Box::new(Rectangle::new(new_x1.min(new_x2), new_y1.min(new_y2), width, height))
+                    }
+                    ShapeType::Circle => {
+                        let center_x = (x1 + x2) / 2.0;
+                        let center_y = (y1 + y2) / 2.0;
+                        let radius = (x2 - x1) / 2.0;
+                        
+                        let (new_cx, new_cy, new_r) = match handle {
+                            0 => {
+                                // Top-left: resize from opposite corner (bottom-right)
+                                let dist = ((dx * dx + dy * dy).sqrt()) / 1.414;
+                                (center_x + dx / 2.0, center_y + dy / 2.0, (radius - dist).max(5.0))
+                            }
+                            1 => {
+                                // Top-right: resize from opposite corner (bottom-left)
+                                let dist = ((dx * dx + dy * dy).sqrt()) / 1.414;
+                                (center_x + dx / 2.0, center_y + dy / 2.0, (radius - dist).max(5.0))
+                            }
+                            2 => {
+                                // Bottom-left: resize from opposite corner (top-right)
+                                let dist = ((dx * dx + dy * dy).sqrt()) / 1.414;
+                                (center_x + dx / 2.0, center_y + dy / 2.0, (radius - dist).max(5.0))
+                            }
+                            3 => {
+                                // Bottom-right: resize from opposite corner (top-left)
+                                let dist = ((dx * dx + dy * dy).sqrt()) / 1.414;
+                                (center_x + dx / 2.0, center_y + dy / 2.0, (radius - dist).max(5.0))
+                            }
+                            4 => (center_x + dx, center_y + dy, radius), // Center (move)
+                            _ => (center_x, center_y, radius),
+                        };
+                        Box::new(Circle::new(Point::new(new_cx, new_cy), new_r))
+                    }
+                    ShapeType::Line => {
+                        let (new_x1, new_y1, new_x2, new_y2) = match handle {
+                            0 => (x1 + dx, y1 + dy, x2, y2),           // Move start
+                            1 => (x1, y1, x2 + dx, y2 + dy),           // Move end
+                            4 => (x1 + dx, y1 + dy, x2 + dx, y2 + dy), // Move both
+                            _ => (x1, y1, x2, y2),
+                        };
+                        Box::new(Line::new(Point::new(new_x1, new_y1), Point::new(new_x2, new_y2)))
+                    }
+                };
+                obj.shape = new_shape;
+            }
+        }
     }
 }
 
