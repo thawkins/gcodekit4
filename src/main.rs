@@ -1128,6 +1128,20 @@ fn main() -> anyhow::Result<()> {
 
             let category = format!("{}", setting.category);
 
+            // Build options list for enum-type settings
+            let options: Vec<slint::SharedString> = if value_type == "String" {
+                // For now, no options for string settings
+                Vec::new()
+            } else {
+                Vec::new()
+            };
+
+            // Find the current index in the options list
+            let current_index = options
+                .iter()
+                .position(|o| *o == setting.value.as_str())
+                .unwrap_or(0) as i32;
+
             settings_items.push(slint_generatedMainWindow::SettingItem {
                 id: setting.id.clone().into(),
                 name: setting.name.clone().into(),
@@ -1139,6 +1153,8 @@ fn main() -> anyhow::Result<()> {
                     .clone()
                     .map(|s| s.into())
                     .unwrap_or_default(),
+                options: slint::ModelRc::from(Rc::new(slint::VecModel::from(options))),
+                current_index,
             });
         }
 

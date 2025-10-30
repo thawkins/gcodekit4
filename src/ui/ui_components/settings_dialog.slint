@@ -1,7 +1,7 @@
 //! Settings Dialog Component
 //! Preferences/settings dialog UI with category sidebar and dynamic settings rendering.
 
-import { Button, CheckBox, LineEdit, ScrollView, VerticalBox, HorizontalBox } from "std-widgets.slint";
+import { Button, CheckBox, ComboBox, LineEdit, ScrollView, VerticalBox, HorizontalBox } from "std-widgets.slint";
 
 export struct SettingItem {
     id: string,
@@ -10,6 +10,8 @@ export struct SettingItem {
     value-type: string,
     category: string,
     description: string,
+    options: [string],
+    current-index: int,
 }
 
 export component SettingsDialog inherits Rectangle {
@@ -172,7 +174,12 @@ export component SettingsDialog inherits Rectangle {
                                                 checked: setting.value == "true" || setting.value == "1";
                                                 toggled => { root.update-setting(setting.id, self.checked ? "true" : "false"); }
                                             }
-                                            if setting.value-type != "Boolean" : LineEdit {
+                                            if setting.value-type == "Enum" && setting.options.length > 0 : ComboBox {
+                                                model: setting.options;
+                                                current-index: setting.current-index;
+                                                selected => { root.update-setting(setting.id, self.current-value); }
+                                            }
+                                            if setting.value-type != "Boolean" && setting.value-type != "Enum" : LineEdit {
                                                 text: setting.value;
                                                 edited => { root.update-setting(setting.id, self.text); }
                                             }
@@ -197,7 +204,12 @@ export component SettingsDialog inherits Rectangle {
                                                 checked: setting.value == "true" || setting.value == "1";
                                                 toggled => { root.update-setting(setting.id, self.checked ? "true" : "false"); }
                                             }
-                                            if setting.value-type != "Boolean" : LineEdit {
+                                            if setting.value-type == "Enum" && setting.options.length > 0 : ComboBox {
+                                                model: setting.options;
+                                                current-index: setting.current-index;
+                                                selected => { root.update-setting(setting.id, self.current-value); }
+                                            }
+                                            if setting.value-type != "Boolean" && setting.value-type != "Enum" : LineEdit {
                                                 text: setting.value;
                                                 edited => { root.update-setting(setting.id, self.text); }
                                             }
@@ -222,7 +234,12 @@ export component SettingsDialog inherits Rectangle {
                                                 checked: setting.value == "true" || setting.value == "1";
                                                 toggled => { root.update-setting(setting.id, self.checked ? "true" : "false"); }
                                             }
-                                            if setting.value-type != "Boolean" : LineEdit {
+                                            if setting.value-type == "Enum" && setting.options.length > 0 : ComboBox {
+                                                model: setting.options;
+                                                current-index: setting.current-index;
+                                                selected => { root.update-setting(setting.id, self.current-value); }
+                                            }
+                                            if setting.value-type != "Boolean" && setting.value-type != "Enum" : LineEdit {
                                                 text: setting.value;
                                                 edited => { root.update-setting(setting.id, self.text); }
                                             }
@@ -247,7 +264,12 @@ export component SettingsDialog inherits Rectangle {
                                                 checked: setting.value == "true" || setting.value == "1";
                                                 toggled => { root.update-setting(setting.id, self.checked ? "true" : "false"); }
                                             }
-                                            if setting.value-type != "Boolean" : LineEdit {
+                                            if setting.value-type == "Enum" && setting.options.length > 0 : ComboBox {
+                                                model: setting.options;
+                                                current-index: setting.current-index;
+                                                selected => { root.update-setting(setting.id, self.current-value); }
+                                            }
+                                            if setting.value-type != "Boolean" && setting.value-type != "Enum" : LineEdit {
                                                 text: setting.value;
                                                 edited => { root.update-setting(setting.id, self.text); }
                                             }
