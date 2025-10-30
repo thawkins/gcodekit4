@@ -11,6 +11,7 @@
 //! - Tool library management
 //! - Toolpath simulation and visualization
 //! - File import support (SVG, DXF)
+//! - Array operations (linear, circular, grid pattern copies)
 //! - G-code export to the G-Code Editor
 //!
 //! This module is organized into sub-modules:
@@ -24,6 +25,7 @@
 //! - `multipass` - Multi-pass depth control and ramping
 //! - `toolpath_simulation` - Toolpath preview and analysis
 //! - `import` - SVG and DXF file import
+//! - `arrays` - Linear, circular, and grid array operations
 //! - `gcode_gen` - G-code generation from toolpaths
 
 pub mod canvas;
@@ -38,6 +40,7 @@ pub mod drilling_patterns;
 pub mod multipass;
 pub mod toolpath_simulation;
 pub mod import;
+pub mod arrays;
 
 pub use canvas::{Canvas, CanvasPoint, DrawingMode};
 pub use gcode_gen::ToolpathToGcode;
@@ -50,3 +53,7 @@ pub use drilling_patterns::{DrillOperation, DrillingPattern, DrillingPatternGene
 pub use multipass::{MultiPassConfig, MultiPassToolpathGenerator, DepthStrategy};
 pub use toolpath_simulation::{ToolpathSimulator, ToolpathAnalyzer, SimulationState, ToolPosition};
 pub use import::{SvgImporter, DxfImporter, ImportedDesign, FileFormat};
+pub use arrays::{
+    ArrayOperation, ArrayType, ArrayGenerator, LinearArrayParams, CircularArrayParams,
+    GridArrayParams,
+};
