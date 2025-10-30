@@ -286,8 +286,6 @@ export component DesignerPanel inherits VerticalBox {
                                 TouchArea {
                                     width: 100%;
                                     height: 100%;
-                                    // Reset hover when not in select mode
-                                    enabled: designer_state.mode == 0;
                                     mouse-cursor: 
                                         designer_state.mode == 0 ? (
                                             root.hovered_handle == 0 || root.hovered_handle == 2 ? ns-resize :

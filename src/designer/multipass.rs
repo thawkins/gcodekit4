@@ -74,7 +74,7 @@ impl MultiPassConfig {
     pub fn calculate_pass_depth(&self, pass: u32) -> f64 {
         match self.strategy {
             DepthStrategy::Constant => {
-                (self.total_depth * pass as f64 / self.calculate_passes() as f64)
+                self.total_depth * pass as f64 / self.calculate_passes() as f64
             }
             DepthStrategy::Ramped => self.calculate_ramped_depth(pass),
             DepthStrategy::Adaptive => self.calculate_adaptive_depth(pass),
