@@ -16,7 +16,7 @@ impl DesignerState {
     /// Creates a new designer state.
     pub fn new() -> Self {
         Self {
-            canvas: Canvas::new(),
+            canvas: Canvas::with_size(1600.0, 1200.0),
             toolpath_generator: ToolpathGenerator::new(),
             generated_gcode: String::new(),
             gcode_generated: false,

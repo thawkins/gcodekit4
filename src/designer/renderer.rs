@@ -10,18 +10,24 @@ const SELECTION_COLOR: Rgb<u8> = Rgb([255, 235, 59]); // #ffeb3b
 const HANDLE_SIZE: i32 = 12;
 
 /// Render canvas shapes to an image buffer
-pub fn render_canvas(canvas: &Canvas, width: u32, height: u32, zoom: f32, pan_x: f32, pan_y: f32) -> RgbImage {
+pub fn render_canvas(canvas: &Canvas, width: u32, height: u32, _zoom: f32, _pan_x: f32, _pan_y: f32) -> RgbImage {
     let mut img = ImageBuffer::from_pixel(width, height, BG_COLOR);
+    
+    // Get viewport for coordinate transformations
+    let viewport = canvas.viewport();
     
     // Render each shape
     for shape_obj in canvas.shapes() {
         let (x1, y1, x2, y2) = shape_obj.shape.bounding_box();
         
-        // Convert to screen coordinates (no zoom/pan for now - TODO: implement proper transforms)
-        let screen_x1 = (x1 as i32).max(0).min(width as i32 - 1);
-        let screen_y1 = (y1 as i32).max(0).min(height as i32 - 1);
-        let screen_x2 = (x2 as i32).max(0).min(width as i32 - 1);
-        let screen_y2 = (y2 as i32).max(0).min(height as i32 - 1);
+        // Convert world coordinates to screen coordinates using viewport transformation
+        let (screen_x1, screen_y1) = viewport.world_to_pixel(x1, y1);
+        let (screen_x2, screen_y2) = viewport.world_to_pixel(x2, y2);
+        
+        let screen_x1 = screen_x1 as i32;
+        let screen_y1 = screen_y1 as i32;
+        let screen_x2 = screen_x2 as i32;
+        let screen_y2 = screen_y2 as i32;
         
         // Render based on shape type
         match shape_obj.shape.shape_type() {
@@ -32,13 +38,21 @@ pub fn render_canvas(canvas: &Canvas, width: u32, height: u32, zoom: f32, pan_x:
                 }
             }
             ShapeType::Circle => {
-                let cx = ((x1 + x2) / 2.0) as i32;
-                let cy = ((y1 + y2) / 2.0) as i32;
-                let radius = (((x2 - x1) / 2.0).abs()) as i32;
-                draw_circle(&mut img, cx, cy, radius, SHAPE_COLOR);
+                // Calculate circle center and radius in world coordinates
+                let center_x = (x1 + x2) / 2.0;
+                let center_y = (y1 + y2) / 2.0;
+                let radius_world = ((x2 - x1) / 2.0).abs();
+                
+                // Convert center to screen coordinates
+                let (cx, cy) = viewport.world_to_pixel(center_x, center_y);
+                
+                // Calculate screen radius (use viewport zoom scale)
+                let radius_screen = (radius_world * viewport.zoom()) as i32;
+                
+                draw_circle(&mut img, cx as i32, cy as i32, radius_screen, SHAPE_COLOR);
                 if shape_obj.selected {
-                    let r = radius as i32;
-                    draw_selection_box(&mut img, cx - r, cy - r, cx + r, cy + r);
+                    let r = radius_screen;
+                    draw_selection_box(&mut img, (cx as i32) - r, (cy as i32) - r, (cx as i32) + r, (cy as i32) + r);
                 }
             }
             ShapeType::Line => {

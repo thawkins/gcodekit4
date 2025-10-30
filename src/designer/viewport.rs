@@ -27,6 +27,16 @@ impl Viewport {
         }
     }
 
+    /// Gets the canvas width.
+    pub fn canvas_width(&self) -> f64 {
+        self.canvas_width
+    }
+
+    /// Gets the canvas height.
+    pub fn canvas_height(&self) -> f64 {
+        self.canvas_height
+    }
+
     /// Sets the canvas dimensions (typically called when window resizes).
     pub fn set_canvas_size(&mut self, width: f64, height: f64) {
         self.canvas_width = width;
