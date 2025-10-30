@@ -8,6 +8,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.24.2] - 2025-10-30
 
 ### Added
+- **Designer Viewport & Interaction - Phase 3 Complete**
+  - Zoom and Pan Controls
+    - Zoom in/out buttons with configurable scale factor (default 1.2x)
+    - Zoom fit to show all shapes
+    - Reset view to return to original state
+    - Viewport rendering with correct coordinate transformations
+    - Pan offset tracking with world coordinates
+  
+  - Coordinate Mapping System
+    - Viewport class with world↔pixel coordinate conversion
+    - Zoom-aware transformations using viewport scale factor
+    - Pan-aware viewport offset calculations
+    - Proper boundary conditions and constraints
+    - 14 unit tests covering all coordinate transformations
+  
+  - Mouse Event Coordinate Mapping
+    - Selection works correctly at any zoom/pan level
+    - Shape dragging works with accurate world-space deltas
+    - Handle detection scales with zoom
+    - Resize operations work correctly when zoomed/panned
+    - Handle size adapts to zoom level for consistent picking
+    - 12 integration tests for mouse event mapping
+  
+  - Pan-On-Drag Feature
+    - Drag on empty canvas (no shape selected) pans the viewport
+    - Standard CAD/CAM UI behavior
+    - Pan direction inverted: drag right = pan left
+    - Works correctly at all zoom levels
+    - 10 integration tests for pan-on-drag functionality
+  
+  - Comprehensive Testing
+    - 48 total tests for viewport and interaction systems
+    - 100% test pass rate
+    - Coverage includes zoom, pan, selection, dragging, resizing
+
 - **Designer Tool Phase 3 - CAM Operations**
   - Tool Library Management: Define and manage cutting tools with geometry and parameters
     - 5 tool types: End Mill, Ball Nose, V-Bit, Drill, Slot Cutter

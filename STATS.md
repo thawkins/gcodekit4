@@ -1,17 +1,17 @@
 # GCodeKit4 Project Statistics
 
 ## Overall Project Status
-- **Version**: 0.24.1-alpha
-- **Status**: Designer Phase 3 Complete - CAM Operations Ready ✅
-- **Completion**: Phase 3 Complete (All CAM operations implemented)
+- **Version**: 0.24.2-alpha
+- **Status**: Designer Phase 3 Complete - Viewport & Interaction ✅
+- **Completion**: Phase 3 Complete (Zoom/Pan/Interaction + CAM operations)
 - **Build Date**: 2025-10-30
-- **Last Updated**: 2025-10-30 09:12 UTC
+- **Last Updated**: 2025-10-30 11:15 UTC
 
 ## Code Metrics
 
 ### Total Lines of Code
 ```
-Rust Implementation:  ~43,500+ lines
+Rust Implementation:  ~43,700+ lines
   - UI Module:        ~11,800 lines (24 files)
   - Firmware:         ~8,000 lines (GRBL, TinyG, g2core, FluidNC, Smoothieware)
   - Core:             ~3,500 lines (controllers, events, messaging, state)
@@ -19,7 +19,9 @@ Rust Implementation:  ~43,500+ lines
   - G-Code:           ~2,000 lines (parser, preprocessors, validation)
   - Visualizer:       ~4,200 lines (3D rendering, 2D visualization, toolpath)
     * visualizer_2d.rs: ~700 lines (2D rendering with two-level grid system)
-  - Designer:         ~1,500 lines (Phase 3 CAM operations)
+  - Designer:         ~1,700 lines (Phase 3 CAM operations + viewport)
+    * viewport.rs: ~200 lines (Viewport class with coordinate transformations)
+    * renderer.rs: ~150 lines (Viewport-aware rendering)
     * tool_library.rs: ~350 lines (Tool definitions & management)
     * pocket_operations.rs: ~350 lines (Pocket milling with islands)
     * drilling_patterns.rs: ~380 lines (Pattern-based drilling)
@@ -28,35 +30,55 @@ Rust Implementation:  ~43,500+ lines
   - Data Models:      ~1,200 lines (positions, commands, states)
   - Utilities:        ~5,900 lines (file I/O, processing, export, advanced, phase6, phase7)
 
-Slint UI:             ~1,300 lines (modularized)
+Slint UI:             ~1,310 lines (modularized)
   - Main interface    ~400 lines (imports & root window)
-  - 6 Modular panels in src/ui_panels/:
+  - 8 Modular panels in src/ui_panels/:
+    * designer.slint (~280 lines - with pan-on-drag support)
     * gcode_editor.slint (~200 lines)
     * device_console.slint (~200 lines)
     * machine_control.slint (~200 lines)
     * gcode_visualizer.slint (~280 lines - enhanced with grid controls)
     * file_validation.slint (~200 lines)
     * advanced_features.slint (~200 lines)
-    * gcode_visualizer.slint (~220 lines - with 2D rendering and interactive controls)
     * safety_diagnostics.slint (~200 lines)
 
-Tests:                ~550+ tests (all passing ✓)
+Tests:                ~600+ tests (all passing ✓)
   - Designer Phase 3:  74 tests (52 unit + 22 integration)
+  - Designer Viewport: 48 tests (14 viewport + 22 coordinate + 12 mouse event)
+  - Designer Pan:      10 tests (pan-on-drag integration)
   - Visualizer tests:  102 integration tests (setup, controls, features, toolpath, 2D)
   - Phase 7 tests:     27 integration + 13 unit tests
   - Phase 6/7 UI:      27 new UI tests (8 validation + 11 features + 9 safety)
   - All modules:       100% pass rate (0 failures)
 ```
 
-### Phase 7 Implementation Summary
+### Phase 3 Viewport & Interaction (Latest)
 ```
-Phase 7 Tasks:        121-150 (30 tasks) ✅ COMPLETE
-  - Task 121:         Safety Features (Emergency Stop, Motion Interlock, Feed Hold)
-  - Task 122:         Plugin System (Architecture, Registry, Loading)
-  - Task 123:         Export Formats (5 Post-Processors, Multi-Format Support)
-  - Task 124:         Calibration Wizards (4 Wizard Types, Report Generation)
-  - Task 125:         Diagnostics (Communication, Buffer, Performance, Reports)
-  - Tasks 126-150:    Complete test framework & documentation
+Zoom & Pan Controls:   ✅ COMPLETE
+  - Zoom in/out buttons with 1.2x scale factor
+  - Zoom fit to show all shapes
+  - Reset view functionality
+  - Viewport rendering with coordinate transformations
+
+Coordinate Mapping:    ✅ COMPLETE
+  - World ↔ Pixel conversions
+  - Zoom-aware transformations
+  - Pan-aware offset calculations
+  - 14 unit tests covering all transformations
+
+Mouse Event Mapping:   ✅ COMPLETE
+  - Selection at any zoom/pan level
+  - Shape dragging with world-space deltas
+  - Handle detection with zoom scaling
+  - Resize operations at any zoom level
+  - 12 integration tests
+
+Pan-On-Drag Feature:   ✅ COMPLETE
+  - Drag empty canvas to pan viewport
+  - Standard CAD/CAM UI behavior
+  - Works at all zoom levels
+  - 10 integration tests
+```
 
 Phase 7 Code:         1,100+ lines in phase7.rs
 Phase 7 Tests:        40 tests (27 integration + 13 unit)
