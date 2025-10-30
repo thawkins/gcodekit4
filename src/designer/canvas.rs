@@ -1,6 +1,7 @@
 //! Canvas for drawing and manipulating shapes.
 
 use super::shapes::{Circle, Line, Point, Rectangle, Shape, ShapeType};
+use super::viewport::Viewport;
 
 /// Canvas coordinates for drawing.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -71,9 +72,7 @@ pub struct Canvas {
     shapes: Vec<DrawingObject>,
     next_id: u64,
     mode: DrawingMode,
-    zoom: f64,
-    pan_x: f64,
-    pan_y: f64,
+    viewport: Viewport,
     selected_id: Option<u64>,
 }
 
@@ -84,9 +83,18 @@ impl Canvas {
             shapes: Vec::new(),
             next_id: 1,
             mode: DrawingMode::Select,
-            zoom: 1.0,
-            pan_x: 0.0,
-            pan_y: 0.0,
+            viewport: Viewport::new(800.0, 600.0),
+            selected_id: None,
+        }
+    }
+
+    /// Creates a canvas with specified dimensions.
+    pub fn with_size(width: f64, height: f64) -> Self {
+        Self {
+            shapes: Vec::new(),
+            next_id: 1,
+            mode: DrawingMode::Select,
+            viewport: Viewport::new(width, height),
             selected_id: None,
         }
     }
@@ -188,25 +196,120 @@ impl Canvas {
 
     /// Sets zoom level (1.0 = 100%).
     pub fn set_zoom(&mut self, zoom: f64) {
-        if zoom > 0.1 && zoom < 10.0 {
-            self.zoom = zoom;
-        }
+        self.viewport.set_zoom(zoom);
     }
 
     /// Gets current zoom level.
     pub fn zoom(&self) -> f64 {
-        self.zoom
+        self.viewport.zoom()
     }
 
-    /// Pans the canvas.
-    pub fn pan(&mut self, dx: f64, dy: f64) {
-        self.pan_x += dx;
-        self.pan_y += dy;
+    /// Zooms in.
+    pub fn zoom_in(&mut self) {
+        self.viewport.zoom_in();
     }
 
-    /// Gets the pan offset.
+    /// Zooms out.
+    pub fn zoom_out(&mut self) {
+        self.viewport.zoom_out();
+    }
+
+    /// Resets zoom to 100%.
+    pub fn reset_zoom(&mut self) {
+        self.viewport.reset_zoom();
+    }
+
+    /// Sets pan offset.
+    pub fn set_pan(&mut self, x: f64, y: f64) {
+        self.viewport.set_pan(x, y);
+    }
+
+    /// Gets pan X offset.
+    pub fn pan_x(&self) -> f64 {
+        self.viewport.pan_x()
+    }
+
+    /// Gets pan Y offset.
+    pub fn pan_y(&self) -> f64 {
+        self.viewport.pan_y()
+    }
+
+    /// Pans by a delta amount.
+    pub fn pan_by(&mut self, dx: f64, dy: f64) {
+        self.viewport.pan_by(dx, dy);
+    }
+
+    /// Resets pan to origin.
+    pub fn reset_pan(&mut self) {
+        self.viewport.reset_pan();
+    }
+
+    /// Gets a reference to the viewport for coordinate transformations.
+    pub fn viewport(&self) -> &Viewport {
+        &self.viewport
+    }
+
+    /// Gets a mutable reference to the viewport.
+    pub fn viewport_mut(&mut self) -> &mut Viewport {
+        &mut self.viewport
+    }
+
+    /// Converts pixel coordinates to world coordinates.
+    pub fn pixel_to_world(&self, pixel_x: f64, pixel_y: f64) -> Point {
+        self.viewport.pixel_to_world(pixel_x, pixel_y)
+    }
+
+    /// Converts world coordinates to pixel coordinates.
+    pub fn world_to_pixel(&self, world_x: f64, world_y: f64) -> (f64, f64) {
+        self.viewport.world_to_pixel(world_x, world_y)
+    }
+
+    /// Fits the canvas to show all shapes with padding.
+    pub fn fit_all_shapes(&mut self) {
+        if self.shapes.is_empty() {
+            self.viewport.reset();
+            return;
+        }
+
+        let mut min_x = f64::INFINITY;
+        let mut min_y = f64::INFINITY;
+        let mut max_x = f64::NEG_INFINITY;
+        let mut max_y = f64::NEG_INFINITY;
+
+        for obj in &self.shapes {
+            let (x1, y1, x2, y2) = obj.shape.bounding_box();
+            min_x = min_x.min(x1);
+            min_y = min_y.min(y1);
+            max_x = max_x.max(x2);
+            max_y = max_y.max(y2);
+        }
+
+        self.viewport.fit_to_view(min_x, min_y, max_x, max_y);
+    }
+
+    /// Zooms to a point with optional zoom level.
+    pub fn zoom_to_point(&mut self, world_point: &Point, zoom: f64) {
+        self.viewport.zoom_to_point(world_point, zoom);
+    }
+
+    /// Centers the canvas on a point.
+    pub fn center_on(&mut self, point: &Point) {
+        self.viewport.center_on_point(point);
+    }
+
+    /// Resets viewport to default state.
+    pub fn reset_view(&mut self) {
+        self.viewport.reset();
+    }
+
+    /// Gets the pan offset (compatibility method).
     pub fn pan_offset(&self) -> (f64, f64) {
-        (self.pan_x, self.pan_y)
+        (self.viewport.pan_x(), self.viewport.pan_y())
+    }
+
+    /// Pans the canvas (compatibility method).
+    pub fn pan(&mut self, dx: f64, dy: f64) {
+        self.viewport.pan_by(dx, dy);
     }
 
     /// Clears all shapes from the canvas.
