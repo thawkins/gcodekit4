@@ -923,46 +923,51 @@ fn main() -> anyhow::Result<()> {
             const GRBL_RX_BUFFER_SIZE: usize = 127;
             const MAX_TIMEOUT_ITERATIONS: u32 = 300000;
 
-            // Use a timer that fires every 1ms to process sending without blocking UI
+            // Use a timer that fires every 50ms to process sending without blocking UI
+            // This reduces contention on the communicator lock
             let timer = Rc::new(slint::Timer::default());
             let timer_clone = timer.clone();
 
             timer.start(
                 slint::TimerMode::Repeated,
-                std::time::Duration::from_millis(1),
+                std::time::Duration::from_millis(50),
                 move || {
-                    let mut state = send_state_timer.borrow_mut();
-                    let mut comm = communicator_timer.borrow_mut();
-
-                    // First, always try to receive and process acknowledgments
-                    match comm.receive() {
-                        Ok(response) => {
-                            if !response.is_empty() {
-                                let resp_str = String::from_utf8_lossy(&response);
-                                debug!("Response: {}", resp_str);
-
-                                let ok_count =
-                                    resp_str.matches("ok").count() + resp_str.matches("OK").count();
-                                for _ in 0..ok_count {
-                                    if !state.line_lengths.is_empty() {
-                                        let processed_length = state.line_lengths.remove(0);
-                                        state.pending_bytes =
-                                            state.pending_bytes.saturating_sub(processed_length);
-                                        debug!(
-                                            "ACK received: pending_bytes now {}",
-                                            state.pending_bytes
-                                        );
+                    // Step 1: Handle incoming responses (minimize lock duration)
+                    {
+                        let mut comm = communicator_timer.borrow_mut();
+                        match comm.receive() {
+                            Ok(response) => {
+                                if !response.is_empty() {
+                                    let resp_str = String::from_utf8_lossy(&response);
+                                    debug!("Response: {}", resp_str);
+                                    let ok_count =
+                                        resp_str.matches("ok").count() + resp_str.matches("OK").count();
+                                    
+                                    let mut state = send_state_timer.borrow_mut();
+                                    for _ in 0..ok_count {
+                                        if !state.line_lengths.is_empty() {
+                                            let processed_length = state.line_lengths.remove(0);
+                                            state.pending_bytes =
+                                                state.pending_bytes.saturating_sub(processed_length);
+                                            debug!(
+                                                "ACK received: pending_bytes now {}",
+                                                state.pending_bytes
+                                            );
+                                        }
                                     }
+                                    state.timeout_count = 0;
                                 }
-                                state.timeout_count = 0;
+                            }
+                            Err(_) => {
+                                let mut state = send_state_timer.borrow_mut();
+                                if state.waiting_for_acks {
+                                    state.timeout_count += 1;
+                                }
                             }
                         }
-                        Err(_) => {
-                            if state.waiting_for_acks {
-                                state.timeout_count += 1;
-                            }
-                        }
-                    }
+                    } // Release communicator lock here
+
+                    let mut state = send_state_timer.borrow_mut();
 
                     // Check if we're waiting for final acknowledgments
                     if state.waiting_for_acks {
@@ -970,7 +975,6 @@ fn main() -> anyhow::Result<()> {
                             || state.timeout_count >= MAX_TIMEOUT_ITERATIONS
                         {
                             // Done - update UI
-                            drop(comm);
                             drop(state);
 
                             let final_state = send_state_timer.borrow();
@@ -1026,36 +1030,44 @@ fn main() -> anyhow::Result<()> {
                         return;
                     }
 
-                    // Try to send next line if we have room in buffer
-                    if state.line_index < state.lines.len() {
+                    // Step 2: Send multiple lines in batches (up to 5 lines per timer tick)
+                    for _ in 0..5 {
+                        if state.line_index >= state.lines.len() {
+                            state.waiting_for_acks = true;
+                            break;
+                        }
+
                         let trimmed = state.lines[state.line_index].trim().to_string();
 
                         if trimmed.is_empty() {
                             state.line_index += 1;
-                            return;
+                            continue;
                         }
 
                         let line_length = trimmed.len() + 1;
 
                         // Check if there's room in the buffer
                         if state.pending_bytes + line_length <= GRBL_RX_BUFFER_SIZE {
-                            let command_bytes = format!("{}\n", trimmed);
-                            let line_num = state.send_count + 1;
-                            let pending_after = state.pending_bytes + line_length;
+                            // Scope the communicator borrow to minimal duration
+                            let send_result = {
+                                let mut comm = communicator_timer.borrow_mut();
+                                let command_bytes = format!("{}\n", trimmed);
+                                comm.send(command_bytes.as_bytes())
+                            };
 
-                            match comm.send(command_bytes.as_bytes()) {
-                                Ok(bytes_sent) => {
+                            match send_result {
+                                Ok(_bytes_sent) => {
                                     state.send_count += 1;
                                     state.pending_bytes += line_length;
                                     state.line_lengths.push(line_length);
                                     state.line_index += 1;
 
-                                    info!(
+                                    debug!(
                                         "Sent line {} ({} bytes): {} [pending: {}/{}]",
-                                        line_num,
-                                        bytes_sent,
+                                        state.send_count,
+                                        line_length,
                                         trimmed,
-                                        pending_after,
+                                        state.pending_bytes,
                                         GRBL_RX_BUFFER_SIZE
                                     );
                                 }
@@ -1067,7 +1079,6 @@ fn main() -> anyhow::Result<()> {
                                     state.error_msg = error_msg.clone();
                                     state.error_occurred = true;
 
-                                    drop(comm);
                                     drop(state);
 
                                     console_manager_timer.add_message(
@@ -1092,15 +1103,14 @@ fn main() -> anyhow::Result<()> {
                                     }
 
                                     timer_clone.stop();
+                                    return;
                                 }
                             }
+                        } else {
+                            // Buffer full, wait for acknowledgments
+                            state.waiting_for_acks = true;
+                            break;
                         }
-                    } else if !state.waiting_for_acks {
-                        // All lines sent, now wait for final acknowledgments
-                        let ack_count = state.line_lengths.len();
-                        info!("All lines sent, waiting for {} acknowledgments", ack_count);
-                        state.waiting_for_acks = true;
-                        state.timeout_count = 0;
                     }
                 },
             );
