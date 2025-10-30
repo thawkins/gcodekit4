@@ -10,6 +10,7 @@
 pub mod capabilities;
 pub mod capabilities_db;
 pub mod connection_watch;
+pub mod device_db;
 pub mod device_status;
 pub mod file_service;
 pub mod firmware_version;
