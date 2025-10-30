@@ -1932,6 +1932,27 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
+    // Designer: Canvas pan callback (drag on empty canvas)
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_canvas_pan(move |dx: f32, dy: f32| {
+        info!("Designer: Canvas pan - pixel delta=({}, {})", dx, dy);
+        let mut state = designer_mgr_clone.borrow_mut();
+        
+        // Pan is in pixel space, convert to world space
+        // Note: Pan direction is inverted - dragging right pans left (shows content to the right)
+        let viewport = state.canvas.viewport();
+        let world_dx = -dx as f64 / viewport.zoom();
+        let world_dy = -dy as f64 / viewport.zoom();
+        
+        info!("Converted to world delta: ({}, {})", world_dx, world_dy);
+        state.canvas.pan_by(world_dx, world_dy);
+        
+        if let Some(window) = window_weak.upgrade() {
+            update_designer_ui(&window, &state);
+        }
+    });
+
     // Zoom state tracking (Arc for shared state across closures)
     use std::sync::{Arc, Mutex};
     let zoom_scale = Arc::new(Mutex::new(1.0f32));

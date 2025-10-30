@@ -32,6 +32,10 @@ All tests **MUST** be located in the `tests/` folder organized by module hierarc
 - `cargo fmt` - Format code with rustfmt
 - `cargo fmt --check` - Check formatting without changes
 
+## Units ##
+- DateTime vaules should be represented internaly in UTC and translated to locale based represetations in the UI layer. 
+- Dimensional units should be represented internaly in 100ths of a mm, and mm valus should be represted to 2 decimal place accuracy. 
+
 ## GitHub Access
 - Use "gh" to access all GitHub repositories.
 - When asked to "push to remote", update the SPEC.md, README.md, STATS.md and CHANGELOG.md files with all recent activity and spec changes, construct a suitable commit message based on recent activity, commit all changes and push the changes to the remote repository.

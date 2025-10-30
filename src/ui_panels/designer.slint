@@ -87,6 +87,7 @@ export component DesignerPanel inherits VerticalBox {
     callback detect_handle(float, float) -> int;  // x, y - returns handle index (-1 if not on handle)
     callback shape_drag(int, float, float);        // shape_id, dx, dy
     callback handle_drag(int, int, float, float);  // shape_id, handle_index, dx, dy
+    callback canvas_pan(float, float);             // dx, dy - pan the viewport
     callback deselect_all();
     
     // Track last delta sent to backend (per shape) to compute incremental changes
@@ -330,9 +331,12 @@ export component DesignerPanel inherits VerticalBox {
                                                 if root.dragging_handle >= 0 && root.dragging_handle <= 3 {
                                                     // Dragging a resize handle (0-3)
                                                     handle_drag(root.dragging_shape_id, root.dragging_handle, inc_dx, inc_dy);
-                                                } else {
+                                                } else if root.dragging_handle == 4 || (root.dragging_handle == -1 && designer_state.selected_id > 0) {
                                                     // Dragging the shape itself (move) - handle is -1 or 4 (center)
                                                     handle_drag(-1, root.dragging_handle, inc_dx, inc_dy);
+                                                } else if root.dragging_handle == -1 && designer_state.selected_id == 0 {
+                                                    // No shape selected - pan the canvas
+                                                    canvas_pan(inc_dx, inc_dy);
                                                 }
                                                 root.drag_last_dx = total_dx;
                                                 root.drag_last_dy = total_dy;

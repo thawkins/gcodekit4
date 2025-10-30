@@ -169,6 +169,7 @@ export component MainWindow inherits Window {
     callback designer-detect-handle(float, float) -> int;  // x, y - returns handle index
     callback designer-shape-drag(int, float, float);        // shape_id, dx, dy
     callback designer-handle-drag(int, int, float, float);  // shape_id, handle_index, dx, dy
+    callback designer-canvas-pan(float, float);             // dx, dy - pan the viewport
     callback designer-deselect-all();
     
     // Internal state for UI selections
@@ -766,6 +767,10 @@ if current-view == "safety-diagnostics" : SafetyDiagnosticsPanel {
                     
                     handle_drag(id, handle, dx, dy) => {
                         root.designer-handle-drag(id, handle, dx, dy);
+                    }
+                    
+                    canvas_pan(dx, dy) => {
+                        root.designer-canvas-pan(dx, dy);
                     }
                     
                     deselect_all => {
