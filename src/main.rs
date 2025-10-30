@@ -35,11 +35,57 @@ fn copy_to_clipboard(text: &str) -> bool {
     }
 }
 
+/// Transform screen coordinates to canvas coordinates
+/// Used when the displayed image size doesn't match the rendered image size
+#[allow(dead_code)]
+fn transform_screen_to_canvas(
+    screen_x: f32,
+    screen_y: f32,
+    display_width: f32,
+    display_height: f32,
+    canvas_width: f32,
+    canvas_height: f32,
+) -> (f32, f32) {
+    // Calculate scaling factors
+    let scale_x = canvas_width / display_width;
+    let scale_y = canvas_height / display_height;
+    
+    // Transform coordinates
+    let canvas_x = screen_x * scale_x;
+    let canvas_y = screen_y * scale_y;
+    
+    (canvas_x, canvas_y)
+}
+
 /// Update designer UI with current shapes from state
 fn update_designer_ui(
     window: &MainWindow,
     state: &gcodekit4::DesignerState,
 ) {
+    tracing::info!("update_designer_ui called with {} shapes", state.canvas.shapes().len());
+    
+    // Render canvas to image - using larger size to reduce stretching artifacts
+    let canvas_width = 1600u32;
+    let canvas_height = 1200u32;
+    let img = gcodekit4::designer::renderer::render_canvas(
+        &state.canvas,
+        canvas_width,
+        canvas_height,
+        state.canvas.zoom() as f32,
+        state.canvas.pan_offset().0 as f32,
+        state.canvas.pan_offset().1 as f32,
+    );
+    
+    // Convert to Slint image
+    let buffer = slint::SharedPixelBuffer::<slint::Rgb8Pixel>::clone_from_slice(
+        img.as_raw(),
+        canvas_width,
+        canvas_height,
+    );
+    let slint_image = slint::Image::from_rgb8(buffer);
+    window.set_designer_canvas_image(slint_image);
+    
+    // Still update shapes array for metadata (could be used for debugging/info)
     let shapes: Vec<crate::DesignerShape> = state
         .canvas
         .shapes()
@@ -65,8 +111,22 @@ fn update_designer_ui(
             }
         })
         .collect();
+    tracing::info!("Updating UI with {} shapes", shapes.len());
+    for shape in &shapes {
+        tracing::info!("  Shape {}: x={}, y={}, w={}, h={}", shape.id, shape.x, shape.y, shape.width, shape.height);
+    }
+    // Force UI to recognize the change by clearing first
+    window.set_designer_shapes(slint::ModelRc::from(Rc::new(slint::VecModel::from(Vec::<crate::DesignerShape>::new()))));
     let shapes_model = Rc::new(slint::VecModel::from(shapes));
     window.set_designer_shapes(slint::ModelRc::from(shapes_model));
+    
+    // Increment update counter to force UI re-render
+    let mut ui_state = window.get_designer_state();
+    let counter = ui_state.update_counter + 1;
+    ui_state.update_counter = counter;
+    window.set_designer_state(ui_state);
+    
+    tracing::info!("Designer shapes updated in UI (counter: {})", counter);
 }
 
 /// Parse GRBL status response and extract position
@@ -162,6 +222,7 @@ fn main() -> anyhow::Result<()> {
         pan_x: 0.0,
         pan_y: 0.0,
         selected_id: -1,
+        update_counter: 0,
     };
     main_window.set_designer_state(initial_designer_state);
 
@@ -1581,6 +1642,7 @@ fn main() -> anyhow::Result<()> {
                 pan_x: 0.0,
                 pan_y: 0.0,
                 selected_id: -1,
+                update_counter: 0,
             });
         }
     });
@@ -1601,6 +1663,7 @@ fn main() -> anyhow::Result<()> {
                 pan_x: state.canvas.pan_offset().0 as f32,
                 pan_y: state.canvas.pan_offset().1 as f32,
                 selected_id: state.canvas.selected_id().unwrap_or(0) as i32,
+                update_counter: 0,
             };
             window.set_designer_state(ui_state);
         }
@@ -1621,6 +1684,7 @@ fn main() -> anyhow::Result<()> {
                 pan_x: state.canvas.pan_offset().0 as f32,
                 pan_y: state.canvas.pan_offset().1 as f32,
                 selected_id: state.canvas.selected_id().unwrap_or(0) as i32,
+                update_counter: 0,
             };
             window.set_designer_state(ui_state);
         }
@@ -1641,6 +1705,7 @@ fn main() -> anyhow::Result<()> {
                 pan_x: state.canvas.pan_offset().0 as f32,
                 pan_y: state.canvas.pan_offset().1 as f32,
                 selected_id: state.canvas.selected_id().unwrap_or(0) as i32,
+                update_counter: 0,
             };
             window.set_designer_state(ui_state);
         }
@@ -1665,6 +1730,7 @@ fn main() -> anyhow::Result<()> {
                 pan_x: state.canvas.pan_offset().0 as f32,
                 pan_y: state.canvas.pan_offset().1 as f32,
                 selected_id: state.canvas.selected_id().unwrap_or(0) as i32,
+                update_counter: 0,
             };
             window.set_designer_state(ui_state);
         }
@@ -1720,11 +1786,10 @@ fn main() -> anyhow::Result<()> {
     let window_weak = main_window.as_weak();
     main_window.on_designer_export_gcode(move || {
         info!("Designer: Export G-code to editor");
-        let state = designer_mgr_clone.borrow();
+        let mut state = designer_mgr_clone.borrow_mut();
+        let gcode = state.generate_gcode();
         if let Some(window) = window_weak.upgrade() {
-            window.set_gcode_content(slint::SharedString::from(
-                state.generated_gcode.clone()
-            ));
+            window.set_gcode_content(slint::SharedString::from(gcode));
             window.set_current_view(slint::SharedString::from("gcode-editor"));
             window.set_connection_status(slint::SharedString::from(
                 "G-code exported to editor"
@@ -1743,8 +1808,14 @@ fn main() -> anyhow::Result<()> {
         if state.canvas.mode() == gcodekit4::DrawingMode::Select {
             // Check if we clicked on the already selected shape - if so, don't deselect
             let click_point = gcodekit4::Point::new(x as f64, y as f64);
+            info!("Checking shapes for selection at point ({}, {})", x, y);
+            for (i, shape) in state.canvas.shapes().iter().enumerate() {
+                let (x1, y1, x2, y2) = shape.shape.bounding_box();
+                info!("  Shape {}: bounds=({}, {}) to ({}, {})", i, x1, y1, x2, y2);
+            }
             if !state.canvas.is_point_in_selected(&click_point) {
-                state.canvas.select_at(&click_point);
+                let selected = state.canvas.select_at(&click_point);
+                info!("Selection result: {:?}", selected);
             }
         } else {
             state.add_shape_at(x as f64, y as f64);
@@ -1762,6 +1833,7 @@ fn main() -> anyhow::Result<()> {
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
     main_window.on_designer_shape_drag(move |_shape_id: i32, dx: f32, dy: f32| {
+        info!("Designer: Shape drag - id={}, dx={}, dy={}", _shape_id, dx, dy);
         let mut state = designer_mgr_clone.borrow_mut();
         state.move_selected(dx as f64, dy as f64);
         if let Some(window) = window_weak.upgrade() {
@@ -1769,12 +1841,56 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
-    // Designer: Handle drag callback (resize via handles)
+    // Designer: Detect handle callback (check if click is on a resize handle)  
+    // Returns handle index (-1 if not on a handle): 0=TL, 1=TR, 2=BL, 3=BR, 4=Center
+    let designer_mgr_clone = designer_mgr.clone();
+    main_window.on_designer_detect_handle(move |x: f32, y: f32| -> i32 {
+        let state = designer_mgr_clone.borrow();
+        let mut dragging_handle = -1;
+        
+        if let Some(selected_id) = state.canvas.selected_id() {
+            if let Some(obj) = state.canvas.shapes().iter().find(|o| o.id == selected_id) {
+                let (x1, y1, x2, y2) = obj.shape.bounding_box();
+                let handle_size = 8.0;
+                let cx = (x1 + x2) / 2.0;
+                let cy = (y1 + y2) / 2.0;
+                
+                // Check each handle position
+                if (x as f64 - x1).abs() < handle_size && (y as f64 - y1).abs() < handle_size {
+                    dragging_handle = 0; // Top-left
+                } else if (x as f64 - x2).abs() < handle_size && (y as f64 - y1).abs() < handle_size {
+                    dragging_handle = 1; // Top-right
+                } else if (x as f64 - x1).abs() < handle_size && (y as f64 - y2).abs() < handle_size {
+                    dragging_handle = 2; // Bottom-left
+                } else if (x as f64 - x2).abs() < handle_size && (y as f64 - y2).abs() < handle_size {
+                    dragging_handle = 3; // Bottom-right
+                } else if (x as f64 - cx).abs() < handle_size && (y as f64 - cy).abs() < handle_size {
+                    dragging_handle = 4; // Center (move handle)
+                }
+                
+                info!("Designer: Detect handle at ({}, {}) - handle={}", x, y, dragging_handle);
+            }
+        }
+        
+        dragging_handle
+    });
+
+    // Designer: Handle drag callback (move or resize via handles)
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
     main_window.on_designer_handle_drag(move |_shape_id: i32, handle: i32, dx: f32, dy: f32| {
         let mut state = designer_mgr_clone.borrow_mut();
-        state.resize_selected(handle as usize, dx as f64, dy as f64);
+        
+        if handle == -1 || handle == 4 {
+            // handle=-1 or handle=4 (center handle) means move the entire shape
+            info!("Designer: Move shape - dx={}, dy={}", dx, dy);
+            state.move_selected(dx as f64, dy as f64);
+        } else {
+            // Resize via specific handle (0=top-left, 1=top-right, 2=bottom-left, 3=bottom-right)
+            info!("Designer: Resize handle {} - dx={}, dy={}", handle, dx, dy);
+            state.resize_selected(handle as usize, dx as f64, dy as f64);
+        }
+        
         if let Some(window) = window_weak.upgrade() {
             update_designer_ui(&window, &state);
         }

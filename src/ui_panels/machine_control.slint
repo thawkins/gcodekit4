@@ -61,6 +61,14 @@ export component MachineControlPanel inherits VerticalBox {
     private property <float> step-size: 1.0;
     private property <int> step-index: 1;
     
+    // Connection controls passed from parent
+    in property <[string]> available-ports;
+    in property <string> selected-port;
+    callback port-selected(string);
+    callback connect-clicked();
+    callback disconnect-clicked();
+    callback refresh-ports-clicked();
+    
     ScrollView {
         VerticalBox {
             spacing: 15px;
@@ -68,6 +76,49 @@ export component MachineControlPanel inherits VerticalBox {
             padding-right: 5px;
             horizontal-stretch: 1.0;
             vertical-stretch: 1.0;
+            
+            // Connection Panel (horizontal layout)
+            Rectangle {
+                background: #ecf0f1;
+                height: 50px;
+                
+                HorizontalBox {
+                    padding: 8px;
+                    spacing: 8px;
+                    alignment: start;
+                    
+                    Text { 
+                        text: "Port:";
+                        width: 40px;
+                        vertical-alignment: center;
+                        font-size: 13px;
+                    }
+                    ComboBox {
+                        width: 180px;
+                        model: root.available-ports;
+                        current-value: root.selected-port;
+                        selected(value) => {
+                            root.port-selected(value);
+                        }
+                    }
+                    Button {
+                        text: root.connected ? "Disconnect" : "Connect";
+                        width: 100px;
+                        clicked => {
+                            if (root.connected) {
+                                root.disconnect-clicked();
+                            } else {
+                                root.connect-clicked();
+                            }
+                        }
+                    }
+                    Button {
+                        text: "Refresh";
+                        width: 90px;
+                        clicked => { root.refresh-ports-clicked(); }
+                    }
+                }
+            }
             
             /// DRO Display (moved to top)
             Rectangle {

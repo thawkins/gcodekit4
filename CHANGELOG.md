@@ -5,6 +5,67 @@ All notable changes to this project should be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.2] - 2025-10-30
+
+### Added
+- **Designer Tool Phase 3 - CAM Operations**
+  - Tool Library Management: Define and manage cutting tools with geometry and parameters
+    - 5 tool types: End Mill, Ball Nose, V-Bit, Drill, Slot Cutter
+    - Cutting parameters: Feed rate, plunge rate, spindle speed
+    - Coolant support: None, Flood, Mist, Through-Spindle
+    - Material profiles with recommended cutting speeds
+    - Default tool library with common tools
+  
+  - Pocket Operations: Advanced pocket milling with island detection
+    - Rectangular pocket generation with multi-pass ramping
+    - Circular pocket generation with optimal segmentation
+    - Island detection and preservation (keep features untouched)
+    - Offset path generation for roughing passes
+    - Climb and conventional milling support
+    - Automatic stepover control
+  
+  - Drilling Patterns: Pattern-based drilling operations
+    - 4 pattern types: Linear, Circular, Grid, Custom
+    - Automatic hole pattern generation from parameters
+    - Peck drilling with configurable depth per peck
+    - Support for arbitrary hole placement
+    - Automatic feed rate and spindle speed configuration
+  
+  - Multi-Pass Depth Control: Depth ramping and stepping for deep cuts
+    - 3 depth strategies: Constant, Ramped, Adaptive
+    - Automatic pass generation based on total depth
+    - Ramped entry (shallow to deep) for tool preservation
+    - Spiral ramp entry for smooth tool engagement
+    - Ramp-down segments with linear interpolation
+  
+  - Toolpath Simulation & Analysis: Comprehensive preview and analysis
+    - Real-time simulation with step control
+    - State management (Idle, Running, Paused, Complete)
+    - Progress tracking and tool position recording
+    - Machining time estimation
+    - Material removal volume calculation
+    - Surface finish analysis based on feed rate
+    - Tool wear estimation
+    - Rapid move inefficiency detection
+    - Segment type analysis (rapid, linear, arc)
+
+- **New Modules**
+  - `src/designer/tool_library.rs` (~350 lines)
+  - `src/designer/pocket_operations.rs` (~350 lines)
+  - `src/designer/drilling_patterns.rs` (~380 lines)
+  - `src/designer/multipass.rs` (~340 lines)
+  - `src/designer/toolpath_simulation.rs` (~380 lines)
+
+- **Comprehensive Test Suite**
+  - 32 unit tests for Phase 3 features
+  - 22 integration tests for Phase 3 workflows
+  - 100% pass rate on all 54 Phase 3 tests
+
+- **Documentation**
+  - PHASE3_CAM_OPERATIONS.md: 11,891 lines of comprehensive documentation
+  - 100% API documentation for all public functions
+  - Complete usage examples for all features
+
 ## [0.24.1] - 2025-10-29
 
 ### Added

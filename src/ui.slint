@@ -40,6 +40,7 @@ export struct DesignerState {
     pan_x: float,
     pan_y: float,
     selected_id: int,
+    update_counter: int,
 }
 
 export component MainWindow inherits Window {
@@ -105,6 +106,7 @@ export component MainWindow inherits Window {
     in property <float> designer-safe-z: 10.0;
     in property <string> designer-generated-gcode: "";
     in property <bool> designer-gcode-generated: false;
+    in property <image> designer-canvas-image;
     
     callback refresh-ports();
     callback connect(string, int);
@@ -164,6 +166,7 @@ export component MainWindow inherits Window {
     callback designer-generate-toolpath();
     callback designer-export-gcode();
     callback designer-canvas-click(float, float);
+    callback designer-detect-handle(float, float) -> int;  // x, y - returns handle index
     callback designer-shape-drag(int, float, float);        // shape_id, dx, dy
     callback designer-handle-drag(int, int, float, float);  // shape_id, handle_index, dx, dy
     callback designer-deselect-all();
@@ -307,92 +310,7 @@ export component MainWindow inherits Window {
             spacing: 10px;
             padding: 10px;
             
-            // Left panel - Connection and Control
-            VerticalBox {
-                width: 300px;
-                spacing: 10px;
-                
-                // Connection Panel
-                Rectangle {
-                    background: #ecf0f1;
-                    height: 135px;
-                    
-                    Rectangle {
-                        background: #ecf0f1;
-                        width: 100%;
-                        y: 0;
-                        
-                        VerticalBox {
-                            padding: 10px;
-                            spacing: 8px;
-                            
-                            Text {
-                                text: "Connection";
-                                font-weight: 700;
-                                font-size: 14px;
-                            }
-                            
-                            HorizontalBox {
-                                Text { text: "Port:"; width: 50px; }
-                                port-combo := ComboBox {
-                                    model: root.available-ports;
-                                    current-index: port-index;
-                                    selected => {
-                                        port-index = port-combo.current-index;
-                                        if (port-combo.current-index >= 0 && port-combo.current-index < root.available-ports.length) {
-                                            root.selected-port = root.available-ports[port-combo.current-index];
-                                        }
-                                    }
-                                }
-                            }
-                            
-                            HorizontalBox {
-                                spacing: 5px;
-                                Button {
-                                    text: root.connected ? "Disconnect" : "Connect";
-                                    width: 50%;
-                                    clicked => {
-                                        if (root.connected) {
-                                            root.disconnect();
-                                        } else {
-                                            root.connect(root.selected-port, 115200);
-                                        }
-                                    }
-                                }
-                                Button {
-                                    text: "Refresh";
-                                    width: 50%;
-                                    clicked => { root.refresh-ports(); }
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                // Control Buttons
-                Rectangle {
-                    background: #ecf0f1;
-                    VerticalBox {
-                        padding: 10px;
-                        spacing: 8px;
-                        
-                        Button {
-                            text: "Start";
-                        }
-                        Button {
-                            text: "Pause";
-                        }
-                        Button {
-                            text: "Stop";
-                        }
-                        Button {
-                            text: "Reset";
-                        }
-                    }
-                }
-            }
-            
-            // Center panel - File and Viewer
+            // Main content area - File and Viewer
             VerticalBox {
                 spacing: 0px;
                 horizontal-stretch: 1.0;
@@ -643,6 +561,8 @@ export component MainWindow inherits Window {
                 // Machine Control View
                 if current-view == "machine" : MachineControlPanel {
                     connected: root.connected;
+                    available-ports: root.available-ports;
+                    selected-port: root.selected-port;
                     position-x: root.position-x;
                     position-y: root.position-y;
                     position-z: root.position-z;
@@ -651,6 +571,18 @@ export component MainWindow inherits Window {
                     position-c: root.position-c;
                     feed-rate: root.feed-rate;
                     spindle-speed: root.spindle-speed;
+                    port-selected(port) => {
+                        root.selected-port = port;
+                    }
+                    connect-clicked => {
+                        root.connect(root.selected-port, 115200);
+                    }
+                    disconnect-clicked => {
+                        root.disconnect();
+                    }
+                    refresh-ports-clicked => {
+                        root.refresh-ports();
+                    }
                     jog-home-clicked => {
                         root.machine-jog-home();
                     }
@@ -782,6 +714,7 @@ if current-view == "safety-diagnostics" : SafetyDiagnosticsPanel {
                     zoom_scale: root.designer-state.zoom;
                     x_offset: root.designer-state.pan_x;
                     y_offset: root.designer-state.pan_y;
+                    canvas_image: root.designer-canvas-image;
                     
                     set_mode(m) => {
                         root.designer-set-mode(m);
@@ -821,6 +754,10 @@ if current-view == "safety-diagnostics" : SafetyDiagnosticsPanel {
                     
                     canvas_click(x, y) => {
                         root.designer-canvas-click(x, y);
+                    }
+                    
+                    detect_handle(x, y) => {
+                        return root.designer-detect-handle(x, y);
                     }
                     
                     shape_drag(id, dx, dy) => {

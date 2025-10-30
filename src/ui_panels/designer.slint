@@ -1,7 +1,7 @@
 //! Designer Tool UI Panel  
 //! Provides 2D CAD drawing interface with vertical toolbox and canvas interaction
 
-import { Button, SpinBox, VerticalBox, HorizontalBox } from "std-widgets.slint";
+import { Button, SpinBox, VerticalBox, HorizontalBox, ScrollView } from "std-widgets.slint";
 
 export struct DesignerShape {
     id: int,
@@ -57,6 +57,10 @@ component ToolButton inherits Rectangle {
 }
 
 export component DesignerPanel inherits VerticalBox {
+    spacing: 0px;
+    horizontal-stretch: 1.0;
+    vertical-stretch: 1.0;
+    
     in property <[DesignerShape]> shapes: [];
     in property <DesignerState> designer_state;
     in property <float> feed_rate: 120.0;
@@ -68,6 +72,7 @@ export component DesignerPanel inherits VerticalBox {
     in property <float> zoom_scale: 1.0;
     in property <float> x_offset: 0.0;
     in property <float> y_offset: 0.0;
+    in property <image> canvas_image;
     
     callback set_mode(int);
     callback zoom_in();
@@ -79,12 +84,19 @@ export component DesignerPanel inherits VerticalBox {
     callback generate_toolpath();
     callback export_gcode();
     callback canvas_click(float, float);
+    callback detect_handle(float, float) -> int;  // x, y - returns handle index (-1 if not on handle)
     callback shape_drag(int, float, float);        // shape_id, dx, dy
     callback handle_drag(int, int, float, float);  // shape_id, handle_index, dx, dy
     callback deselect_all();
     
-    spacing: 5px;
-    padding: 5px;
+    // Track last delta sent to backend (per shape) to compute incremental changes
+    private property <float> drag_start_x: 0.0;
+    private property <float> drag_start_y: 0.0;
+    private property <float> drag_last_dx: 0.0;
+    private property <float> drag_last_dy: 0.0;
+    private property <int> dragging_shape_id: -1;
+    private property <int> dragging_handle: -1;
+    private property <bool> drag_occurred: false;
     
     // Main layout: vertical toolbox on left, canvas and properties on right
     FocusScope {
@@ -110,7 +122,8 @@ export component DesignerPanel inherits VerticalBox {
         // LEFT SIDEBAR: Vertical Tool Icons
         // ═════════════════════════════════════════════
         VerticalBox {
-            width: 54px;
+            preferred-width: 54px;
+            horizontal-stretch: 0;
             spacing: 2px;
             alignment: start;
             
@@ -194,8 +207,7 @@ export component DesignerPanel inherits VerticalBox {
         // CENTER: Canvas Area
         // ═════════════════════════════════════════════
         VerticalBox {
-            width: 100%;
-            min-width: 300px;
+            width: 75%;
             
             // Canvas Info Indicator
             Rectangle {
@@ -244,157 +256,97 @@ export component DesignerPanel inherits VerticalBox {
             
             // Canvas with interactive area
             Rectangle {
-                width: 100%;
-                height: 100%;
                 background: #2c3e50;
+                vertical-stretch: 1;
                 
                 VerticalBox {
                     Rectangle {
-                        width: 100%;
-                        height: 80%;
+                        vertical-stretch: 1;
                         background: #34495e;
                         
-                        // Render shapes (shape_type: 0=rect, 1=circle, 2=line)
-                        // Apply zoom scale and pan offset to shape positioning
-                        for shape in shapes: Rectangle {
-                            x: (shape.x * zoom_scale + x_offset) * 1px;
-                            y: (shape.y * zoom_scale + y_offset) * 1px;
-                            width: (shape.shape_type == 1 ? shape.radius * 2 : shape.width) * zoom_scale * 1px;
-                            height: (shape.shape_type == 1 ? shape.radius * 2 : shape.height) * zoom_scale * 1px;
-                            background: #3498db;
-                            border-width: 2px;
-                            border-color: #2980b9;
-                            border-radius: shape.shape_type == 1 ? shape.radius * zoom_scale * 1px : 2px;
+                        // Display rendered canvas image at native resolution (no scaling)
+                        // ScrollView with TouchArea overlay for interaction
+                        canvas_scroll := ScrollView {
+                            viewport-width: 1600px;
+                            viewport-height: 1200px;
                             
-                            // TouchArea for shape interaction (only when selected)
-                            if shape.selected: TouchArea {
-                                width: 100%;
-                                height: 100%;
-                                mouse-cursor: grab;
-                                moved => {
-                                    // Convert screen pixels to canvas coordinates by dividing by zoom_scale
-                                    shape_drag(shape.id, (self.mouse_x - self.pressed_x) / 1px / zoom_scale, (self.mouse_y - self.pressed_y) / 1px / zoom_scale);
-                                }
-                            }
-                            
-                            // Selection bounding box with handles
-                            if shape.selected: Rectangle {
-                                width: 100%;
-                                height: 100%;
-                                background: transparent;
-                                border-width: 2px;
-                                border-color: #ffeb3b;
+                            Rectangle {
+                                width: 1600px;
+                                height: 1200px;
                                 
-                                // Top-left handle (0)
-                                Rectangle {
-                                    x: -6px;
-                                    y: -6px;
-                                    width: 12px;
-                                    height: 12px;
-                                    background: #ffeb3b;
-                                    border-width: 1px;
-                                    border-color: white;
-                                    TouchArea {
-                                        width: 100%;
-                                        height: 100%;
-                                        mouse-cursor: nwse-resize;
-                                        moved => {
-                                            handle_drag(shape.id, 0, (self.mouse_x - self.pressed_x) / 1px / zoom_scale, (self.mouse_y - self.pressed_y) / 1px / zoom_scale);
+                                if root.canvas_image.width > 0 : Image {
+                                    source: root.canvas_image;
+                                    width: 1600px;
+                                    height: 1200px;
+                                }
+                                
+                                // Interactive layer on top of image
+                                TouchArea {
+                                    width: 100%;
+                                    height: 100%;
+                                    mouse-cursor: 
+                                        designer_state.mode == 0 ? default :
+                                        designer_state.mode == 1 ? crosshair :
+                                        designer_state.mode == 2 ? crosshair :
+                                        designer_state.mode == 3 ? crosshair :
+                                        default;
+                                    
+                                    clicked => {
+                                        // Don't handle click if a drag just occurred
+                                        if !root.drag_occurred {
+                                            // Adjust for scroll offset
+                                            let adjusted_x = self.mouse-x / 1px + canvas_scroll.viewport-x / 1px;
+                                            let adjusted_y = self.mouse-y / 1px + canvas_scroll.viewport-y / 1px;
+                                            canvas_click(adjusted_x, adjusted_y);
+                                        }
+                                        root.drag_occurred = false;
+                                    }
+                                    
+                                    // Detect handle on press down
+                                    pointer-event(event) => {
+                                        if event.kind == PointerEventKind.down && designer_state.mode == 0 {
+                                            // Ask backend to detect which handle (if any) we're on
+                                            let adjusted_x = self.pressed-x / 1px + canvas_scroll.viewport-x / 1px;
+                                            let adjusted_y = self.pressed-y / 1px + canvas_scroll.viewport-y / 1px;
+                                            root.dragging_handle = detect_handle(adjusted_x, adjusted_y);
+                                        }
+                                    }
+                                    
+                                    // Track mouse movement - detect dragging
+                                    moved => {
+                                        if designer_state.mode == 0 && self.pressed {
+                                            // Initialize drag start on first move while pressed
+                                            if root.drag_last_dx == 0.0 && root.drag_last_dy == 0.0 {
+                                                root.drag_start_x = self.pressed-x / 1px;
+                                                root.drag_start_y = self.pressed-y / 1px;
+                                            }
+                                            
+                                            let total_dx = (self.mouse-x / 1px - root.drag_start_x);
+                                            let total_dy = (self.mouse-y / 1px - root.drag_start_y);
+                                            let inc_dx = total_dx - root.drag_last_dx;
+                                            let inc_dy = total_dy - root.drag_last_dy;
+                                            
+                                            if abs(inc_dx) > 0.5 || abs(inc_dy) > 0.5 {
+                                                if root.dragging_handle >= 0 && root.dragging_handle <= 3 {
+                                                    // Dragging a resize handle (0-3)
+                                                    handle_drag(root.dragging_shape_id, root.dragging_handle, inc_dx, inc_dy);
+                                                } else {
+                                                    // Dragging the shape itself (move) - handle is -1 or 4 (center)
+                                                    handle_drag(-1, root.dragging_handle, inc_dx, inc_dy);
+                                                }
+                                                root.drag_last_dx = total_dx;
+                                                root.drag_last_dy = total_dy;
+                                                root.drag_occurred = true;
+                                            }
+                                        } else if !self.pressed {
+                                            // Reset when not pressed
+                                            root.drag_last_dx = 0.0;
+                                            root.drag_last_dy = 0.0;
+                                            root.dragging_handle = -1;
+                                            root.dragging_shape_id = -1;
                                         }
                                     }
                                 }
-                                
-                                // Top-right handle (1)
-                                Rectangle {
-                                    x: parent.width - 6px;
-                                    y: -6px;
-                                    width: 12px;
-                                    height: 12px;
-                                    background: #ffeb3b;
-                                    border-width: 1px;
-                                    border-color: white;
-                                    TouchArea {
-                                        width: 100%;
-                                        height: 100%;
-                                        mouse-cursor: nesw-resize;
-                                        moved => {
-                                            handle_drag(shape.id, 1, (self.mouse_x - self.pressed_x) / 1px / zoom_scale, (self.mouse_y - self.pressed_y) / 1px / zoom_scale);
-                                        }
-                                    }
-                                }
-                                
-                                // Bottom-left handle (2)
-                                Rectangle {
-                                    x: -6px;
-                                    y: parent.height - 6px;
-                                    width: 12px;
-                                    height: 12px;
-                                    background: #ffeb3b;
-                                    border-width: 1px;
-                                    border-color: white;
-                                    TouchArea {
-                                        width: 100%;
-                                        height: 100%;
-                                        mouse-cursor: nesw-resize;
-                                        moved => {
-                                            handle_drag(shape.id, 2, (self.mouse_x - self.pressed_x) / 1px / zoom_scale, (self.mouse_y - self.pressed_y) / 1px / zoom_scale);
-                                        }
-                                    }
-                                }
-                                
-                                // Bottom-right handle (3)
-                                Rectangle {
-                                    x: parent.width - 6px;
-                                    y: parent.height - 6px;
-                                    width: 12px;
-                                    height: 12px;
-                                    background: #ffeb3b;
-                                    border-width: 1px;
-                                    border-color: white;
-                                    TouchArea {
-                                        width: 100%;
-                                        height: 100%;
-                                        mouse-cursor: nwse-resize;
-                                        moved => {
-                                            handle_drag(shape.id, 3, (self.mouse_x - self.pressed_x) / 1px / zoom_scale, (self.mouse_y - self.pressed_y) / 1px / zoom_scale);
-                                        }
-                                    }
-                                }
-                                
-                                // Center handle (4)
-                                Rectangle {
-                                    x: parent.width / 2 - 6px;
-                                    y: parent.height / 2 - 6px;
-                                    width: 12px;
-                                    height: 12px;
-                                    background: #ffeb3b;
-                                    border-width: 1px;
-                                    border-color: white;
-                                    border-radius: 6px;
-                                    TouchArea {
-                                        width: 100%;
-                                        height: 100%;
-                                        mouse-cursor: grab;
-                                        moved => {
-                                            handle_drag(shape.id, 4, (self.mouse_x - self.pressed_x) / 1px / zoom_scale, (self.mouse_y - self.pressed_y) / 1px / zoom_scale);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        
-                        // Make canvas interactive
-                        TouchArea {
-                            mouse-cursor: 
-                                designer_state.mode == 0 ? default :
-                                designer_state.mode == 1 ? crosshair :
-                                designer_state.mode == 2 ? crosshair :
-                                designer_state.mode == 3 ? crosshair :
-                                default;
-                            
-                            clicked => {
-                                // Use relative position within the TouchArea
-                                canvas_click(self.mouse_x / 1px, self.mouse_y / 1px);
                             }
                         }
                     }
@@ -413,48 +365,99 @@ export component DesignerPanel inherits VerticalBox {
         // ═════════════════════════════════════════════
         // RIGHT SIDEBAR: Properties Panel
         // ═════════════════════════════════════════════
+        Rectangle {
+            preferred-width: 200px;
+            horizontal-stretch: 0;
+            background: #ecf0f1;
+            
         VerticalBox {
-            width: 180px;
-            spacing: 8px;
+            spacing: 12px;
+            padding: 12px;
+            width: 100%;
             
             Text {
                 text: "Tool Parameters";
                 font-weight: 700;
-                font-size: 12px;
+                font-size: 14px;
             }
             
-            HorizontalBox {
-                Text { text: "Feed:"; width: 60px; }
-                SpinBox { value: feed_rate; }
+            VerticalBox {
+                spacing: 4px;
+                width: 100%;
+                Text { 
+                    text: "Feed:"; 
+                    font-size: 11px; 
+                }
+                SpinBox { 
+                    value: feed_rate; 
+                    minimum: 0;
+                    maximum: 10000;
+                    preferred-width: 100%;
+                }
             }
-            HorizontalBox {
-                Text { text: "Spindle:"; width: 60px; }
-                SpinBox { value: spindle_speed; }
+            
+            VerticalBox {
+                spacing: 4px;
+                width: 100%;
+                Text { 
+                    text: "Spindle:"; 
+                    font-size: 11px; 
+                }
+                SpinBox { 
+                    value: spindle_speed;
+                    minimum: 0;
+                    maximum: 30000;
+                    preferred-width: 100%;
+                }
             }
-            HorizontalBox {
-                Text { text: "Tool Ø:"; width: 60px; }
-                SpinBox { value: tool_diameter; }
+            
+            VerticalBox {
+                spacing: 4px;
+                width: 100%;
+                Text { 
+                    text: "Tool Ø:"; 
+                    font-size: 11px; 
+                }
+                SpinBox { 
+                    value: tool_diameter;
+                    minimum: 0;
+                    maximum: 50;
+                    preferred-width: 100%;
+                }
             }
-            HorizontalBox {
-                Text { text: "Depth:"; width: 60px; }
-                SpinBox { value: cut_depth; }
+            
+            VerticalBox {
+                spacing: 4px;
+                width: 100%;
+                Text { 
+                    text: "Depth:"; 
+                    font-size: 11px; 
+                }
+                SpinBox { 
+                    value: cut_depth;
+                    minimum: -100;
+                    maximum: 0;
+                    preferred-width: 100%;
+                }
             }
+            
+            Rectangle { height: 8px; }
             
             Text {
                 text: "Generate G-Code";
                 font-weight: 700;
-                font-size: 12px;
+                font-size: 14px;
             }
             
             Button {
                 text: "⚙ Generate";
-                width: 100%;
+                preferred-width: 100%;
                 clicked => { generate_toolpath(); }
             }
             
             Button {
                 text: "► Export";
-                width: 100%;
+                preferred-width: 100%;
                 clicked => { export_gcode(); }
             }
             
@@ -466,6 +469,7 @@ export component DesignerPanel inherits VerticalBox {
             }
             
             VerticalBox { }
+        }
         }
     }
     }
