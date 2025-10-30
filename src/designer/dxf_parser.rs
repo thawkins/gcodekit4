@@ -439,7 +439,7 @@ impl DxfParser {
     }
 
     /// Parse a POLYLINE entity
-    fn parse_polyline(lines: &[&str], _index: &mut usize) -> Result<DxfPolyline> {
+    fn parse_polyline(_lines: &[&str], _index: &mut usize) -> Result<DxfPolyline> {
         Ok(DxfPolyline {
             vertices: vec![Point::new(0.0, 0.0), Point::new(10.0, 0.0), Point::new(10.0, 10.0)],
             closed: false,

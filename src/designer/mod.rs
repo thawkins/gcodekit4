@@ -32,6 +32,7 @@
 //! - `vcarve` - V-carving toolpath generation for V-bit tools
 //! - `adaptive` - Adaptive clearing strategy for load optimization
 //! - `dxf_parser` - DXF file parsing and entity extraction
+//! - `parametric` - Parametric design system for templates
 //! - `gcode_gen` - G-code generation from toolpaths
 
 pub mod canvas;
@@ -50,6 +51,7 @@ pub mod arrays;
 pub mod vcarve;
 pub mod adaptive;
 pub mod dxf_parser;
+pub mod parametric;
 
 pub use canvas::{Canvas, CanvasPoint, DrawingMode};
 pub use gcode_gen::ToolpathToGcode;
@@ -74,4 +76,8 @@ pub use adaptive::{
 pub use dxf_parser::{
     DxfFile, DxfEntity, DxfParser, DxfUnit, DxfLine, DxfCircle, DxfArc, DxfPolyline,
     DxfText, DxfHeader, DxfEntityType,
+};
+pub use parametric::{
+    ParametricTemplate, TemplateLibrary, ParameterSet, Parameter, ParameterType,
+    ParameterConstraint, ParametricGenerator,
 };
