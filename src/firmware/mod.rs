@@ -8,6 +8,7 @@
 //! - FluidNC: Powerful open-source CNC control
 
 pub mod capabilities;
+pub mod capabilities_db;
 pub mod connection_watch;
 pub mod device_status;
 pub mod file_service;
