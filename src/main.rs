@@ -1801,24 +1801,27 @@ fn main() -> anyhow::Result<()> {
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
     main_window.on_designer_canvas_click(move |x: f32, y: f32| {
-        info!("Designer: Canvas clicked at ({}, {})", x, y);
+        info!("Designer: Canvas clicked at pixel ({}, {})", x, y);
         let mut state = designer_mgr_clone.borrow_mut();
+        
+        // Convert pixel coordinates to world coordinates
+        let world_point = state.canvas.pixel_to_world(x as f64, y as f64);
+        info!("Converted to world coordinates: ({}, {})", world_point.x, world_point.y);
         
         // If in Select mode, try to select a shape; otherwise add a new shape
         if state.canvas.mode() == gcodekit4::DrawingMode::Select {
             // Check if we clicked on the already selected shape - if so, don't deselect
-            let click_point = gcodekit4::Point::new(x as f64, y as f64);
-            info!("Checking shapes for selection at point ({}, {})", x, y);
+            info!("Checking shapes for selection at world point ({}, {})", world_point.x, world_point.y);
             for (i, shape) in state.canvas.shapes().iter().enumerate() {
                 let (x1, y1, x2, y2) = shape.shape.bounding_box();
                 info!("  Shape {}: bounds=({}, {}) to ({}, {})", i, x1, y1, x2, y2);
             }
-            if !state.canvas.is_point_in_selected(&click_point) {
-                let selected = state.canvas.select_at(&click_point);
+            if !state.canvas.is_point_in_selected(&world_point) {
+                let selected = state.canvas.select_at(&world_point);
                 info!("Selection result: {:?}", selected);
             }
         } else {
-            state.add_shape_at(x as f64, y as f64);
+            state.add_shape_at(world_point.x, world_point.y);
         }
         
         if let Some(window) = window_weak.upgrade() {
@@ -1833,9 +1836,18 @@ fn main() -> anyhow::Result<()> {
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
     main_window.on_designer_shape_drag(move |_shape_id: i32, dx: f32, dy: f32| {
-        info!("Designer: Shape drag - id={}, dx={}, dy={}", _shape_id, dx, dy);
+        info!("Designer: Shape drag - id={}, pixel delta=({}, {})", _shape_id, dx, dy);
         let mut state = designer_mgr_clone.borrow_mut();
-        state.move_selected(dx as f64, dy as f64);
+        
+        // Convert pixel delta to world delta using viewport zoom
+        // At zoom level Z, moving 1 pixel is equivalent to 1/Z world units
+        let viewport = state.canvas.viewport();
+        let world_dx = dx as f64 / viewport.zoom();
+        let world_dy = dy as f64 / viewport.zoom();
+        
+        info!("Converted to world delta: ({}, {})", world_dx, world_dy);
+        state.move_selected(world_dx, world_dy);
+        
         if let Some(window) = window_weak.upgrade() {
             update_designer_ui(&window, &state);
         }
@@ -1848,23 +1860,30 @@ fn main() -> anyhow::Result<()> {
         let state = designer_mgr_clone.borrow();
         let mut dragging_handle = -1;
         
+        // Convert pixel coordinates to world coordinates
+        let world_point = state.canvas.pixel_to_world(x as f64, y as f64);
+        
         if let Some(selected_id) = state.canvas.selected_id() {
             if let Some(obj) = state.canvas.shapes().iter().find(|o| o.id == selected_id) {
                 let (x1, y1, x2, y2) = obj.shape.bounding_box();
-                let handle_size = 8.0;
+                
+                // Handle size in world coordinates (scaled by zoom)
+                let viewport = state.canvas.viewport();
+                let handle_size = 8.0 / viewport.zoom();
+                
                 let cx = (x1 + x2) / 2.0;
                 let cy = (y1 + y2) / 2.0;
                 
                 // Check each handle position
-                if (x as f64 - x1).abs() < handle_size && (y as f64 - y1).abs() < handle_size {
+                if (world_point.x - x1).abs() < handle_size && (world_point.y - y1).abs() < handle_size {
                     dragging_handle = 0; // Top-left
-                } else if (x as f64 - x2).abs() < handle_size && (y as f64 - y1).abs() < handle_size {
+                } else if (world_point.x - x2).abs() < handle_size && (world_point.y - y1).abs() < handle_size {
                     dragging_handle = 1; // Top-right
-                } else if (x as f64 - x1).abs() < handle_size && (y as f64 - y2).abs() < handle_size {
+                } else if (world_point.x - x1).abs() < handle_size && (world_point.y - y2).abs() < handle_size {
                     dragging_handle = 2; // Bottom-left
-                } else if (x as f64 - x2).abs() < handle_size && (y as f64 - y2).abs() < handle_size {
+                } else if (world_point.x - x2).abs() < handle_size && (world_point.y - y2).abs() < handle_size {
                     dragging_handle = 3; // Bottom-right
-                } else if (x as f64 - cx).abs() < handle_size && (y as f64 - cy).abs() < handle_size {
+                } else if (world_point.x - cx).abs() < handle_size && (world_point.y - cy).abs() < handle_size {
                     dragging_handle = 4; // Center (move handle)
                 }
                 
@@ -1881,14 +1900,19 @@ fn main() -> anyhow::Result<()> {
     main_window.on_designer_handle_drag(move |_shape_id: i32, handle: i32, dx: f32, dy: f32| {
         let mut state = designer_mgr_clone.borrow_mut();
         
+        // Convert pixel delta to world delta using viewport zoom
+        let viewport = state.canvas.viewport();
+        let world_dx = dx as f64 / viewport.zoom();
+        let world_dy = dy as f64 / viewport.zoom();
+        
         if handle == -1 || handle == 4 {
             // handle=-1 or handle=4 (center handle) means move the entire shape
-            info!("Designer: Move shape - dx={}, dy={}", dx, dy);
-            state.move_selected(dx as f64, dy as f64);
+            info!("Designer: Move shape - world delta=({}, {})", world_dx, world_dy);
+            state.move_selected(world_dx, world_dy);
         } else {
             // Resize via specific handle (0=top-left, 1=top-right, 2=bottom-left, 3=bottom-right)
-            info!("Designer: Resize handle {} - dx={}, dy={}", handle, dx, dy);
-            state.resize_selected(handle as usize, dx as f64, dy as f64);
+            info!("Designer: Resize handle {} - world delta=({}, {})", handle, world_dx, world_dy);
+            state.resize_selected(handle as usize, world_dx, world_dy);
         }
         
         if let Some(window) = window_weak.upgrade() {
