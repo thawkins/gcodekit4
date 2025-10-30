@@ -14,6 +14,7 @@
 //! - Array operations (linear, circular, grid pattern copies)
 //! - V-carving toolpath generation for V-bit tools
 //! - Adaptive clearing for optimized material removal
+//! - DXF file parsing and entity extraction
 //! - G-code export to the G-Code Editor
 //!
 //! This module is organized into sub-modules:
@@ -30,6 +31,7 @@
 //! - `arrays` - Linear, circular, and grid array operations
 //! - `vcarve` - V-carving toolpath generation for V-bit tools
 //! - `adaptive` - Adaptive clearing strategy for load optimization
+//! - `dxf_parser` - DXF file parsing and entity extraction
 //! - `gcode_gen` - G-code generation from toolpaths
 
 pub mod canvas;
@@ -47,6 +49,7 @@ pub mod import;
 pub mod arrays;
 pub mod vcarve;
 pub mod adaptive;
+pub mod dxf_parser;
 
 pub use canvas::{Canvas, CanvasPoint, DrawingMode};
 pub use gcode_gen::ToolpathToGcode;
@@ -67,4 +70,8 @@ pub use vcarve::{VBitTool, VCarveParams, VCarveSegment, VCarveGenerator};
 pub use adaptive::{
     AdaptiveClearing, MaterialProperties, MaterialType, LoadMonitor, DynamicStepover,
     AdaptiveAlgorithm,
+};
+pub use dxf_parser::{
+    DxfFile, DxfEntity, DxfParser, DxfUnit, DxfLine, DxfCircle, DxfArc, DxfPolyline,
+    DxfText, DxfHeader, DxfEntityType,
 };
