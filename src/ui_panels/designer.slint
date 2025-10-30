@@ -98,6 +98,7 @@ export component DesignerPanel inherits VerticalBox {
     private property <int> dragging_shape_id: -1;
     private property <int> dragging_handle: -1;
     private property <bool> drag_occurred: false;
+    private property <int> hovered_handle: -1;  // Track which handle we're hovering over
     
     // Main layout: vertical toolbox on left, canvas and properties on right
     FocusScope {
@@ -285,8 +286,15 @@ export component DesignerPanel inherits VerticalBox {
                                 TouchArea {
                                     width: 100%;
                                     height: 100%;
+                                    // Reset hover when not in select mode
+                                    enabled: designer_state.mode == 0;
                                     mouse-cursor: 
-                                        designer_state.mode == 0 ? default :
+                                        designer_state.mode == 0 ? (
+                                            root.hovered_handle == 0 || root.hovered_handle == 2 ? ns-resize :
+                                            root.hovered_handle == 1 || root.hovered_handle == 3 ? ew-resize :
+                                            root.dragging_shape_id >= 0 || (root.hovered_handle == 4 && designer_state.selected_id > 0) ? move :
+                                            default
+                                        ) :
                                         designer_state.mode == 1 ? crosshair :
                                         designer_state.mode == 2 ? crosshair :
                                         designer_state.mode == 3 ? crosshair :
@@ -313,8 +321,15 @@ export component DesignerPanel inherits VerticalBox {
                                         }
                                     }
                                     
-                                    // Track mouse movement - detect dragging
+                                    // Track mouse movement - detect dragging and hover
                                     moved => {
+                                        if designer_state.mode == 0 {
+                                            // Check which handle we're hovering over
+                                            let adjusted_x = self.mouse-x / 1px + canvas_scroll.viewport-x / 1px;
+                                            let adjusted_y = self.mouse-y / 1px + canvas_scroll.viewport-y / 1px;
+                                            root.hovered_handle = detect_handle(adjusted_x, adjusted_y);
+                                        }
+                                        
                                         if designer_state.mode == 0 && self.pressed {
                                             // Initialize drag start on first move while pressed
                                             if root.drag_last_dx == 0.0 && root.drag_last_dy == 0.0 {

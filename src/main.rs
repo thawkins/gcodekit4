@@ -1810,16 +1810,10 @@ fn main() -> anyhow::Result<()> {
         
         // If in Select mode, try to select a shape; otherwise add a new shape
         if state.canvas.mode() == gcodekit4::DrawingMode::Select {
-            // Check if we clicked on the already selected shape - if so, don't deselect
-            info!("Checking shapes for selection at world point ({}, {})", world_point.x, world_point.y);
-            for (i, shape) in state.canvas.shapes().iter().enumerate() {
-                let (x1, y1, x2, y2) = shape.shape.bounding_box();
-                info!("  Shape {}: bounds=({}, {}) to ({}, {})", i, x1, y1, x2, y2);
-            }
-            if !state.canvas.is_point_in_selected(&world_point) {
-                let selected = state.canvas.select_at(&world_point);
-                info!("Selection result: {:?}", selected);
-            }
+            // Try to select - this will deselect any other shapes
+            info!("Attempting to select shape at world point ({}, {})", world_point.x, world_point.y);
+            let selected = state.canvas.select_at(&world_point);
+            info!("Selection result: {:?}", selected);
         } else {
             state.add_shape_at(world_point.x, world_point.y);
         }
