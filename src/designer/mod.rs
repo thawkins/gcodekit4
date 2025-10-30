@@ -12,6 +12,7 @@
 //! - Toolpath simulation and visualization
 //! - File import support (SVG, DXF)
 //! - Array operations (linear, circular, grid pattern copies)
+//! - V-carving toolpath generation for V-bit tools
 //! - G-code export to the G-Code Editor
 //!
 //! This module is organized into sub-modules:
@@ -26,6 +27,7 @@
 //! - `toolpath_simulation` - Toolpath preview and analysis
 //! - `import` - SVG and DXF file import
 //! - `arrays` - Linear, circular, and grid array operations
+//! - `vcarve` - V-carving toolpath generation for V-bit tools
 //! - `gcode_gen` - G-code generation from toolpaths
 
 pub mod canvas;
@@ -41,6 +43,7 @@ pub mod multipass;
 pub mod toolpath_simulation;
 pub mod import;
 pub mod arrays;
+pub mod vcarve;
 
 pub use canvas::{Canvas, CanvasPoint, DrawingMode};
 pub use gcode_gen::ToolpathToGcode;
@@ -57,3 +60,4 @@ pub use arrays::{
     ArrayOperation, ArrayType, ArrayGenerator, LinearArrayParams, CircularArrayParams,
     GridArrayParams,
 };
+pub use vcarve::{VBitTool, VCarveParams, VCarveSegment, VCarveGenerator};
