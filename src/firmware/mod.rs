@@ -11,6 +11,7 @@ pub mod capabilities;
 pub mod connection_watch;
 pub mod device_status;
 pub mod file_service;
+pub mod firmware_version;
 pub mod fluidnc;
 pub mod g2core;
 pub mod grbl;
