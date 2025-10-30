@@ -10,6 +10,7 @@
 //! - CAM operations: pocket milling, drilling patterns, multi-pass depth control
 //! - Tool library management
 //! - Toolpath simulation and visualization
+//! - File import support (SVG, DXF)
 //! - G-code export to the G-Code Editor
 //!
 //! This module is organized into sub-modules:
@@ -22,6 +23,7 @@
 //! - `drilling_patterns` - Drilling pattern generation
 //! - `multipass` - Multi-pass depth control and ramping
 //! - `toolpath_simulation` - Toolpath preview and analysis
+//! - `import` - SVG and DXF file import
 //! - `gcode_gen` - G-code generation from toolpaths
 
 pub mod canvas;
@@ -35,6 +37,7 @@ pub mod pocket_operations;
 pub mod drilling_patterns;
 pub mod multipass;
 pub mod toolpath_simulation;
+pub mod import;
 
 pub use canvas::{Canvas, CanvasPoint, DrawingMode};
 pub use gcode_gen::ToolpathToGcode;
@@ -46,3 +49,4 @@ pub use pocket_operations::{PocketOperation, PocketGenerator, Island};
 pub use drilling_patterns::{DrillOperation, DrillingPattern, DrillingPatternGenerator, PatternType};
 pub use multipass::{MultiPassConfig, MultiPassToolpathGenerator, DepthStrategy};
 pub use toolpath_simulation::{ToolpathSimulator, ToolpathAnalyzer, SimulationState, ToolPosition};
+pub use import::{SvgImporter, DxfImporter, ImportedDesign, FileFormat};
