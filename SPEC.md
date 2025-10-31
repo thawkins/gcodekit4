@@ -1,18 +1,17 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.24.2-alpha  
+**Version**: 0.25.0-alpha  
 **Last Updated**: 2025-10-31  
-**Status**: COMPLETE (All 7 Phases Complete - 150/150 Tasks)
+**Status**: COMPLETE (All 7 Phases Complete - 150/150 Tasks, Phase 8 In Progress)
 
-### Latest Release (v0.24.2-alpha)
-- ✅ **Firmware Capabilities Database** - Version-aware feature tracking for all supported controllers
-- ✅ **Designer Viewport & Interaction Phase 3** - Zoom/pan controls, coordinate mapping, mouse event handling
-- ✅ **Pan-On-Drag Feature** - Drag empty canvas to pan viewport
-- ✅ **Mouse Event Coordinate Mapping** - Selection/dragging works at any zoom level
-- ✅ **Viewport Rendering Fixed** - Correct coordinate transformations applied
-- ✅ **48 New Integration Tests** - 100% pass rate, comprehensive coverage
-- ✅ **Production Ready** - All tests passing, no regressions
-- ✅ **Previous**: Visualizer UI Improvements, Test Reorganization, Issue Tracking Integration
+### Latest Release (v0.25.0-alpha)
+- ✅ **CAM Tools Palette Phase 1** - Core tool library with 5+ tools, specifications, and parameters (43 tests)
+- ✅ **Materials Database Phase 1** - Core database with 3+ materials, properties, and cutting params (31 tests)
+- ✅ **Designer Snapping Feature** - Shift-key constraint detection for position/move operations
+- ✅ **Firmware Capabilities Database** - Version-aware feature tracking for all controllers
+- ✅ **70+ New Tests** - Comprehensive coverage, 100% pass rate
+- ✅ **Production Ready** - All systems passing, ready for Phase 8 integration
+- ✅ **Previous**: Designer Polish Phase 5, Visualizer UI, Issue Tracking
 
 ## 1. Executive Summary
 
