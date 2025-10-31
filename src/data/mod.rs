@@ -8,8 +8,10 @@
 //! - Command structures
 //! - Unit management (MM, INCH)
 //! - Materials database with cutting parameters
+//! - Tools palette for CAM operations
 
 pub mod materials;
+pub mod tools;
 
 use serde::{Deserialize, Serialize};
 use std::fmt;

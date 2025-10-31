@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.25.0-alpha] - 2025-10-31
 
+### 🎉 CAM Tools Palette Phase 1 Implementation
+
+**Feature Delivery** - Core tools library with comprehensive tool specifications, cutting parameters, and library management.
+
+### ✨ Added
+
+#### CAM Tools Palette - Phase 1: Core Library
+- Complete `Tool` data structure with full specifications:
+  - Tool geometry (diameter, length, flutes, tip angle, etc.)
+  - Material composition (HSS, Carbide, Coated Carbide, Diamond)
+  - Tool coatings (TiN, TiAlN, DLC, Al2O3)
+  - Shank types for holder compatibility
+- `ToolCuttingParams` for cutting parameters:
+  - RPM, feed rate, plunge rate recommendations
+  - Depth per pass, stepover, and stepdown parameters
+- `ToolLibrary` for managing tool collections:
+  - Add/remove tools
+  - Search by name (case-insensitive)
+  - Filter by tool type or diameter range
+  - Mutable access for modifications
+- Standard library with 5 common tools:
+  - 1/4" Flat End Mill (carbide, TiN, 2-flute)
+  - 1/8" Flat End Mill (carbide, TiN, 2-flute)
+  - 90° V-Bit (carbide, TiN, 1-flute)
+  - 1/4" Drill Bit (HSS, 118° tip)
+  - 1/8" Ball End Mill (carbide, TiAlN, 2-flute)
+- 16 unit tests for core functionality
+- 27 comprehensive integration tests
+- Full documentation in `docs/tools_palette.md`
+
+#### Integration with Materials Database
+- Tools module ready for material-specific parameter integration
+- Foundation for Phase 2 bi-directional linking
+- Tool-material compatibility framework
+
 ### 🎉 Materials Database Phase 1 Implementation
 
 **Feature Delivery** - Core materials database with comprehensive material properties, cutting parameters, and safety information.
