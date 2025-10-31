@@ -5,6 +5,43 @@ All notable changes to this project should be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- **Designer Tool - Bug Fixes**
+  - gcodekit4-62: Circle resize handles now work correctly
+    - Previously dragging handles outward reduced the radius
+    - Now correctly increases radius by calculating distance from handle to center
+    - Fixed calculation to use absolute position instead of delta
+  
+  - gcodekit4-56: Properties panel width overflow issue
+    - Added max-width: 200px constraint to panel
+    - Reduced SpinBox/Button width to 160px to prevent expansion
+    - Panel now stays within screen bounds
+  
+  - gcodekit4-63: Deselecting shapes (WIP Investigation)
+    - Identified issue in UI interaction layer
+    - Backend deselection logic verified working via unit tests
+    - Need to debug coordinate conversion in click handler
+
+### Added
+- **G-Code Generation Settings**
+  - gcodekit4-60: Line numbers configuration
+    - Added line_numbers_enabled setting to Config.FileProcessingSettings
+    - Implemented ToolpathToGcode::with_line_numbers() constructor
+    - Setting defaults to false (most modern machines don't need line numbers)
+    - G-code generator now conditionally adds N[nnn] line numbers
+    - Supports sequential numbering starting from N10 with increment of 10
+
+### Created Issues
+- gcodekit4-63: Deselecting shapes doesn't work - clicking outside has no effect
+- gcodekit4-64: Visualizer is distorting aspect ratio of rendered G-code
+
+### Technical Improvements
+- Added unit test test_deselect_by_clicking_empty_space to verify backend deselection logic
+- Enhanced ToolpathToGcode with configurable line number generation
+- Improved Designer UI layout constraints
+
 ## [0.24.2-alpha] - 2025-10-31
 
 ### Added
