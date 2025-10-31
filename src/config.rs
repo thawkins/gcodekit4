@@ -118,6 +118,8 @@ pub struct FileProcessingSettings {
     pub output_directory: PathBuf,
     /// Number of recent files to track
     pub recent_files_count: usize,
+    /// Whether to add N[nnn] line numbers in generated G-code
+    pub line_numbers_enabled: bool,
 }
 
 impl Default for FileProcessingSettings {
@@ -132,6 +134,7 @@ impl Default for FileProcessingSettings {
             preserve_comments: false,
             output_directory: PathBuf::from("."),
             recent_files_count: 10,
+            line_numbers_enabled: false,
         }
     }
 }

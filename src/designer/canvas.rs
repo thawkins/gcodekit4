@@ -384,24 +384,32 @@ impl Canvas {
                         
                         let (new_cx, new_cy, new_r) = match handle {
                             0 => {
-                                // Top-left: resize from opposite corner (bottom-right)
-                                let dist = ((dx * dx + dy * dy).sqrt()) / 1.414;
-                                (center_x + dx / 2.0, center_y + dy / 2.0, (radius - dist).max(5.0))
+                                // Top-left: calculate new radius from handle position to center
+                                let new_handle_x = x1 + dx;
+                                let new_handle_y = y1 + dy;
+                                let new_r = ((center_x - new_handle_x).abs() + (center_y - new_handle_y).abs()) / 1.414;
+                                (center_x, center_y, new_r.max(5.0))
                             }
                             1 => {
-                                // Top-right: resize from opposite corner (bottom-left)
-                                let dist = ((dx * dx + dy * dy).sqrt()) / 1.414;
-                                (center_x + dx / 2.0, center_y + dy / 2.0, (radius - dist).max(5.0))
+                                // Top-right: calculate new radius from handle position to center
+                                let new_handle_x = x2 + dx;
+                                let new_handle_y = y1 + dy;
+                                let new_r = ((center_x - new_handle_x).abs() + (center_y - new_handle_y).abs()) / 1.414;
+                                (center_x, center_y, new_r.max(5.0))
                             }
                             2 => {
-                                // Bottom-left: resize from opposite corner (top-right)
-                                let dist = ((dx * dx + dy * dy).sqrt()) / 1.414;
-                                (center_x + dx / 2.0, center_y + dy / 2.0, (radius - dist).max(5.0))
+                                // Bottom-left: calculate new radius from handle position to center
+                                let new_handle_x = x1 + dx;
+                                let new_handle_y = y2 + dy;
+                                let new_r = ((center_x - new_handle_x).abs() + (center_y - new_handle_y).abs()) / 1.414;
+                                (center_x, center_y, new_r.max(5.0))
                             }
                             3 => {
-                                // Bottom-right: resize from opposite corner (top-left)
-                                let dist = ((dx * dx + dy * dy).sqrt()) / 1.414;
-                                (center_x + dx / 2.0, center_y + dy / 2.0, (radius - dist).max(5.0))
+                                // Bottom-right: calculate new radius from handle position to center
+                                let new_handle_x = x2 + dx;
+                                let new_handle_y = y2 + dy;
+                                let new_r = ((center_x - new_handle_x).abs() + (center_y - new_handle_y).abs()) / 1.414;
+                                (center_x, center_y, new_r.max(5.0))
                             }
                             4 => (center_x + dx, center_y + dy, radius), // Center (move)
                             _ => (center_x, center_y, radius),

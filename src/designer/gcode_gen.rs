@@ -7,12 +7,26 @@ use crate::data::Units;
 pub struct ToolpathToGcode {
     units: Units,
     safe_z: f64,
+    line_numbers_enabled: bool,
 }
 
 impl ToolpathToGcode {
     /// Creates a new G-code generator.
     pub fn new(units: Units, safe_z: f64) -> Self {
-        Self { units, safe_z }
+        Self { 
+            units, 
+            safe_z,
+            line_numbers_enabled: false,
+        }
+    }
+
+    /// Creates a new G-code generator with line numbers enabled.
+    pub fn with_line_numbers(units: Units, safe_z: f64, enabled: bool) -> Self {
+        Self {
+            units,
+            safe_z,
+            line_numbers_enabled: enabled,
+        }
     }
 
     /// Generates G-code from a toolpath.
@@ -41,18 +55,28 @@ impl ToolpathToGcode {
             match segment.segment_type {
                 ToolpathSegmentType::RapidMove => {
                     // Rapid move (G00)
+                    let line_prefix = if self.line_numbers_enabled {
+                        format!("N{} ", line_number)
+                    } else {
+                        String::new()
+                    };
                     gcode.push_str(&format!(
-                        "N{} G00 X{:.3} Y{:.3} Z{:.3}\n",
-                        line_number, segment.end.x, segment.end.y, self.safe_z
+                        "{}G00 X{:.3} Y{:.3} Z{:.3}\n",
+                        line_prefix, segment.end.x, segment.end.y, self.safe_z
                     ));
                     current_z = self.safe_z;
                 }
                 ToolpathSegmentType::LinearMove => {
                     // First plunge if needed
                     if (current_z - self.safe_z).abs() > 0.01 {
+                        let line_prefix = if self.line_numbers_enabled {
+                            format!("N{} ", line_number)
+                        } else {
+                            String::new()
+                        };
                         gcode.push_str(&format!(
-                            "N{} G01 Z{:.3} F{:.0}\n",
-                            line_number,
+                            "{}G01 Z{:.3} F{:.0}\n",
+                            line_prefix,
                             toolpath.depth,
                             segment.feed_rate
                         ));
@@ -60,9 +84,14 @@ impl ToolpathToGcode {
                         current_z = toolpath.depth;
                     } else if (current_z - self.safe_z).abs() < 0.01 {
                         // Plunge before first move
+                        let line_prefix = if self.line_numbers_enabled {
+                            format!("N{} ", line_number)
+                        } else {
+                            String::new()
+                        };
                         gcode.push_str(&format!(
-                            "N{} G01 Z{:.3} F{:.0}\n",
-                            line_number,
+                            "{}G01 Z{:.3} F{:.0}\n",
+                            line_prefix,
                             toolpath.depth,
                             segment.feed_rate
                         ));
@@ -71,16 +100,26 @@ impl ToolpathToGcode {
                     }
 
                     // Linear move (G01)
+                    let line_prefix = if self.line_numbers_enabled {
+                        format!("N{} ", line_number)
+                    } else {
+                        String::new()
+                    };
                     gcode.push_str(&format!(
-                        "N{} G01 X{:.3} Y{:.3} F{:.0}\n",
-                        line_number, segment.end.x, segment.end.y, segment.feed_rate
+                        "{}G01 X{:.3} Y{:.3} F{:.0}\n",
+                        line_prefix, segment.end.x, segment.end.y, segment.feed_rate
                     ));
                 }
                 ToolpathSegmentType::ArcMove => {
                     // Arc move (G02/G03) - for future use
+                    let line_prefix = if self.line_numbers_enabled {
+                        format!("N{} ", line_number)
+                    } else {
+                        String::new()
+                    };
                     gcode.push_str(&format!(
-                        "N{} G01 X{:.3} Y{:.3} F{:.0}\n",
-                        line_number, segment.end.x, segment.end.y, segment.feed_rate
+                        "{}G01 X{:.3} Y{:.3} F{:.0}\n",
+                        line_prefix, segment.end.x, segment.end.y, segment.feed_rate
                     ));
                 }
             }
