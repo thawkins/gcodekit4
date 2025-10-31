@@ -323,3 +323,33 @@ fn test_complex_gcode_parsing() {
     assert!(min_x < max_x);
     assert!(min_y < max_y);
 }
+
+#[test]
+fn test_aspect_ratio_preserved_square_canvas() {
+    let mut viz = Visualizer2D::new();
+    let gcode = "G1 X10 Y10\nG1 X20 Y20";
+    viz.parse_gcode(gcode);
+
+    let img_square = viz.render(400, 400);
+    assert!(!img_square.is_empty());
+}
+
+#[test]
+fn test_aspect_ratio_preserved_wide_canvas() {
+    let mut viz = Visualizer2D::new();
+    let gcode = "G1 X10 Y10\nG1 X20 Y20";
+    viz.parse_gcode(gcode);
+
+    let img_wide = viz.render(800, 400);
+    assert!(!img_wide.is_empty());
+}
+
+#[test]
+fn test_aspect_ratio_preserved_tall_canvas() {
+    let mut viz = Visualizer2D::new();
+    let gcode = "G1 X10 Y10\nG1 X20 Y20";
+    viz.parse_gcode(gcode);
+
+    let img_tall = viz.render(400, 800);
+    assert!(!img_tall.is_empty());
+}

@@ -111,17 +111,19 @@ struct CoordTransform {
     min_x: f32,
     min_y: f32,
     scale: f32,
+    width: f32,
     height: f32,
     x_offset: f32,
     y_offset: f32,
 }
 
 impl CoordTransform {
-    fn new(min_x: f32, min_y: f32, scale: f32, height: f32, x_offset: f32, y_offset: f32) -> Self {
+    fn new(min_x: f32, min_y: f32, scale: f32, width: f32, height: f32, x_offset: f32, y_offset: f32) -> Self {
         Self {
             min_x,
             min_y,
             scale,
+            width,
             height,
             x_offset,
             y_offset,
@@ -410,6 +412,7 @@ impl Visualizer2D {
             self.min_x,
             self.min_y,
             scale,
+            width as f32,
             height as f32,
             self.x_offset,
             self.y_offset,
