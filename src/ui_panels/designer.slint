@@ -99,6 +99,7 @@ export component DesignerPanel inherits VerticalBox {
     private property <int> dragging_handle: -1;
     private property <bool> drag_occurred: false;
     private property <int> hovered_handle: -1;  // Track which handle we're hovering over
+    private property <bool> drag_start_initialized: false;  // Track if drag_start has been set for current press
     
     // Main layout: vertical toolbox on left, canvas and properties on right
     FocusScope {
@@ -316,6 +317,8 @@ export component DesignerPanel inherits VerticalBox {
                                             let adjusted_x = self.pressed-x / 1px + canvas_scroll.viewport-x / 1px;
                                             let adjusted_y = self.pressed-y / 1px + canvas_scroll.viewport-y / 1px;
                                             root.dragging_handle = detect_handle(adjusted_x, adjusted_y);
+                                            // Reset drag tracking for new press
+                                            root.drag_start_initialized = false;
                                         }
                                     }
                                     
@@ -330,9 +333,12 @@ export component DesignerPanel inherits VerticalBox {
                                         
                                         if designer_state.mode == 0 && self.pressed {
                                             // Initialize drag start on first move while pressed
-                                            if root.drag_last_dx == 0.0 && root.drag_last_dy == 0.0 {
+                                            if !root.drag_start_initialized {
                                                 root.drag_start_x = self.pressed-x / 1px;
                                                 root.drag_start_y = self.pressed-y / 1px;
+                                                root.drag_start_initialized = true;
+                                                root.drag_last_dx = 0.0;
+                                                root.drag_last_dy = 0.0;
                                             }
                                             
                                             let total_dx = (self.mouse-x / 1px - root.drag_start_x);
@@ -343,10 +349,11 @@ export component DesignerPanel inherits VerticalBox {
                                             if abs(inc_dx) > 0.5 || abs(inc_dy) > 0.5 {
                                                 if root.dragging_handle >= 0 && root.dragging_handle <= 3 {
                                                     // Dragging a resize handle (0-3)
-                                                    handle_drag(root.dragging_shape_id, root.dragging_handle, inc_dx, inc_dy);
+                                                    // Use current selected_id, not cached dragging_shape_id
+                                                    handle_drag(designer_state.selected_id, root.dragging_handle, inc_dx, inc_dy);
                                                 } else if root.dragging_handle == 4 || (root.dragging_handle == -1 && designer_state.selected_id > 0) {
                                                     // Dragging the shape itself (move) - handle is -1 or 4 (center)
-                                                    handle_drag(-1, root.dragging_handle, inc_dx, inc_dy);
+                                                    handle_drag(designer_state.selected_id, root.dragging_handle, inc_dx, inc_dy);
                                                 } else if root.dragging_handle == -1 && designer_state.selected_id == 0 {
                                                     // No shape selected - pan the canvas
                                                     canvas_pan(inc_dx, inc_dy);
@@ -359,6 +366,7 @@ export component DesignerPanel inherits VerticalBox {
                                             // Reset when not pressed
                                             root.drag_last_dx = 0.0;
                                             root.drag_last_dy = 0.0;
+                                            root.drag_start_initialized = false;
                                             root.dragging_handle = -1;
                                             root.dragging_shape_id = -1;
                                         }

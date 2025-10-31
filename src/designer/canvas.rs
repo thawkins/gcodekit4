@@ -478,4 +478,30 @@ mod tests {
         assert_eq!(canvas.shapes().len(), 0);
         assert_eq!(canvas.selected_id(), None);
     }
+
+    #[test]
+    fn test_resize_handle_sequence() {
+        let mut canvas = Canvas::with_size(800.0, 600.0);
+        canvas.add_rectangle(0.0, 0.0, 100.0, 100.0);
+        canvas.select_at(&Point::new(50.0, 50.0));
+        
+        // Verify initial state
+        let shape = &canvas.shapes()[0];
+        let (x1, y1, x2, y2) = shape.shape.bounding_box();
+        assert_eq!((x1, y1, x2, y2), (0.0, 0.0, 100.0, 100.0));
+        
+        // Drag bottom-left handle down by 20
+        canvas.resize_selected(2, 0.0, 20.0);
+        let shape = &canvas.shapes()[0];
+        let (x1, y1, x2, y2) = shape.shape.bounding_box();
+        assert_eq!((x1, y1, x2, y2), (0.0, 0.0, 100.0, 120.0));
+        
+        // Drag center handle by (10, 10)
+        canvas.resize_selected(4, 10.0, 10.0);
+        let shape = &canvas.shapes()[0];
+        let (x1, y1, x2, y2) = shape.shape.bounding_box();
+        // Expected: center was at (50, 60), moving by (10, 10) should give (60, 70)
+        // Which means rect should be at (10, 10, 110, 130)
+        assert_eq!((x1, y1, x2, y2), (10.0, 10.0, 110.0, 130.0));
+    }
 }
