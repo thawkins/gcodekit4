@@ -21,7 +21,6 @@
 
 ### Test Organization
 All tests **MUST** be located in the `tests/` folder organized by module hierarchy, NOT inline in source files:
-
 - Use `#[test]` for sync tests and `#[tokio::test]` for async tests
 - Import from the public `gcodekit4` crate (e.g., `use gcodekiti4::communication::GrblController;`)
 - Be organized with related tests grouped together
@@ -34,7 +33,8 @@ All tests **MUST** be located in the `tests/` folder organized by module hierarc
 
 ## Units ##
 - DateTime vaules should be represented internaly in UTC and translated to locale based represetations in the UI layer. 
-- Dimensional units should be represented internaly in 100ths of a mm, and mm valus should be represted to 2 decimal place accuracy. 
+- Dimensional units should be represented internaly in mms, and be of type f32, and mm values should be represted to 2 decimal place accuracy. 
+- All text strings where feasable should be internaly represented in UTF8 encoding, with translation to and from UI encoding in the UI layer if required. 
 
 ## GitHub Access
 - Use "gh" to access all GitHub repositories.

@@ -138,6 +138,13 @@ impl Canvas {
 
     /// Selects a shape at the given point, or deselects if no shape at that point.
     pub fn select_at(&mut self, point: &Point) -> Option<u64> {
+        // Deselect all shapes first
+        for obj in self.shapes.iter_mut() {
+            obj.selected = false;
+        }
+        self.selected_id = None;
+
+        // Then try to select the shape at the given point
         for obj in self.shapes.iter_mut().rev() {
             if obj.shape.contains_point(point) {
                 obj.selected = true;
@@ -146,10 +153,6 @@ impl Canvas {
             }
         }
 
-        for obj in self.shapes.iter_mut() {
-            obj.selected = false;
-        }
-        self.selected_id = None;
         None
     }
 
@@ -424,6 +427,40 @@ impl Canvas {
                             _ => (x1, y1, x2, y2),
                         };
                         Box::new(Line::new(Point::new(new_x1, new_y1), Point::new(new_x2, new_y2)))
+                    }
+                };
+                obj.shape = new_shape;
+            }
+        }
+    }
+
+    /// Snaps the selected shape's position to whole millimeters
+    pub fn snap_selected_to_mm(&mut self) {
+        if let Some(id) = self.selected_id {
+            if let Some(obj) = self.shapes.iter_mut().find(|o| o.id == id) {
+                let (x1, y1, x2, y2) = obj.shape.bounding_box();
+                let width = x2 - x1;
+                let height = y2 - y1;
+                
+                // Snap the top-left corner to whole mm
+                let snapped_x1 = (x1 + 0.5).floor();
+                let snapped_y1 = (y1 + 0.5).floor();
+                
+                // Replace the shape with snapped position
+                let shape = &*obj.shape;
+                let new_shape: Box<dyn Shape> = match shape.shape_type() {
+                    ShapeType::Rectangle => {
+                        Box::new(Rectangle::new(snapped_x1, snapped_y1, width, height))
+                    }
+                    ShapeType::Circle => {
+                        let radius = width / 2.0;
+                        Box::new(Circle::new(Point::new(snapped_x1 + radius, snapped_y1 + radius), radius))
+                    }
+                    ShapeType::Line => {
+                        Box::new(Line::new(
+                            Point::new(snapped_x1, snapped_y1),
+                            Point::new(snapped_x1 + width, snapped_y1 + height),
+                        ))
                     }
                 };
                 obj.shape = new_shape;

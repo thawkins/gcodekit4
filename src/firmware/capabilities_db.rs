@@ -179,6 +179,7 @@ impl CapabilitiesDatabase {
         db.init_grbl_profiles();
         db.init_tinyg_profiles();
         db.init_g2core_profiles();
+        db.init_smoothieware_profiles();
         db.init_fluidnc_profiles();
         
         db
@@ -234,6 +235,50 @@ impl CapabilitiesDatabase {
         grbl_1_1.realtime_commands = true;
         grbl_1_1.flow_control = true;
         self.database.insert((FirmwareType::Grbl, "1.1".to_string()), grbl_1_1);
+        
+        // GRBL 1.2
+        let mut grbl_1_2 = FirmwareCapabilities::new(FirmwareType::Grbl, SemanticVersion::new(1, 2, 0));
+        grbl_1_2.max_axes = 3;
+        grbl_1_2.arc_support = true;
+        grbl_1_2.variable_spindle = true;
+        grbl_1_2.spindle_direction = true;
+        grbl_1_2.tool_change = true;
+        grbl_1_2.probing = true;
+        grbl_1_2.probe_away = true;
+        grbl_1_2.homing_cycle = true;
+        grbl_1_2.soft_homing = true;
+        grbl_1_2.coordinate_systems = 6;
+        grbl_1_2.cutter_radius_compensation = true;
+        grbl_1_2.soft_limits = true;
+        grbl_1_2.hard_limits = true;
+        grbl_1_2.alarm_conditions = true;
+        grbl_1_2.door_interlock = true;
+        grbl_1_2.status_reports = true;
+        grbl_1_2.realtime_commands = true;
+        grbl_1_2.flow_control = true;
+        self.database.insert((FirmwareType::Grbl, "1.2".to_string()), grbl_1_2);
+        
+        // GRBL 1.3
+        let mut grbl_1_3 = FirmwareCapabilities::new(FirmwareType::Grbl, SemanticVersion::new(1, 3, 0));
+        grbl_1_3.max_axes = 3;
+        grbl_1_3.arc_support = true;
+        grbl_1_3.variable_spindle = true;
+        grbl_1_3.spindle_direction = true;
+        grbl_1_3.tool_change = true;
+        grbl_1_3.probing = true;
+        grbl_1_3.probe_away = true;
+        grbl_1_3.homing_cycle = true;
+        grbl_1_3.soft_homing = true;
+        grbl_1_3.coordinate_systems = 6;
+        grbl_1_3.cutter_radius_compensation = true;
+        grbl_1_3.soft_limits = true;
+        grbl_1_3.hard_limits = true;
+        grbl_1_3.alarm_conditions = true;
+        grbl_1_3.door_interlock = true;
+        grbl_1_3.status_reports = true;
+        grbl_1_3.realtime_commands = true;
+        grbl_1_3.flow_control = true;
+        self.database.insert((FirmwareType::Grbl, "1.3".to_string()), grbl_1_3);
     }
     
     /// Initialize TinyG capability profiles
@@ -305,6 +350,42 @@ impl CapabilitiesDatabase {
         g2core.alarm_conditions = true;
         g2core.door_interlock = true;
         self.database.insert((FirmwareType::G2Core, "3.0".to_string()), g2core);
+    }
+    
+    /// Initialize Smoothieware capability profiles
+    fn init_smoothieware_profiles(&mut self) {
+        let mut smoothieware = FirmwareCapabilities::new(FirmwareType::Smoothieware, SemanticVersion::new(1, 0, 0));
+        smoothieware.max_axes = 5;
+        smoothieware.arc_support = true;
+        smoothieware.inverse_time_feed = true;
+        smoothieware.feed_per_revolution = true;
+        smoothieware.variable_spindle = true;
+        smoothieware.spindle_direction = true;
+        smoothieware.spindle_css = true;
+        smoothieware.tool_change = true;
+        smoothieware.tool_length_offset = true;
+        smoothieware.tool_diameter_offset = true;
+        smoothieware.probing = true;
+        smoothieware.probe_away = true;
+        smoothieware.coolant_control = true;
+        smoothieware.mist_control = true;
+        smoothieware.homing_cycle = true;
+        smoothieware.soft_homing = true;
+        smoothieware.hard_homing = true;
+        smoothieware.coordinate_systems = 9;
+        smoothieware.local_offsets = true;
+        smoothieware.cutter_radius_compensation = true;
+        smoothieware.macro_support = true;
+        smoothieware.conditional_blocks = true;
+        smoothieware.variable_support = true;
+        smoothieware.status_reports = true;
+        smoothieware.realtime_commands = true;
+        smoothieware.flow_control = true;
+        smoothieware.soft_limits = true;
+        smoothieware.hard_limits = true;
+        smoothieware.alarm_conditions = true;
+        smoothieware.door_interlock = true;
+        self.database.insert((FirmwareType::Smoothieware, "1.0".to_string()), smoothieware);
     }
     
     /// Initialize FluidNC capability profiles
@@ -436,6 +517,42 @@ mod tests {
     }
 
     #[test]
+    fn test_grbl_1_2_capabilities() {
+        let db = CapabilitiesDatabase::new();
+        let caps = db
+            .get_capabilities(FirmwareType::Grbl, &SemanticVersion::new(1, 2, 0))
+            .unwrap();
+
+        assert_eq!(caps.max_axes, 3);
+        assert!(caps.arc_support);
+        assert!(caps.variable_spindle);
+        assert!(caps.tool_change);
+        assert!(caps.probing);
+        assert!(caps.probe_away);
+        assert!(caps.status_reports);
+        assert!(caps.realtime_commands);
+        assert_eq!(caps.coordinate_systems, 6);
+    }
+
+    #[test]
+    fn test_grbl_1_3_capabilities() {
+        let db = CapabilitiesDatabase::new();
+        let caps = db
+            .get_capabilities(FirmwareType::Grbl, &SemanticVersion::new(1, 3, 0))
+            .unwrap();
+
+        assert_eq!(caps.max_axes, 3);
+        assert!(caps.arc_support);
+        assert!(caps.variable_spindle);
+        assert!(caps.tool_change);
+        assert!(caps.probing);
+        assert!(caps.probe_away);
+        assert!(caps.status_reports);
+        assert!(caps.realtime_commands);
+        assert_eq!(caps.coordinate_systems, 6);
+    }
+
+    #[test]
     fn test_grbl_0_9_limited_capabilities() {
         let db = CapabilitiesDatabase::new();
         let caps = db
@@ -512,6 +629,7 @@ mod tests {
         assert!(types.contains(&FirmwareType::Grbl));
         assert!(types.contains(&FirmwareType::TinyG));
         assert!(types.contains(&FirmwareType::G2Core));
+        assert!(types.contains(&FirmwareType::Smoothieware));
         assert!(types.contains(&FirmwareType::FluidNC));
     }
 
@@ -527,5 +645,25 @@ mod tests {
         assert!(cap.is_available_for(&SemanticVersion::new(1, 0, 0)));
         assert!(cap.is_available_for(&SemanticVersion::new(1, 1, 0)));
         assert!(!cap.is_available_for(&SemanticVersion::new(0, 9, 0)));
+    }
+
+    #[test]
+    fn test_smoothieware_capabilities() {
+        let db = CapabilitiesDatabase::new();
+        let caps = db
+            .get_capabilities(FirmwareType::Smoothieware, &SemanticVersion::new(1, 0, 0))
+            .unwrap();
+
+        assert_eq!(caps.max_axes, 5);
+        assert!(caps.arc_support);
+        assert!(caps.variable_spindle);
+        assert!(caps.tool_change);
+        assert!(caps.tool_length_offset);
+        assert!(caps.probing);
+        assert!(caps.status_reports);
+        assert!(caps.realtime_commands);
+        assert_eq!(caps.coordinate_systems, 9);
+        assert!(caps.macro_support);
+        assert!(caps.conditional_blocks);
     }
 }

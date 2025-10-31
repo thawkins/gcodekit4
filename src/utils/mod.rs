@@ -3,6 +3,8 @@
 pub mod advanced;
 pub mod export;
 pub mod file_io;
+pub mod geometry_generators;
+pub mod gtools;
 pub mod phase6_extended;
 pub mod phase7;
 pub mod processing;
@@ -20,6 +22,9 @@ pub use file_io::{
     FileEncoding, FileReadStats, FileValidation, GcodeFileReader, RecentFileEntry,
     RecentFilesManager,
 };
+pub use gtools::{
+    BoundingBox, GcodeGenerator, GcodeOutput, Parameter, ParameterValue, ToolRegistry,
+};
 pub use phase6_extended::{
     Alarm, AlarmManager, AlarmType, AutoConnectConfig, Bookmark, BookmarkManager, CommandHistory,
     CustomAction, CustomMacro, DataLogger, HeightPoint, HistoryEntry, LogEntry, NetworkConfig,
@@ -35,7 +40,7 @@ pub use phase7::{
     SafetyFeaturesManager,
 };
 pub use processing::{
-    BoundingBox, FeedRateStats, FileProcessingPipeline, FileStatistics, ProcessedFile, SpindleStats,
+    FeedRateStats, FileProcessingPipeline, FileStatistics, ProcessedFile, SpindleStats,
 };
 
 /// Format a float to a reasonable number of decimal places

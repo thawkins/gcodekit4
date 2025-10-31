@@ -177,6 +177,11 @@ impl DesignerState {
         self.canvas.resize_selected(handle, dx, dy);
     }
 
+    /// Snaps the selected shape to whole millimeters
+    pub fn snap_selected_to_mm(&mut self) {
+        self.canvas.snap_selected_to_mm();
+    }
+
     /// Deselects all shapes.
     pub fn deselect_all(&mut self) {
         self.canvas.deselect_all();

@@ -156,23 +156,23 @@ impl fmt::Display for CNCPoint {
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Position {
     /// X-axis position
-    pub x: f64,
+    pub x: f32,
     /// Y-axis position
-    pub y: f64,
+    pub y: f32,
     /// Z-axis position
-    pub z: f64,
+    pub z: f32,
     /// Fourth axis (A/U) if present
-    pub a: Option<f64>,
+    pub a: Option<f32>,
 }
 
 impl Position {
     /// Create a new position with X, Y, Z coordinates
-    pub fn new(x: f64, y: f64, z: f64) -> Self {
+    pub fn new(x: f32, y: f32, z: f32) -> Self {
         Self { x, y, z, a: None }
     }
 
     /// Create a position with four axes including the A axis
-    pub fn with_a(x: f64, y: f64, z: f64, a: f64) -> Self {
+    pub fn with_a(x: f32, y: f32, z: f32, a: f32) -> Self {
         Self {
             x,
             y,
@@ -184,20 +184,20 @@ impl Position {
     /// Convert from a CNCPoint to Position (takes only X, Y, Z, A)
     pub fn from_cnc_point(point: &CNCPoint) -> Self {
         Self {
-            x: point.x,
-            y: point.y,
-            z: point.z,
-            a: Some(point.a),
+            x: point.x as f32,
+            y: point.y as f32,
+            z: point.z as f32,
+            a: Some(point.a as f32),
         }
     }
 
     /// Convert this Position to a CNCPoint
     pub fn to_cnc_point(&self, unit: Units) -> CNCPoint {
         CNCPoint::with_axes(
-            self.x,
-            self.y,
-            self.z,
-            self.a.unwrap_or(0.0),
+            self.x as f64,
+            self.y as f64,
+            self.z as f64,
+            self.a.unwrap_or(0.0) as f64,
             0.0,
             0.0,
             unit,
@@ -205,7 +205,7 @@ impl Position {
     }
 
     /// Calculate distance to another position (XYZ only)
-    pub fn distance_to(&self, other: &Position) -> f64 {
+    pub fn distance_to(&self, other: &Position) -> f32 {
         let dx = self.x - other.x;
         let dy = self.y - other.y;
         let dz = self.z - other.z;
@@ -262,10 +262,10 @@ impl std::fmt::Display for Position {
         match self.a {
             Some(a) => write!(
                 f,
-                "X:{:.3} Y:{:.3} Z:{:.3} A:{:.3}",
+                "X:{:.2} Y:{:.2} Z:{:.2} A:{:.2}",
                 self.x, self.y, self.z, a
             ),
-            None => write!(f, "X:{:.3} Y:{:.3} Z:{:.3}", self.x, self.y, self.z),
+            None => write!(f, "X:{:.2} Y:{:.2} Z:{:.2}", self.x, self.y, self.z),
         }
     }
 }
@@ -277,17 +277,17 @@ impl std::fmt::Display for Position {
 #[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize)]
 pub struct PartialPosition {
     /// X-axis position (if Some, update this axis)
-    pub x: Option<f64>,
+    pub x: Option<f32>,
     /// Y-axis position (if Some, update this axis)
-    pub y: Option<f64>,
+    pub y: Option<f32>,
     /// Z-axis position (if Some, update this axis)
-    pub z: Option<f64>,
+    pub z: Option<f32>,
     /// A-axis position (if Some, update this axis)
-    pub a: Option<f64>,
+    pub a: Option<f32>,
     /// B-axis position (if Some, update this axis)
-    pub b: Option<f64>,
+    pub b: Option<f32>,
     /// C-axis position (if Some, update this axis)
-    pub c: Option<f64>,
+    pub c: Option<f32>,
 }
 
 impl PartialPosition {
@@ -297,7 +297,7 @@ impl PartialPosition {
     }
 
     /// Create a partial position with only X axis set
-    pub fn x_only(x: f64) -> Self {
+    pub fn x_only(x: f32) -> Self {
         Self {
             x: Some(x),
             ..Default::default()
@@ -305,7 +305,7 @@ impl PartialPosition {
     }
 
     /// Create a partial position with only Y axis set
-    pub fn y_only(y: f64) -> Self {
+    pub fn y_only(y: f32) -> Self {
         Self {
             y: Some(y),
             ..Default::default()
@@ -313,7 +313,7 @@ impl PartialPosition {
     }
 
     /// Create a partial position with only Z axis set
-    pub fn z_only(z: f64) -> Self {
+    pub fn z_only(z: f32) -> Self {
         Self {
             z: Some(z),
             ..Default::default()
@@ -321,7 +321,7 @@ impl PartialPosition {
     }
 
     /// Create a partial position with XY axes set
-    pub fn xy(x: f64, y: f64) -> Self {
+    pub fn xy(x: f32, y: f32) -> Self {
         Self {
             x: Some(x),
             y: Some(y),
@@ -330,7 +330,7 @@ impl PartialPosition {
     }
 
     /// Create a partial position with XYZ axes set
-    pub fn xyz(x: f64, y: f64, z: f64) -> Self {
+    pub fn xyz(x: f32, y: f32, z: f32) -> Self {
         Self {
             x: Some(x),
             y: Some(y),
@@ -352,12 +352,12 @@ impl PartialPosition {
     /// Apply this partial position to a CNC point, updating only specified axes
     pub fn apply_to_cnc_point(&self, point: &CNCPoint) -> CNCPoint {
         CNCPoint {
-            x: self.x.unwrap_or(point.x),
-            y: self.y.unwrap_or(point.y),
-            z: self.z.unwrap_or(point.z),
-            a: self.a.unwrap_or(point.a),
-            b: self.b.unwrap_or(point.b),
-            c: self.c.unwrap_or(point.c),
+            x: self.x.map(|v| v as f64).unwrap_or(point.x),
+            y: self.y.map(|v| v as f64).unwrap_or(point.y),
+            z: self.z.map(|v| v as f64).unwrap_or(point.z),
+            a: self.a.map(|v| v as f64).unwrap_or(point.a),
+            b: self.b.map(|v| v as f64).unwrap_or(point.b),
+            c: self.c.map(|v| v as f64).unwrap_or(point.c),
             unit: point.unit,
         }
     }

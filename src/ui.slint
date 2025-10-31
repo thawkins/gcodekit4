@@ -13,6 +13,7 @@ import { AdvancedFeaturesPanel } from "ui_panels/advanced_features.slint";
 import { SafetyDiagnosticsPanel } from "ui_panels/safety_diagnostics.slint";
 import { GcodeVisualizerPanel } from "ui_panels/gcode_visualizer.slint";
 import { DesignerPanel } from "ui_panels/designer.slint";
+import { GToolsPanel, GToolConfig } from "ui_panels/gtools.slint";
 import { MainMenu } from "ui/ui_components/mainmenu.slint";
 import { SettingsDialog, SettingItem } from "ui/ui_components/settings_dialog.slint";
 
@@ -107,6 +108,10 @@ export component MainWindow inherits Window {
     in property <string> designer-generated-gcode: "";
     in property <bool> designer-gcode-generated: false;
     in property <image> designer-canvas-image;
+    in property <float> designer-selected-shape-x: 0.0;
+    in property <float> designer-selected-shape-y: 0.0;
+    in property <float> designer-selected-shape-w: 0.0;
+    in property <float> designer-selected-shape-h: 0.0;
     
     callback refresh-ports();
     callback connect(string, int);
@@ -140,6 +145,7 @@ export component MainWindow inherits Window {
     callback menu-view-safety-diagnostics();
     callback menu-view-gcode-visualizer();
     callback menu-view-designer();
+    callback menu-view-gtools();
     callback menu-help-about();
     callback update-setting(string, string);
     callback console-clear-clicked();
@@ -171,6 +177,7 @@ export component MainWindow inherits Window {
     callback designer-handle-drag(int, int, float, float);  // shape_id, handle_index, dx, dy
     callback designer-canvas-pan(float, float);             // dx, dy - pan the viewport
     callback designer-deselect-all();
+    callback designer-set-shift-pressed(bool);              // Shift key state
     
     // Internal state for UI selections
     private property <int> port-index: 0;
@@ -286,6 +293,15 @@ export component MainWindow inherits Window {
                     if (current-view != "designer") {
                         current-view = "designer";
                         root.menu-view-designer();
+                    }
+                }
+            }
+            MenuItem {
+                title: current-view == "gtools" ? @tr("✓ GTools") : @tr("GTools");
+                activated => {
+                    if (current-view != "gtools") {
+                        current-view = "gtools";
+                        root.menu-view-gtools();
                     }
                 }
             }
@@ -526,6 +542,31 @@ export component MainWindow inherits Window {
                                 }
                             }
                         }
+
+                        // GTools Tab
+                        Rectangle {
+                            width: 100px;
+                            height: 32px;
+                            background: current-view == "gtools" ? #34495e : #3d5470;
+                            border-radius: 3px;
+                            
+                            Text {
+                                text: "🛠️ GTools";
+                                color: current-view == "gtools" ? white : #bdc3c7;
+                                font-size: 12px;
+                                font-weight: current-view == "gtools" ? 700 : 400;
+                                vertical-alignment: center;
+                                horizontal-alignment: center;
+                            }
+                            
+                            TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => {
+                                    current-view = "gtools";
+                                    root.menu-view-gtools();
+                                }
+                            }
+                        }
                     }
                 }
                 
@@ -716,6 +757,10 @@ if current-view == "safety-diagnostics" : SafetyDiagnosticsPanel {
                     x_offset: root.designer-state.pan_x;
                     y_offset: root.designer-state.pan_y;
                     canvas_image: root.designer-canvas-image;
+                    selected_shape_x: root.designer-selected-shape-x;
+                    selected_shape_y: root.designer-selected-shape-y;
+                    selected_shape_w: root.designer-selected-shape-w;
+                    selected_shape_h: root.designer-selected-shape-h;
                     
                     set_mode(m) => {
                         root.designer-set-mode(m);
@@ -775,6 +820,44 @@ if current-view == "safety-diagnostics" : SafetyDiagnosticsPanel {
                     
                     deselect_all => {
                         root.designer-deselect-all();
+                    }
+                    
+                    set_shift_pressed(pressed) => {
+                        root.designer-set-shift-pressed(pressed);
+                    }
+                }
+
+                // GTools View
+                if current-view == "gtools" : GToolsPanel {
+                    current-tool: {
+                        tool_id: 0,
+                        tool_name: "",
+                        category: "",
+                        parameters: []
+                    };
+                    
+                    select-tool(category, tool_name) => {
+                        // Will be wired in main.rs
+                    }
+                    
+                    set-parameter(name, value) => {
+                        // Will be wired in main.rs
+                    }
+                    
+                    generate => {
+                        // Will be wired in main.rs
+                    }
+                    
+                    preview => {
+                        // Will be wired in main.rs
+                    }
+                    
+                    send-to-editor => {
+                        // Will be wired in main.rs
+                    }
+                    
+                    send-to-machine => {
+                        // Will be wired in main.rs
                     }
                 }
             }

@@ -47,13 +47,13 @@ impl std::fmt::Display for ConnectionState {
 #[derive(Debug, Clone, Default)]
 pub struct ControllerState {
     /// Current X position
-    pub position_x: f64,
+    pub position_x: f32,
     /// Current Y position
-    pub position_y: f64,
+    pub position_y: f32,
     /// Current Z position
-    pub position_z: f64,
+    pub position_z: f32,
     /// Feed rate
-    pub feed_rate: f64,
+    pub feed_rate: f32,
     /// Spindle speed
     pub spindle_speed: u16,
     /// Machine running
@@ -120,14 +120,14 @@ impl UiState {
     }
 
     /// Update controller position
-    pub fn update_position(&mut self, x: f64, y: f64, z: f64) {
+    pub fn update_position(&mut self, x: f32, y: f32, z: f32) {
         self.controller_state.position_x = x;
         self.controller_state.position_y = y;
         self.controller_state.position_z = z;
     }
 
     /// Update feed rate
-    pub fn update_feed_rate(&mut self, rate: f64) {
+    pub fn update_feed_rate(&mut self, rate: f32) {
         self.controller_state.feed_rate = rate;
     }
 

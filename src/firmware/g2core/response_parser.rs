@@ -81,9 +81,9 @@ pub struct G2CoreStatus {
     /// Current units (0 = mm, 1 = inches)
     pub units: u8,
     /// Work coordinate system offset
-    pub work_offset: Option<(f64, f64, f64)>,
+    pub work_offset: Option<(f32, f32, f32)>,
     /// Rotational axes (A, B, C if applicable)
-    pub rotational_axes: Option<(f64, f64, f64)>,
+    pub rotational_axes: Option<(f32, f32, f32)>,
     /// Additional fields from status report
     pub extra_fields: HashMap<String, Value>,
 }
@@ -262,12 +262,12 @@ impl G2CoreResponseParser {
         // Parse positions with 6-axis support
         if let Some(pos_val) = sr.get("pos") {
             if let Some(pos_obj) = pos_val.as_object() {
-                let x = pos_obj.get("x").and_then(Value::as_f64).unwrap_or(0.0);
-                let y = pos_obj.get("y").and_then(Value::as_f64).unwrap_or(0.0);
-                let z = pos_obj.get("z").and_then(Value::as_f64).unwrap_or(0.0);
-                let a = pos_obj.get("a").and_then(Value::as_f64).unwrap_or(0.0);
-                let b = pos_obj.get("b").and_then(Value::as_f64).unwrap_or(0.0);
-                let c = pos_obj.get("c").and_then(Value::as_f64).unwrap_or(0.0);
+                let x = pos_obj.get("x").and_then(Value::as_f64).unwrap_or(0.0) as f32;
+                let y = pos_obj.get("y").and_then(Value::as_f64).unwrap_or(0.0) as f32;
+                let z = pos_obj.get("z").and_then(Value::as_f64).unwrap_or(0.0) as f32;
+                let a = pos_obj.get("a").and_then(Value::as_f64).unwrap_or(0.0) as f32;
+                let b = pos_obj.get("b").and_then(Value::as_f64).unwrap_or(0.0) as f32;
+                let c = pos_obj.get("c").and_then(Value::as_f64).unwrap_or(0.0) as f32;
                 status.work_position = Position::with_a(x, y, z, a);
                 status.rotational_axes = Some((a, b, c));
             }
@@ -275,10 +275,10 @@ impl G2CoreResponseParser {
 
         if let Some(mpos_val) = sr.get("mpos") {
             if let Some(mpos_obj) = mpos_val.as_object() {
-                let x = mpos_obj.get("x").and_then(Value::as_f64).unwrap_or(0.0);
-                let y = mpos_obj.get("y").and_then(Value::as_f64).unwrap_or(0.0);
-                let z = mpos_obj.get("z").and_then(Value::as_f64).unwrap_or(0.0);
-                let a = mpos_obj.get("a").and_then(Value::as_f64).unwrap_or(0.0);
+                let x = mpos_obj.get("x").and_then(Value::as_f64).unwrap_or(0.0) as f32;
+                let y = mpos_obj.get("y").and_then(Value::as_f64).unwrap_or(0.0) as f32;
+                let z = mpos_obj.get("z").and_then(Value::as_f64).unwrap_or(0.0) as f32;
+                let a = mpos_obj.get("a").and_then(Value::as_f64).unwrap_or(0.0) as f32;
                 status.machine_position = Position::with_a(x, y, z, a);
             }
         }

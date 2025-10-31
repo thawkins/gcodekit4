@@ -37,12 +37,12 @@ export component GcodeVisualizerPanel inherits VerticalBox {
     callback toggle-grid();
 
     VerticalBox {
-        spacing: 4px;
-        padding: 6px;
+        spacing: 2px;
+        padding: 2px;
 
         // Toolbar - all controls on one line
         HorizontalBox {
-            min-height: 50px;
+            min-height: 40px;
             spacing: 8px;
             vertical-stretch: 0;
 
@@ -157,12 +157,12 @@ export component GcodeVisualizerPanel inherits VerticalBox {
         // Status display - single line (outside ScrollView)
         HorizontalBox {
             spacing: 12px;
-            padding-left: 10px;
-            padding-right: 10px;
-            padding-top: 4px;
-            padding-bottom: 4px;
+            padding-left: 5px;
+            padding-right: 5px;
+            padding-top: 2px;
+            padding-bottom: 2px;
             alignment: start;
-            min-height: 25px;
+            min-height: 20px;
             vertical-stretch: 0;
 
             // Zoom Scale
@@ -262,29 +262,31 @@ export component GcodeVisualizerPanel inherits VerticalBox {
 
         // Main visualization area with scrollview
         ScrollView {
-            VerticalBox {
-                padding: 10px;
-                spacing: 6px;
-                alignment: center;
-
-                    // 2D Visualizer - Rendered Toolpath
-                    Rectangle {
-                        width: 100%;
-                        height: 500px;
-                        background: #f5f5f5;
-                        border-width: 2px;
-                        border-color: #000;
-                        border-radius: 4px;
-                        
-                        if root.gcode-content != "" && root.visualization-image.width > 0 : Image {
-                            source: root.visualization-image;
-                            x: 2px;
-                            y: 2px;
-                            width: parent.width - 4px;
-                            height: parent.height - 4px;
-                        }
+            // 2D Visualizer - Rendered Toolpath
+            Rectangle {
+                width: 100%;
+                background: #f5f5f5;
+                border-width: 2px;
+                border-color: #000;
+                border-radius: 4px;
+                
+                VerticalBox {
+                    alignment: center;
+                    padding-left: 2px;
+                    padding-right: 2px;
+                    padding-top: 2px;
+                    padding-bottom: 2px;
+                    
+                    if root.gcode-content != "" && root.visualization-image.width > 0 : Image {
+                        source: root.visualization-image;
+                        // Calculate proportional dimensions while maintaining aspect ratio
+                        width: root.visualization-image.width / root.visualization-image.height * parent.height;
+                        height: parent.height;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
                     }
                 }
             }
         }
     }
+}

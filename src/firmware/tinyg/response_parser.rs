@@ -259,20 +259,20 @@ impl TinyGResponseParser {
         // Parse positions
         if let Some(pos_val) = sr.get("pos") {
             if let Some(pos_obj) = pos_val.as_object() {
-                let x = pos_obj.get("x").and_then(Value::as_f64).unwrap_or(0.0);
-                let y = pos_obj.get("y").and_then(Value::as_f64).unwrap_or(0.0);
-                let z = pos_obj.get("z").and_then(Value::as_f64).unwrap_or(0.0);
-                let a = pos_obj.get("a").and_then(Value::as_f64).unwrap_or(0.0);
+                let x = pos_obj.get("x").and_then(Value::as_f64).unwrap_or(0.0) as f32;
+                let y = pos_obj.get("y").and_then(Value::as_f64).unwrap_or(0.0) as f32;
+                let z = pos_obj.get("z").and_then(Value::as_f64).unwrap_or(0.0) as f32;
+                let a = pos_obj.get("a").and_then(Value::as_f64).unwrap_or(0.0) as f32;
                 status.work_position = Position::with_a(x, y, z, a);
             }
         }
 
         if let Some(mpos_val) = sr.get("mpos") {
             if let Some(mpos_obj) = mpos_val.as_object() {
-                let x = mpos_obj.get("x").and_then(Value::as_f64).unwrap_or(0.0);
-                let y = mpos_obj.get("y").and_then(Value::as_f64).unwrap_or(0.0);
-                let z = mpos_obj.get("z").and_then(Value::as_f64).unwrap_or(0.0);
-                let a = mpos_obj.get("a").and_then(Value::as_f64).unwrap_or(0.0);
+                let x = mpos_obj.get("x").and_then(Value::as_f64).unwrap_or(0.0) as f32;
+                let y = mpos_obj.get("y").and_then(Value::as_f64).unwrap_or(0.0) as f32;
+                let z = mpos_obj.get("z").and_then(Value::as_f64).unwrap_or(0.0) as f32;
+                let a = mpos_obj.get("a").and_then(Value::as_f64).unwrap_or(0.0) as f32;
                 status.machine_position = Position::with_a(x, y, z, a);
             }
         }

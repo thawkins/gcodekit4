@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.25.0-alpha] - 2025-10-31
 
+### 🎉 Firmware Capabilities Database Implementation
+
+**Feature Delivery** - Comprehensive version-aware firmware capability tracking system.
+
+### ✨ Added
+
+#### Firmware Capabilities Database
+- Complete implementation of `CapabilitiesDatabase` for tracking firmware features by version
+- Support for all 5 major firmware types:
+  - GRBL (versions 0.9, 1.0, 1.1)
+  - TinyG (version 2.0+)
+  - g2core (version 3.0+)
+  - Smoothieware (version 1.0+)
+  - FluidNC (version 3.0+)
+- 10+ capability categories tracked:
+  - Core motion (arcs, inverse time feed, feed per revolution)
+  - Spindle control (variable speed, direction, CSS)
+  - Tool management (tool change, length offset, diameter offset)
+  - Probing (G38.2, G38.4/G38.5)
+  - Coolant/Mist control
+  - Homing (soft/hard)
+  - Offsets & compensation (work coordinate systems, local offsets, cutter radius)
+  - Advanced features (macros, conditionals, variables)
+  - Communication (status reports, real-time commands, flow control)
+  - Safety (soft limits, hard limits, alarms, door interlock)
+- Version-aware querying with major.minor matching fallback
+- Custom capability registration support
+- Comprehensive documentation in `docs/FIRMWARE_CAPABILITIES_DATABASE.md`
+- 10 new tests covering all firmware types and capabilities (100% pass rate)
+
+## [0.24.2-alpha] - 2025-10-30
+
 ### 🎉 PHASE 5 COMPLETE: Designer Polish & Integration
 
 **Phase 5: Major Milestone** - All 6 subtasks delivered, 630 tests passing (100%), Designer fully polished and integrated with core systems.

@@ -22,7 +22,7 @@ impl std::fmt::Display for UnitSystem {
 
 impl UnitSystem {
     /// Convert millimeters to this unit
-    pub fn from_mm(&self, mm: f64) -> f64 {
+    pub fn from_mm(&self, mm: f32) -> f32 {
         match self {
             Self::Millimeters => mm,
             Self::Inches => mm / 25.4,
@@ -30,7 +30,7 @@ impl UnitSystem {
     }
 
     /// Convert from this unit to millimeters
-    pub fn to_mm(&self, value: f64) -> f64 {
+    pub fn to_mm(&self, value: f32) -> f32 {
         match self {
             Self::Millimeters => value,
             Self::Inches => value * 25.4,
@@ -86,18 +86,18 @@ impl CoordinateSystem {
 #[derive(Debug, Clone, Copy, Default)]
 pub struct MachinePosition {
     /// X axis position
-    pub x: f64,
+    pub x: f32,
     /// Y axis position
-    pub y: f64,
+    pub y: f32,
     /// Z axis position
-    pub z: f64,
+    pub z: f32,
     /// A axis position (optional rotary)
-    pub a: f64,
+    pub a: f32,
 }
 
 impl MachinePosition {
     /// Create new machine position
-    pub fn new(x: f64, y: f64, z: f64) -> Self {
+    pub fn new(x: f32, y: f32, z: f32) -> Self {
         Self { x, y, z, a: 0.0 }
     }
 
@@ -106,7 +106,7 @@ impl MachinePosition {
         let x = units.from_mm(self.x);
         let y = units.from_mm(self.y);
         let z = units.from_mm(self.z);
-        format!("X:{:.3} Y:{:.3} Z:{:.3}", x, y, z)
+        format!("X:{:.2} Y:{:.2} Z:{:.2}", x, y, z)
     }
 }
 
@@ -114,18 +114,18 @@ impl MachinePosition {
 #[derive(Debug, Clone, Copy, Default)]
 pub struct WorkPosition {
     /// X axis offset
-    pub x: f64,
+    pub x: f32,
     /// Y axis offset
-    pub y: f64,
+    pub y: f32,
     /// Z axis offset
-    pub z: f64,
+    pub z: f32,
     /// A axis offset (optional rotary)
-    pub a: f64,
+    pub a: f32,
 }
 
 impl WorkPosition {
     /// Create new work position
-    pub fn new(x: f64, y: f64, z: f64) -> Self {
+    pub fn new(x: f32, y: f32, z: f32) -> Self {
         Self { x, y, z, a: 0.0 }
     }
 
@@ -134,7 +134,7 @@ impl WorkPosition {
         let x = units.from_mm(self.x);
         let y = units.from_mm(self.y);
         let z = units.from_mm(self.z);
-        format!("X:{:.3} Y:{:.3} Z:{:.3}", x, y, z)
+        format!("X:{:.2} Y:{:.2} Z:{:.2}", x, y, z)
     }
 
     /// Zero out all axes
@@ -169,7 +169,7 @@ pub struct ControllerDRO {
     /// Unit system (mm or inches)
     pub units: UnitSystem,
     /// Feed rate (units/min)
-    pub feed_rate: f64,
+    pub feed_rate: f32,
     /// Spindle speed (RPM)
     pub spindle_speed: u16,
     /// Is spindle running
@@ -194,17 +194,17 @@ impl ControllerDRO {
     }
 
     /// Update machine position
-    pub fn update_position(&mut self, x: f64, y: f64, z: f64) {
+    pub fn update_position(&mut self, x: f32, y: f32, z: f32) {
         self.machine_pos = MachinePosition::new(x, y, z);
     }
 
     /// Update work position
-    pub fn update_work_position(&mut self, x: f64, y: f64, z: f64) {
+    pub fn update_work_position(&mut self, x: f32, y: f32, z: f32) {
         self.work_pos = WorkPosition::new(x, y, z);
     }
 
     /// Update feed rate
-    pub fn update_feed_rate(&mut self, rate: f64) {
+    pub fn update_feed_rate(&mut self, rate: f32) {
         self.feed_rate = rate;
     }
 
@@ -299,21 +299,21 @@ impl DROPanel {
     /// Get display format for current settings
     pub fn get_display(&self) -> (String, String, String) {
         let x_display = if self.show_work_pos {
-            format!("X: {:.3}", self.dro.units.from_mm(self.dro.work_pos.x))
+            format!("X: {:.2}", self.dro.units.from_mm(self.dro.work_pos.x))
         } else {
-            format!("X: {:.3}", self.dro.units.from_mm(self.dro.machine_pos.x))
+            format!("X: {:.2}", self.dro.units.from_mm(self.dro.machine_pos.x))
         };
 
         let y_display = if self.show_work_pos {
-            format!("Y: {:.3}", self.dro.units.from_mm(self.dro.work_pos.y))
+            format!("Y: {:.2}", self.dro.units.from_mm(self.dro.work_pos.y))
         } else {
-            format!("Y: {:.3}", self.dro.units.from_mm(self.dro.machine_pos.y))
+            format!("Y: {:.2}", self.dro.units.from_mm(self.dro.machine_pos.y))
         };
 
         let z_display = if self.show_work_pos {
-            format!("Z: {:.3}", self.dro.units.from_mm(self.dro.work_pos.z))
+            format!("Z: {:.2}", self.dro.units.from_mm(self.dro.work_pos.z))
         } else {
-            format!("Z: {:.3}", self.dro.units.from_mm(self.dro.machine_pos.z))
+            format!("Z: {:.2}", self.dro.units.from_mm(self.dro.machine_pos.z))
         };
 
         (x_display, y_display, z_display)

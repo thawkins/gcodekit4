@@ -1,10 +1,11 @@
 # GCodeKit4 - Specification Document
 
 **Version**: 0.24.2-alpha  
-**Last Updated**: 2025-10-30  
+**Last Updated**: 2025-10-31  
 **Status**: COMPLETE (All 7 Phases Complete - 150/150 Tasks)
 
 ### Latest Release (v0.24.2-alpha)
+- ✅ **Firmware Capabilities Database** - Version-aware feature tracking for all supported controllers
 - ✅ **Designer Viewport & Interaction Phase 3** - Zoom/pan controls, coordinate mapping, mouse event handling
 - ✅ **Pan-On-Drag Feature** - Drag empty canvas to pan viewport
 - ✅ **Mouse Event Coordinate Mapping** - Selection/dragging works at any zoom level
@@ -1291,7 +1292,24 @@ G54                ; Back to work coordinates
 |------|----------|---------|
 | T[0-99] | Tool selection | GRBL, TinyG |
 
-## 8. Firmware Capabilities Matrix
+## 8. Firmware Capabilities Database
+
+GcodeKit4 includes a comprehensive **Firmware Capabilities Database** that tracks which features are supported by each firmware version. This enables:
+
+- Version-aware UI feature enabling/disabling
+- G-code validation against controller capabilities
+- Automatic warnings for unsupported operations
+- Firmware-specific G-code generation variants
+
+**Database Features:**
+- 10+ capability categories tracked (motion, spindle, probing, offsets, safety, etc.)
+- Support for GRBL (v0.9, v1.0, v1.1), TinyG (v2.0), g2core (v3.0), Smoothieware (v1.0), and FluidNC (v3.0)
+- Version matching with major.minor fallback strategy
+- Custom capability registration for new firmware
+
+See [FIRMWARE_CAPABILITIES_DATABASE.md](docs/FIRMWARE_CAPABILITIES_DATABASE.md) for complete details.
+
+### Firmware Capabilities Matrix
 
 | Feature | GRBL | TinyG | g2core | Smoothie | FluidNC |
 |---------|------|-------|--------|----------|---------|

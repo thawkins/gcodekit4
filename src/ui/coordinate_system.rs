@@ -69,31 +69,31 @@ impl std::fmt::Display for CoordinateSystemId {
 #[derive(Debug, Clone, Copy)]
 pub struct CoordinateOffset {
     /// X offset
-    pub x: f64,
+    pub x: f32,
     /// Y offset
-    pub y: f64,
+    pub y: f32,
     /// Z offset
-    pub z: f64,
+    pub z: f32,
 }
 
 impl CoordinateOffset {
     /// Create new coordinate offset
-    pub fn new(x: f64, y: f64, z: f64) -> Self {
+    pub fn new(x: f32, y: f32, z: f32) -> Self {
         Self { x, y, z }
     }
 
     /// Get offset as tuple
-    pub fn as_tuple(&self) -> (f64, f64, f64) {
+    pub fn as_tuple(&self) -> (f32, f32, f32) {
         (self.x, self.y, self.z)
     }
 
     /// Get formatted string
     pub fn formatted(&self, units: &str) -> String {
-        format!("X:{:.3} Y:{:.3} Z:{:.3} {}", self.x, self.y, self.z, units)
+        format!("X:{:.2} Y:{:.2} Z:{:.2} {}", self.x, self.y, self.z, units)
     }
 
     /// Set offset value
-    pub fn set(&mut self, axis: char, value: f64) {
+    pub fn set(&mut self, axis: char, value: f32) {
         match axis {
             'X' => self.x = value,
             'Y' => self.y = value,
@@ -103,7 +103,7 @@ impl CoordinateOffset {
     }
 
     /// Get offset value
-    pub fn get(&self, axis: char) -> Option<f64> {
+    pub fn get(&self, axis: char) -> Option<f32> {
         match axis {
             'X' => Some(self.x),
             'Y' => Some(self.y),
@@ -141,17 +141,17 @@ impl WorkCoordinateSystem {
     }
 
     /// Set offset
-    pub fn set_offset(&mut self, x: f64, y: f64, z: f64) {
+    pub fn set_offset(&mut self, x: f32, y: f32, z: f32) {
         self.offset = CoordinateOffset::new(x, y, z);
     }
 
     /// Get current position with offset
-    pub fn apply_offset(&self, x: f64, y: f64, z: f64) -> (f64, f64, f64) {
+    pub fn apply_offset(&self, x: f32, y: f32, z: f32) -> (f32, f32, f32) {
         (x + self.offset.x, y + self.offset.y, z + self.offset.z)
     }
 
     /// Remove offset from position
-    pub fn remove_offset(&self, x: f64, y: f64, z: f64) -> (f64, f64, f64) {
+    pub fn remove_offset(&self, x: f32, y: f32, z: f32) -> (f32, f32, f32) {
         (x - self.offset.x, y - self.offset.y, z - self.offset.z)
     }
 }
@@ -188,7 +188,7 @@ pub struct CoordinateSystemPanel {
     /// Active/current WCS
     pub active_system: CoordinateSystemId,
     /// Current machine position
-    pub current_position: (f64, f64, f64),
+    pub current_position: (f32, f32, f32),
     /// Unit system (mm or in)
     pub units: String,
 }
@@ -231,7 +231,7 @@ impl CoordinateSystemPanel {
     }
 
     /// Set offset in active system
-    pub fn set_active_offset(&mut self, x: f64, y: f64, z: f64) {
+    pub fn set_active_offset(&mut self, x: f32, y: f32, z: f32) {
         if let Some(system) = self.get_active_system_mut() {
             system.set_offset(x, y, z);
         }
@@ -258,7 +258,7 @@ impl CoordinateSystemPanel {
     }
 
     /// Set work position (sets offset based on current position)
-    pub fn set_work_position(&mut self, x: f64, y: f64, z: f64) -> bool {
+    pub fn set_work_position(&mut self, x: f32, y: f32, z: f32) -> bool {
         let (cx, cy, cz) = self.current_position;
         if let Some(system) = self.get_active_system_mut() {
             system.set_offset(x - cx, y - cy, z - cz);
@@ -269,7 +269,7 @@ impl CoordinateSystemPanel {
     }
 
     /// Go to zero (return to work coordinate zero)
-    pub fn go_to_zero(&self) -> (f64, f64, f64) {
+    pub fn go_to_zero(&self) -> (f32, f32, f32) {
         if let Some(system) = self.get_active_system() {
             let (x, y, z) = system.offset.as_tuple();
             (-x, -y, -z)
@@ -279,12 +279,12 @@ impl CoordinateSystemPanel {
     }
 
     /// Update current machine position
-    pub fn update_position(&mut self, x: f64, y: f64, z: f64) {
+    pub fn update_position(&mut self, x: f32, y: f32, z: f32) {
         self.current_position = (x, y, z);
     }
 
     /// Get work position from machine position
-    pub fn get_work_position(&self) -> (f64, f64, f64) {
+    pub fn get_work_position(&self) -> (f32, f32, f32) {
         if let Some(system) = self.get_active_system() {
             system.remove_offset(
                 self.current_position.0,
@@ -297,7 +297,7 @@ impl CoordinateSystemPanel {
     }
 
     /// Get all offsets
-    pub fn get_all_offsets(&self) -> HashMap<CoordinateSystemId, (f64, f64, f64)> {
+    pub fn get_all_offsets(&self) -> HashMap<CoordinateSystemId, (f32, f32, f32)> {
         self.systems
             .iter()
             .map(|(id, sys)| (*id, sys.offset.as_tuple()))
@@ -305,7 +305,7 @@ impl CoordinateSystemPanel {
     }
 
     /// Get offset for specific system
-    pub fn get_offset(&self, id: CoordinateSystemId) -> Option<(f64, f64, f64)> {
+    pub fn get_offset(&self, id: CoordinateSystemId) -> Option<(f32, f32, f32)> {
         self.systems.get(&id).map(|s| s.offset.as_tuple())
     }
 

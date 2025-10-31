@@ -57,6 +57,12 @@ fn transform_screen_to_canvas(
     (canvas_x, canvas_y)
 }
 
+/// Snap world coordinates to whole millimeters
+/// Rounds to nearest 1.0 mm
+fn snap_to_mm(value: f64) -> f64 {
+    (value + 0.5).floor()
+}
+
 /// Update designer UI with current shapes from state
 fn update_designer_ui(
     window: &MainWindow,
@@ -117,8 +123,22 @@ fn update_designer_ui(
     }
     // Force UI to recognize the change by clearing first
     window.set_designer_shapes(slint::ModelRc::from(Rc::new(slint::VecModel::from(Vec::<crate::DesignerShape>::new()))));
-    let shapes_model = Rc::new(slint::VecModel::from(shapes));
+    let shapes_model = Rc::new(slint::VecModel::from(shapes.clone()));
     window.set_designer_shapes(slint::ModelRc::from(shapes_model));
+    
+    // Update shape indicator with selected shape info
+    if let Some(selected_shape) = shapes.iter().find(|s| s.selected) {
+        window.set_designer_selected_shape_x(selected_shape.x);
+        window.set_designer_selected_shape_y(selected_shape.y);
+        window.set_designer_selected_shape_w(selected_shape.width);
+        window.set_designer_selected_shape_h(selected_shape.height);
+    } else {
+        // No shape selected - clear indicators
+        window.set_designer_selected_shape_x(0.0);
+        window.set_designer_selected_shape_y(0.0);
+        window.set_designer_selected_shape_w(0.0);
+        window.set_designer_selected_shape_h(0.0);
+    }
     
     // Increment update counter to force UI re-render
     let mut ui_state = window.get_designer_state();
@@ -215,13 +235,16 @@ fn main() -> anyhow::Result<()> {
     let designer_mgr = Rc::new(RefCell::new(gcodekit4::DesignerState::new()));
     info!("Designer state initialized");
     
+    // Shift key state for snapping in designer
+    let shift_pressed = Rc::new(RefCell::new(false));
+    
     // Initialize designer UI state with Select mode (0) as default
     let initial_designer_state = crate::DesignerState {
         mode: 0,
         zoom: 1.0,
         pan_x: 0.0,
         pan_y: 0.0,
-        selected_id: -1,
+        selected_id: 0,
         update_counter: 0,
     };
     main_window.set_designer_state(initial_designer_state);
@@ -1590,6 +1613,18 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
+    // Set up menu-view-gtools callback
+    let window_weak = main_window.as_weak();
+    main_window.on_menu_view_gtools(move || {
+        info!("Menu: View > GTools selected");
+        if let Some(window) = window_weak.upgrade() {
+            window.set_current_view(slint::SharedString::from("gtools"));
+            window.set_connection_status(slint::SharedString::from(
+                "GTools panel activated",
+            ));
+        }
+    });
+
     // Set up menu-help-about callback
     let window_weak = main_window.as_weak();
     main_window.on_menu_help_about(move || {
@@ -1846,6 +1881,12 @@ fn main() -> anyhow::Result<()> {
         
         if let Some(window) = window_weak.upgrade() {
             update_designer_ui(&window, &state);
+            
+            // Update UI state with selected shape ID
+            let mut ui_state = window.get_designer_state();
+            ui_state.selected_id = state.canvas.selected_id().unwrap_or(0) as i32;
+            window.set_designer_state(ui_state);
+            
             window.set_connection_status(slint::SharedString::from(
                 format!("Shapes: {}", state.canvas.shapes().len())
             ));
@@ -1917,6 +1958,7 @@ fn main() -> anyhow::Result<()> {
     // Designer: Handle drag callback (move or resize via handles)
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
+    let shift_pressed_clone = shift_pressed.clone();
     main_window.on_designer_handle_drag(move |_shape_id: i32, handle: i32, dx: f32, dy: f32| {
         let mut state = designer_mgr_clone.borrow_mut();
         
@@ -1929,10 +1971,20 @@ fn main() -> anyhow::Result<()> {
             // handle=-1 or handle=4 (center handle) means move the entire shape
             info!("Designer: Move shape - world delta=({}, {})", world_dx, world_dy);
             state.move_selected(world_dx, world_dy);
+            
+            // If Shift is pressed, snap the final position to whole mm
+            if *shift_pressed_clone.borrow() {
+                state.snap_selected_to_mm();
+            }
         } else {
             // Resize via specific handle (0=top-left, 1=top-right, 2=bottom-left, 3=bottom-right)
             info!("Designer: Resize handle {} - world delta=({}, {})", handle, world_dx, world_dy);
             state.resize_selected(handle as usize, world_dx, world_dy);
+            
+            // If Shift is pressed, snap the final position to whole mm
+            if *shift_pressed_clone.borrow() {
+                state.snap_selected_to_mm();
+            }
         }
         
         if let Some(window) = window_weak.upgrade() {
@@ -1949,27 +2001,55 @@ fn main() -> anyhow::Result<()> {
         state.deselect_all();
         if let Some(window) = window_weak.upgrade() {
             update_designer_ui(&window, &state);
+            
+            // Update UI state with no selected shape
+            let mut ui_state = window.get_designer_state();
+            ui_state.selected_id = 0;
+            window.set_designer_state(ui_state);
         }
+    });
+
+    // Designer: Shift key state callback
+    let shift_pressed_clone = shift_pressed.clone();
+    main_window.on_designer_set_shift_pressed(move |pressed: bool| {
+        *shift_pressed_clone.borrow_mut() = pressed;
+        info!("Designer: Shift pressed = {}", pressed);
     });
 
     // Designer: Canvas pan callback (drag on empty canvas)
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
+    let shift_pressed_clone = shift_pressed.clone();
     main_window.on_designer_canvas_pan(move |dx: f32, dy: f32| {
         info!("Designer: Canvas pan - pixel delta=({}, {})", dx, dy);
         let mut state = designer_mgr_clone.borrow_mut();
         
         // Pan is in pixel space, convert to world space
-        // Note: Pan direction is inverted - dragging right pans left (shows content to the right)
         let viewport = state.canvas.viewport();
-        let world_dx = -dx as f64 / viewport.zoom();
-        let world_dy = -dy as f64 / viewport.zoom();
+        let mut world_dx = dx as f64 / viewport.zoom();
+        let mut world_dy = dy as f64 / viewport.zoom();
+        
+        // Apply snapping to whole mm if Shift is pressed
+        if *shift_pressed_clone.borrow() {
+            world_dx = snap_to_mm(world_dx);
+            world_dy = snap_to_mm(world_dy);
+        }
         
         info!("Converted to world delta: ({}, {})", world_dx, world_dy);
         state.canvas.pan_by(world_dx, world_dy);
         
         if let Some(window) = window_weak.upgrade() {
             update_designer_ui(&window, &state);
+            // Update UI state with new pan values
+            let ui_state = crate::DesignerState {
+                mode: state.canvas.mode() as i32,
+                zoom: state.canvas.zoom() as f32,
+                pan_x: state.canvas.pan_offset().0 as f32,
+                pan_y: state.canvas.pan_offset().1 as f32,
+                selected_id: state.canvas.selected_id().unwrap_or(0) as i32,
+                update_counter: 0,
+            };
+            window.set_designer_state(ui_state);
         }
     });
 

@@ -73,6 +73,10 @@ export component DesignerPanel inherits VerticalBox {
     in property <float> x_offset: 0.0;
     in property <float> y_offset: 0.0;
     in property <image> canvas_image;
+    in property <float> selected_shape_x: 0.0;
+    in property <float> selected_shape_y: 0.0;
+    in property <float> selected_shape_w: 0.0;
+    in property <float> selected_shape_h: 0.0;
     
     callback set_mode(int);
     callback zoom_in();
@@ -89,6 +93,7 @@ export component DesignerPanel inherits VerticalBox {
     callback handle_drag(int, int, float, float);  // shape_id, handle_index, dx, dy
     callback canvas_pan(float, float);             // dx, dy - pan the viewport
     callback deselect_all();
+    callback set_shift_pressed(bool);              // Notify backend of Shift key state
     
     // Track last delta sent to backend (per shape) to compute incremental changes
     private property <float> drag_start_x: 0.0;
@@ -100,6 +105,7 @@ export component DesignerPanel inherits VerticalBox {
     private property <bool> drag_occurred: false;
     private property <int> hovered_handle: -1;  // Track which handle we're hovering over
     private property <bool> drag_start_initialized: false;  // Track if drag_start has been set for current press
+    private property <bool> shift_pressed: false;  // Track if Shift key is held
     
     // Main layout: vertical toolbox on left, canvas and properties on right
     FocusScope {
@@ -112,6 +118,20 @@ export component DesignerPanel inherits VerticalBox {
                 accept
             } else if event.text == Key.Delete {
                 delete_selected();
+                accept
+            } else if event.text == Key.Shift {
+                root.shift_pressed = true;
+                set_shift_pressed(true);
+                accept
+            } else {
+                reject
+            }
+        }
+        
+        key-released(event) => {
+            if event.text == Key.Shift {
+                root.shift_pressed = false;
+                set_shift_pressed(false);
                 accept
             } else {
                 reject
@@ -224,7 +244,8 @@ export component DesignerPanel inherits VerticalBox {
                     padding-right: 8px;
                     padding-top: 4px;
                     padding-bottom: 4px;
-                    spacing: 20px;
+                    spacing: 0px;
+                    alignment: start;
                     
                     // Zoom Scale
                     Text {
@@ -234,12 +255,18 @@ export component DesignerPanel inherits VerticalBox {
                         color: black;
                     }
                     
+                    // Spacer
+                    Rectangle { width: 20px; }
+                    
                     // X Offset
                     Text {
                         text: "X: " + Math.round(x_offset * 10.0) / 10.0;
                         font-size: 13px;
                         color: black;
                     }
+                    
+                    // Spacer
+                    Rectangle { width: 20px; }
                     
                     // Y Offset
                     Text {
@@ -248,11 +275,20 @@ export component DesignerPanel inherits VerticalBox {
                         color: black;
                     }
                     
-                    // Zoom multiplier for reference
-                    Text {
-                        text: "(" + Math.round(zoom_scale * 100.0) / 100.0 + "x)";
-                        font-size: 12px;
-                        color: black;
+                    // Spacer before shape indicator
+                    if designer_state.selected_id > 0 : Rectangle {
+                        width: 20px;
+                    }
+                    
+                    // Shape Indicator (X, Y, W, H) - shown only when shape is selected
+                    if designer_state.selected_id > 0 : Text {
+                        text: "| Shape: X=" + Math.round(root.selected_shape_x * 10.0) / 10.0 + 
+                              " Y=" + Math.round(root.selected_shape_y * 10.0) / 10.0 +
+                              " W=" + Math.round(root.selected_shape_w * 10.0) / 10.0 +
+                              " H=" + Math.round(root.selected_shape_h * 10.0) / 10.0;
+                        font-size: 13px;
+                        color: #2980b9;
+                        font-weight: 700;
                     }
                 }
             }
@@ -267,11 +303,37 @@ export component DesignerPanel inherits VerticalBox {
                         vertical-stretch: 1;
                         background: #34495e;
                         
-                        // Display rendered canvas image at native resolution (no scaling)
-                        // ScrollView with TouchArea overlay for interaction
-                        canvas_scroll := ScrollView {
-                            viewport-width: 1600px;
-                            viewport-height: 1200px;
+                        // Wrap canvas in FocusScope to enable mouse wheel handling
+                        canvas_focus := FocusScope {
+                            key-pressed(event) => {
+                                if event.text == "+" || event.text == "=" {
+                                    zoom_in();
+                                    return accept;
+                                } else if event.text == "-" {
+                                    zoom_out();
+                                    return accept;
+                                } else if event.text == Key.Shift {
+                                    root.shift_pressed = true;
+                                    set_shift_pressed(true);
+                                    return accept;
+                                }
+                                reject
+                            }
+                            
+                            key-released(event) => {
+                                if event.text == Key.Shift {
+                                    root.shift_pressed = false;
+                                    set_shift_pressed(false);
+                                    return accept;
+                                }
+                                reject
+                            }
+                            
+                            // Display rendered canvas image at native resolution (no scaling)
+                            // ScrollView with TouchArea overlay for interaction
+                            canvas_scroll := ScrollView {
+                                viewport-width: 1600px;
+                                viewport-height: 1200px;
                             
                             Rectangle {
                                 width: 1600px;
@@ -312,13 +374,17 @@ export component DesignerPanel inherits VerticalBox {
                                     
                                     // Detect handle on press down
                                     pointer-event(event) => {
-                                        if event.kind == PointerEventKind.down && designer_state.mode == 0 {
-                                            // Ask backend to detect which handle (if any) we're on
-                                            let adjusted_x = self.pressed-x / 1px + canvas_scroll.viewport-x / 1px;
-                                            let adjusted_y = self.pressed-y / 1px + canvas_scroll.viewport-y / 1px;
-                                            root.dragging_handle = detect_handle(adjusted_x, adjusted_y);
-                                            // Reset drag tracking for new press
-                                            root.drag_start_initialized = false;
+                                        if event.kind == PointerEventKind.down {
+                                            // Ensure FocusScope has focus so key events are captured
+                                            canvas_focus.focus();
+                                            if designer_state.mode == 0 {
+                                                // Ask backend to detect which handle (if any) we're on
+                                                let adjusted_x = self.pressed-x / 1px + canvas_scroll.viewport-x / 1px;
+                                                let adjusted_y = self.pressed-y / 1px + canvas_scroll.viewport-y / 1px;
+                                                root.dragging_handle = detect_handle(adjusted_x, adjusted_y);
+                                                // Reset drag tracking for new press
+                                                root.drag_start_initialized = false;
+                                            }
                                         }
                                     }
                                     
@@ -376,6 +442,7 @@ export component DesignerPanel inherits VerticalBox {
                                 }
                             }
                         }
+                        }
                     }
                     
                     Text {
@@ -417,7 +484,7 @@ export component DesignerPanel inherits VerticalBox {
                     font-size: 11px; 
                 }
                 SpinBox { 
-                    value: feed_rate; 
+                    value: root.feed_rate; 
                     minimum: 0;
                     maximum: 10000;
                     preferred-width: 160px;
@@ -432,7 +499,7 @@ export component DesignerPanel inherits VerticalBox {
                     font-size: 11px; 
                 }
                 SpinBox { 
-                    value: spindle_speed;
+                    value: root.spindle_speed;
                     minimum: 0;
                     maximum: 30000;
                     preferred-width: 160px;
@@ -447,7 +514,7 @@ export component DesignerPanel inherits VerticalBox {
                     font-size: 11px; 
                 }
                 SpinBox { 
-                    value: tool_diameter;
+                    value: root.tool_diameter;
                     minimum: 0;
                     maximum: 50;
                     preferred-width: 160px;
@@ -462,7 +529,7 @@ export component DesignerPanel inherits VerticalBox {
                     font-size: 11px; 
                 }
                 SpinBox { 
-                    value: cut_depth;
+                    value: root.cut_depth;
                     minimum: -100;
                     maximum: 0;
                     preferred-width: 160px;

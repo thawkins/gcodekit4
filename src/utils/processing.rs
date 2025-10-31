@@ -41,7 +41,7 @@ pub struct FileStatistics {
     /// Number of M-codes (miscellaneous)
     pub m_codes: u64,
     /// Total distance traveled (in current units)
-    pub total_distance: f64,
+    pub total_distance: f32,
     /// Estimated execution time (seconds)
     pub estimated_time: u64,
     /// Bounding box (min/max coordinates)
@@ -58,34 +58,34 @@ pub struct FileStatistics {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct BoundingBox {
     /// Minimum X coordinate
-    pub min_x: f64,
+    pub min_x: f32,
     /// Maximum X coordinate
-    pub max_x: f64,
+    pub max_x: f32,
     /// Minimum Y coordinate
-    pub min_y: f64,
+    pub min_y: f32,
     /// Maximum Y coordinate
-    pub max_y: f64,
+    pub max_y: f32,
     /// Minimum Z coordinate
-    pub min_z: f64,
+    pub min_z: f32,
     /// Maximum Z coordinate
-    pub max_z: f64,
+    pub max_z: f32,
 }
 
 impl BoundingBox {
     /// Create a new bounding box
     pub fn new() -> Self {
         Self {
-            min_x: f64::INFINITY,
-            max_x: f64::NEG_INFINITY,
-            min_y: f64::INFINITY,
-            max_y: f64::NEG_INFINITY,
-            min_z: f64::INFINITY,
-            max_z: f64::NEG_INFINITY,
+            min_x: f32::INFINITY,
+            max_x: f32::NEG_INFINITY,
+            min_y: f32::INFINITY,
+            max_y: f32::NEG_INFINITY,
+            min_z: f32::INFINITY,
+            max_z: f32::NEG_INFINITY,
         }
     }
 
     /// Update bounding box with a point
-    pub fn update(&mut self, x: f64, y: f64, z: f64) {
+    pub fn update(&mut self, x: f32, y: f32, z: f32) {
         self.min_x = self.min_x.min(x);
         self.max_x = self.max_x.max(x);
         self.min_y = self.min_y.min(y);
@@ -95,7 +95,7 @@ impl BoundingBox {
     }
 
     /// Get width (X span)
-    pub fn width(&self) -> f64 {
+    pub fn width(&self) -> f32 {
         if self.max_x.is_infinite() {
             0.0
         } else {
@@ -104,7 +104,7 @@ impl BoundingBox {
     }
 
     /// Get height (Y span)
-    pub fn height(&self) -> f64 {
+    pub fn height(&self) -> f32 {
         if self.max_y.is_infinite() {
             0.0
         } else {
@@ -113,7 +113,7 @@ impl BoundingBox {
     }
 
     /// Get depth (Z span)
-    pub fn depth(&self) -> f64 {
+    pub fn depth(&self) -> f32 {
         if self.max_z.is_infinite() {
             0.0
         } else {
@@ -486,15 +486,15 @@ impl FileProcessingPipeline {
 
         // Estimate time (simplified: assume 60 mm/min for rapid, 20 mm/min for feed)
         // This is a rough estimate - actual time depends on many factors
-        let rapid_distance = statistics.rapid_moves as f64 * 10.0; // assume 10mm per rapid move avg
+        let rapid_distance = (statistics.rapid_moves as f32) * 10.0; // assume 10mm per rapid move avg
         let feed_distance = statistics.total_distance - rapid_distance;
         let rapid_time = (rapid_distance / 60.0) * 60.0; // 60 mm/min -> seconds
         let feed_time = if statistics.feed_rate_stats.max_feed > 0.0 {
-            (feed_distance / statistics.feed_rate_stats.max_feed) * 60.0
+            (feed_distance / (statistics.feed_rate_stats.max_feed as f32)) * 60.0
         } else {
             0.0
         };
-        statistics.estimated_time = (rapid_time + feed_time) as u64;
+        statistics.estimated_time = ((rapid_time + feed_time) as f64) as u64;
 
         let processed_content = processed_lines.join("\n");
         let processed_result = ProcessedFile {
@@ -527,7 +527,7 @@ impl Default for FileProcessingPipeline {
 }
 
 /// Extract numeric value from G-code
-fn extract_number(line: &str, pos: usize) -> Result<f64> {
+fn extract_number(line: &str, pos: usize) -> Result<f32> {
     let end = pos
         + 1
         + line[pos + 1..]
@@ -535,7 +535,7 @@ fn extract_number(line: &str, pos: usize) -> Result<f64> {
             .unwrap_or(line.len() - pos - 1);
 
     let num_str = &line[pos + 1..end].trim();
-    num_str.parse::<f64>().map_err(|e| anyhow::anyhow!(e))
+    num_str.parse::<f32>().map_err(|e| anyhow::anyhow!(e))
 }
 
 #[cfg(test)]
