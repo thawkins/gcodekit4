@@ -34,6 +34,8 @@
 //! - `dxf_parser` - DXF file parsing and entity extraction
 //! - `parametric` - Parametric design system for templates
 //! - `gcode_gen` - G-code generation from toolpaths
+//! - `templates` - Design template management system for saving and organizing designs
+//! - `history` - Undo/redo functionality for all design operations
 
 pub mod canvas;
 pub mod gcode_gen;
@@ -52,6 +54,10 @@ pub mod vcarve;
 pub mod adaptive;
 pub mod dxf_parser;
 pub mod parametric;
+pub mod templates;
+pub mod history;
+pub mod spatial_index;
+pub mod render_optimizer;
 
 pub use canvas::{Canvas, CanvasPoint, DrawingMode};
 pub use gcode_gen::ToolpathToGcode;
@@ -81,3 +87,11 @@ pub use parametric::{
     ParametricTemplate, TemplateLibrary, ParameterSet, Parameter, ParameterType,
     ParameterConstraint, ParametricGenerator,
 };
+pub use templates::{
+    DesignTemplate, DesignTemplateLibrary, TemplateCategory, TemplatePersistence, TemplateManager,
+};
+pub use history::{
+    UndoRedoManager, HistoryAction, ActionType, HistoryTransaction,
+};
+pub use spatial_index::{SpatialIndex, Bounds, SpatialIndexStats};
+pub use render_optimizer::{RenderOptimizer, RenderStats};

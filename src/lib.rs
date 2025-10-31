@@ -37,6 +37,8 @@ pub mod core;
 pub mod data;
 pub mod designer;
 pub mod designer_state;
+pub mod designer_editor_integration;
+pub mod designer_visualizer_integration;
 pub mod error;
 pub mod firmware;
 pub mod gcode;
