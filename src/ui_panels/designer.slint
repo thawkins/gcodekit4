@@ -392,6 +392,7 @@ export component DesignerPanel inherits VerticalBox {
         // ═════════════════════════════════════════════
         Rectangle {
             preferred-width: 200px;
+            max-width: 200px;
             horizontal-stretch: 0;
             background: #ecf0f1;
             
@@ -417,7 +418,7 @@ export component DesignerPanel inherits VerticalBox {
                     value: feed_rate; 
                     minimum: 0;
                     maximum: 10000;
-                    preferred-width: 100%;
+                    preferred-width: 160px;
                 }
             }
             
@@ -432,7 +433,7 @@ export component DesignerPanel inherits VerticalBox {
                     value: spindle_speed;
                     minimum: 0;
                     maximum: 30000;
-                    preferred-width: 100%;
+                    preferred-width: 160px;
                 }
             }
             
@@ -447,7 +448,7 @@ export component DesignerPanel inherits VerticalBox {
                     value: tool_diameter;
                     minimum: 0;
                     maximum: 50;
-                    preferred-width: 100%;
+                    preferred-width: 160px;
                 }
             }
             
@@ -462,7 +463,7 @@ export component DesignerPanel inherits VerticalBox {
                     value: cut_depth;
                     minimum: -100;
                     maximum: 0;
-                    preferred-width: 100%;
+                    preferred-width: 160px;
                 }
             }
             
@@ -476,13 +477,13 @@ export component DesignerPanel inherits VerticalBox {
             
             Button {
                 text: "⚙ Generate";
-                preferred-width: 100%;
+                preferred-width: 160px;
                 clicked => { generate_toolpath(); }
             }
             
             Button {
                 text: "► Export";
-                preferred-width: 100%;
+                preferred-width: 160px;
                 clicked => { export_gcode(); }
             }
             
