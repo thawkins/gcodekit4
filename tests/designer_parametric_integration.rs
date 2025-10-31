@@ -351,7 +351,7 @@ fn test_library_category() {
 #[test]
 fn test_parametric_design_workflow() {
     // Create template
-    let template = ParametricTemplate::new(
+    let mut template = ParametricTemplate::new(
         "box".to_string(),
         "Box".to_string(),
         "Create a box".to_string(),

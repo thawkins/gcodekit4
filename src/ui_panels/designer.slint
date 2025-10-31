@@ -351,16 +351,18 @@ export component DesignerPanel inherits VerticalBox {
                                                     // Dragging a resize handle (0-3)
                                                     // Use current selected_id, not cached dragging_shape_id
                                                     handle_drag(designer_state.selected_id, root.dragging_handle, inc_dx, inc_dy);
+                                                    root.drag_occurred = true;
                                                 } else if root.dragging_handle == 4 || (root.dragging_handle == -1 && designer_state.selected_id > 0) {
                                                     // Dragging the shape itself (move) - handle is -1 or 4 (center)
                                                     handle_drag(designer_state.selected_id, root.dragging_handle, inc_dx, inc_dy);
+                                                    root.drag_occurred = true;
                                                 } else if root.dragging_handle == -1 && designer_state.selected_id == 0 {
                                                     // No shape selected - pan the canvas
                                                     canvas_pan(inc_dx, inc_dy);
+                                                    root.drag_occurred = true;
                                                 }
                                                 root.drag_last_dx = total_dx;
                                                 root.drag_last_dy = total_dy;
-                                                root.drag_occurred = true;
                                             }
                                         } else if !self.pressed {
                                             // Reset when not pressed
