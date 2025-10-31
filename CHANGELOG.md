@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.25.0-alpha] - 2025-10-31
 
+### 🎉 Materials Database Phase 1 Implementation
+
+**Feature Delivery** - Core materials database with comprehensive material properties, cutting parameters, and safety information.
+
+### ✨ Added
+
+#### Materials Database - Phase 1: Core Database
+- Complete `Material` data structure with full property definitions
+- 7 material categories: Wood, Engineered Wood, Plastic, Non-Ferrous Metals, Ferrous Metals, Composites, Stone & Ceramic
+- Material properties tracked:
+  - Physical (density, tensile strength, melting point)
+  - Machining (chip type, heat sensitivity, abrasiveness, surface finish)
+  - Safety (dust/fume hazards, PPE requirements, coolant needs)
+- `CuttingParameters` structure for tool-material recommendations:
+  - RPM, feed rate, plunge rate, depth of cut, stepover ranges
+  - Coolant type recommendations
+  - Tool type specific parameters
+- `MaterialLibrary` for managing material collections
+  - Add/remove materials
+  - Search by name (case-insensitive)
+  - Filter by category
+  - Mutable access for modifications
+- Standard library with 3 common materials:
+  - Red Oak (hardwood, machinability 8/10)
+  - Aluminum 6061 (non-ferrous metal, machinability 9/10)
+  - Acrylic (plastic, machinability 9/10)
+- 9 unit tests for core functionality
+- 22 comprehensive integration tests
+- Full documentation in `docs/materials_database.md`
+
 ### 🎉 Firmware Capabilities Database Implementation
 
 **Feature Delivery** - Comprehensive version-aware firmware capability tracking system.

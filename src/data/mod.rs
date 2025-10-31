@@ -7,6 +7,9 @@
 //! - Machine capabilities
 //! - Command structures
 //! - Unit management (MM, INCH)
+//! - Materials database with cutting parameters
+
+pub mod materials;
 
 use serde::{Deserialize, Serialize};
 use std::fmt;

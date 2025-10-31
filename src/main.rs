@@ -1964,15 +1964,21 @@ fn main() -> anyhow::Result<()> {
         
         // Convert pixel delta to world delta using viewport zoom
         let viewport = state.canvas.viewport();
-        let world_dx = dx as f64 / viewport.zoom();
-        let world_dy = dy as f64 / viewport.zoom();
+        let mut world_dx = dx as f64 / viewport.zoom();
+        let mut world_dy = dy as f64 / viewport.zoom();
+        
+        // If Shift is pressed, snap deltas to whole mm
+        if *shift_pressed_clone.borrow() {
+            world_dx = snap_to_mm(world_dx);
+            world_dy = snap_to_mm(world_dy);
+        }
         
         if handle == -1 || handle == 4 {
             // handle=-1 or handle=4 (center handle) means move the entire shape
             info!("Designer: Move shape - world delta=({}, {})", world_dx, world_dy);
             state.move_selected(world_dx, world_dy);
             
-            // If Shift is pressed, snap the final position to whole mm
+            // For moves, also snap the final position to whole mm if Shift is pressed
             if *shift_pressed_clone.borrow() {
                 state.snap_selected_to_mm();
             }
@@ -1980,11 +1986,6 @@ fn main() -> anyhow::Result<()> {
             // Resize via specific handle (0=top-left, 1=top-right, 2=bottom-left, 3=bottom-right)
             info!("Designer: Resize handle {} - world delta=({}, {})", handle, world_dx, world_dy);
             state.resize_selected(handle as usize, world_dx, world_dy);
-            
-            // If Shift is pressed, snap the final position to whole mm
-            if *shift_pressed_clone.borrow() {
-                state.snap_selected_to_mm();
-            }
         }
         
         if let Some(window) = window_weak.upgrade() {
