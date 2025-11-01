@@ -600,64 +600,76 @@ export component DesignerPanel inherits VerticalBox {
                     HorizontalBox {
                         spacing: 2px;
                         width: 100%;
+                        height: 24px;
                         Text { 
                             text: "Feed:"; 
                             font-size: 9px;
                             width: 40px;
+                            vertical-alignment: center;
                         }
                         SpinBox { 
                             value: root.feed_rate; 
                             minimum: 0;
                             maximum: 10000;
                             horizontal-stretch: 1;
+                            height: 24px;
                         }
                     }
                     
                     HorizontalBox {
                         spacing: 2px;
                         width: 100%;
+                        height: 24px;
                         Text { 
                             text: "Speed:"; 
                             font-size: 9px;
                             width: 40px;
+                            vertical-alignment: center;
                         }
                         SpinBox { 
                             value: root.spindle_speed;
                             minimum: 0;
                             maximum: 30000;
                             horizontal-stretch: 1;
+                            height: 24px;
                         }
                     }
                     
                     HorizontalBox {
                         spacing: 2px;
                         width: 100%;
+                        height: 24px;
                         Text { 
                             text: "Tool:"; 
                             font-size: 9px;
                             width: 40px;
+                            vertical-alignment: center;
                         }
                         SpinBox { 
                             value: root.tool_diameter;
                             minimum: 0;
                             maximum: 50;
                             horizontal-stretch: 1;
+                            height: 24px;
                         }
                     }
                     
                     HorizontalBox {
                         spacing: 2px;
                         width: 100%;
+                        height: 24px;
                         Text { 
                             text: "Depth:"; 
                             font-size: 9px;
                             width: 40px;
+                            vertical-alignment: center;
                         }
                         SpinBox { 
                             value: root.cut_depth;
                             minimum: -100;
                             maximum: 0;
                             horizontal-stretch: 1;
+                            height: 24px;
                         }
                     }
                     
