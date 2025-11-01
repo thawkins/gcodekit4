@@ -323,12 +323,6 @@ impl ControllerTrait for SimpleController {
         distance: f64,
         feed_rate: f64,
     ) -> anyhow::Result<()> {
-        tracing::info!(
-            "Incremental jog {} {} at {} F/min",
-            axis,
-            distance,
-            feed_rate
-        );
         Ok(())
     }
 

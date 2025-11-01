@@ -15,7 +15,7 @@
 
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
-use tracing::{debug, info};
+use tracing::debug;
 
 /// Token types for G-Code syntax highlighting
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -309,7 +309,6 @@ impl GcodeEditor {
     pub fn load_content(&self, content: &str) -> anyhow::Result<()> {
         let mut file = self.file.lock().unwrap();
         file.load_content(content);
-        info!("Loaded G-Code content: {} lines", file.lines.len());
         Ok(())
     }
 

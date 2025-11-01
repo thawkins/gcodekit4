@@ -429,11 +429,6 @@ impl Communicator for SerialCommunicator {
         // Try to open the port
         match serial::RealSerialPort::open(params) {
             Ok(port) => {
-                tracing::info!(
-                    "Serial communicator connected to {} at {} baud",
-                    params.port,
-                    params.baud_rate
-                );
                 self.port = Some(Box::new(port));
                 self.params = Some(params.clone());
                 self.notify_listeners(CommunicatorEvent::Connected, "Connected to serial port");
@@ -601,11 +596,6 @@ impl Communicator for TcpCommunicator {
         // Try to open the connection
         match tcp::RealTcpPort::open(params) {
             Ok(port) => {
-                tracing::info!(
-                    "TCP communicator connected to {}:{}",
-                    params.port,
-                    params.network_port
-                );
                 self.port = Some(Box::new(port));
                 self.params = Some(params.clone());
                 self.notify_listeners(CommunicatorEvent::Connected, "Connected to TCP server");

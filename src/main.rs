@@ -7,7 +7,7 @@ use gcodekit4::{
 use slint::VecModel;
 use std::cell::RefCell;
 use std::rc::Rc;
-use tracing::{debug, info, warn};
+use tracing::{debug, warn};
 
 slint::include_modules!();
 
@@ -17,7 +17,6 @@ fn copy_to_clipboard(text: &str) -> bool {
         Ok(mut clipboard) => {
             match clipboard.set_text(text.to_string()) {
                 Ok(_) => {
-                    info!("Copied {} characters to clipboard", text.len());
                     // Keep clipboard alive for a moment to ensure managers see it
                     std::thread::sleep(std::time::Duration::from_millis(100));
                     true
@@ -66,7 +65,6 @@ fn update_designer_ui(
     window: &MainWindow,
     state: &gcodekit4::DesignerState,
 ) {
-    tracing::info!("update_designer_ui called with {} shapes", state.canvas.shapes().len());
     
     // Render canvas to image - using larger size to reduce stretching artifacts
     let canvas_width = 1600u32;
@@ -115,7 +113,6 @@ fn update_designer_ui(
             }
         })
         .collect();
-    tracing::info!("Updating UI with {} shapes", shapes.len());
     for shape in &shapes {
     }
     // Force UI to recognize the change by clearing first
@@ -142,8 +139,6 @@ fn update_designer_ui(
     let counter = ui_state.update_counter + 1;
     ui_state.update_counter = counter;
     window.set_designer_state(ui_state);
-    
-    tracing::info!("Designer shapes updated in UI (counter: {})", counter);
 }
 
 /// Parse GRBL status response and extract position
@@ -561,8 +556,6 @@ fn main() -> anyhow::Result<()> {
                 // Update UI with new content
                 let content = gcode_editor_clone.get_plain_content();
 
-                // DEBUG: Log the content that will be set in TextEdit
-                info!("TextEdit content length: {} characters", content.len());
                 let preview = if content.len() > 100 {
                     format!("{}...", &content[..100])
                 } else {
@@ -587,11 +580,6 @@ fn main() -> anyhow::Result<()> {
                     // IMPORTANT: Switch to gcode-editor view to show the content
                     window.set_current_view(slint::SharedString::from("gcode-editor"));
 
-                    // DEBUG: Log TextEdit update
-                    info!(
-                        "Setting gcode-content property with {} chars",
-                        content.len()
-                    );
                     console_manager_clone.add_message(
                         DeviceMessageType::Output,
                         format!("DEBUG: Setting TextEdit content ({} chars)", content.len()),
@@ -601,10 +589,6 @@ fn main() -> anyhow::Result<()> {
 
                     // VERIFY: Log what was set
                     let verify_content = window.get_gcode_content();
-                    info!(
-                        "VERIFY - After set_gcode_content, get_gcode_content returns {} chars",
-                        verify_content.len()
-                    );
                     console_manager_clone.add_message(
                         DeviceMessageType::Output,
                         format!(
@@ -852,10 +836,6 @@ fn main() -> anyhow::Result<()> {
 
             // Send G-Code content to device using GRBL Character-Counting Protocol
             // This protocol ensures the 127-character serial RX buffer is used efficiently
-            info!(
-                "Sending {} bytes of G-Code to device using character-counting protocol",
-                current_content.len()
-            );
             console_manager_clone.add_message(
                 DeviceMessageType::Output,
                 format!(
@@ -1142,11 +1122,6 @@ fn main() -> anyhow::Result<()> {
             });
         }
 
-        info!(
-            "Settings prepared: {} items for UI display",
-            settings_items.len()
-        );
-
         if let Some(window) = window_weak.upgrade() {
             let model = std::rc::Rc::new(slint::VecModel::from(settings_items));
             window.set_all_settings(slint::ModelRc::new(model));
@@ -1168,11 +1143,7 @@ fn main() -> anyhow::Result<()> {
             // Log all changed settings
             for setting in dialog.settings.values() {
                 if setting.is_changed() {
-                    info!(
-                        "Setting changed: {} = {}",
-                        setting.name,
-                        setting.value.as_str()
-                    );
+                    // Setting changed, will be saved
                 }
             }
 
@@ -1762,17 +1733,14 @@ fn main() -> anyhow::Result<()> {
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
     main_window.on_designer_canvas_click(move |x: f32, y: f32| {
-        info!("Designer: Canvas clicked at pixel ({}, {})", x, y);
         let mut state = designer_mgr_clone.borrow_mut();
         
         // Convert pixel coordinates to world coordinates
         let world_point = state.canvas.pixel_to_world(x as f64, y as f64);
-        info!("Converted to world coordinates: ({}, {})", world_point.x, world_point.y);
         
         // If in Select mode, try to select a shape; otherwise add a new shape
         if state.canvas.mode() == gcodekit4::DrawingMode::Select {
             // Try to select - this will deselect any other shapes
-            info!("Attempting to select shape at world point ({}, {})", world_point.x, world_point.y);
             let selected = state.canvas.select_at(&world_point);
         } else {
             state.add_shape_at(world_point.x, world_point.y);
@@ -1796,7 +1764,6 @@ fn main() -> anyhow::Result<()> {
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
     main_window.on_designer_shape_drag(move |_shape_id: i32, dx: f32, dy: f32| {
-        info!("Designer: Shape drag - id={}, pixel delta=({}, {})", _shape_id, dx, dy);
         let mut state = designer_mgr_clone.borrow_mut();
         
         // Convert pixel delta to world delta using viewport zoom
@@ -1805,7 +1772,6 @@ fn main() -> anyhow::Result<()> {
         let world_dx = dx as f64 / viewport.zoom();
         let world_dy = dy as f64 / viewport.zoom();
         
-        info!("Converted to world delta: ({}, {})", world_dx, world_dy);
         state.move_selected(world_dx, world_dy);
         
         if let Some(window) = window_weak.upgrade() {
@@ -1846,8 +1812,6 @@ fn main() -> anyhow::Result<()> {
                 } else if (world_point.x - cx).abs() < handle_size && (world_point.y - cy).abs() < handle_size {
                     dragging_handle = 4; // Center (move handle)
                 }
-                
-                info!("Designer: Detect handle at ({}, {}) - handle={}", x, y, dragging_handle);
             }
         }
         
@@ -1922,7 +1886,6 @@ fn main() -> anyhow::Result<()> {
     let window_weak = main_window.as_weak();
     let shift_pressed_clone = shift_pressed.clone();
     main_window.on_designer_canvas_pan(move |dx: f32, dy: f32| {
-        info!("Designer: Canvas pan - pixel delta=({}, {})", dx, dy);
         let mut state = designer_mgr_clone.borrow_mut();
         
         // Pan is in pixel space, convert to world space
@@ -1936,7 +1899,6 @@ fn main() -> anyhow::Result<()> {
             world_dy = snap_to_mm(world_dy);
         }
         
-        info!("Converted to world delta: ({}, {})", world_dx, world_dy);
         state.canvas.pan_by(world_dx, world_dy);
         
         if let Some(window) = window_weak.upgrade() {
@@ -1973,8 +1935,6 @@ fn main() -> anyhow::Result<()> {
                 window.set_visualizer_status(slint::SharedString::from("No G-code loaded"));
                 return;
             }
-
-            info!("Re-rendering visualization with {} chars", content.len());
 
             // Reset progress
             window.set_visualizer_progress(0.0);
@@ -2088,7 +2048,6 @@ fn main() -> anyhow::Result<()> {
             if *scale > 5.0 {
                 *scale = 5.0;
             }
-            info!("New zoom scale: {}%", (*scale * 100.0).round() as u32);
 
             // Update UI immediately
             if let Some(window) = window_weak_zoom_in.upgrade() {
@@ -2109,7 +2068,6 @@ fn main() -> anyhow::Result<()> {
             if *scale < 0.1 {
                 *scale = 0.1;
             }
-            info!("New zoom scale: {}%", (*scale * 100.0).round() as u32);
 
             // Update UI immediately
             if let Some(window) = window_weak_zoom_out.upgrade() {
@@ -2132,7 +2090,6 @@ fn main() -> anyhow::Result<()> {
         if let Ok(mut offsets) = pan_offset_reset.lock() {
             offsets.0 = 0.0;
             offsets.1 = 0.0;
-            info!("Pan offsets reset to (0, 0)");
         }
 
         // Update UI immediately
@@ -2158,7 +2115,6 @@ fn main() -> anyhow::Result<()> {
                 return;
             }
 
-            info!("Calculating fit-to-view for {} chars", content.len());
 
             // Reset progress
             window.set_visualizer_progress(0.0);
@@ -2195,7 +2151,6 @@ fn main() -> anyhow::Result<()> {
                 // Apply fit parameters to shared state
                 if let Ok(mut scale) = zoom_fit_render.lock() {
                     *scale = visualizer.zoom_scale;
-                    info!("Fit zoom scale: {}%", (*scale * 100.0).round() as u32);
                 }
 
                 if let Ok(mut offsets) = pan_fit_render.lock() {
@@ -2358,7 +2313,6 @@ fn get_available_ports() -> anyhow::Result<Vec<slint::SharedString>> {
             if port_names.is_empty() {
                 Ok(vec![slint::SharedString::from("No ports available")])
             } else {
-                info!("Found {} serial ports", port_names.len());
                 Ok(port_names)
             }
         }
@@ -2377,8 +2331,6 @@ fn render_gcode_visualization(window: &MainWindow, gcode_content: &str) {
     // Parse G-code
     let mut visualizer = Visualizer2D::new();
     visualizer.parse_gcode(gcode_content);
-
-    info!("Parsed {} G-code commands", visualizer.get_command_count());
 
     // Render to image
     let image_bytes = visualizer.render(800, 600);

@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
-use tracing::{debug, info, warn};
+use tracing::{debug, warn};
 
 /// GRBL firmware setting
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -142,10 +142,6 @@ impl SettingsManager {
     /// Create a backup of current settings
     pub fn backup(&mut self) {
         self.backup = Some(self.settings.clone());
-        info!(
-            "Settings backup created with {} entries",
-            self.settings.len()
-        );
     }
 
     /// Restore settings from backup
@@ -184,11 +180,6 @@ impl SettingsManager {
         }
 
         self.dirty = true;
-        info!(
-            "Settings imported from {:?} ({} entries)",
-            path,
-            self.settings.len()
-        );
 
         Ok(())
     }

@@ -130,7 +130,6 @@ pub fn list_ports() -> Result<Vec<SerialPortInfo>> {
                 })
                 .collect();
 
-            tracing::info!("Found {} valid CNC serial ports", port_infos.len());
             Ok(port_infos)
         }
         Err(e) => {
@@ -251,12 +250,6 @@ impl RealSerialPort {
             } else {
                 serialport::FlowControl::None
             });
-
-        tracing::info!(
-            "Opening serial port {} at {} baud",
-            params.port,
-            params.baud_rate
-        );
 
         match builder.open_native() {
             Ok(port) => {

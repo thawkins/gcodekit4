@@ -357,8 +357,6 @@ impl Canvas {
 
     /// Resizes the selected shape. Handles: 0=TL, 1=TR, 2=BL, 3=BR, 4=Center (moves)
     pub fn resize_selected(&mut self, handle: usize, dx: f64, dy: f64) {
-        tracing::info!("Canvas::resize_selected called - handle: {}, dx: {}, dy: {}, selected_id: {:?}", 
-                      handle, dx, dy, self.selected_id);
         if let Some(id) = self.selected_id {
             if let Some(obj) = self.shapes.iter_mut().find(|o| o.id == id) {
                 let (x1, y1, x2, y2) = obj.shape.bounding_box();

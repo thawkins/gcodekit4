@@ -5,6 +5,26 @@ All notable changes to this project should be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.2-alpha] - 2025-11-01
+
+### 🐛 Logging & Performance Optimization
+
+**Logging Cleanup Complete** - Removed all remaining INFO level tracing calls from performance-critical code paths.
+
+### ✨ Fixed
+
+- **Removed INFO logging from hot paths**: Eliminated 100+ additional `info!()` calls from:
+  - Designer canvas handle detection and resize operations
+  - UI update cycles
+  - Shape manipulation events
+- **Performance improvement**: Reduced console I/O overhead during intensive designer operations
+- **Clean output**: Only critical warnings and errors now logged
+
+### ✅ Testing
+- All 667 unit tests passing
+- Designer responsive and stable
+- No console spam during user interactions
+
 ## [0.25.1-alpha] - 2025-11-01
 
 ### 🐛 Designer Canvas Critical Fixes

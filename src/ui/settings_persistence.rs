@@ -10,7 +10,6 @@ use super::settings_dialog::{
 use crate::config::{Config, ConnectionType};
 use crate::error::Result;
 use std::path::Path;
-use tracing::info;
 
 /// Settings persistence layer
 #[derive(Debug, Clone)]
@@ -52,11 +51,6 @@ impl SettingsPersistence {
 
         // Keyboard Shortcuts (from config if available)
         self.add_keyboard_shortcuts(dialog);
-
-        info!(
-            "Settings dialog populated with {} settings",
-            dialog.settings.len()
-        );
     }
 
     /// Load settings from dialog into config

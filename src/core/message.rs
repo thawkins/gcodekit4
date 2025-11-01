@@ -129,7 +129,9 @@ impl MessageDispatcher {
         if message.level >= min_level {
             match message.level {
                 MessageLevel::Verbose => tracing::trace!("{}", message.format_console()),
-                MessageLevel::Info => tracing::info!("{}", message.format_console()),
+                MessageLevel::Info => {
+                    // Skip logging info messages to reduce noise
+                }
                 MessageLevel::Warning => tracing::warn!("{}", message.format_console()),
                 MessageLevel::Error => tracing::error!("{}", message.format_console()),
             }

@@ -8,7 +8,7 @@ use crate::error::Result;
 use crate::ui::firmware_settings_panel::{FirmwareParameter, FirmwareSettingsPanel, ParameterType};
 use crate::ui::settings_dialog::{Setting, SettingValue, SettingsCategory, SettingsDialog};
 use std::collections::HashMap;
-use tracing::{info, warn};
+use tracing::warn;
 
 /// Firmware settings integration
 #[derive(Debug, Clone)]
@@ -222,10 +222,6 @@ impl FirmwareSettingsIntegration {
         }
 
         self.is_loaded = true;
-        info!(
-            "Loaded {} GRBL firmware settings",
-            self.firmware_panel.list_parameters().len()
-        );
         Ok(())
     }
 
@@ -235,11 +231,6 @@ impl FirmwareSettingsIntegration {
             warn!("Firmware settings not loaded, skipping dialog population");
             return;
         }
-
-        info!(
-            "Populating settings dialog with {} firmware parameters",
-            self.firmware_panel.list_parameters().len()
-        );
 
         let params = self.firmware_panel.list_parameters();
 
