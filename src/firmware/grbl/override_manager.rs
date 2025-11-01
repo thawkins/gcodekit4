@@ -107,7 +107,6 @@ impl OverrideManager {
             ));
         }
 
-        debug!("Setting feed override to {}%", percentage);
         self.previous_feed = self.feed_override;
         self.feed_override = percentage;
 
@@ -118,7 +117,6 @@ impl OverrideManager {
     pub fn increase_feed_1(&mut self) -> anyhow::Result<()> {
         let new_value = std::cmp::min(self.feed_override + 1, 200);
         self.set_feed_override(new_value)?;
-        debug!("Feed override increased to {}%", new_value);
         Ok(())
     }
 
@@ -130,7 +128,6 @@ impl OverrideManager {
             0
         };
         self.set_feed_override(new_value)?;
-        debug!("Feed override decreased to {}%", new_value);
         Ok(())
     }
 
@@ -138,7 +135,6 @@ impl OverrideManager {
     pub fn increase_feed_10(&mut self) -> anyhow::Result<()> {
         let new_value = std::cmp::min(self.feed_override + 10, 200);
         self.set_feed_override(new_value)?;
-        debug!("Feed override increased by 10% to {}%", new_value);
         Ok(())
     }
 
@@ -150,7 +146,6 @@ impl OverrideManager {
             0
         };
         self.set_feed_override(new_value)?;
-        debug!("Feed override decreased by 10% to {}%", new_value);
         Ok(())
     }
 
@@ -169,7 +164,6 @@ impl OverrideManager {
             ));
         }
 
-        debug!("Setting rapid override to {}%", percentage);
         self.rapid_override = percentage;
 
         Ok(())
@@ -199,7 +193,6 @@ impl OverrideManager {
             ));
         }
 
-        debug!("Setting spindle override to {}%", percentage);
         self.previous_spindle = self.spindle_override;
         self.spindle_override = percentage;
 
@@ -210,7 +203,6 @@ impl OverrideManager {
     pub fn increase_spindle_1(&mut self) -> anyhow::Result<()> {
         let new_value = std::cmp::min(self.spindle_override + 1, 200);
         self.set_spindle_override(new_value)?;
-        debug!("Spindle override increased to {}%", new_value);
         Ok(())
     }
 
@@ -222,7 +214,6 @@ impl OverrideManager {
             0
         };
         self.set_spindle_override(new_value)?;
-        debug!("Spindle override decreased to {}%", new_value);
         Ok(())
     }
 
@@ -230,7 +221,6 @@ impl OverrideManager {
     pub fn increase_spindle_10(&mut self) -> anyhow::Result<()> {
         let new_value = std::cmp::min(self.spindle_override + 10, 200);
         self.set_spindle_override(new_value)?;
-        debug!("Spindle override increased by 10% to {}%", new_value);
         Ok(())
     }
 
@@ -242,13 +232,11 @@ impl OverrideManager {
             0
         };
         self.set_spindle_override(new_value)?;
-        debug!("Spindle override decreased by 10% to {}%", new_value);
         Ok(())
     }
 
     /// Stop spindle
     pub fn stop_spindle(&mut self) -> anyhow::Result<()> {
-        debug!("Stopping spindle");
         self.previous_spindle = self.spindle_override;
         self.spindle_override = 0;
         Ok(())
@@ -256,7 +244,6 @@ impl OverrideManager {
 
     /// Reset all overrides to 100%
     pub fn reset_all(&mut self) {
-        debug!("Resetting all overrides to 100%");
         self.feed_override = 100;
         self.rapid_override = 100;
         self.spindle_override = 100;

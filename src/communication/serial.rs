@@ -103,7 +103,6 @@ impl SerialPortInfo {
 /// - Linux: /dev/ttyUSB*, /dev/ttyACM*
 /// - macOS: /dev/cu.usbserial-*, /dev/cu.usbmodem*
 pub fn list_ports() -> Result<Vec<SerialPortInfo>> {
-    tracing::debug!("Listing available serial ports");
 
     match serialport::available_ports() {
         Ok(ports) => {
@@ -261,7 +260,6 @@ impl RealSerialPort {
 
         match builder.open_native() {
             Ok(port) => {
-                tracing::info!("Successfully opened serial port {}", params.port);
                 Ok(RealSerialPort {
                     port: Box::new(port),
                 })

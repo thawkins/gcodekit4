@@ -74,7 +74,6 @@ impl ConnectionWatcher {
 
     /// Start watching the connection
     pub async fn start(&self) -> anyhow::Result<()> {
-        debug!("Starting connection watch");
 
         let config = self.config.clone();
         let last_heartbeat = Arc::clone(&self.last_heartbeat);
@@ -104,10 +103,6 @@ impl ConnectionWatcher {
                 };
 
                 if *current_state != new_state {
-                    debug!(
-                        "Connection state changed: {:?} -> {:?}",
-                        *current_state, new_state
-                    );
                     *current_state = new_state;
                 } else if new_state == ConnectionWatchState::Lost {
                     warn!("Connection timeout detected");
@@ -123,7 +118,6 @@ impl ConnectionWatcher {
 
     /// Stop watching the connection
     pub async fn stop(&self) {
-        debug!("Stopping connection watch");
         let mut watch_task = self.watch_task.lock().await;
         if let Some(task) = watch_task.take() {
             task.abort();

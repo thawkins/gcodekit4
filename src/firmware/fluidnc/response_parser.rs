@@ -47,7 +47,6 @@ impl FluidNCResponseParser {
             return None;
         }
 
-        debug!("Parsing FluidNC response: {}", line);
 
         // Check for acknowledgment
         if line == "ok" || line == "OK" {

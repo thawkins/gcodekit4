@@ -332,14 +332,12 @@ impl Default for NoOpCommunicator {
 impl Communicator for NoOpCommunicator {
     fn connect(&mut self, params: &ConnectionParams) -> crate::Result<()> {
         params.validate()?;
-        tracing::info!("NoOp communicator connecting to {}", params.port);
         self.params = Some(params.clone());
         self.connected = true;
         Ok(())
     }
 
     fn disconnect(&mut self) -> crate::Result<()> {
-        tracing::info!("NoOp communicator disconnecting");
         self.connected = false;
         Ok(())
     }
@@ -360,7 +358,6 @@ impl Communicator for NoOpCommunicator {
         if !self.connected {
             return Err(crate::Error::other("Not connected"));
         }
-        tracing::trace!("NoOp receive");
         Ok(vec![])
     }
 
@@ -455,7 +452,6 @@ impl Communicator for SerialCommunicator {
         if let Some(mut port) = self.port.take() {
             match port.close() {
                 Ok(()) => {
-                    tracing::info!("Serial communicator disconnected");
                     self.notify_listeners(
                         CommunicatorEvent::Disconnected,
                         "Disconnected from serial port",
@@ -482,7 +478,6 @@ impl Communicator for SerialCommunicator {
         if let Some(port) = &mut self.port {
             match port.write(data) {
                 Ok(n) => {
-                    tracing::trace!("Serial sent {} bytes", n);
                     self.notify_listeners(CommunicatorEvent::DataSent, &format!("{} bytes", n));
                     Ok(n)
                 }
@@ -505,7 +500,6 @@ impl Communicator for SerialCommunicator {
                 Ok(n) => {
                     let data = buf[..n].to_vec();
                     if n > 0 {
-                        tracing::trace!("Serial received {} bytes", n);
                         self.notify_listeners(
                             CommunicatorEvent::DataReceived,
                             &format!("{} bytes", n),
@@ -630,7 +624,6 @@ impl Communicator for TcpCommunicator {
         if let Some(mut port) = self.port.take() {
             match port.close() {
                 Ok(()) => {
-                    tracing::info!("TCP communicator disconnected");
                     self.notify_listeners(
                         CommunicatorEvent::Disconnected,
                         "Disconnected from TCP server",
@@ -657,7 +650,6 @@ impl Communicator for TcpCommunicator {
         if let Some(port) = &mut self.port {
             match port.write(data) {
                 Ok(n) => {
-                    tracing::trace!("TCP sent {} bytes", n);
                     self.notify_listeners(CommunicatorEvent::DataSent, &format!("{} bytes", n));
                     Ok(n)
                 }
@@ -680,7 +672,6 @@ impl Communicator for TcpCommunicator {
                 Ok(n) => {
                     let data = buf[..n].to_vec();
                     if n > 0 {
-                        tracing::trace!("TCP received {} bytes", n);
                         self.notify_listeners(
                             CommunicatorEvent::DataReceived,
                             &format!("{} bytes", n),

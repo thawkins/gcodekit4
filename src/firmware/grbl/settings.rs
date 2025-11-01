@@ -141,7 +141,6 @@ impl SettingsManager {
 
     /// Create a backup of current settings
     pub fn backup(&mut self) {
-        debug!("Creating settings backup");
         self.backup = Some(self.settings.clone());
         info!(
             "Settings backup created with {} entries",
@@ -152,10 +151,8 @@ impl SettingsManager {
     /// Restore settings from backup
     pub fn restore(&mut self) -> anyhow::Result<()> {
         if let Some(backup) = self.backup.take() {
-            debug!("Restoring settings from backup");
             self.settings = backup;
             self.dirty = true;
-            info!("Settings restored from backup");
             Ok(())
         } else {
             Err(anyhow::anyhow!("No settings backup available"))
@@ -164,20 +161,17 @@ impl SettingsManager {
 
     /// Export settings to JSON file
     pub fn export_to_file(&self, path: &Path) -> anyhow::Result<()> {
-        debug!("Exporting settings to file: {:?}", path);
 
         let settings_list: Vec<_> = self.settings.values().collect();
         let json = serde_json::to_string_pretty(&settings_list)?;
 
         fs::write(path, json)?;
-        info!("Settings exported to {:?}", path);
 
         Ok(())
     }
 
     /// Import settings from JSON file
     pub fn import_from_file(&mut self, path: &Path) -> anyhow::Result<()> {
-        debug!("Importing settings from file: {:?}", path);
 
         let contents = fs::read_to_string(path)?;
         let settings_list: Vec<Setting> = serde_json::from_str(&contents)?;
@@ -201,7 +195,6 @@ impl SettingsManager {
 
     /// Clear all cached settings
     pub fn clear(&mut self) {
-        debug!("Clearing all settings");
         self.settings.clear();
         self.dirty = true;
     }

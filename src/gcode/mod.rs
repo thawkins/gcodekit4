@@ -1035,7 +1035,6 @@ impl GcodeParser {
         let sequence = self.command_generator.next();
         let command = GcodeCommand::with_sequence(cleaned, sequence);
 
-        tracing::debug!("Parsing G-Code [seq={}]: {}", sequence, command.command);
 
         // Update modal state
         self.update_modal_state(&command)?;
@@ -1073,7 +1072,6 @@ impl GcodeParser {
 
     /// Update modal state based on parsed command
     fn update_modal_state(&mut self, command: &GcodeCommand) -> Result<(), String> {
-        tracing::trace!("Updating modal state for: {}", command.command);
 
         let cmd_upper = command.command.to_uppercase();
 

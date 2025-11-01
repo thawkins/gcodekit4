@@ -228,7 +228,6 @@ impl BufferedCommunicatorWrapper {
 
     /// Send a command and track it in the buffer
     fn send_buffered_command(&mut self, command: &mut BufferedCommand) -> crate::Result<()> {
-        tracing::debug!("Sending buffered command: {}", command.command);
 
         self.communicator
             .send_command(&command.command)
@@ -308,13 +307,11 @@ impl BufferedCommunicatorWrapper {
     /// Pause sending commands
     pub fn pause(&mut self) {
         self.send_paused = true;
-        tracing::info!("Command streaming paused");
     }
 
     /// Resume sending commands
     pub fn resume(&mut self) -> crate::Result<()> {
         self.send_paused = false;
-        tracing::info!("Command streaming resumed");
         self.stream_commands()
     }
 

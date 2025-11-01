@@ -494,7 +494,6 @@ impl GcodeEditor {
             .pick_file()
             .ok_or_else(|| anyhow::anyhow!("File dialog cancelled"))?;
 
-        info!("Selected file: {:?}", file);
         Ok(file)
     }
 
@@ -505,7 +504,6 @@ impl GcodeEditor {
 
         let mut file = self.file.lock().unwrap();
         file.path = Some(path.to_string_lossy().to_string());
-        info!("Loaded file from: {:?}", path);
         Ok(())
     }
 
@@ -522,7 +520,6 @@ impl GcodeEditor {
 
         if let Some(path) = &file.path {
             std::fs::write(path, content)?;
-            info!("Saved file to: {}", path);
             Ok(())
         } else {
             Err(anyhow::anyhow!("No file path set. Use save_as instead."))
@@ -536,7 +533,6 @@ impl GcodeEditor {
         if let Some(path) = &file.path {
             let content = file.get_plain_content();
             std::fs::write(path, content)?;
-            info!("Saved file to: {}", path);
             Ok(())
         } else {
             Err(anyhow::anyhow!("No file path set. Use save_as instead."))
@@ -553,7 +549,6 @@ impl GcodeEditor {
             .save_file()
             .ok_or_else(|| anyhow::anyhow!("Save dialog cancelled"))?;
 
-        info!("Save as: {:?}", file);
         Ok(file)
     }
 
@@ -568,7 +563,6 @@ impl GcodeEditor {
 
         let mut file = self.file.lock().unwrap();
         file.path = Some(path.to_string_lossy().to_string());
-        info!("Saved as: {:?}", path);
         Ok(())
     }
 
@@ -578,7 +572,6 @@ impl GcodeEditor {
 
         let mut file = self.file.lock().unwrap();
         file.path = Some(path.to_string_lossy().to_string());
-        info!("Saved as: {:?}", path);
         Ok(())
     }
 
@@ -612,7 +605,6 @@ impl GcodeEditor {
     pub fn export_to(&self, path: &Path) -> anyhow::Result<()> {
         let content = self.get_plain_content();
         std::fs::write(path, content)?;
-        info!("Exported to: {:?}", path);
         Ok(())
     }
 }

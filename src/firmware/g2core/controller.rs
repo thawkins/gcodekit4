@@ -80,7 +80,6 @@ pub struct G2CoreController {
 impl G2CoreController {
     /// Create a new g2core controller
     pub fn new(connection_params: ConnectionParams, name: Option<String>) -> anyhow::Result<Self> {
-        debug!("Creating g2core controller");
 
         Ok(Self {
             name: name.unwrap_or_else(|| "g2core".to_string()),
@@ -93,10 +92,8 @@ impl G2CoreController {
 
     /// Initialize the controller and query its capabilities
     fn initialize(&self) -> anyhow::Result<()> {
-        debug!("Initializing g2core controller");
 
         // Query firmware version and capabilities
-        debug!("Querying g2core firmware version and capabilities");
 
         Ok(())
     }
@@ -106,14 +103,12 @@ impl G2CoreController {
         debug!("Initializing g2core controller (async)");
 
         // Query firmware version and capabilities
-        debug!("Querying g2core firmware version and capabilities");
 
         Ok(())
     }
 
     /// Start status polling
     fn start_polling(&self) {
-        debug!("Starting g2core status polling");
         let poll_rate = self.state.read().poll_rate_ms;
 
         let poll_task = tokio::spawn(async move {
@@ -129,7 +124,6 @@ impl G2CoreController {
 
     /// Stop status polling
     fn stop_polling(&self) {
-        debug!("Stopping g2core status polling");
         if let Some(task) = self.poll_task.write().take() {
             task.abort();
         }
@@ -142,7 +136,6 @@ impl G2CoreController {
 
     /// Set the number of active axes
     pub fn set_active_axes(&self, axes: u8) {
-        debug!("Setting g2core active axes to {}", axes);
         self.state.write().active_axes = axes;
     }
 
@@ -153,7 +146,6 @@ impl G2CoreController {
 
     /// Set the kinematics mode
     pub fn set_kinematics_mode(&self, mode: Option<String>) {
-        debug!("Setting g2core kinematics mode to {:?}", mode);
         self.state.write().kinematics_mode = mode;
     }
 }
@@ -177,10 +169,6 @@ impl ControllerTrait for G2CoreController {
     }
 
     async fn connect(&mut self) -> anyhow::Result<()> {
-        info!(
-            "Connecting to g2core controller on {}",
-            self.connection_params.port
-        );
 
         // Update state to connecting
         {
@@ -200,12 +188,10 @@ impl ControllerTrait for G2CoreController {
         // Start status polling
         self.start_polling();
 
-        info!("Successfully connected to g2core controller");
         Ok(())
     }
 
     async fn disconnect(&mut self) -> anyhow::Result<()> {
-        info!("Disconnecting from g2core controller");
 
         // Stop polling
         self.stop_polling();
@@ -220,7 +206,6 @@ impl ControllerTrait for G2CoreController {
     }
 
     async fn send_command(&mut self, command: &str) -> anyhow::Result<()> {
-        debug!("Sending g2core command: {}", command);
 
         if !self.is_connected() {
             anyhow::bail!("g2core controller not connected");
@@ -232,7 +217,6 @@ impl ControllerTrait for G2CoreController {
     }
 
     async fn home(&mut self) -> anyhow::Result<()> {
-        debug!("Homing g2core");
 
         if !self.is_connected() {
             anyhow::bail!("g2core controller not connected");
@@ -244,7 +228,6 @@ impl ControllerTrait for G2CoreController {
     }
 
     async fn reset(&mut self) -> anyhow::Result<()> {
-        debug!("Performing g2core soft reset");
 
         if !self.is_connected() {
             anyhow::bail!("g2core controller not connected");
@@ -257,7 +240,6 @@ impl ControllerTrait for G2CoreController {
     }
 
     async fn clear_alarm(&mut self) -> anyhow::Result<()> {
-        debug!("Clearing g2core alarm");
 
         if !self.is_connected() {
             anyhow::bail!("g2core controller not connected");
@@ -270,7 +252,6 @@ impl ControllerTrait for G2CoreController {
     }
 
     async fn unlock(&mut self) -> anyhow::Result<()> {
-        debug!("Unlocking g2core alarm state");
 
         if !self.is_connected() {
             anyhow::bail!("g2core controller not connected");
@@ -287,7 +268,6 @@ impl ControllerTrait for G2CoreController {
         _direction: i32,
         _feed_rate: f64,
     ) -> anyhow::Result<()> {
-        debug!("Starting g2core jog");
 
         if !self.is_connected() {
             anyhow::bail!("g2core controller not connected");
@@ -297,7 +277,6 @@ impl ControllerTrait for G2CoreController {
     }
 
     async fn jog_stop(&mut self) -> anyhow::Result<()> {
-        debug!("Stopping g2core jog");
 
         if !self.is_connected() {
             anyhow::bail!("g2core controller not connected");
@@ -315,7 +294,6 @@ impl ControllerTrait for G2CoreController {
         _distance: f64,
         _feed_rate: f64,
     ) -> anyhow::Result<()> {
-        debug!("Performing g2core incremental jog");
 
         if !self.is_connected() {
             anyhow::bail!("g2core controller not connected");
@@ -325,7 +303,6 @@ impl ControllerTrait for G2CoreController {
     }
 
     async fn start_streaming(&mut self) -> anyhow::Result<()> {
-        debug!("Starting g2core streaming");
 
         if !self.is_connected() {
             anyhow::bail!("g2core controller not connected");
@@ -338,7 +315,6 @@ impl ControllerTrait for G2CoreController {
     }
 
     async fn pause_streaming(&mut self) -> anyhow::Result<()> {
-        debug!("Pausing g2core streaming");
 
         if !self.is_connected() {
             anyhow::bail!("g2core controller not connected");
@@ -351,7 +327,6 @@ impl ControllerTrait for G2CoreController {
     }
 
     async fn resume_streaming(&mut self) -> anyhow::Result<()> {
-        debug!("Resuming g2core streaming");
 
         if !self.is_connected() {
             anyhow::bail!("g2core controller not connected");
@@ -364,7 +339,6 @@ impl ControllerTrait for G2CoreController {
     }
 
     async fn cancel_streaming(&mut self) -> anyhow::Result<()> {
-        debug!("Cancelling g2core streaming");
 
         if !self.is_connected() {
             anyhow::bail!("g2core controller not connected");
@@ -377,7 +351,6 @@ impl ControllerTrait for G2CoreController {
     }
 
     async fn probe_z(&mut self, _feed_rate: f64) -> anyhow::Result<crate::data::PartialPosition> {
-        debug!("Starting g2core Z-probe cycle");
 
         if !self.is_connected() {
             anyhow::bail!("g2core controller not connected");
@@ -387,7 +360,6 @@ impl ControllerTrait for G2CoreController {
     }
 
     async fn probe_x(&mut self, _feed_rate: f64) -> anyhow::Result<crate::data::PartialPosition> {
-        debug!("Starting g2core X-probe cycle");
 
         if !self.is_connected() {
             anyhow::bail!("g2core controller not connected");
@@ -397,7 +369,6 @@ impl ControllerTrait for G2CoreController {
     }
 
     async fn probe_y(&mut self, _feed_rate: f64) -> anyhow::Result<crate::data::PartialPosition> {
-        debug!("Starting g2core Y-probe cycle");
 
         if !self.is_connected() {
             anyhow::bail!("g2core controller not connected");
@@ -407,7 +378,6 @@ impl ControllerTrait for G2CoreController {
     }
 
     async fn set_feed_override(&mut self, _percentage: u16) -> anyhow::Result<()> {
-        debug!("Setting g2core feed override");
 
         if !self.is_connected() {
             anyhow::bail!("g2core controller not connected");
@@ -417,7 +387,6 @@ impl ControllerTrait for G2CoreController {
     }
 
     async fn set_rapid_override(&mut self, _percentage: u8) -> anyhow::Result<()> {
-        debug!("Setting g2core rapid override");
 
         if !self.is_connected() {
             anyhow::bail!("g2core controller not connected");
@@ -427,7 +396,6 @@ impl ControllerTrait for G2CoreController {
     }
 
     async fn set_spindle_override(&mut self, _percentage: u16) -> anyhow::Result<()> {
-        debug!("Setting g2core spindle override");
 
         if !self.is_connected() {
             anyhow::bail!("g2core controller not connected");
@@ -437,7 +405,6 @@ impl ControllerTrait for G2CoreController {
     }
 
     async fn set_work_zero(&mut self) -> anyhow::Result<()> {
-        debug!("Setting g2core work zero");
 
         if !self.is_connected() {
             anyhow::bail!("g2core controller not connected");
@@ -447,7 +414,6 @@ impl ControllerTrait for G2CoreController {
     }
 
     async fn set_work_zero_axes(&mut self, _axes: &str) -> anyhow::Result<()> {
-        debug!("Setting g2core work zero for specific axes");
 
         if !self.is_connected() {
             anyhow::bail!("g2core controller not connected");
@@ -457,7 +423,6 @@ impl ControllerTrait for G2CoreController {
     }
 
     async fn go_to_work_zero(&mut self) -> anyhow::Result<()> {
-        debug!("Moving g2core to work zero");
 
         if !self.is_connected() {
             anyhow::bail!("g2core controller not connected");
@@ -467,7 +432,6 @@ impl ControllerTrait for G2CoreController {
     }
 
     async fn set_work_coordinate_system(&mut self, _wcs: u8) -> anyhow::Result<()> {
-        debug!("Setting g2core work coordinate system");
 
         if !self.is_connected() {
             anyhow::bail!("g2core controller not connected");
@@ -477,13 +441,11 @@ impl ControllerTrait for G2CoreController {
     }
 
     async fn get_wcs_offset(&self, _wcs: u8) -> anyhow::Result<crate::data::PartialPosition> {
-        debug!("Getting g2core WCS offset");
 
         Ok(crate::data::PartialPosition::default())
     }
 
     async fn query_status(&mut self) -> anyhow::Result<ControllerStatus> {
-        debug!("Querying g2core status");
 
         if !self.is_connected() {
             anyhow::bail!("g2core controller not connected");
@@ -493,7 +455,6 @@ impl ControllerTrait for G2CoreController {
     }
 
     async fn query_settings(&mut self) -> anyhow::Result<()> {
-        debug!("Querying g2core settings");
 
         if !self.is_connected() {
             anyhow::bail!("g2core controller not connected");
@@ -503,7 +464,6 @@ impl ControllerTrait for G2CoreController {
     }
 
     async fn query_parser_state(&mut self) -> anyhow::Result<()> {
-        debug!("Querying g2core parser state");
 
         if !self.is_connected() {
             anyhow::bail!("g2core controller not connected");

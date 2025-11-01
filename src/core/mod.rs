@@ -249,7 +249,6 @@ impl SimpleController {
     /// Set the controller state
     pub fn set_state(&self, new_state: ControllerState) {
         *self.state.write() = new_state;
-        tracing::debug!("Controller {} state changed to: {}", self.name, new_state);
     }
 }
 
@@ -273,24 +272,20 @@ impl ControllerTrait for SimpleController {
 
     async fn connect(&mut self) -> anyhow::Result<()> {
         self.set_state(ControllerState::Idle);
-        tracing::info!("Connected to {}", self.name);
         Ok(())
     }
 
     async fn disconnect(&mut self) -> anyhow::Result<()> {
         self.set_state(ControllerState::Disconnected);
-        tracing::info!("Disconnected from {}", self.name);
         Ok(())
     }
 
     async fn send_command(&mut self, command: &str) -> anyhow::Result<()> {
-        tracing::debug!("Sending command: {}", command);
         Ok(())
     }
 
     async fn home(&mut self) -> anyhow::Result<()> {
         self.set_state(ControllerState::Home);
-        tracing::info!("Homing initiated");
         Ok(())
     }
 
@@ -315,7 +310,6 @@ impl ControllerTrait for SimpleController {
         direction: i32,
         feed_rate: f64,
     ) -> anyhow::Result<()> {
-        tracing::info!("Jog {} {} at {} F/min", axis, direction, feed_rate);
         Ok(())
     }
 
@@ -359,32 +353,26 @@ impl ControllerTrait for SimpleController {
     }
 
     async fn probe_z(&mut self, feed_rate: f64) -> anyhow::Result<PartialPosition> {
-        tracing::info!("Probing Z at {} F/min", feed_rate);
         Ok(PartialPosition::default())
     }
 
     async fn probe_x(&mut self, feed_rate: f64) -> anyhow::Result<PartialPosition> {
-        tracing::info!("Probing X at {} F/min", feed_rate);
         Ok(PartialPosition::default())
     }
 
     async fn probe_y(&mut self, feed_rate: f64) -> anyhow::Result<PartialPosition> {
-        tracing::info!("Probing Y at {} F/min", feed_rate);
         Ok(PartialPosition::default())
     }
 
     async fn set_feed_override(&mut self, percentage: u16) -> anyhow::Result<()> {
-        tracing::info!("Feed override: {}%", percentage);
         Ok(())
     }
 
     async fn set_rapid_override(&mut self, percentage: u8) -> anyhow::Result<()> {
-        tracing::info!("Rapid override: {}%", percentage);
         Ok(())
     }
 
     async fn set_spindle_override(&mut self, percentage: u16) -> anyhow::Result<()> {
-        tracing::info!("Spindle override: {}%", percentage);
         Ok(())
     }
 
@@ -393,7 +381,6 @@ impl ControllerTrait for SimpleController {
     }
 
     async fn set_work_zero_axes(&mut self, axes: &str) -> anyhow::Result<()> {
-        tracing::info!("Setting work zero for axes: {}", axes);
         Ok(())
     }
 
@@ -402,12 +389,10 @@ impl ControllerTrait for SimpleController {
     }
 
     async fn set_work_coordinate_system(&mut self, wcs: u8) -> anyhow::Result<()> {
-        tracing::info!("Setting WCS to G{}", 53 + wcs);
         Ok(())
     }
 
     async fn get_wcs_offset(&self, wcs: u8) -> anyhow::Result<PartialPosition> {
-        tracing::info!("Getting WCS {} offset", wcs);
         Ok(PartialPosition::default())
     }
 

@@ -92,7 +92,6 @@ impl EventDispatcher {
         &self,
         event: ControllerEvent,
     ) -> Result<usize, broadcast::error::SendError<ControllerEvent>> {
-        tracing::trace!("Publishing event: {}", event);
         self.tx.send(event)
     }
 

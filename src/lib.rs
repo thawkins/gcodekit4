@@ -133,6 +133,5 @@ pub fn init_logging() -> anyhow::Result<()> {
         .with(fmt_layer)
         .init();
 
-    tracing::info!("GCodeKit4 v{} logging initialized", VERSION);
     Ok(())
 }

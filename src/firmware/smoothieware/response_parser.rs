@@ -45,7 +45,6 @@ impl SmoothiewareResponseParser {
             return None;
         }
 
-        debug!("Parsing Smoothieware response: {}", line);
 
         // Check for acknowledgment
         if line == "ok" || line == "OK" {

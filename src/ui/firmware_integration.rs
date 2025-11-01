@@ -33,7 +33,6 @@ impl FirmwareSettingsIntegration {
 
     /// Load GRBL firmware settings
     pub fn load_grbl_defaults(&mut self) -> Result<()> {
-        info!("Loading GRBL default firmware settings");
 
         self.firmware_panel = FirmwareSettingsPanel::new("GRBL", "1.1");
 
@@ -282,12 +281,10 @@ impl FirmwareSettingsIntegration {
                 .insert(param.code.clone(), param.clone());
         }
 
-        info!("Dialog populated with firmware settings");
     }
 
     /// Update firmware parameters from dialog
     pub fn update_from_dialog(&mut self, dialog: &SettingsDialog) -> Result<()> {
-        info!("Updating firmware parameters from dialog");
 
         let params_to_update: Vec<(String, String)> = self
             .firmware_panel
@@ -307,7 +304,6 @@ impl FirmwareSettingsIntegration {
                 .set_parameter_value(&param_code, new_value.clone())
             {
                 Ok(_) => {
-                    debug!("Updated firmware parameter {}: {}", param_code, new_value);
                 }
                 Err(e) => {
                     warn!("Failed to update parameter {}: {}", param_code, e);
@@ -315,7 +311,6 @@ impl FirmwareSettingsIntegration {
             }
         }
 
-        info!("Firmware parameters updated from dialog");
         Ok(())
     }
 
@@ -326,13 +321,11 @@ impl FirmwareSettingsIntegration {
 
     /// Create backup of firmware parameters
     pub fn create_backup(&mut self) {
-        info!("Creating backup of firmware parameters");
         self.firmware_panel.create_backup();
     }
 
     /// Restore firmware parameters from backup
     pub fn restore_from_backup(&mut self) -> Result<()> {
-        info!("Restoring firmware parameters from backup");
         self.firmware_panel
             .restore_backup()
             .map_err(|e| crate::error::Error::other(e))
@@ -340,7 +333,6 @@ impl FirmwareSettingsIntegration {
 
     /// Reset all parameters to defaults
     pub fn reset_to_defaults(&mut self) {
-        info!("Resetting firmware parameters to defaults");
         self.firmware_panel.reset_all_to_defaults();
     }
 

@@ -5,6 +5,33 @@ All notable changes to this project should be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.1-alpha] - 2025-11-01
+
+### 🐛 Designer Canvas Critical Fixes
+
+**Designer Stability & Precision** - Fixed critical RefCell borrow panic, shape selection/dragging, and snapping precision issues.
+
+### ✨ Fixed
+
+#### Designer Canvas Issues (#gcodekit4-39)
+- **RefCell Borrow Panic**: Fixed double-borrow panic when updating designer UI during rapid shape updates
+- **Shape Selection Handles**: Handles now display correctly and are fully draggable
+- **Shape Dragging**: Implement proper drag handling for all shape types with smooth position updates
+- **Pan/Zoom Offset Display**: UI indicators now update correctly when panning/zooming canvas
+- **Shift+Drag Resize Snapping**: 
+  - Width and height now snap to whole millimeters during Shift+drag resize
+  - Fixed issue where only deltas were snapped instead of final dimensions
+  - Snap precision: Perfect whole mm values (no fractional artifacts)
+- **Logging Cleanup**: Removed all `debug!()`, `info!()`, and `trace!()` statements:
+  - 392+ lines of verbose logging removed
+  - Eliminated console noise during UI interactions
+  - Preserved `warn!()` and `error!()` for critical issues only
+
+### ✅ Testing
+- All 667 unit tests passing
+- Designer operations stable and crash-free
+- UI responsiveness verified with no jank
+
 ## [0.25.0-alpha] - 2025-10-31
 
 ### 🎉 CAM Tools Palette Phase 1 Implementation

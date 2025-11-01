@@ -69,7 +69,6 @@ pub struct GrblController {
 impl GrblController {
     /// Create a new GRBL controller
     pub fn new(connection_params: ConnectionParams, name: Option<String>) -> anyhow::Result<Self> {
-        debug!("Creating GRBL controller");
 
         let communicator = Arc::new(GrblCommunicator::new(
             Box::new(NoOpCommunicator::new()),
@@ -88,31 +87,25 @@ impl GrblController {
 
     /// Initialize the controller and query its capabilities
     fn initialize(&self) -> anyhow::Result<()> {
-        debug!("Initializing GRBL controller");
 
         // Send soft reset
         self.communicator.send_command("$RST=*")?;
         std::thread::sleep(Duration::from_millis(100));
 
         // Query firmware version
-        debug!("Querying firmware version");
         self.communicator.send_command("$I")?;
 
         // Request current settings
-        debug!("Requesting settings");
         self.communicator.send_command("$")?;
 
         // Query parser state
-        debug!("Querying parser state");
         self.communicator.send_command("$G")?;
 
-        info!("GRBL controller initialization complete");
         Ok(())
     }
 
     /// Start the status polling task
     fn start_polling(&mut self) -> anyhow::Result<()> {
-        debug!("Starting status polling");
 
         let notify = Arc::new(tokio::sync::Notify::new());
         *self.shutdown_signal.write() = Some(notify.clone());
@@ -129,7 +122,6 @@ impl GrblController {
                     _ = interval.tick() => {
                         // Send status query
                         if let Err(e) = communicator.send_realtime_byte(b'?') {
-                            trace!("Failed to send status query: {}", e);
                             continue;
                         }
 
@@ -137,11 +129,9 @@ impl GrblController {
                         tokio::time::sleep(Duration::from_millis(10)).await;
                         if let Ok(_response) = communicator.read_response() {
                             // Parse status response
-                            trace!("Received status response");
                         }
                     }
                     _ = notify.notified() => {
-                        debug!("Status polling stopped");
                         break;
                     }
                 }
@@ -154,7 +144,6 @@ impl GrblController {
 
     /// Stop the status polling task
     fn stop_polling(&mut self) -> anyhow::Result<()> {
-        debug!("Stopping status polling");
 
         if let Some(notify) = self.shutdown_signal.write().take() {
             notify.notify_one();
@@ -187,7 +176,6 @@ impl ControllerTrait for GrblController {
     }
 
     async fn connect(&mut self) -> anyhow::Result<()> {
-        debug!("GRBL: Connecting");
 
         self.communicator.connect(&self.connection_params)?;
         *self.state.write() = GrblControllerState::default();
@@ -200,12 +188,10 @@ impl ControllerTrait for GrblController {
             state.state = ControllerState::Idle;
         }
 
-        info!("GRBL controller connected");
         Ok(())
     }
 
     async fn disconnect(&mut self) -> anyhow::Result<()> {
-        debug!("GRBL: Disconnecting");
 
         self.stop_polling()?;
         self.communicator.disconnect()?;
@@ -215,12 +201,10 @@ impl ControllerTrait for GrblController {
             state.state = ControllerState::Disconnected;
         }
 
-        info!("GRBL controller disconnected");
         Ok(())
     }
 
     async fn send_command(&mut self, command: &str) -> anyhow::Result<()> {
-        debug!("GRBL: Sending command: {}", command);
 
         // Check if ready to send (character counting)
         let command_size = command.len() + 1; // +1 for newline
@@ -238,35 +222,28 @@ impl ControllerTrait for GrblController {
         // Read OK response
         let response = self.communicator.read_line()?;
         if !response.contains("ok") {
-            trace!("GRBL: Unexpected response: {}", response);
         }
 
         Ok(())
     }
 
     async fn home(&mut self) -> anyhow::Result<()> {
-        debug!("GRBL: Homing");
         self.send_command("$H").await?;
-        info!("GRBL: Homing complete");
         Ok(())
     }
 
     async fn reset(&mut self) -> anyhow::Result<()> {
-        debug!("GRBL: Soft reset");
         self.communicator.send_realtime_byte(0x18)?;
         tokio::time::sleep(Duration::from_millis(100)).await;
-        info!("GRBL: Reset complete");
         Ok(())
     }
 
     async fn clear_alarm(&mut self) -> anyhow::Result<()> {
-        debug!("GRBL: Clearing alarm");
         self.send_command("$X").await?;
         Ok(())
     }
 
     async fn unlock(&mut self) -> anyhow::Result<()> {
-        debug!("GRBL: Unlocking");
         self.send_command("$X").await?;
         Ok(())
     }
@@ -277,10 +254,6 @@ impl ControllerTrait for GrblController {
         direction: i32,
         feed_rate: f64,
     ) -> anyhow::Result<()> {
-        debug!(
-            "GRBL: Starting jog - axis: {}, direction: {}, feed_rate: {}",
-            axis, direction, feed_rate
-        );
 
         if direction == 0 {
             return Err(anyhow::anyhow!("Direction must be non-zero"));
@@ -295,7 +268,6 @@ impl ControllerTrait for GrblController {
     }
 
     async fn jog_stop(&mut self) -> anyhow::Result<()> {
-        debug!("GRBL: Stopping jog");
         self.communicator.send_realtime_byte(0x85)?;
         Ok(())
     }
@@ -306,10 +278,6 @@ impl ControllerTrait for GrblController {
         distance: f64,
         feed_rate: f64,
     ) -> anyhow::Result<()> {
-        debug!(
-            "GRBL: Incremental jog - axis: {}, distance: {}, feed_rate: {}",
-            axis, distance, feed_rate
-        );
 
         // Format: $J=G91 G0 X{signed_distance} F{feed_rate}
         // distance already includes sign from the caller
@@ -320,42 +288,33 @@ impl ControllerTrait for GrblController {
     }
 
     async fn start_streaming(&mut self) -> anyhow::Result<()> {
-        debug!("GRBL: Starting streaming");
         let mut state = self.state.write();
         state.is_streaming = true;
         state.state = ControllerState::Run;
-        info!("GRBL: Streaming started");
         Ok(())
     }
 
     async fn pause_streaming(&mut self) -> anyhow::Result<()> {
-        debug!("GRBL: Pausing streaming");
         self.communicator.send_realtime_byte(0x21)?;
         self.state.write().state = ControllerState::Hold;
-        info!("GRBL: Streaming paused");
         Ok(())
     }
 
     async fn resume_streaming(&mut self) -> anyhow::Result<()> {
-        debug!("GRBL: Resuming streaming");
         self.communicator.send_realtime_byte(0x7E)?;
         self.state.write().state = ControllerState::Run;
-        info!("GRBL: Streaming resumed");
         Ok(())
     }
 
     async fn cancel_streaming(&mut self) -> anyhow::Result<()> {
-        debug!("GRBL: Canceling streaming");
         self.communicator.send_realtime_byte(0x18)?;
         let mut state = self.state.write();
         state.is_streaming = false;
         state.state = ControllerState::Idle;
-        info!("GRBL: Streaming canceled");
         Ok(())
     }
 
     async fn probe_z(&mut self, feed_rate: f64) -> anyhow::Result<PartialPosition> {
-        debug!("GRBL: Probing Z at feed rate: {}", feed_rate);
 
         let cmd = format!("G38.2Z-100F{}", feed_rate);
         self.send_command(&cmd).await?;
@@ -368,7 +327,6 @@ impl ControllerTrait for GrblController {
     }
 
     async fn probe_x(&mut self, feed_rate: f64) -> anyhow::Result<PartialPosition> {
-        debug!("GRBL: Probing X at feed rate: {}", feed_rate);
 
         let cmd = format!("G38.2X100F{}", feed_rate);
         self.send_command(&cmd).await?;
@@ -381,7 +339,6 @@ impl ControllerTrait for GrblController {
     }
 
     async fn probe_y(&mut self, feed_rate: f64) -> anyhow::Result<PartialPosition> {
-        debug!("GRBL: Probing Y at feed rate: {}", feed_rate);
 
         let cmd = format!("G38.2Y100F{}", feed_rate);
         self.send_command(&cmd).await?;
@@ -394,7 +351,6 @@ impl ControllerTrait for GrblController {
     }
 
     async fn set_feed_override(&mut self, percentage: u16) -> anyhow::Result<()> {
-        debug!("GRBL: Setting feed override to {}%", percentage);
 
         if percentage > 200 {
             return Err(anyhow::anyhow!("Feed override must be 0-200%"));
@@ -412,7 +368,6 @@ impl ControllerTrait for GrblController {
     }
 
     async fn set_rapid_override(&mut self, percentage: u8) -> anyhow::Result<()> {
-        debug!("GRBL: Setting rapid override to {}%", percentage);
 
         if ![25, 50, 100].contains(&percentage) {
             return Err(anyhow::anyhow!("Rapid override must be 25, 50, or 100"));
@@ -423,7 +378,6 @@ impl ControllerTrait for GrblController {
     }
 
     async fn set_spindle_override(&mut self, percentage: u16) -> anyhow::Result<()> {
-        debug!("GRBL: Setting spindle override to {}%", percentage);
 
         if percentage > 200 {
             return Err(anyhow::anyhow!("Spindle override must be 0-200%"));
@@ -434,13 +388,11 @@ impl ControllerTrait for GrblController {
     }
 
     async fn set_work_zero(&mut self) -> anyhow::Result<()> {
-        debug!("GRBL: Setting work zero");
         self.send_command("G92X0Y0Z0").await?;
         Ok(())
     }
 
     async fn set_work_zero_axes(&mut self, axes: &str) -> anyhow::Result<()> {
-        debug!("GRBL: Setting work zero for axes: {}", axes);
         let mut cmd = String::from("G92");
         for axis in axes.chars() {
             if ['X', 'Y', 'Z', 'A', 'B', 'C'].contains(&axis) {
@@ -453,13 +405,11 @@ impl ControllerTrait for GrblController {
     }
 
     async fn go_to_work_zero(&mut self) -> anyhow::Result<()> {
-        debug!("GRBL: Going to work zero");
         self.send_command("G00X0Y0Z0").await?;
         Ok(())
     }
 
     async fn set_work_coordinate_system(&mut self, wcs: u8) -> anyhow::Result<()> {
-        debug!("GRBL: Setting work coordinate system: {}", wcs);
 
         if wcs < 54 || wcs > 59 {
             return Err(anyhow::anyhow!("Work coordinate system must be 54-59"));
@@ -471,7 +421,6 @@ impl ControllerTrait for GrblController {
     }
 
     async fn get_wcs_offset(&self, _wcs: u8) -> anyhow::Result<PartialPosition> {
-        debug!("GRBL: Getting work coordinate system offset");
         let state = self.state.read();
         Ok(PartialPosition {
             x: Some(state.work_position.x),
@@ -482,18 +431,15 @@ impl ControllerTrait for GrblController {
     }
 
     async fn query_status(&mut self) -> anyhow::Result<ControllerStatus> {
-        debug!("GRBL: Querying status");
         Ok(self.get_status())
     }
 
     async fn query_settings(&mut self) -> anyhow::Result<()> {
-        debug!("GRBL: Querying settings");
         self.communicator.send_command("$")?;
         Ok(())
     }
 
     async fn query_parser_state(&mut self) -> anyhow::Result<()> {
-        debug!("GRBL: Querying parser state");
         self.communicator.send_command("$G")?;
         Ok(())
     }

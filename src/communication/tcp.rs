@@ -88,7 +88,6 @@ impl RealTcpPort {
         }
 
         let address = format!("{}:{}", params.port, params.network_port);
-        tracing::info!("Connecting to TCP server at {}", address);
 
         match TcpStream::connect_timeout(
             &address
@@ -107,7 +106,6 @@ impl RealTcpPort {
                     .set_write_timeout(Some(Duration::from_millis(params.timeout_ms)))
                     .map_err(|e| Error::other(format!("Failed to set write timeout: {}", e)))?;
 
-                tracing::info!("Successfully connected to TCP server {}", address);
                 Ok(RealTcpPort { stream })
             }
             Err(e) => {

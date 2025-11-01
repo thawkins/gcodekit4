@@ -123,7 +123,6 @@ impl OverrideManagerTrait for DefaultOverrideManager {
                 percentage
             ));
         }
-        debug!("Setting feed rate override to {}%", percentage);
         self.state.feed_rate_override = percentage;
         Ok(())
     }
@@ -133,7 +132,6 @@ impl OverrideManagerTrait for DefaultOverrideManager {
     }
 
     fn set_rapid_override(&mut self, level: RapidOverrideLevel) -> anyhow::Result<()> {
-        debug!("Setting rapid override to {:?}", level);
         self.state.rapid_override = level;
         Ok(())
     }
@@ -149,7 +147,6 @@ impl OverrideManagerTrait for DefaultOverrideManager {
                 percentage
             ));
         }
-        debug!("Setting spindle override to {}%", percentage);
         self.state.spindle_override = percentage;
         Ok(())
     }

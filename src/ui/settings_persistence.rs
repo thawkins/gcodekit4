@@ -28,23 +28,18 @@ impl SettingsPersistence {
 
     /// Load settings from file
     pub fn load_from_file(path: &Path) -> Result<Self> {
-        info!("Loading settings from: {:?}", path);
         let config = Config::load_from_file(path)?;
-        info!("Settings loaded successfully from {:?}", path);
         Ok(Self { config })
     }
 
     /// Save settings to file
     pub fn save_to_file(&self, path: &Path) -> Result<()> {
-        info!("Saving settings to: {:?}", path);
         self.config.save_to_file(path)?;
-        info!("Settings saved successfully to {:?}", path);
         Ok(())
     }
 
     /// Populate SettingsDialog from config
     pub fn populate_dialog(&self, dialog: &mut SettingsDialog) {
-        info!("Populating settings dialog from config");
 
         // Connection Settings
         self.add_connection_settings(dialog);
@@ -66,7 +61,6 @@ impl SettingsPersistence {
 
     /// Load settings from dialog into config
     pub fn load_from_dialog(&mut self, dialog: &SettingsDialog) -> Result<()> {
-        info!("Loading settings from dialog into config");
 
         // Update connection settings
         self.update_connection_settings(dialog)?;
@@ -80,7 +74,6 @@ impl SettingsPersistence {
         // Validate updated config
         self.config.validate()?;
 
-        info!("Settings loaded from dialog successfully");
         Ok(())
     }
 
@@ -96,7 +89,6 @@ impl SettingsPersistence {
 
     /// Validate settings
     pub fn validate(&self) -> Result<()> {
-        info!("Validating settings");
         self.config.validate()
     }
 
@@ -181,7 +173,6 @@ impl SettingsPersistence {
             .with_category(SettingsCategory::Controller),
         );
 
-        info!("Added {} connection settings", 6);
     }
 
     /// Add UI settings to dialog
@@ -249,7 +240,6 @@ impl SettingsPersistence {
             .with_category(SettingsCategory::UserInterface),
         );
 
-        info!("Added {} UI settings", 5);
     }
 
     /// Add file processing settings to dialog
@@ -289,7 +279,6 @@ impl SettingsPersistence {
             .with_category(SettingsCategory::FileProcessing),
         );
 
-        info!("Added {} file processing settings", 3);
     }
 
     /// Add keyboard shortcuts to dialog
@@ -315,12 +304,10 @@ impl SettingsPersistence {
             dialog.add_shortcut(shortcut);
         }
 
-        info!("Added {} keyboard shortcuts", 13);
     }
 
     /// Update connection settings in config from dialog
     fn update_connection_settings(&mut self, dialog: &SettingsDialog) -> Result<()> {
-        debug!("Updating connection settings from dialog");
 
         if let Some(setting) = dialog.get_setting("connection_type") {
             let conn_type = match setting.value.as_str().as_str() {
@@ -364,7 +351,6 @@ impl SettingsPersistence {
 
     /// Update UI settings in config from dialog
     fn update_ui_settings(&mut self, dialog: &SettingsDialog) -> Result<()> {
-        debug!("Updating UI settings from dialog");
 
         if let Some(setting) = dialog.get_setting("theme") {
             self.config.ui.theme = setting.value.as_str();
@@ -405,7 +391,6 @@ impl SettingsPersistence {
 
     /// Update file processing settings in config from dialog
     fn update_file_processing_settings(&mut self, dialog: &SettingsDialog) -> Result<()> {
-        debug!("Updating file processing settings from dialog");
 
         if let Some(setting) = dialog.get_setting("preserve_comments") {
             if let Ok(value) = setting.value.as_str().parse::<bool>() {

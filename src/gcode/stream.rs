@@ -172,7 +172,6 @@ impl StringStreamReader {
             .collect::<Vec<_>>();
 
         let total = lines.len();
-        tracing::debug!("Created StringStreamReader with {} lines", total);
 
         Self {
             lines,
@@ -259,13 +258,11 @@ impl PausableStream {
         self.is_paused.store(1, Ordering::SeqCst);
         let line = self.inner.current_line_number();
         self.pause_line.store(line, Ordering::SeqCst);
-        tracing::info!("Stream paused at line {}", line);
     }
 
     /// Resume the stream
     pub fn resume(&self) {
         self.is_paused.store(0, Ordering::SeqCst);
-        tracing::info!("Stream resumed");
     }
 
     /// Check if stream is paused

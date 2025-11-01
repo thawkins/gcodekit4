@@ -361,7 +361,6 @@ impl Canvas {
                       handle, dx, dy, self.selected_id);
         if let Some(id) = self.selected_id {
             if let Some(obj) = self.shapes.iter_mut().find(|o| o.id == id) {
-                tracing::info!("Found shape to resize: id={}", id);
                 let (x1, y1, x2, y2) = obj.shape.bounding_box();
                 let shape = &*obj.shape;
                 
@@ -442,24 +441,26 @@ impl Canvas {
                 let width = x2 - x1;
                 let height = y2 - y1;
                 
-                // Snap the top-left corner to whole mm
+                // Snap the top-left corner and dimensions to whole mm
                 let snapped_x1 = (x1 + 0.5).floor();
                 let snapped_y1 = (y1 + 0.5).floor();
+                let snapped_width = (width + 0.5).floor();
+                let snapped_height = (height + 0.5).floor();
                 
-                // Replace the shape with snapped position
+                // Replace the shape with snapped position and dimensions
                 let shape = &*obj.shape;
                 let new_shape: Box<dyn Shape> = match shape.shape_type() {
                     ShapeType::Rectangle => {
-                        Box::new(Rectangle::new(snapped_x1, snapped_y1, width, height))
+                        Box::new(Rectangle::new(snapped_x1, snapped_y1, snapped_width, snapped_height))
                     }
                     ShapeType::Circle => {
-                        let radius = width / 2.0;
+                        let radius = snapped_width / 2.0;
                         Box::new(Circle::new(Point::new(snapped_x1 + radius, snapped_y1 + radius), radius))
                     }
                     ShapeType::Line => {
                         Box::new(Line::new(
                             Point::new(snapped_x1, snapped_y1),
-                            Point::new(snapped_x1 + width, snapped_y1 + height),
+                            Point::new(snapped_x1 + snapped_width, snapped_y1 + snapped_height),
                         ))
                     }
                 };

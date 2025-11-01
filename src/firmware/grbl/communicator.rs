@@ -63,10 +63,6 @@ pub struct GrblCommunicator {
 impl GrblCommunicator {
     /// Create a new GRBL communicator from an existing communicator
     pub fn new(communicator: Box<dyn Communicator>, config: GrblCommunicatorConfig) -> Self {
-        debug!(
-            "Creating GRBL communicator with RX buffer: {}, TX buffer: {}",
-            config.rx_buffer_size, config.tx_buffer_size
-        );
 
         Self {
             communicator: Arc::new(RwLock::new(communicator)),
@@ -78,23 +74,19 @@ impl GrblCommunicator {
 
     /// Connect to GRBL device
     pub fn connect(&self, params: &ConnectionParams) -> anyhow::Result<()> {
-        debug!("Connecting to GRBL");
         let mut comm = self.communicator.write();
         comm.connect(params)
             .map_err(|e| anyhow::anyhow!("Connection failed: {}", e))?;
         *self.running.write() = true;
-        debug!("Connected to GRBL");
         Ok(())
     }
 
     /// Disconnect from GRBL device
     pub fn disconnect(&self) -> anyhow::Result<()> {
-        debug!("Disconnecting from GRBL");
         *self.running.write() = false;
         let mut comm = self.communicator.write();
         comm.disconnect()
             .map_err(|e| anyhow::anyhow!("Disconnection failed: {}", e))?;
-        debug!("Disconnected from GRBL");
         Ok(())
     }
 
@@ -114,7 +106,6 @@ impl GrblCommunicator {
         let mut counting = self.char_counting.write();
         counting.pending_chars += data.len();
 
-        trace!("Pending characters: {}", counting.pending_chars);
         Ok(())
     }
 
@@ -122,7 +113,6 @@ impl GrblCommunicator {
     ///
     /// This sends a command with proper CRLF termination.
     pub fn send_command(&self, command: &str) -> anyhow::Result<()> {
-        trace!("Sending command: {}", command);
         let formatted = if command.ends_with('\n') {
             command.to_string()
         } else {
@@ -130,13 +120,11 @@ impl GrblCommunicator {
         };
 
         self.send_bytes(formatted.as_bytes())?;
-        debug!("Command sent: {}", command);
         Ok(())
     }
 
     /// Read response from GRBL device
     pub fn read_response(&self) -> anyhow::Result<Vec<u8>> {
-        trace!("Reading response from GRBL");
         let mut comm = self.communicator.write();
         let response = comm
             .receive()
@@ -147,10 +135,8 @@ impl GrblCommunicator {
 
     /// Read a line from GRBL (terminated by newline)
     pub fn read_line(&self) -> anyhow::Result<String> {
-        trace!("Reading line from GRBL");
         let response = self.read_response()?;
         let line = String::from_utf8_lossy(&response).to_string();
-        trace!("Received line: {}", line);
         Ok(line)
     }
 
@@ -161,11 +147,6 @@ impl GrblCommunicator {
         let mut counting = self.char_counting.write();
         counting.acked_chars = counting.acked_chars.saturating_add(count);
         counting.pending_chars = counting.pending_chars.saturating_sub(count);
-        trace!(
-            "Acknowledged {} characters, pending: {}",
-            count,
-            counting.pending_chars
-        );
     }
 
     /// Get available buffer space (for character counting protocol)
@@ -175,7 +156,6 @@ impl GrblCommunicator {
             .config
             .rx_buffer_size
             .saturating_sub(counting.pending_chars);
-        trace!("Available buffer: {} bytes", available);
         available
     }
 
@@ -192,7 +172,6 @@ impl GrblCommunicator {
 
     /// Clear all pending data (reset character counting)
     pub fn clear(&self) -> anyhow::Result<()> {
-        debug!("Clearing GRBL communicator");
         *self.char_counting.write() = CharacterCountingState::default();
         Ok(())
     }
@@ -206,7 +185,6 @@ impl GrblCommunicator {
     ///
     /// Real-time commands are sent immediately and don't follow the character counting protocol.
     pub fn send_realtime_byte(&self, byte: u8) -> anyhow::Result<()> {
-        trace!("Sending real-time byte: 0x{:02x}", byte);
         self.send_bytes(&[byte])
     }
 }

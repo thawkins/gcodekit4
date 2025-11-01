@@ -66,7 +66,6 @@ impl DeviceConsoleManager {
     /// Add message to console
     pub fn add_message(&self, msg_type: DeviceMessageType, content: impl Into<String>) {
         let content = content.into();
-        debug!("Console message: {:?} - {}", msg_type, content);
 
         let level = match msg_type {
             DeviceMessageType::Output => MessageLevel::Info,
@@ -117,14 +116,12 @@ impl DeviceConsoleManager {
         let mut console = self.console.lock().unwrap();
         console.clear();
         self.emit_event(ConsoleEvent::Cleared);
-        debug!("Console cleared");
     }
 
     /// Set verbose output enabled
     pub fn set_verbose_enabled(&self, enabled: bool) {
         *self.verbose_enabled.lock().unwrap() = enabled;
         self.emit_event(ConsoleEvent::SettingsChanged);
-        debug!("Verbose output: {}", enabled);
     }
 
     /// Get verbose output enabled state
@@ -138,7 +135,6 @@ impl DeviceConsoleManager {
         console.auto_scroll = enabled;
         *self.auto_scroll_enabled.lock().unwrap() = enabled;
         self.emit_event(ConsoleEvent::SettingsChanged);
-        debug!("Auto-scroll: {}", enabled);
     }
 
     /// Get auto-scroll enabled state

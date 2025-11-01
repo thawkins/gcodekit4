@@ -23,13 +23,11 @@ fn copy_to_clipboard(text: &str) -> bool {
                     true
                 }
                 Err(e) => {
-                    info!("Error copying to clipboard: {}", e);
                     false
                 }
             }
         }
         Err(e) => {
-            info!("Could not access clipboard: {}", e);
             false
         }
     }
@@ -119,7 +117,6 @@ fn update_designer_ui(
         .collect();
     tracing::info!("Updating UI with {} shapes", shapes.len());
     for shape in &shapes {
-        tracing::info!("  Shape {}: x={}, y={}, w={}, h={}", shape.id, shape.x, shape.y, shape.width, shape.height);
     }
     // Force UI to recognize the change by clearing first
     window.set_designer_shapes(slint::ModelRc::from(Rc::new(slint::VecModel::from(Vec::<crate::DesignerShape>::new()))));
@@ -176,13 +173,8 @@ fn main() -> anyhow::Result<()> {
     // Initialize logging
     init_logging()?;
 
-    info!("═══════════════════════════════════════════════════════════");
-    info!("GCodeKit4 v{}", VERSION);
-    info!("Universal G-Code Sender for CNC Machines");
-    info!("═══════════════════════════════════════════════════════════");
 
     let main_window = MainWindow::new().map_err(|e| anyhow::anyhow!("UI Error: {}", e))?;
-    info!("UI window created successfully");
 
     // Set window to maximized state
     let window = main_window.window();
@@ -222,7 +214,6 @@ fn main() -> anyhow::Result<()> {
     // Initialize device console manager early to register listeners
     // Use Arc since communicator listeners need Arc for thread-safe sharing
     let console_manager = std::sync::Arc::new(DeviceConsoleManager::new());
-    info!("Device console manager initialized");
 
     // Create and register console listener with communicator
     let console_listener = ConsoleListener::new(console_manager.clone());
@@ -233,7 +224,6 @@ fn main() -> anyhow::Result<()> {
 
     // Initialize Designer state (Phase 2)
     let designer_mgr = Rc::new(RefCell::new(gcodekit4::DesignerState::new()));
-    info!("Designer state initialized");
     
     // Shift key state for snapping in designer
     let shift_pressed = Rc::new(RefCell::new(false));
@@ -261,9 +251,7 @@ fn main() -> anyhow::Result<()> {
     {
         let mut fw_integration = firmware_integration.borrow_mut();
         if let Err(e) = fw_integration.load_grbl_defaults() {
-            info!("Warning: Could not load firmware settings: {}", e);
         } else {
-            info!("Firmware settings loaded successfully");
 
             // Populate dialog with firmware parameters
             let mut dialog = settings_dialog.borrow_mut();
@@ -301,7 +289,6 @@ fn main() -> anyhow::Result<()> {
 
     // Initialize G-Code editor
     let gcode_editor = Rc::new(GcodeEditor::new());
-    info!("G-Code editor initialized");
 
     // Load sample G-Code content for demonstration
     // Note: Don't load sample gcode - start with empty editor
@@ -313,7 +300,6 @@ fn main() -> anyhow::Result<()> {
         let config_path = match gcodekit4::config::SettingsManager::config_file_path() {
             Ok(path) => path,
             Err(e) => {
-                info!("Could not determine config path: {}", e);
                 std::path::PathBuf::new()
             }
         };
@@ -322,14 +308,11 @@ fn main() -> anyhow::Result<()> {
             match SettingsPersistence::load_from_file(&config_path) {
                 Ok(loaded_persistence) => {
                     *persistence = loaded_persistence;
-                    info!("Settings loaded from {:?}", config_path);
                 }
                 Err(e) => {
-                    info!("Could not load settings from {:?}: {}", config_path, e);
                 }
             }
         } else {
-            info!("No existing config file at {:?}", config_path);
         }
 
         // Populate dialog with settings
@@ -353,7 +336,6 @@ fn main() -> anyhow::Result<()> {
     let polling_stop_connect = status_polling_stop.clone();
     main_window.on_connect(move |port: slint::SharedString, baud: i32| {
         let port_str = port.to_string();
-        info!("Connect requested for port: {} at {} baud", port_str, baud);
 
         // Add connection attempt to console
         console_manager_clone.add_message(
@@ -389,7 +371,6 @@ fn main() -> anyhow::Result<()> {
         let mut comm = communicator_clone.borrow_mut();
         match comm.connect(&params) {
             Ok(()) => {
-                info!("Successfully connected to {}", port_str);
                 console_manager_clone.add_message(
                     DeviceMessageType::Success,
                     format!("Successfully connected to {} at {} baud", port_str, baud),
@@ -442,7 +423,6 @@ fn main() -> anyhow::Result<()> {
                                     if let Ok(response) = poll_comm.receive() {
                                         if !response.is_empty() {
                                             let response_str = String::from_utf8_lossy(&response);
-                                            debug!("Status response: {}", response_str);
 
                                             // Parse position from response
                                             if let Some((x, y, z)) =
@@ -470,7 +450,6 @@ fn main() -> anyhow::Result<()> {
             }
             Err(e) => {
                 let error_msg = format!("{}", e);
-                info!("Failed to connect: {}", error_msg);
                 console_manager_clone.add_message(
                     DeviceMessageType::Error,
                     format!("Connection failed: {}", error_msg),
@@ -495,7 +474,6 @@ fn main() -> anyhow::Result<()> {
     let console_manager_clone = console_manager.clone();
     let polling_stop_clone = status_polling_stop.clone();
     main_window.on_disconnect(move || {
-        info!("Disconnect requested");
         console_manager_clone.add_message(DeviceMessageType::Output, "Disconnecting from device");
 
         // Stop the polling thread
@@ -504,7 +482,6 @@ fn main() -> anyhow::Result<()> {
         let mut comm = communicator_clone.borrow_mut();
         match comm.disconnect() {
             Ok(()) => {
-                info!("Successfully disconnected");
                 // Reset the communicator to a fresh state by replacing with a new instance
                 drop(comm);
                 let mut new_comm = SerialCommunicator::new();
@@ -528,7 +505,6 @@ fn main() -> anyhow::Result<()> {
                 }
             }
             Err(e) => {
-                info!("Failed to disconnect: {}", e);
                 console_manager_clone
                     .add_message(DeviceMessageType::Error, format!("Disconnect error: {}", e));
                 if let Some(window) = window_weak.upgrade() {
@@ -543,13 +519,10 @@ fn main() -> anyhow::Result<()> {
     // Set up menu-file-exit callback
     let communicator_clone = communicator.clone();
     main_window.on_menu_file_exit(move || {
-        info!("Menu: File > Exit selected");
         // Disconnect if connected before exiting
         let mut comm = communicator_clone.borrow_mut();
         if let Err(e) = comm.disconnect() {
-            info!("Warning: Failed to disconnect during exit: {}", e);
         }
-        info!("Exiting application");
         std::process::exit(0);
     });
 
@@ -558,7 +531,6 @@ fn main() -> anyhow::Result<()> {
     let gcode_editor_clone = gcode_editor.clone();
     let console_manager_clone = console_manager.clone();
     main_window.on_menu_file_open(move || {
-        info!("Menu: File > Open selected");
 
         // Open file dialog and load file
         match gcode_editor_clone.open_and_load_file() {
@@ -571,7 +543,6 @@ fn main() -> anyhow::Result<()> {
                 let full_path = path.display().to_string();
                 let line_count = gcode_editor_clone.get_line_count();
 
-                info!("File loaded: {:?}", path);
 
                 // Log to device console
                 console_manager_clone.add_message(
@@ -597,7 +568,6 @@ fn main() -> anyhow::Result<()> {
                 } else {
                     content.clone()
                 };
-                info!("TextEdit content preview:\n{}", preview);
                 console_manager_clone.add_message(
                     DeviceMessageType::Output,
                     format!("CONTENT LENGTH: {} chars", content.len()),
@@ -609,7 +579,6 @@ fn main() -> anyhow::Result<()> {
 
                 if let Some(window) = window_weak.upgrade() {
                     // DEBUG: Log view switch
-                    info!("Switching to gcode-editor view");
                     console_manager_clone.add_message(
                         DeviceMessageType::Output,
                         format!("DEBUG: Switching to gcode-editor view"),
@@ -699,7 +668,6 @@ fn main() -> anyhow::Result<()> {
                     });
 
                     // DEBUG: Log console update
-                    info!("Updating console output");
                     console_manager_clone.add_message(
                         DeviceMessageType::Output,
                         format!("DEBUG: TextEdit content set in view"),
@@ -715,7 +683,6 @@ fn main() -> anyhow::Result<()> {
 
                 // Silently ignore dialog cancellations
                 if error_msg.contains("cancelled") {
-                    debug!("File dialog cancelled by user");
                     return;
                 }
 
@@ -744,7 +711,6 @@ fn main() -> anyhow::Result<()> {
     let gcode_editor_clone = gcode_editor.clone();
     let console_manager_clone = console_manager.clone();
     main_window.on_menu_file_save(move || {
-        info!("Menu: File > Save selected");
 
         // Get current filename and content from window
         if let Some(window) = window_weak.upgrade() {
@@ -753,7 +719,6 @@ fn main() -> anyhow::Result<()> {
 
             // If it's "untitled.gcode", prompt for filename (treat as Save As)
             if filename.contains("untitled") {
-                info!("No current file, treating Save as Save As");
                 console_manager_clone.add_message(
                     DeviceMessageType::Output,
                     "No file loaded. Use 'Save As' to save with a filename.",
@@ -767,7 +732,6 @@ fn main() -> anyhow::Result<()> {
             // Save to current file with current content from TextEdit
             match gcode_editor_clone.save_file_with_content(&current_content) {
                 Ok(_) => {
-                    info!("File saved: {}", filename);
                     console_manager_clone.add_message(
                         DeviceMessageType::Success,
                         format!("✓ File saved: {}", filename),
@@ -798,7 +762,6 @@ fn main() -> anyhow::Result<()> {
     let gcode_editor_clone = gcode_editor.clone();
     let console_manager_clone = console_manager.clone();
     main_window.on_menu_file_save_as(move || {
-        info!("Menu: File > Save As selected");
 
         if let Some(window) = window_weak.upgrade() {
             let current_content = window.get_gcode_content().to_string();
@@ -813,7 +776,6 @@ fn main() -> anyhow::Result<()> {
                         .to_string();
                     let full_path = path.display().to_string();
 
-                    info!("File saved as: {}", file_name);
                     console_manager_clone.add_message(
                         DeviceMessageType::Success,
                         format!("✓ File saved as: {}", file_name),
@@ -852,7 +814,6 @@ fn main() -> anyhow::Result<()> {
     let console_manager_clone = console_manager.clone();
     let gcode_editor_clone = gcode_editor.clone();
     main_window.on_menu_send_to_device(move || {
-        info!("Send to Device: User clicked Send button");
 
         if let Some(window) = window_weak.upgrade() {
             // Get the current content from the UI TextEdit
@@ -962,7 +923,6 @@ fn main() -> anyhow::Result<()> {
                             Ok(response) => {
                                 if !response.is_empty() {
                                     let resp_str = String::from_utf8_lossy(&response);
-                                    debug!("Response: {}", resp_str);
                                     let ok_count =
                                         resp_str.matches("ok").count() + resp_str.matches("OK").count();
                                     
@@ -972,10 +932,6 @@ fn main() -> anyhow::Result<()> {
                                             let processed_length = state.line_lengths.remove(0);
                                             state.pending_bytes =
                                                 state.pending_bytes.saturating_sub(processed_length);
-                                            debug!(
-                                                "ACK received: pending_bytes now {}",
-                                                state.pending_bytes
-                                            );
                                         }
                                     }
                                     state.timeout_count = 0;
@@ -1019,10 +975,6 @@ fn main() -> anyhow::Result<()> {
                                 }
 
                                 if !final_state.error_occurred {
-                                    info!(
-                                        "Successfully sent {} lines to device",
-                                        final_state.send_count
-                                    );
                                     console_manager_timer.add_message(
                                         DeviceMessageType::Success,
                                         format!(
@@ -1144,7 +1096,6 @@ fn main() -> anyhow::Result<()> {
     let window_weak = main_window.as_weak();
     let settings_dialog_clone = settings_dialog.clone();
     main_window.on_menu_edit_preferences(move || {
-        info!("Menu: Edit > Preferences selected");
 
         // Get reference to settings dialog
         let dialog = settings_dialog_clone.borrow();
@@ -1208,13 +1159,11 @@ fn main() -> anyhow::Result<()> {
     let settings_dialog_clone = settings_dialog.clone();
     let settings_persistence_clone = settings_persistence.clone();
     main_window.on_menu_settings_save(move || {
-        info!("Menu: Settings Save clicked");
 
         let dialog = settings_dialog_clone.borrow();
 
         // Check for unsaved changes
         if dialog.has_changes() {
-            info!("Settings have been modified");
 
             // Log all changed settings
             for setting in dialog.settings.values() {
@@ -1233,7 +1182,6 @@ fn main() -> anyhow::Result<()> {
 
                 // Load settings from dialog into config
                 if let Err(e) = persistence.load_from_dialog(&dialog) {
-                    info!("Error loading settings from dialog: {}", e);
                     if let Some(window) = window_weak.upgrade() {
                         window.set_connection_status(slint::SharedString::from(format!(
                             "Error saving settings: {}",
@@ -1247,7 +1195,6 @@ fn main() -> anyhow::Result<()> {
                 let config_path = match gcodekit4::config::SettingsManager::config_file_path() {
                     Ok(path) => path,
                     Err(e) => {
-                        info!("Could not determine config path: {}", e);
                         if let Some(window) = window_weak.upgrade() {
                             window.set_connection_status(slint::SharedString::from(format!(
                                 "Error: Could not determine config path: {}",
@@ -1260,7 +1207,6 @@ fn main() -> anyhow::Result<()> {
 
                 // Ensure config directory exists
                 if let Err(e) = gcodekit4::config::SettingsManager::ensure_config_dir() {
-                    info!("Failed to create config directory: {}", e);
                     if let Some(window) = window_weak.upgrade() {
                         window.set_connection_status(slint::SharedString::from(format!(
                             "Error: Failed to create config directory: {}",
@@ -1271,7 +1217,6 @@ fn main() -> anyhow::Result<()> {
                 }
 
                 if let Err(e) = persistence.save_to_file(&config_path) {
-                    info!("Error saving settings to file: {}", e);
                     if let Some(window) = window_weak.upgrade() {
                         window.set_connection_status(slint::SharedString::from(format!(
                             "Error saving settings: {}",
@@ -1279,7 +1224,6 @@ fn main() -> anyhow::Result<()> {
                         )));
                     }
                 } else {
-                    info!("Settings saved to disk successfully");
                     if let Some(window) = window_weak.upgrade() {
                         window.set_connection_status(slint::SharedString::from(
                             "Settings saved successfully",
@@ -1293,11 +1237,9 @@ fn main() -> anyhow::Result<()> {
                         setting.default = setting.value.clone();
                     }
                     dialog_mut.has_unsaved_changes = false;
-                    info!("Dialog defaults synced with saved values");
                 }
             }
         } else {
-            info!("No settings changes to save");
             if let Some(window) = window_weak.upgrade() {
                 window.set_connection_status(slint::SharedString::from("No changes to save"));
             }
@@ -1307,7 +1249,6 @@ fn main() -> anyhow::Result<()> {
     // Set up menu-settings-cancel callback
     let window_weak = main_window.as_weak();
     main_window.on_menu_settings_cancel(move || {
-        info!("Menu: Settings Cancel clicked");
         if let Some(window) = window_weak.upgrade() {
             window.set_connection_status(slint::SharedString::from("Settings dialog closed"));
         }
@@ -1317,12 +1258,10 @@ fn main() -> anyhow::Result<()> {
     let window_weak = main_window.as_weak();
     let settings_dialog_clone = settings_dialog.clone();
     main_window.on_menu_settings_restore_defaults(move || {
-        info!("Menu: Settings Restore Defaults clicked");
 
         let mut dialog = settings_dialog_clone.borrow_mut();
         dialog.reset_all_to_defaults();
 
-        info!("All settings reset to defaults");
         if let Some(window) = window_weak.upgrade() {
             window
                 .set_connection_status(slint::SharedString::from("Settings restored to defaults"));
@@ -1333,7 +1272,6 @@ fn main() -> anyhow::Result<()> {
     let settings_dialog_clone = settings_dialog.clone();
     main_window.on_update_setting(
         move |setting_id: slint::SharedString, value: slint::SharedString| {
-            debug!("Setting updated: {} = {}", setting_id, value);
 
             let mut dialog = settings_dialog_clone.borrow_mut();
             let setting_id_str = setting_id.to_string();
@@ -1376,9 +1314,7 @@ fn main() -> anyhow::Result<()> {
 
                 setting.value = new_value;
                 dialog.has_unsaved_changes = true;
-                debug!("Setting {} updated successfully", setting_id_str);
             } else {
-                debug!("Setting {} not found in dialog", setting_id_str);
             }
         },
     );
@@ -1386,7 +1322,6 @@ fn main() -> anyhow::Result<()> {
     // Set up menu-view-fullscreen callback
     let window_weak = main_window.as_weak();
     main_window.on_menu_view_fullscreen(move || {
-        info!("Menu: View > Fullscreen selected");
         if let Some(window) = window_weak.upgrade() {
             window.set_connection_status(slint::SharedString::from(
                 "Fullscreen toggle would activate here",
@@ -1397,7 +1332,6 @@ fn main() -> anyhow::Result<()> {
     // Set up menu-view-gcode-editor callback
     let window_weak = main_window.as_weak();
     main_window.on_menu_view_gcode_editor(move || {
-        info!("Menu: View > G-Code Editor selected");
         if let Some(window) = window_weak.upgrade() {
             window.set_connection_status(slint::SharedString::from("G-Code Editor activated"));
         }
@@ -1406,7 +1340,6 @@ fn main() -> anyhow::Result<()> {
     // Set up menu-view-machine callback
     let window_weak = main_window.as_weak();
     main_window.on_menu_view_machine(move || {
-        info!("Menu: View > Machine Control selected");
         if let Some(window) = window_weak.upgrade() {
             window.set_connection_status(slint::SharedString::from("Machine Control activated"));
         }
@@ -1417,7 +1350,6 @@ fn main() -> anyhow::Result<()> {
     let communicator_clone = communicator.clone();
     let console_manager_clone = console_manager.clone();
     main_window.on_machine_jog_home(move || {
-        info!("Machine: Jog Home button clicked - sending $H command");
 
         if let Some(window) = window_weak.upgrade() {
             // Check if device is connected
@@ -1433,13 +1365,11 @@ fn main() -> anyhow::Result<()> {
                 ));
             } else {
                 // Send the Home command ($H)
-                info!("Sending Home command: $H");
                 console_manager_clone
                     .add_message(DeviceMessageType::Output, "Sending Home command...");
 
                 match comm.send_command("$H") {
                     Ok(_) => {
-                        info!("Home command sent successfully");
                         console_manager_clone.add_message(
                             DeviceMessageType::Success,
                             "✓ Home command sent to device",
@@ -1470,10 +1400,6 @@ fn main() -> anyhow::Result<()> {
     let communicator_clone = communicator.clone();
     let console_manager_clone = console_manager.clone();
     main_window.on_machine_jog_x_positive(move |step_size: f32| {
-        info!(
-            "Machine: Jog X+ button clicked - sending jog command with step size {}",
-            step_size
-        );
 
         if let Some(window) = window_weak.upgrade() {
             let mut comm = communicator_clone.borrow_mut();
@@ -1484,7 +1410,6 @@ fn main() -> anyhow::Result<()> {
             } else {
                 // Send jog command in positive X direction using step size and 2000mm/min feedrate
                 let jog_cmd = format!("$J=X{} F2000", step_size);
-                info!("Sending jog command: {}", jog_cmd);
                 console_manager_clone.add_message(
                     DeviceMessageType::Output,
                     format!("Jogging X+ ({} mm)...", step_size),
@@ -1492,7 +1417,6 @@ fn main() -> anyhow::Result<()> {
 
                 match comm.send(format!("{}\n", jog_cmd).as_bytes()) {
                     Ok(_) => {
-                        info!("Jog X+ command sent successfully");
                     }
                     Err(e) => {
                         warn!("Failed to send Jog X+ command: {}", e);
@@ -1514,10 +1438,6 @@ fn main() -> anyhow::Result<()> {
     let communicator_clone = communicator.clone();
     let console_manager_clone = console_manager.clone();
     main_window.on_machine_jog_x_negative(move |step_size: f32| {
-        info!(
-            "Machine: Jog X- button clicked - sending jog command with step size {}",
-            step_size
-        );
 
         if let Some(window) = window_weak.upgrade() {
             let mut comm = communicator_clone.borrow_mut();
@@ -1528,7 +1448,6 @@ fn main() -> anyhow::Result<()> {
             } else {
                 // Send jog command in negative X direction using step size and 2000mm/min feedrate
                 let jog_cmd = format!("$J=X-{} F2000", step_size);
-                info!("Sending jog command: {}", jog_cmd);
                 console_manager_clone.add_message(
                     DeviceMessageType::Output,
                     format!("Jogging X- ({} mm)...", step_size),
@@ -1536,7 +1455,6 @@ fn main() -> anyhow::Result<()> {
 
                 match comm.send(format!("{}\n", jog_cmd).as_bytes()) {
                     Ok(_) => {
-                        info!("Jog X- command sent successfully");
                     }
                     Err(e) => {
                         warn!("Failed to send Jog X- command: {}", e);
@@ -1557,7 +1475,6 @@ fn main() -> anyhow::Result<()> {
     let window_weak = main_window.as_weak();
     let console_manager_weak = std::sync::Arc::downgrade(&console_manager);
     main_window.on_menu_view_device_console(move || {
-        info!("Menu: View > Device Console selected");
         if let Some(window) = window_weak.upgrade() {
             if let Some(console_mgr) = console_manager_weak.upgrade() {
                 let output = console_mgr.get_output();
@@ -1570,7 +1487,6 @@ fn main() -> anyhow::Result<()> {
     // Set up menu-view-file-validation callback
     let window_weak = main_window.as_weak();
     main_window.on_menu_view_file_validation(move || {
-        info!("Menu: View > File Validation selected");
         if let Some(window) = window_weak.upgrade() {
             window.set_connection_status(slint::SharedString::from(
                 "File Validation panel activated",
@@ -1581,7 +1497,6 @@ fn main() -> anyhow::Result<()> {
     // Set up menu-view-advanced-features callback
     let window_weak = main_window.as_weak();
     main_window.on_menu_view_advanced_features(move || {
-        info!("Menu: View > Advanced Features selected");
         if let Some(window) = window_weak.upgrade() {
             window.set_connection_status(slint::SharedString::from(
                 "Advanced Features panel activated",
@@ -1592,7 +1507,6 @@ fn main() -> anyhow::Result<()> {
     // Set up menu-view-safety-diagnostics callback
     let window_weak = main_window.as_weak();
     main_window.on_menu_view_safety_diagnostics(move || {
-        info!("Menu: View > Safety & Diagnostics selected");
         if let Some(window) = window_weak.upgrade() {
             window.set_connection_status(slint::SharedString::from(
                 "Safety & Diagnostics panel activated",
@@ -1604,7 +1518,6 @@ fn main() -> anyhow::Result<()> {
     let _designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
     main_window.on_menu_view_designer(move || {
-        info!("Menu: View > Designer selected");
         if let Some(window) = window_weak.upgrade() {
             window.set_current_view(slint::SharedString::from("designer"));
             window.set_connection_status(slint::SharedString::from(
@@ -1616,7 +1529,6 @@ fn main() -> anyhow::Result<()> {
     // Set up menu-view-gtools callback
     let window_weak = main_window.as_weak();
     main_window.on_menu_view_gtools(move || {
-        info!("Menu: View > GTools selected");
         if let Some(window) = window_weak.upgrade() {
             window.set_current_view(slint::SharedString::from("gtools"));
             window.set_connection_status(slint::SharedString::from(
@@ -1628,7 +1540,6 @@ fn main() -> anyhow::Result<()> {
     // Set up menu-help-about callback
     let window_weak = main_window.as_weak();
     main_window.on_menu_help_about(move || {
-        info!("Menu: Help > About selected");
         if let Some(window) = window_weak.upgrade() {
             let about_msg = format!(
                 "GCodeKit4 v{}\n\nUniversal G-Code Sender for CNC Machines",
@@ -1642,7 +1553,6 @@ fn main() -> anyhow::Result<()> {
     let console_manager_clone = console_manager.clone();
     let window_weak = main_window.as_weak();
     main_window.on_console_clear_clicked(move || {
-        info!("Console Clear button clicked");
         console_manager_clone.clear();
         if let Some(window) = window_weak.upgrade() {
             window.set_console_output(slint::SharedString::from(""));
@@ -1654,7 +1564,6 @@ fn main() -> anyhow::Result<()> {
     let console_manager_clone = console_manager.clone();
     let window_weak = main_window.as_weak();
     main_window.on_console_copy_clicked(move || {
-        info!("Console Copy button clicked");
         let output = console_manager_clone.get_output();
 
         let success = copy_to_clipboard(&output);
@@ -1681,7 +1590,6 @@ fn main() -> anyhow::Result<()> {
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
     main_window.on_designer_set_mode(move |mode: i32| {
-        info!("Designer: Set mode to {}", mode);
         let mut state = designer_mgr_clone.borrow_mut();
         state.set_mode(mode);
         if let Some(window) = window_weak.upgrade() {
@@ -1712,7 +1620,6 @@ fn main() -> anyhow::Result<()> {
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
     main_window.on_designer_zoom_in(move || {
-        info!("Designer: Zoom in");
         let mut state = designer_mgr_clone.borrow_mut();
         state.zoom_in();
         if let Some(window) = window_weak.upgrade() {
@@ -1734,7 +1641,6 @@ fn main() -> anyhow::Result<()> {
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
     main_window.on_designer_zoom_out(move || {
-        info!("Designer: Zoom out");
         let mut state = designer_mgr_clone.borrow_mut();
         state.zoom_out();
         if let Some(window) = window_weak.upgrade() {
@@ -1755,7 +1661,6 @@ fn main() -> anyhow::Result<()> {
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
     main_window.on_designer_zoom_fit(move || {
-        info!("Designer: Zoom fit");
         let mut state = designer_mgr_clone.borrow_mut();
         state.zoom_fit();
         if let Some(window) = window_weak.upgrade() {
@@ -1776,7 +1681,6 @@ fn main() -> anyhow::Result<()> {
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
     main_window.on_designer_reset_view(move || {
-        info!("Designer: Reset view");
         let mut state = designer_mgr_clone.borrow_mut();
         // Reset zoom to 1.0 (100%)
         state.canvas.set_zoom(1.0);
@@ -1801,7 +1705,6 @@ fn main() -> anyhow::Result<()> {
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
     main_window.on_designer_delete_selected(move || {
-        info!("Designer: Delete selected");
         let mut state = designer_mgr_clone.borrow_mut();
         state.delete_selected();
         if let Some(window) = window_weak.upgrade() {
@@ -1816,7 +1719,6 @@ fn main() -> anyhow::Result<()> {
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
     main_window.on_designer_clear_canvas(move || {
-        info!("Designer: Clear canvas");
         let mut state = designer_mgr_clone.borrow_mut();
         state.clear_canvas();
         if let Some(window) = window_weak.upgrade() {
@@ -1830,7 +1732,6 @@ fn main() -> anyhow::Result<()> {
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
     main_window.on_designer_generate_toolpath(move || {
-        info!("Designer: Generate toolpath");
         let mut state = designer_mgr_clone.borrow_mut();
         let gcode = state.generate_gcode();
         if let Some(window) = window_weak.upgrade() {
@@ -1846,7 +1747,6 @@ fn main() -> anyhow::Result<()> {
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
     main_window.on_designer_export_gcode(move || {
-        info!("Designer: Export G-code to editor");
         let mut state = designer_mgr_clone.borrow_mut();
         let gcode = state.generate_gcode();
         if let Some(window) = window_weak.upgrade() {
@@ -1874,7 +1774,6 @@ fn main() -> anyhow::Result<()> {
             // Try to select - this will deselect any other shapes
             info!("Attempting to select shape at world point ({}, {})", world_point.x, world_point.y);
             let selected = state.canvas.select_at(&world_point);
-            info!("Selection result: {:?}", selected);
         } else {
             state.add_shape_at(world_point.x, world_point.y);
         }
@@ -1967,15 +1866,14 @@ fn main() -> anyhow::Result<()> {
         let mut world_dx = dx as f64 / viewport.zoom();
         let mut world_dy = dy as f64 / viewport.zoom();
         
-        // If Shift is pressed, snap deltas to whole mm
-        if *shift_pressed_clone.borrow() {
+        // If Shift is pressed and this is a MOVE (not resize), snap deltas to whole mm
+        if *shift_pressed_clone.borrow() && (handle == -1 || handle == 4) {
             world_dx = snap_to_mm(world_dx);
             world_dy = snap_to_mm(world_dy);
         }
         
         if handle == -1 || handle == 4 {
             // handle=-1 or handle=4 (center handle) means move the entire shape
-            info!("Designer: Move shape - world delta=({}, {})", world_dx, world_dy);
             state.move_selected(world_dx, world_dy);
             
             // For moves, also snap the final position to whole mm if Shift is pressed
@@ -1984,8 +1882,12 @@ fn main() -> anyhow::Result<()> {
             }
         } else {
             // Resize via specific handle (0=top-left, 1=top-right, 2=bottom-left, 3=bottom-right)
-            info!("Designer: Resize handle {} - world delta=({}, {})", handle, world_dx, world_dy);
             state.resize_selected(handle as usize, world_dx, world_dy);
+            
+            // For resizes, also snap the final dimensions to whole mm if Shift is pressed
+            if *shift_pressed_clone.borrow() {
+                state.snap_selected_to_mm();
+            }
         }
         
         if let Some(window) = window_weak.upgrade() {
@@ -1997,7 +1899,6 @@ fn main() -> anyhow::Result<()> {
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
     main_window.on_designer_deselect_all(move || {
-        info!("Designer: Deselect all");
         let mut state = designer_mgr_clone.borrow_mut();
         state.deselect_all();
         if let Some(window) = window_weak.upgrade() {
@@ -2014,7 +1915,6 @@ fn main() -> anyhow::Result<()> {
     let shift_pressed_clone = shift_pressed.clone();
     main_window.on_designer_set_shift_pressed(move |pressed: bool| {
         *shift_pressed_clone.borrow_mut() = pressed;
-        info!("Designer: Shift pressed = {}", pressed);
     });
 
     // Designer: Canvas pan callback (drag on empty canvas)
@@ -2064,7 +1964,6 @@ fn main() -> anyhow::Result<()> {
     let zoom_for_refresh = zoom_scale.clone();
     let pan_for_refresh = pan_offset.clone();
     main_window.on_refresh_visualization(move || {
-        info!("Refresh visualization requested");
 
         // Get the current G-code content
         if let Some(window) = window_weak.upgrade() {
@@ -2182,7 +2081,6 @@ fn main() -> anyhow::Result<()> {
     let zoom_scale_in = zoom_scale.clone();
     let window_weak_zoom_in = main_window.as_weak();
     main_window.on_zoom_in(move || {
-        info!("Zoom in requested");
 
         if let Ok(mut scale) = zoom_scale_in.lock() {
             *scale *= 1.1;
@@ -2204,7 +2102,6 @@ fn main() -> anyhow::Result<()> {
     let zoom_scale_out = zoom_scale.clone();
     let window_weak_zoom_out = main_window.as_weak();
     main_window.on_zoom_out(move || {
-        info!("Zoom out requested");
 
         if let Ok(mut scale) = zoom_scale_out.lock() {
             *scale /= 1.1;
@@ -2227,11 +2124,9 @@ fn main() -> anyhow::Result<()> {
     let pan_offset_reset = pan_offset.clone();
     let window_weak_reset = main_window.as_weak();
     main_window.on_reset_view(move || {
-        info!("Reset view requested");
 
         if let Ok(mut scale) = zoom_scale_reset.lock() {
             *scale = 1.0;
-            info!("Zoom scale reset to 100%");
         }
 
         if let Ok(mut offsets) = pan_offset_reset.lock() {
@@ -2254,7 +2149,6 @@ fn main() -> anyhow::Result<()> {
     let zoom_for_fit = zoom_scale.clone();
     let pan_for_fit = pan_offset.clone();
     main_window.on_fit_to_view(move || {
-        info!("Fit to view requested");
 
         if let Some(window) = window_weak_fit.upgrade() {
             let content = window.get_gcode_content();
@@ -2307,7 +2201,6 @@ fn main() -> anyhow::Result<()> {
                 if let Ok(mut offsets) = pan_fit_render.lock() {
                     offsets.0 = visualizer.x_offset;
                     offsets.1 = visualizer.y_offset;
-                    info!("Fit offsets: x={}, y={}", offsets.0, offsets.1);
                 }
 
                 let _ = tx.send((0.3, "Rendering image...".to_string(), None));
@@ -2375,11 +2268,9 @@ fn main() -> anyhow::Result<()> {
     let pan_left_clone = pan_offset.clone();
     let window_weak_pan_left = main_window.as_weak();
     main_window.on_pan_left(move || {
-        info!("Pan left requested");
 
         if let Ok(mut offsets) = pan_left_clone.lock() {
             offsets.0 -= 80.0; // 10% of 800px canvas
-            info!("Pan offset: x={}, y={}", offsets.0, offsets.1);
 
             if let Some(window) = window_weak_pan_left.upgrade() {
                 window.set_visualizer_x_offset(offsets.0);
@@ -2393,11 +2284,9 @@ fn main() -> anyhow::Result<()> {
     let pan_right_clone = pan_offset.clone();
     let window_weak_pan_right = main_window.as_weak();
     main_window.on_pan_right(move || {
-        info!("Pan right requested");
 
         if let Ok(mut offsets) = pan_right_clone.lock() {
             offsets.0 += 80.0; // 10% of 800px canvas
-            info!("Pan offset: x={}, y={}", offsets.0, offsets.1);
 
             if let Some(window) = window_weak_pan_right.upgrade() {
                 window.set_visualizer_x_offset(offsets.0);
@@ -2411,11 +2300,9 @@ fn main() -> anyhow::Result<()> {
     let pan_up_clone = pan_offset.clone();
     let window_weak_pan_up = main_window.as_weak();
     main_window.on_pan_up(move || {
-        info!("Pan up requested");
 
         if let Ok(mut offsets) = pan_up_clone.lock() {
             offsets.1 -= 60.0; // 10% of 600px canvas (down in screen coords)
-            info!("Pan offset: x={}, y={}", offsets.0, offsets.1);
 
             if let Some(window) = window_weak_pan_up.upgrade() {
                 window.set_visualizer_x_offset(offsets.0);
@@ -2429,11 +2316,9 @@ fn main() -> anyhow::Result<()> {
     let pan_down_clone = pan_offset.clone();
     let window_weak_pan_down = main_window.as_weak();
     main_window.on_pan_down(move || {
-        info!("Pan down requested");
 
         if let Ok(mut offsets) = pan_down_clone.lock() {
             offsets.1 += 60.0; // 10% of 600px canvas (up in screen coords)
-            info!("Pan offset: x={}, y={}", offsets.0, offsets.1);
 
             if let Some(window) = window_weak_pan_down.upgrade() {
                 window.set_visualizer_x_offset(offsets.0);
@@ -2446,7 +2331,6 @@ fn main() -> anyhow::Result<()> {
     // Toggle grid callback
     let window_weak_grid = main_window.as_weak();
     main_window.on_toggle_grid(move || {
-        info!("Toggle grid requested");
         if let Some(window) = window_weak_grid.upgrade() {
             window.invoke_refresh_visualization();
         }
@@ -2459,7 +2343,6 @@ fn main() -> anyhow::Result<()> {
         .run()
         .map_err(|e| anyhow::anyhow!("UI Runtime Error: {}", e))?;
 
-    info!("Application closed");
     Ok(())
 }
 
@@ -2473,7 +2356,6 @@ fn get_available_ports() -> anyhow::Result<Vec<slint::SharedString>> {
                 .collect();
 
             if port_names.is_empty() {
-                info!("No serial ports found");
                 Ok(vec![slint::SharedString::from("No ports available")])
             } else {
                 info!("Found {} serial ports", port_names.len());
@@ -2481,7 +2363,6 @@ fn get_available_ports() -> anyhow::Result<Vec<slint::SharedString>> {
             }
         }
         Err(e) => {
-            info!("Error listing serial ports: {}", e);
             Ok(vec![slint::SharedString::from("Error reading ports")])
         }
     }
@@ -2492,7 +2373,6 @@ fn get_available_ports() -> anyhow::Result<Vec<slint::SharedString>> {
 fn render_gcode_visualization(window: &MainWindow, gcode_content: &str) {
     use gcodekit4::visualizer::Visualizer2D;
 
-    info!("Rendering 2D G-code visualization");
 
     // Parse G-code
     let mut visualizer = Visualizer2D::new();
@@ -2514,12 +2394,9 @@ fn render_gcode_visualization(window: &MainWindow, gcode_content: &str) {
                 rgba_img.height(),
             ));
             window.set_visualization_image(img_buffer);
-            info!("Visualization rendered successfully");
         } else {
-            info!("Failed to load rendered image");
         }
     } else {
-        info!("Failed to render visualization - no image bytes");
     }
 }
 
