@@ -7,7 +7,7 @@ use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::task::JoinHandle;
 use tokio::time::{interval, Duration};
-use tracing::{debug, warn};
+use tracing::warn;
 
 /// Connection watch configuration
 #[derive(Debug, Clone)]

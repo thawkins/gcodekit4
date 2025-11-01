@@ -3,7 +3,6 @@
 //! Parses responses from FluidNC firmware including status reports,
 //! errors, and standard responses.
 
-use tracing::debug;
 
 /// Parsed FluidNC response
 #[derive(Debug, Clone, PartialEq)]

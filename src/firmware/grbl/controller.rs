@@ -12,7 +12,7 @@ use parking_lot::RwLock;
 use std::sync::Arc;
 use tokio::task::JoinHandle;
 use tokio::time::{interval, Duration};
-use tracing::{debug, info, trace};
+use tracing::debug;
 
 /// GRBL Controller state management
 #[derive(Debug, Clone)]

@@ -7,7 +7,6 @@
 use crate::communication::CommunicatorListener;
 use crate::ui::console_panel::{ConsolePanel, MessageLevel};
 use std::sync::{Arc, Mutex};
-use tracing::debug;
 
 /// Message type for device communication
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

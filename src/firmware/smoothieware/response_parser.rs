@@ -3,7 +3,6 @@
 //! Parses responses from Smoothieware firmware including status reports,
 //! errors, and standard responses.
 
-use tracing::debug;
 
 /// Parsed Smoothieware response
 #[derive(Debug, Clone, PartialEq)]

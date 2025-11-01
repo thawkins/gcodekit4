@@ -2,7 +2,6 @@
 //!
 //! Provides traits and implementations for managing feed rate, rapid, and spindle overrides.
 
-use tracing::debug;
 
 /// Override state
 #[derive(Debug, Clone, Copy, PartialEq)]

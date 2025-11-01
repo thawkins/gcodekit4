@@ -8,7 +8,6 @@ use crate::core::OverrideState;
 use crate::data::{ControllerState, ControllerStatus, Position};
 use parking_lot::RwLock;
 use std::sync::Arc;
-use tracing::debug;
 
 /// FluidNC Controller state
 #[derive(Debug, Clone)]

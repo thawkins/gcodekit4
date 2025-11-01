@@ -3,7 +3,6 @@
 //! Provides real-time override management for GRBL firmware,
 //! including feed rate, rapid, and spindle speed overrides.
 
-use tracing::debug;
 
 /// GRBL real-time override commands
 /// According to GRBL protocol specification

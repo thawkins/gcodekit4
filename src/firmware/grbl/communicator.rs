@@ -7,7 +7,7 @@
 use crate::communication::{Communicator, ConnectionParams};
 use parking_lot::RwLock;
 use std::sync::Arc;
-use tracing::{debug, trace};
+use tracing::trace;
 
 /// GRBL communicator configuration
 #[derive(Debug, Clone)]

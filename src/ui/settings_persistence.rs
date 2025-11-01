@@ -10,7 +10,7 @@ use super::settings_dialog::{
 use crate::config::{Config, ConnectionType};
 use crate::error::Result;
 use std::path::Path;
-use tracing::{debug, info};
+use tracing::info;
 
 /// Settings persistence layer
 #[derive(Debug, Clone)]
