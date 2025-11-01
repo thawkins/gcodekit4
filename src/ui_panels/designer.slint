@@ -578,111 +578,111 @@ export component DesignerPanel inherits VerticalBox {
         // RIGHT SIDEBAR: Properties Panel
         // ═════════════════════════════════════════════
         Rectangle {
-            preferred-width: 200px;
-            max-width: 200px;
+            preferred-width: 180px;
+            max-width: 180px;
             horizontal-stretch: 0;
             background: #ecf0f1;
             
-        VerticalBox {
-            spacing: 12px;
-            padding: 12px;
-            width: 100%;
-            
-            Text {
-                text: "Tool Parameters";
-                font-weight: 700;
-                font-size: 14px;
-            }
-            
             VerticalBox {
-                spacing: 4px;
+                spacing: 10px;
+                padding: 10px;
                 width: 100%;
-                Text { 
-                    text: "Feed:"; 
-                    font-size: 11px; 
+                
+                Text {
+                    text: "Tool Parameters";
+                    font-weight: 700;
+                    font-size: 12px;
                 }
-                SpinBox { 
-                    value: root.feed_rate; 
-                    minimum: 0;
-                    maximum: 10000;
-                    preferred-width: 160px;
+                
+                VerticalBox {
+                    spacing: 3px;
+                    width: 100%;
+                    Text { 
+                        text: "Feed:"; 
+                        font-size: 10px; 
+                    }
+                    SpinBox { 
+                        value: root.feed_rate; 
+                        minimum: 0;
+                        maximum: 10000;
+                        width: 100%;
+                    }
                 }
-            }
-            
-            VerticalBox {
-                spacing: 4px;
-                width: 100%;
-                Text { 
-                    text: "Spindle:"; 
-                    font-size: 11px; 
+                
+                VerticalBox {
+                    spacing: 3px;
+                    width: 100%;
+                    Text { 
+                        text: "Spindle:"; 
+                        font-size: 10px; 
+                    }
+                    SpinBox { 
+                        value: root.spindle_speed;
+                        minimum: 0;
+                        maximum: 30000;
+                        width: 100%;
+                    }
                 }
-                SpinBox { 
-                    value: root.spindle_speed;
-                    minimum: 0;
-                    maximum: 30000;
-                    preferred-width: 160px;
+                
+                VerticalBox {
+                    spacing: 3px;
+                    width: 100%;
+                    Text { 
+                        text: "Tool Ø:"; 
+                        font-size: 10px; 
+                    }
+                    SpinBox { 
+                        value: root.tool_diameter;
+                        minimum: 0;
+                        maximum: 50;
+                        width: 100%;
+                    }
                 }
-            }
-            
-            VerticalBox {
-                spacing: 4px;
-                width: 100%;
-                Text { 
-                    text: "Tool Ø:"; 
-                    font-size: 11px; 
+                
+                VerticalBox {
+                    spacing: 3px;
+                    width: 100%;
+                    Text { 
+                        text: "Depth:"; 
+                        font-size: 10px; 
+                    }
+                    SpinBox { 
+                        value: root.cut_depth;
+                        minimum: -100;
+                        maximum: 0;
+                        width: 100%;
+                    }
                 }
-                SpinBox { 
-                    value: root.tool_diameter;
-                    minimum: 0;
-                    maximum: 50;
-                    preferred-width: 160px;
+                
+                Rectangle { height: 6px; }
+                
+                Text {
+                    text: "Generate G-Code";
+                    font-weight: 700;
+                    font-size: 12px;
                 }
-            }
-            
-            VerticalBox {
-                spacing: 4px;
-                width: 100%;
-                Text { 
-                    text: "Depth:"; 
-                    font-size: 11px; 
+                
+                Button {
+                    text: "⚙ Generate";
+                    width: 100%;
+                    clicked => { generate_toolpath(); }
                 }
-                SpinBox { 
-                    value: root.cut_depth;
-                    minimum: -100;
-                    maximum: 0;
-                    preferred-width: 160px;
+                
+                Button {
+                    text: "► Export";
+                    width: 100%;
+                    clicked => { export_gcode(); }
                 }
+                
+                Text {
+                    text: gcode_generated ? "✓ Ready" : "⊘ No G-Code";
+                    font-size: 9px;
+                    color: gcode_generated ? #2ecc71 : #e74c3c;
+                    horizontal-alignment: center;
+                }
+                
+                VerticalBox { }
             }
-            
-            Rectangle { height: 8px; }
-            
-            Text {
-                text: "Generate G-Code";
-                font-weight: 700;
-                font-size: 14px;
-            }
-            
-            Button {
-                text: "⚙ Generate";
-                preferred-width: 160px;
-                clicked => { generate_toolpath(); }
-            }
-            
-            Button {
-                text: "► Export";
-                preferred-width: 160px;
-                clicked => { export_gcode(); }
-            }
-            
-            Text {
-                text: gcode_generated ? "✓ Ready" : "⊘ No G-Code";
-                font-size: 10px;
-                color: gcode_generated ? #2ecc71 : #e74c3c;
-                horizontal-alignment: center;
-            }
-            
-            VerticalBox { }
-        }
         }
     }
     }
