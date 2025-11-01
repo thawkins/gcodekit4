@@ -575,113 +575,121 @@ export component DesignerPanel inherits VerticalBox {
         }
         
         // ═════════════════════════════════════════════
-        // RIGHT SIDEBAR: Properties Panel
+        // RIGHT SIDEBAR: Properties Panel (Scrollable)
         // ═════════════════════════════════════════════
-        Rectangle {
-            preferred-width: 240px;
-            max-width: 240px;
+        ScrollView {
+            preferred-width: 160px;
+            max-width: 160px;
             horizontal-stretch: 0;
-            background: #ecf0f1;
             
-            VerticalBox {
-                spacing: 8px;
-                padding: 8px;
-                width: 100%;
-                
-                Text {
-                    text: "Tool Parameters";
-                    font-weight: 700;
-                    font-size: 12px;
-                }
+            Rectangle {
+                background: #ecf0f1;
+                width: 160px;
                 
                 VerticalBox {
-                    spacing: 2px;
+                    spacing: 6px;
+                    padding: 6px;
                     width: 100%;
-                    Text { 
-                        text: "Feed:"; 
-                        font-size: 10px; 
+                    
+                    Text {
+                        text: "Tool Setup";
+                        font-weight: 700;
+                        font-size: 11px;
                     }
-                    SpinBox { 
-                        value: root.feed_rate; 
-                        minimum: 0;
-                        maximum: 10000;
+                    
+                    HorizontalBox {
+                        spacing: 2px;
                         width: 100%;
+                        Text { 
+                            text: "Feed:"; 
+                            font-size: 9px;
+                            width: 40px;
+                        }
+                        SpinBox { 
+                            value: root.feed_rate; 
+                            minimum: 0;
+                            maximum: 10000;
+                            horizontal-stretch: 1;
+                        }
                     }
-                }
-                
-                VerticalBox {
-                    spacing: 2px;
-                    width: 100%;
-                    Text { 
-                        text: "Spindle:"; 
-                        font-size: 10px; 
-                    }
-                    SpinBox { 
-                        value: root.spindle_speed;
-                        minimum: 0;
-                        maximum: 30000;
+                    
+                    HorizontalBox {
+                        spacing: 2px;
                         width: 100%;
+                        Text { 
+                            text: "Speed:"; 
+                            font-size: 9px;
+                            width: 40px;
+                        }
+                        SpinBox { 
+                            value: root.spindle_speed;
+                            minimum: 0;
+                            maximum: 30000;
+                            horizontal-stretch: 1;
+                        }
                     }
-                }
-                
-                VerticalBox {
-                    spacing: 2px;
-                    width: 100%;
-                    Text { 
-                        text: "Tool Ø:"; 
-                        font-size: 10px; 
-                    }
-                    SpinBox { 
-                        value: root.tool_diameter;
-                        minimum: 0;
-                        maximum: 50;
+                    
+                    HorizontalBox {
+                        spacing: 2px;
                         width: 100%;
+                        Text { 
+                            text: "Tool:"; 
+                            font-size: 9px;
+                            width: 40px;
+                        }
+                        SpinBox { 
+                            value: root.tool_diameter;
+                            minimum: 0;
+                            maximum: 50;
+                            horizontal-stretch: 1;
+                        }
                     }
-                }
-                
-                VerticalBox {
-                    spacing: 2px;
-                    width: 100%;
-                    Text { 
-                        text: "Depth:"; 
-                        font-size: 10px; 
-                    }
-                    SpinBox { 
-                        value: root.cut_depth;
-                        minimum: -100;
-                        maximum: 0;
+                    
+                    HorizontalBox {
+                        spacing: 2px;
                         width: 100%;
+                        Text { 
+                            text: "Depth:"; 
+                            font-size: 9px;
+                            width: 40px;
+                        }
+                        SpinBox { 
+                            value: root.cut_depth;
+                            minimum: -100;
+                            maximum: 0;
+                            horizontal-stretch: 1;
+                        }
                     }
+                    
+                    Rectangle { height: 2px; }
+                    
+                    Text {
+                        text: "G-Code";
+                        font-weight: 700;
+                        font-size: 11px;
+                    }
+                    
+                    Button {
+                        text: "Generate";
+                        width: 100%;
+                        clicked => { generate_toolpath(); }
+                    }
+                    
+                    Button {
+                        text: "Export";
+                        width: 100%;
+                        clicked => { export_gcode(); }
+                    }
+                    
+                    Text {
+                        text: gcode_generated ? "✓ Ready" : "⊘ None";
+                        font-size: 8px;
+                        color: gcode_generated ? #2ecc71 : #e74c3c;
+                        horizontal-alignment: center;
+                    }
+                    
+                    VerticalBox { }
                 }
-                
-                Rectangle { height: 4px; }
-                
-                Text {
-                    text: "Generate G-Code";
-                    font-weight: 700;
-                    font-size: 12px;
-                }
-                
-                Button {
-                    text: "⚙ Generate";
-                    width: 100%;
-                    clicked => { generate_toolpath(); }
-                }
-                
-                Button {
-                    text: "► Export";
-                    width: 100%;
-                    clicked => { export_gcode(); }
-                }
-                
-                Text {
-                    text: gcode_generated ? "✓ Ready" : "⊘ No G-Code";
-                    font-size: 9px;
-                    color: gcode_generated ? #2ecc71 : #e74c3c;
-                    horizontal-alignment: center;
-                }
-                
-                VerticalBox { }
             }
         }
     }
