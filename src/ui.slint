@@ -171,6 +171,9 @@ export component MainWindow inherits Window {
     callback designer-clear-canvas();
     callback designer-generate-toolpath();
     callback designer-export-gcode();
+    callback designer-import-dxf();
+    callback designer-import-svg();
+    callback designer-export-design();
     callback designer-canvas-click(float, float);
     callback designer-detect-handle(float, float) -> int;  // x, y - returns handle index
     callback designer-shape-drag(int, float, float);        // shape_id, dx, dy
@@ -796,6 +799,18 @@ if current-view == "safety-diagnostics" : SafetyDiagnosticsPanel {
                     
                     export_gcode => {
                         root.designer-export-gcode();
+                    }
+                    
+                    import_dxf => {
+                        root.designer-import-dxf();
+                    }
+                    
+                    import_svg => {
+                        root.designer-import-svg();
+                    }
+                    
+                    export_design => {
+                        root.designer-export-design();
                     }
                     
                     canvas_click(x, y) => {

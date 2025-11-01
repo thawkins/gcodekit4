@@ -1693,6 +1693,30 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
+    // Designer: Import DXF callback
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_import_dxf(move || {
+        if let Some(window) = window_weak.upgrade() {
+            window.set_connection_status(slint::SharedString::from("DXF import: Select file to import"));
+        }
+    });
+
+    // Designer: Import SVG callback
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_import_svg(move || {
+        if let Some(window) = window_weak.upgrade() {
+            window.set_connection_status(slint::SharedString::from("SVG import: Select file to import"));
+        }
+    });
+
+    // Designer: Export Design callback
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_export_design(move || {
+        if let Some(window) = window_weak.upgrade() {
+            window.set_connection_status(slint::SharedString::from("Design export: Ready to save"));
+        }
+    });
+
     // Designer: Canvas Click callback
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();

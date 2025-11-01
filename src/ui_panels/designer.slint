@@ -87,6 +87,9 @@ export component DesignerPanel inherits VerticalBox {
     callback clear_canvas();
     callback generate_toolpath();
     callback export_gcode();
+    callback import_dxf();
+    callback import_svg();
+    callback export_design();
     callback canvas_click(float, float);
     callback detect_handle(float, float) -> int;  // x, y - returns handle index (-1 if not on handle)
     callback shape_drag(int, float, float);        // shape_id, dx, dy
@@ -247,6 +250,27 @@ export component DesignerPanel inherits VerticalBox {
                 text: "⊕";
                 width: 50px;
                 clicked => { clear_canvas(); }
+            }
+            
+            VerticalBox { } // Spacer
+            
+            // Import/Export Controls
+            Button {
+                text: "⇧";
+                width: 50px;
+                clicked => { import_dxf(); }
+            }
+            
+            Button {
+                text: "⇨";
+                width: 50px;
+                clicked => { import_svg(); }
+            }
+            
+            Button {
+                text: "⇩";
+                width: 50px;
+                clicked => { export_design(); }
             }
         }
         
