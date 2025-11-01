@@ -578,14 +578,14 @@ export component DesignerPanel inherits VerticalBox {
         // RIGHT SIDEBAR: Properties Panel
         // ═════════════════════════════════════════════
         Rectangle {
-            preferred-width: 180px;
-            max-width: 180px;
+            preferred-width: 240px;
+            max-width: 240px;
             horizontal-stretch: 0;
             background: #ecf0f1;
             
             VerticalBox {
-                spacing: 10px;
-                padding: 10px;
+                spacing: 8px;
+                padding: 8px;
                 width: 100%;
                 
                 Text {
@@ -595,7 +595,7 @@ export component DesignerPanel inherits VerticalBox {
                 }
                 
                 VerticalBox {
-                    spacing: 3px;
+                    spacing: 2px;
                     width: 100%;
                     Text { 
                         text: "Feed:"; 
@@ -610,7 +610,7 @@ export component DesignerPanel inherits VerticalBox {
                 }
                 
                 VerticalBox {
-                    spacing: 3px;
+                    spacing: 2px;
                     width: 100%;
                     Text { 
                         text: "Spindle:"; 
@@ -625,7 +625,7 @@ export component DesignerPanel inherits VerticalBox {
                 }
                 
                 VerticalBox {
-                    spacing: 3px;
+                    spacing: 2px;
                     width: 100%;
                     Text { 
                         text: "Tool Ø:"; 
@@ -640,7 +640,7 @@ export component DesignerPanel inherits VerticalBox {
                 }
                 
                 VerticalBox {
-                    spacing: 3px;
+                    spacing: 2px;
                     width: 100%;
                     Text { 
                         text: "Depth:"; 
@@ -654,7 +654,7 @@ export component DesignerPanel inherits VerticalBox {
                     }
                 }
                 
-                Rectangle { height: 6px; }
+                Rectangle { height: 4px; }
                 
                 Text {
                     text: "Generate G-Code";
