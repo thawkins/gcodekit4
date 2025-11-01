@@ -228,7 +228,6 @@ impl BufferedCommunicatorWrapper {
 
     /// Send a command and track it in the buffer
     fn send_buffered_command(&mut self, command: &mut BufferedCommand) -> crate::Result<()> {
-
         self.communicator
             .send_command(&command.command)
             .map_err(|e| {

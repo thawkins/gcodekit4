@@ -29,6 +29,7 @@ impl Default for GrblCommunicatorConfig {
 
 /// Manages character counting state for GRBL streaming protocol
 #[derive(Debug, Clone, Copy)]
+#[derive(Default)]
 struct CharacterCountingState {
     /// Number of characters sent but not yet acknowledged
     pub pending_chars: usize,
@@ -36,14 +37,6 @@ struct CharacterCountingState {
     pub acked_chars: usize,
 }
 
-impl Default for CharacterCountingState {
-    fn default() -> Self {
-        Self {
-            pending_chars: 0,
-            acked_chars: 0,
-        }
-    }
-}
 
 /// GRBL-specific communicator
 ///
@@ -63,7 +56,6 @@ pub struct GrblCommunicator {
 impl GrblCommunicator {
     /// Create a new GRBL communicator from an existing communicator
     pub fn new(communicator: Box<dyn Communicator>, config: GrblCommunicatorConfig) -> Self {
-
         Self {
             communicator: Arc::new(RwLock::new(communicator)),
             char_counting: Arc::new(RwLock::new(CharacterCountingState::default())),
@@ -152,11 +144,11 @@ impl GrblCommunicator {
     /// Get available buffer space (for character counting protocol)
     pub fn get_available_buffer(&self) -> usize {
         let counting = self.char_counting.read();
-        let available = self
+        
+        self
             .config
             .rx_buffer_size
-            .saturating_sub(counting.pending_chars);
-        available
+            .saturating_sub(counting.pending_chars)
     }
 
     /// Get pending character count

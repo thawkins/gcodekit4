@@ -198,6 +198,7 @@ pub trait FirmwareSettings: Serialize {
 ///
 /// Aggregates all settings sections and provides file I/O operations.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct Config {
     /// Connection settings
     pub connection: ConnectionSettings,
@@ -211,17 +212,6 @@ pub struct Config {
     pub recent_files: Vec<PathBuf>,
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            connection: ConnectionSettings::default(),
-            ui: UiSettings::default(),
-            file_processing: FileProcessingSettings::default(),
-            machine: MachineSettings::default(),
-            recent_files: Vec::new(),
-        }
-    }
-}
 
 impl Config {
     /// Create new config with defaults
@@ -234,10 +224,10 @@ impl Config {
         let content = std::fs::read_to_string(path)
             .map_err(|e| Error::other(format!("Failed to read config file: {}", e)))?;
 
-        let config: Self = if path.extension().map_or(false, |ext| ext == "json") {
+        let config: Self = if path.extension().is_some_and(|ext| ext == "json") {
             serde_json::from_str(&content)
                 .map_err(|e| Error::other(format!("Invalid JSON config: {}", e)))?
-        } else if path.extension().map_or(false, |ext| ext == "toml") {
+        } else if path.extension().is_some_and(|ext| ext == "toml") {
             toml::from_str(&content)
                 .map_err(|e| Error::other(format!("Invalid TOML config: {}", e)))?
         } else {
@@ -254,10 +244,10 @@ impl Config {
     pub fn save_to_file(&self, path: &Path) -> Result<()> {
         self.validate()?;
 
-        let content = if path.extension().map_or(false, |ext| ext == "json") {
+        let content = if path.extension().is_some_and(|ext| ext == "json") {
             serde_json::to_string_pretty(self)
                 .map_err(|e| Error::other(format!("Failed to serialize config: {}", e)))?
-        } else if path.extension().map_or(false, |ext| ext == "toml") {
+        } else if path.extension().is_some_and(|ext| ext == "toml") {
             toml::to_string_pretty(self)
                 .map_err(|e| Error::other(format!("Failed to serialize config: {}", e)))?
         } else {

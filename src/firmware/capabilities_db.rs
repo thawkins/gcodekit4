@@ -4,8 +4,8 @@
 //! Enables version-aware UI and G-code generation.
 
 use super::firmware_version::{FirmwareType, SemanticVersion};
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// Individual capability information
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -26,17 +26,17 @@ impl CapabilityInfo {
         if !self.enabled {
             return false;
         }
-        
+
         if !version.is_at_least(&self.min_version) {
             return false;
         }
-        
+
         if let Some(max_ver) = self.max_version {
             if version > &max_ver {
                 return false;
             }
         }
-        
+
         true
     }
 }
@@ -48,57 +48,57 @@ pub struct FirmwareCapabilities {
     pub firmware_type: FirmwareType,
     /// Firmware version
     pub version: SemanticVersion,
-    
+
     // Core Motion
     pub max_axes: u8,
     pub arc_support: bool,
     pub inverse_time_feed: bool,
     pub feed_per_revolution: bool,
-    
+
     // Spindle
     pub variable_spindle: bool,
     pub spindle_direction: bool,
     pub spindle_css: bool,
-    
+
     // Tool Management
     pub tool_change: bool,
     pub tool_length_offset: bool,
     pub tool_diameter_offset: bool,
-    
+
     // Probing
     pub probing: bool,
     pub probe_away: bool,
-    
+
     // Coolant
     pub coolant_control: bool,
     pub mist_control: bool,
-    
+
     // Homing
     pub homing_cycle: bool,
     pub soft_homing: bool,
     pub hard_homing: bool,
-    
+
     // Offsets
     pub coordinate_systems: u8,
     pub local_offsets: bool,
     pub cutter_radius_compensation: bool,
-    
+
     // Advanced
     pub macro_support: bool,
     pub conditional_blocks: bool,
     pub variable_support: bool,
-    
+
     // Communication
     pub status_reports: bool,
     pub realtime_commands: bool,
     pub flow_control: bool,
-    
+
     // Safety
     pub soft_limits: bool,
     pub hard_limits: bool,
     pub alarm_conditions: bool,
     pub door_interlock: bool,
-    
+
     // Custom capabilities
     pub custom: HashMap<String, bool>,
 }
@@ -142,7 +142,7 @@ impl FirmwareCapabilities {
             custom: HashMap::new(),
         }
     }
-    
+
     /// Check if a capability is supported
     pub fn supports(&self, capability: &str) -> bool {
         match capability {
@@ -174,21 +174,22 @@ impl CapabilitiesDatabase {
         let mut db = Self {
             database: HashMap::new(),
         };
-        
+
         // Initialize with built-in firmware profiles
         db.init_grbl_profiles();
         db.init_tinyg_profiles();
         db.init_g2core_profiles();
         db.init_smoothieware_profiles();
         db.init_fluidnc_profiles();
-        
+
         db
     }
-    
+
     /// Initialize GRBL capability profiles
     fn init_grbl_profiles(&mut self) {
         // GRBL 0.9
-        let mut grbl_0_9 = FirmwareCapabilities::new(FirmwareType::Grbl, SemanticVersion::new(0, 9, 0));
+        let mut grbl_0_9 =
+            FirmwareCapabilities::new(FirmwareType::Grbl, SemanticVersion::new(0, 9, 0));
         grbl_0_9.max_axes = 3;
         grbl_0_9.variable_spindle = true;
         grbl_0_9.spindle_direction = true;
@@ -196,10 +197,12 @@ impl CapabilitiesDatabase {
         grbl_0_9.soft_homing = true;
         grbl_0_9.soft_limits = true;
         grbl_0_9.alarm_conditions = true;
-        self.database.insert((FirmwareType::Grbl, "0.9".to_string()), grbl_0_9);
-        
+        self.database
+            .insert((FirmwareType::Grbl, "0.9".to_string()), grbl_0_9);
+
         // GRBL 1.0
-        let mut grbl_1_0 = FirmwareCapabilities::new(FirmwareType::Grbl, SemanticVersion::new(1, 0, 0));
+        let mut grbl_1_0 =
+            FirmwareCapabilities::new(FirmwareType::Grbl, SemanticVersion::new(1, 0, 0));
         grbl_1_0.max_axes = 3;
         grbl_1_0.arc_support = true;
         grbl_1_0.variable_spindle = true;
@@ -212,10 +215,12 @@ impl CapabilitiesDatabase {
         grbl_1_0.soft_limits = true;
         grbl_1_0.alarm_conditions = true;
         grbl_1_0.flow_control = true;
-        self.database.insert((FirmwareType::Grbl, "1.0".to_string()), grbl_1_0);
-        
+        self.database
+            .insert((FirmwareType::Grbl, "1.0".to_string()), grbl_1_0);
+
         // GRBL 1.1
-        let mut grbl_1_1 = FirmwareCapabilities::new(FirmwareType::Grbl, SemanticVersion::new(1, 1, 0));
+        let mut grbl_1_1 =
+            FirmwareCapabilities::new(FirmwareType::Grbl, SemanticVersion::new(1, 1, 0));
         grbl_1_1.max_axes = 3;
         grbl_1_1.arc_support = true;
         grbl_1_1.variable_spindle = true;
@@ -234,10 +239,12 @@ impl CapabilitiesDatabase {
         grbl_1_1.status_reports = true;
         grbl_1_1.realtime_commands = true;
         grbl_1_1.flow_control = true;
-        self.database.insert((FirmwareType::Grbl, "1.1".to_string()), grbl_1_1);
-        
+        self.database
+            .insert((FirmwareType::Grbl, "1.1".to_string()), grbl_1_1);
+
         // GRBL 1.2
-        let mut grbl_1_2 = FirmwareCapabilities::new(FirmwareType::Grbl, SemanticVersion::new(1, 2, 0));
+        let mut grbl_1_2 =
+            FirmwareCapabilities::new(FirmwareType::Grbl, SemanticVersion::new(1, 2, 0));
         grbl_1_2.max_axes = 3;
         grbl_1_2.arc_support = true;
         grbl_1_2.variable_spindle = true;
@@ -256,10 +263,12 @@ impl CapabilitiesDatabase {
         grbl_1_2.status_reports = true;
         grbl_1_2.realtime_commands = true;
         grbl_1_2.flow_control = true;
-        self.database.insert((FirmwareType::Grbl, "1.2".to_string()), grbl_1_2);
-        
+        self.database
+            .insert((FirmwareType::Grbl, "1.2".to_string()), grbl_1_2);
+
         // GRBL 1.3
-        let mut grbl_1_3 = FirmwareCapabilities::new(FirmwareType::Grbl, SemanticVersion::new(1, 3, 0));
+        let mut grbl_1_3 =
+            FirmwareCapabilities::new(FirmwareType::Grbl, SemanticVersion::new(1, 3, 0));
         grbl_1_3.max_axes = 3;
         grbl_1_3.arc_support = true;
         grbl_1_3.variable_spindle = true;
@@ -278,12 +287,14 @@ impl CapabilitiesDatabase {
         grbl_1_3.status_reports = true;
         grbl_1_3.realtime_commands = true;
         grbl_1_3.flow_control = true;
-        self.database.insert((FirmwareType::Grbl, "1.3".to_string()), grbl_1_3);
+        self.database
+            .insert((FirmwareType::Grbl, "1.3".to_string()), grbl_1_3);
     }
-    
+
     /// Initialize TinyG capability profiles
     fn init_tinyg_profiles(&mut self) {
-        let mut tinyg = FirmwareCapabilities::new(FirmwareType::TinyG, SemanticVersion::new(2, 0, 0));
+        let mut tinyg =
+            FirmwareCapabilities::new(FirmwareType::TinyG, SemanticVersion::new(2, 0, 0));
         tinyg.max_axes = 4;
         tinyg.arc_support = true;
         tinyg.inverse_time_feed = true;
@@ -313,12 +324,14 @@ impl CapabilitiesDatabase {
         tinyg.hard_limits = true;
         tinyg.alarm_conditions = true;
         tinyg.door_interlock = true;
-        self.database.insert((FirmwareType::TinyG, "2.0".to_string()), tinyg);
+        self.database
+            .insert((FirmwareType::TinyG, "2.0".to_string()), tinyg);
     }
-    
+
     /// Initialize g2core capability profiles
     fn init_g2core_profiles(&mut self) {
-        let mut g2core = FirmwareCapabilities::new(FirmwareType::G2Core, SemanticVersion::new(3, 0, 0));
+        let mut g2core =
+            FirmwareCapabilities::new(FirmwareType::G2Core, SemanticVersion::new(3, 0, 0));
         g2core.max_axes = 6;
         g2core.arc_support = true;
         g2core.inverse_time_feed = true;
@@ -349,12 +362,14 @@ impl CapabilitiesDatabase {
         g2core.hard_limits = true;
         g2core.alarm_conditions = true;
         g2core.door_interlock = true;
-        self.database.insert((FirmwareType::G2Core, "3.0".to_string()), g2core);
+        self.database
+            .insert((FirmwareType::G2Core, "3.0".to_string()), g2core);
     }
-    
+
     /// Initialize Smoothieware capability profiles
     fn init_smoothieware_profiles(&mut self) {
-        let mut smoothieware = FirmwareCapabilities::new(FirmwareType::Smoothieware, SemanticVersion::new(1, 0, 0));
+        let mut smoothieware =
+            FirmwareCapabilities::new(FirmwareType::Smoothieware, SemanticVersion::new(1, 0, 0));
         smoothieware.max_axes = 5;
         smoothieware.arc_support = true;
         smoothieware.inverse_time_feed = true;
@@ -385,12 +400,16 @@ impl CapabilitiesDatabase {
         smoothieware.hard_limits = true;
         smoothieware.alarm_conditions = true;
         smoothieware.door_interlock = true;
-        self.database.insert((FirmwareType::Smoothieware, "1.0".to_string()), smoothieware);
+        self.database.insert(
+            (FirmwareType::Smoothieware, "1.0".to_string()),
+            smoothieware,
+        );
     }
-    
+
     /// Initialize FluidNC capability profiles
     fn init_fluidnc_profiles(&mut self) {
-        let mut fluidnc = FirmwareCapabilities::new(FirmwareType::FluidNC, SemanticVersion::new(3, 0, 0));
+        let mut fluidnc =
+            FirmwareCapabilities::new(FirmwareType::FluidNC, SemanticVersion::new(3, 0, 0));
         fluidnc.max_axes = 9;
         fluidnc.arc_support = true;
         fluidnc.inverse_time_feed = true;
@@ -421,9 +440,10 @@ impl CapabilitiesDatabase {
         fluidnc.hard_limits = true;
         fluidnc.alarm_conditions = true;
         fluidnc.door_interlock = true;
-        self.database.insert((FirmwareType::FluidNC, "3.0".to_string()), fluidnc);
+        self.database
+            .insert((FirmwareType::FluidNC, "3.0".to_string()), fluidnc);
     }
-    
+
     /// Get capabilities for a specific firmware type and version
     pub fn get_capabilities(
         &self,
@@ -435,20 +455,19 @@ impl CapabilitiesDatabase {
         if let Some(caps) = self.database.get(&(firmware_type, version_key)) {
             return Some(caps.clone());
         }
-        
+
         // Try major.minor matching (ignore patch)
         for (key, caps) in &self.database {
-            if key.0 == firmware_type {
-                if caps.version.major == version.major && caps.version.minor == version.minor {
+            if key.0 == firmware_type
+                && caps.version.major == version.major && caps.version.minor == version.minor {
                     return Some(caps.clone());
                 }
-            }
         }
-        
+
         // Return None if not found
         None
     }
-    
+
     /// Check if a specific firmware supports a capability
     pub fn supports_capability(
         &self,
@@ -462,7 +481,7 @@ impl CapabilitiesDatabase {
             false
         }
     }
-    
+
     /// Get list of all supported firmware types
     pub fn supported_firmware_types(&self) -> Vec<FirmwareType> {
         let mut types: Vec<_> = self.database.keys().map(|(t, _)| *t).collect();
@@ -470,7 +489,7 @@ impl CapabilitiesDatabase {
         types.dedup();
         types
     }
-    
+
     /// Register custom capabilities for a firmware version
     pub fn register_custom(
         &mut self,
@@ -479,7 +498,8 @@ impl CapabilitiesDatabase {
     ) {
         caps.custom = custom_caps;
         let version_key = format!("{}.{}", caps.version.major, caps.version.minor);
-        self.database.insert((caps.firmware_type, version_key), caps);
+        self.database
+            .insert((caps.firmware_type, version_key), caps);
     }
 }
 
@@ -609,16 +629,8 @@ mod tests {
     fn test_supports_capability() {
         let db = CapabilitiesDatabase::new();
 
-        assert!(db.supports_capability(
-            FirmwareType::Grbl,
-            &SemanticVersion::new(1, 1, 0),
-            "arc"
-        ));
-        assert!(!db.supports_capability(
-            FirmwareType::Grbl,
-            &SemanticVersion::new(0, 9, 0),
-            "arc"
-        ));
+        assert!(db.supports_capability(FirmwareType::Grbl, &SemanticVersion::new(1, 1, 0), "arc"));
+        assert!(!db.supports_capability(FirmwareType::Grbl, &SemanticVersion::new(0, 9, 0), "arc"));
     }
 
     #[test]

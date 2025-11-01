@@ -90,8 +90,12 @@ impl QuadtreeNode {
         }
 
         let (cx, cy) = self.bounds.center();
-        let (min_x, min_y, max_x, max_y) =
-            (self.bounds.min_x, self.bounds.min_y, self.bounds.max_x, self.bounds.max_y);
+        let (min_x, min_y, max_x, max_y) = (
+            self.bounds.min_x,
+            self.bounds.min_y,
+            self.bounds.max_x,
+            self.bounds.max_y,
+        );
 
         let mut children = Box::new([
             QuadtreeNode::new_leaf(Bounds::new(min_x, min_y, cx, cy)),
@@ -145,11 +149,10 @@ fn insert_into_node(
             let children = node.children.as_mut().unwrap();
             // Insert into only the children that intersect with the item bounds
             for child in children.iter_mut() {
-                if child.bounds.intersects(bounds) {
-                    if !child.items.contains(&item_idx) {
+                if child.bounds.intersects(bounds)
+                    && !child.items.contains(&item_idx) {
                         child.items.push(item_idx);
                     }
-                }
             }
         }
     }
@@ -205,7 +208,13 @@ impl SpatialIndex {
 
     /// Insert item at given bounds
     pub fn insert(&mut self, index: usize, item_bounds: &Bounds) {
-        insert_into_node(&mut self.root, index, item_bounds, self.max_depth, self.max_items_per_node);
+        insert_into_node(
+            &mut self.root,
+            index,
+            item_bounds,
+            self.max_depth,
+            self.max_items_per_node,
+        );
     }
 
     /// Query items in given bounds
@@ -290,11 +299,7 @@ pub struct SpatialIndexStats {
 
 impl Default for SpatialIndex {
     fn default() -> Self {
-        Self::new(
-            Bounds::new(-1000.0, -1000.0, 1000.0, 1000.0),
-            8,
-            16,
-        )
+        Self::new(Bounds::new(-1000.0, -1000.0, 1000.0, 1000.0), 8, 16)
     }
 }
 
@@ -342,21 +347,13 @@ mod tests {
 
     #[test]
     fn test_spatial_index_creation() {
-        let index = SpatialIndex::new(
-            Bounds::new(-100.0, -100.0, 100.0, 100.0),
-            8,
-            16,
-        );
+        let index = SpatialIndex::new(Bounds::new(-100.0, -100.0, 100.0, 100.0), 8, 16);
         assert_eq!(index.root.items.len(), 0);
     }
 
     #[test]
     fn test_spatial_index_insert_and_query() {
-        let mut index = SpatialIndex::new(
-            Bounds::new(-100.0, -100.0, 100.0, 100.0),
-            8,
-            16,
-        );
+        let mut index = SpatialIndex::new(Bounds::new(-100.0, -100.0, 100.0, 100.0), 8, 16);
 
         let bounds1 = Bounds::new(0.0, 0.0, 10.0, 10.0);
         let bounds2 = Bounds::new(5.0, 5.0, 15.0, 15.0);
@@ -370,11 +367,7 @@ mod tests {
 
     #[test]
     fn test_spatial_index_query_point() {
-        let mut index = SpatialIndex::new(
-            Bounds::new(-100.0, -100.0, 100.0, 100.0),
-            8,
-            16,
-        );
+        let mut index = SpatialIndex::new(Bounds::new(-100.0, -100.0, 100.0, 100.0), 8, 16);
 
         let bounds = Bounds::new(0.0, 0.0, 10.0, 10.0);
         index.insert(0, &bounds);
@@ -389,11 +382,7 @@ mod tests {
 
     #[test]
     fn test_spatial_index_clear() {
-        let mut index = SpatialIndex::new(
-            Bounds::new(-100.0, -100.0, 100.0, 100.0),
-            8,
-            16,
-        );
+        let mut index = SpatialIndex::new(Bounds::new(-100.0, -100.0, 100.0, 100.0), 8, 16);
 
         let bounds = Bounds::new(0.0, 0.0, 10.0, 10.0);
         index.insert(0, &bounds);
@@ -405,11 +394,7 @@ mod tests {
 
     #[test]
     fn test_spatial_index_stats() {
-        let mut index = SpatialIndex::new(
-            Bounds::new(-100.0, -100.0, 100.0, 100.0),
-            8,
-            16,
-        );
+        let mut index = SpatialIndex::new(Bounds::new(-100.0, -100.0, 100.0, 100.0), 8, 16);
 
         for i in 0..20 {
             let bounds = Bounds::new(
@@ -428,11 +413,7 @@ mod tests {
 
     #[test]
     fn test_spatial_index_stress() {
-        let mut index = SpatialIndex::new(
-            Bounds::new(-10000.0, -10000.0, 10000.0, 10000.0),
-            8,
-            16,
-        );
+        let mut index = SpatialIndex::new(Bounds::new(-10000.0, -10000.0, 10000.0, 10000.0), 8, 16);
 
         // Insert 1000 shapes
         for i in 0..1000 {

@@ -74,11 +74,10 @@ impl DeviceConsoleManager {
             DeviceMessageType::Command => MessageLevel::Info,
         };
 
-        if msg_type == DeviceMessageType::Verbose {
-            if !*self.verbose_enabled.lock().unwrap() {
+        if msg_type == DeviceMessageType::Verbose
+            && !*self.verbose_enabled.lock().unwrap() {
                 return;
             }
-        }
 
         let mut console = self.console.lock().unwrap();
         if msg_type == DeviceMessageType::Command {

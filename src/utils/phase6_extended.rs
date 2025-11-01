@@ -332,7 +332,7 @@ impl WorkCoordinateSystem {
 
     /// Select system
     pub fn select_system(&mut self, system: u32) -> Result<()> {
-        if system < 1 || system > 9 {
+        if !(1..=9).contains(&system) {
             return Err(anyhow::anyhow!("Invalid WCS system: {}", system));
         }
         self.current_system = system;

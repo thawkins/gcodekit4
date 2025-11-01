@@ -4,7 +4,7 @@
 //! search, filtering, and library management.
 
 use gcodekit4::designer::{
-    DesignTemplate, DesignTemplateLibrary, TemplateCategory, TemplatePersistence, TemplateManager,
+    DesignTemplate, DesignTemplateLibrary, TemplateCategory, TemplateManager, TemplatePersistence,
 };
 use tempfile::TempDir;
 
@@ -74,7 +74,9 @@ fn test_design_template_metadata() {
     assert!(template.thumbnail.is_some());
     assert_eq!(template.thumbnail.unwrap(), "base64-encoded-image");
 
-    template.metadata.insert("brand".to_string(), "Precision Tools".to_string());
+    template
+        .metadata
+        .insert("brand".to_string(), "Precision Tools".to_string());
     assert_eq!(template.metadata.get("brand").unwrap(), "Precision Tools");
 }
 
@@ -375,22 +377,12 @@ fn test_design_template_library_advanced_search() {
     library.add_template(t2).ok();
 
     // Search by category only
-    let results = library.search_advanced(
-        None,
-        Some(TemplateCategory::Mechanical),
-        None,
-        false,
-    );
+    let results = library.search_advanced(None, Some(TemplateCategory::Mechanical), None, false);
     assert_eq!(results.len(), 1);
     assert_eq!(results[0].id, "tmpl-1");
 
     // Search by favorites only
-    let results = library.search_advanced(
-        None,
-        None,
-        None,
-        true,
-    );
+    let results = library.search_advanced(None, None, None, true);
     assert_eq!(results.len(), 1);
     assert_eq!(results[0].id, "tmpl-2");
 

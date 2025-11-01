@@ -304,7 +304,7 @@ impl SafetyDiagnosticsPanel {
     pub fn get_summary(&self) -> String {
         let mut summary = String::new();
 
-        summary.push_str(&format!("Safety Status:\n"));
+        summary.push_str(&"Safety Status:\n".to_string());
         summary.push_str(&format!("  E-Stop: {}\n", self.estop_state));
         summary.push_str(&format!(
             "  Motion: {}\n",
@@ -323,7 +323,7 @@ impl SafetyDiagnosticsPanel {
             }
         ));
 
-        summary.push_str(&format!("\nDiagnostics:\n"));
+        summary.push_str(&"\nDiagnostics:\n".to_string());
         summary.push_str(&format!(
             "  Comm: {} ({}% errors in 1min)\n",
             if self.comm_diagnostics.connected {

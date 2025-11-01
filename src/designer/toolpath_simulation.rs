@@ -3,8 +3,8 @@
 //! Provides simulation capabilities for previewing toolpath execution,
 //! estimating machining time, and detecting potential collisions.
 
-use super::toolpath::{Toolpath, ToolpathSegmentType};
 use super::shapes::Point;
+use super::toolpath::{Toolpath, ToolpathSegmentType};
 
 /// Simulation state of a toolpath.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -41,7 +41,13 @@ pub struct ToolPosition {
 
 impl ToolPosition {
     /// Creates a new tool position.
-    pub fn new(position: Point, depth: f64, spindle_speed: u32, feed_rate: f64, timestamp: f64) -> Self {
+    pub fn new(
+        position: Point,
+        depth: f64,
+        spindle_speed: u32,
+        feed_rate: f64,
+        timestamp: f64,
+    ) -> Self {
         Self {
             position,
             depth,

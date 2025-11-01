@@ -202,14 +202,14 @@ impl KeyboardManager {
     /// Get binding for action
     pub fn get_binding(&self, action: &KeyboardAction) -> Option<KeyBinding> {
         // Check custom bindings first
-        for (_, binding) in &self.custom_bindings {
+        for binding in self.custom_bindings.values() {
             if &binding.action == action {
                 return Some(binding.clone());
             }
         }
 
         // Fall back to defaults
-        for (_, binding) in &self.bindings {
+        for binding in self.bindings.values() {
             if &binding.action == action {
                 return Some(binding.clone());
             }
@@ -221,14 +221,14 @@ impl KeyboardManager {
     /// Get action for key combination
     pub fn get_action(&self, key: &str, modifiers: KeyModifiers) -> Option<KeyboardAction> {
         // Check custom bindings first
-        for (_, binding) in &self.custom_bindings {
+        for binding in self.custom_bindings.values() {
             if binding.key == key && binding.modifiers == modifiers {
                 return Some(binding.action.clone());
             }
         }
 
         // Fall back to defaults
-        for (_, binding) in &self.bindings {
+        for binding in self.bindings.values() {
             if binding.key == key && binding.modifiers == modifiers {
                 return Some(binding.action.clone());
             }

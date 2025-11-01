@@ -246,7 +246,10 @@ impl DxfFile {
         let layer = entity.layer().to_string();
         self.entities.push(entity.clone());
 
-        self.layers.entry(layer).or_insert_with(Vec::new).push(entity);
+        self.layers
+            .entry(layer)
+            .or_default()
+            .push(entity);
     }
 
     /// Get all entities in a layer
@@ -441,7 +444,11 @@ impl DxfParser {
     /// Parse a POLYLINE entity
     fn parse_polyline(_lines: &[&str], _index: &mut usize) -> Result<DxfPolyline> {
         Ok(DxfPolyline {
-            vertices: vec![Point::new(0.0, 0.0), Point::new(10.0, 0.0), Point::new(10.0, 10.0)],
+            vertices: vec![
+                Point::new(0.0, 0.0),
+                Point::new(10.0, 0.0),
+                Point::new(10.0, 10.0),
+            ],
             closed: false,
             layer: "0".to_string(),
             color: 256,

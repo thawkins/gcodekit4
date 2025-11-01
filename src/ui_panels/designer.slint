@@ -183,6 +183,30 @@ export component DesignerPanel inherits VerticalBox {
                 clicked => { set_mode(3); }
             }
             
+            ToolButton {
+                tool_id: 4;
+                current_mode: designer_state.mode;
+                icon_text: "◯";
+                tooltip: "Ellipse (E)";
+                clicked => { set_mode(4); }
+            }
+            
+            ToolButton {
+                tool_id: 5;
+                current_mode: designer_state.mode;
+                icon_text: "⬠";
+                tooltip: "Polygon (P)";
+                clicked => { set_mode(5); }
+            }
+            
+            ToolButton {
+                tool_id: 6;
+                current_mode: designer_state.mode;
+                icon_text: "⬛";
+                tooltip: "Round Rectangle (U)";
+                clicked => { set_mode(6); }
+            }
+            
             VerticalBox { } // Spacer
             
             // View Controls
@@ -359,6 +383,9 @@ export component DesignerPanel inherits VerticalBox {
                                         designer_state.mode == 1 ? crosshair :
                                         designer_state.mode == 2 ? crosshair :
                                         designer_state.mode == 3 ? crosshair :
+                                        designer_state.mode == 4 ? crosshair :
+                                        designer_state.mode == 5 ? crosshair :
+                                        designer_state.mode == 6 ? crosshair :
                                         default;
                                     
                                     clicked => {
@@ -449,7 +476,10 @@ export component DesignerPanel inherits VerticalBox {
                         text: "Canvas - " + shapes.length + " shapes | Mode: " + 
                               (designer_state.mode == 0 ? "Select" :
                                designer_state.mode == 1 ? "Rectangle" :
-                               designer_state.mode == 2 ? "Circle" : "Line");
+                               designer_state.mode == 2 ? "Circle" :
+                               designer_state.mode == 3 ? "Line" :
+                               designer_state.mode == 4 ? "Ellipse" :
+                               designer_state.mode == 5 ? "Polygon" : "Round Rectangle");
                         font-size: 11px;
                     }
                 }

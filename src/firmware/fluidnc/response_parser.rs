@@ -3,7 +3,6 @@
 //! Parses responses from FluidNC firmware including status reports,
 //! errors, and standard responses.
 
-
 /// Parsed FluidNC response
 #[derive(Debug, Clone, PartialEq)]
 pub enum FluidNCResponse {
@@ -45,7 +44,6 @@ impl FluidNCResponseParser {
         if line.is_empty() {
             return None;
         }
-
 
         // Check for acknowledgment
         if line == "ok" || line == "OK" {

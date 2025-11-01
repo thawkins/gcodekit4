@@ -13,7 +13,7 @@
 //! - Scale and offset adjustment
 
 use crate::designer::shapes::Shape;
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 
 /// Represents an imported design from a file
 #[derive(Debug)]
@@ -65,9 +65,9 @@ impl SvgImporter {
     /// # Returns
     /// Imported design with converted shapes
     pub fn import_file(&self, path: &str) -> Result<ImportedDesign> {
-        let _content = std::fs::read_to_string(path)
-            .map_err(|e| anyhow!("Failed to read SVG file: {}", e))?;
-        
+        let _content =
+            std::fs::read_to_string(path).map_err(|e| anyhow!("Failed to read SVG file: {}", e))?;
+
         // For now, return empty design
         // Full implementation will parse and extract shapes
         Ok(ImportedDesign {
@@ -125,9 +125,8 @@ impl DxfImporter {
     /// # Returns
     /// Imported design with converted shapes
     pub fn import_file(&self, path: &str) -> Result<ImportedDesign> {
-        let _data = std::fs::read(path)
-            .map_err(|e| anyhow!("Failed to read DXF file: {}", e))?;
-        
+        let _data = std::fs::read(path).map_err(|e| anyhow!("Failed to read DXF file: {}", e))?;
+
         // For now, return empty design
         // Full implementation will parse DXF and extract entities
         Ok(ImportedDesign {
@@ -177,7 +176,7 @@ mod tests {
     fn test_svg_import_framework() {
         let importer = SvgImporter::new(1.0, 0.0, 0.0);
         let result = importer.import_string("<svg></svg>");
-        
+
         assert!(result.is_ok());
         let design = result.unwrap();
         assert_eq!(design.format, FileFormat::Svg);
@@ -187,7 +186,7 @@ mod tests {
     fn test_dxf_import_framework() {
         let importer = DxfImporter::new(1.0, 0.0, 0.0);
         let result = importer.import_bytes(b"");
-        
+
         assert!(result.is_ok());
         let design = result.unwrap();
         assert_eq!(design.format, FileFormat::Dxf);

@@ -12,8 +12,8 @@
 //! - Template library storage
 //! - Generator functions for shape creation
 
-use std::collections::HashMap;
 use anyhow::Result;
+use std::collections::HashMap;
 
 /// Parameter types for parametric design
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -66,7 +66,10 @@ impl ParameterConstraint {
 
     /// Check if constraint is valid
     pub fn is_valid(&self) -> bool {
-        self.min <= self.max && self.default >= self.min && self.default <= self.max && self.step > 0.0
+        self.min <= self.max
+            && self.default >= self.min
+            && self.default <= self.max
+            && self.step > 0.0
     }
 }
 
@@ -248,7 +251,10 @@ impl TemplateLibrary {
     /// Add template to library
     pub fn add_template(&mut self, template: ParametricTemplate) -> Result<()> {
         if self.templates.contains_key(&template.id) {
-            return Err(anyhow::anyhow!("Template with ID {} already exists", template.id));
+            return Err(anyhow::anyhow!(
+                "Template with ID {} already exists",
+                template.id
+            ));
         }
         self.templates.insert(template.id.clone(), template);
         Ok(())
@@ -293,10 +299,7 @@ pub struct ParametricGenerator;
 
 impl ParametricGenerator {
     /// Validate all parameters against template
-    pub fn validate_all(
-        template: &ParametricTemplate,
-        params: &ParameterSet,
-    ) -> Result<()> {
+    pub fn validate_all(template: &ParametricTemplate, params: &ParameterSet) -> Result<()> {
         for param in &template.parameters {
             if let Some(value) = params.get(&param.name) {
                 if !param.validate(value) {
@@ -344,7 +347,7 @@ mod tests {
     #[test]
     fn test_parameter_constraint_validation() {
         let constraint = ParameterConstraint::new(0.0, 100.0, 50.0, 1.0);
-        
+
         assert!(constraint.validate(50.0));
         assert!(constraint.validate(0.0));
         assert!(constraint.validate(100.0));
@@ -355,7 +358,7 @@ mod tests {
     #[test]
     fn test_parameter_constraint_clamping() {
         let constraint = ParameterConstraint::new(0.0, 100.0, 50.0, 1.0);
-        
+
         assert_eq!(constraint.clamp(50.0), 50.0);
         assert_eq!(constraint.clamp(150.0), 100.0);
         assert_eq!(constraint.clamp(-50.0), 0.0);
@@ -386,10 +389,10 @@ mod tests {
     #[test]
     fn test_parameter_set_values() {
         let mut set = ParameterSet::new("template1".to_string());
-        
+
         let _ = set.set("width", 100.0);
         let _ = set.set("height", 50.0);
-        
+
         assert_eq!(set.get("width"), Some(100.0));
         assert_eq!(set.get("height"), Some(50.0));
         assert_eq!(set.param_count(), 2);

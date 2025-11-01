@@ -131,10 +131,7 @@ impl Parameter {
                 Ok(())
             }
             (ParameterValue::Boolean(_), ParameterValue::Boolean(_)) => Ok(()),
-            _ => Err(format!(
-                "Type mismatch for parameter '{}'",
-                self.name
-            )),
+            _ => Err(format!("Type mismatch for parameter '{}'", self.name)),
         }
     }
 }
@@ -322,15 +319,23 @@ mod tests {
 
     #[test]
     fn test_parameter_string_choices() {
-        let param = Parameter::new("mode", "Mode", ParameterValue::String("contour".to_string()))
-            .with_choices(vec![
-                "contour".to_string(),
-                "pocket".to_string(),
-                "engrave".to_string(),
-            ]);
+        let param = Parameter::new(
+            "mode",
+            "Mode",
+            ParameterValue::String("contour".to_string()),
+        )
+        .with_choices(vec![
+            "contour".to_string(),
+            "pocket".to_string(),
+            "engrave".to_string(),
+        ]);
 
-        assert!(param.validate(&ParameterValue::String("pocket".to_string())).is_ok());
-        assert!(param.validate(&ParameterValue::String("invalid".to_string())).is_err());
+        assert!(param
+            .validate(&ParameterValue::String("pocket".to_string()))
+            .is_ok());
+        assert!(param
+            .validate(&ParameterValue::String("invalid".to_string()))
+            .is_err());
     }
 
     #[test]
@@ -343,7 +348,10 @@ mod tests {
         assert_eq!(output.gcode, "G0 X0 Y0\nG1 Z-5 F100");
         assert_eq!(output.estimated_time, Some(10.5));
         assert_eq!(output.warnings.len(), 1);
-        assert_eq!(output.metadata.get("operation"), Some(&"pocket".to_string()));
+        assert_eq!(
+            output.metadata.get("operation"),
+            Some(&"pocket".to_string())
+        );
     }
 
     #[test]

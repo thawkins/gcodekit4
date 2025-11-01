@@ -58,6 +58,7 @@ impl std::fmt::Display for CommandState {
 /// Captures the controller's response to a sent command,
 /// including any error messages or status information.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct CommandResponse {
     /// Whether the command was accepted/acknowledged
     pub success: bool,
@@ -69,16 +70,6 @@ pub struct CommandResponse {
     pub data: Option<String>,
 }
 
-impl Default for CommandResponse {
-    fn default() -> Self {
-        Self {
-            success: false,
-            message: String::new(),
-            error_code: None,
-            data: None,
-        }
-    }
-}
 
 /// Represents a parsed and tracked G-Code command
 ///
@@ -455,7 +446,7 @@ impl GcodeState {
     /// Set motion mode (G00, G01, G02, G03)
     pub fn set_motion_mode(&mut self, mode: u8) -> Result<(), String> {
         match mode {
-            0 | 1 | 2 | 3 => {
+            0..=3 => {
                 self.motion_mode = mode;
                 Ok(())
             }
@@ -466,7 +457,7 @@ impl GcodeState {
     /// Set plane mode (G17, G18, G19)
     pub fn set_plane_mode(&mut self, mode: u8) -> Result<(), String> {
         match mode {
-            17 | 18 | 19 => {
+            17..=19 => {
                 self.plane_mode = mode;
                 Ok(())
             }
@@ -488,7 +479,7 @@ impl GcodeState {
     /// Set feed rate mode (G93, G94, G95)
     pub fn set_feed_rate_mode(&mut self, mode: u8) -> Result<(), String> {
         match mode {
-            93 | 94 | 95 => {
+            93..=95 => {
                 self.feed_rate_mode = mode;
                 Ok(())
             }
@@ -532,7 +523,7 @@ impl GcodeState {
     /// Set cutter compensation mode (G40 off, G41 left, G42 right)
     pub fn set_compensation_mode(&mut self, mode: u8) -> Result<(), String> {
         match mode {
-            40 | 41 | 42 => {
+            40..=42 => {
                 self.compensation_mode = mode;
                 Ok(())
             }
@@ -565,16 +556,16 @@ impl GcodeState {
 
     /// Check if state is valid
     pub fn validate(&self) -> Result<(), String> {
-        if !matches!(self.motion_mode, 0 | 1 | 2 | 3) {
+        if !matches!(self.motion_mode, 0..=3) {
             return Err(format!("Invalid motion mode: {}", self.motion_mode));
         }
-        if !matches!(self.plane_mode, 17 | 18 | 19) {
+        if !matches!(self.plane_mode, 17..=19) {
             return Err(format!("Invalid plane mode: {}", self.plane_mode));
         }
         if !matches!(self.distance_mode, 90 | 91) {
             return Err(format!("Invalid distance mode: {}", self.distance_mode));
         }
-        if !matches!(self.feed_rate_mode, 93 | 94 | 95) {
+        if !matches!(self.feed_rate_mode, 93..=95) {
             return Err(format!("Invalid feed rate mode: {}", self.feed_rate_mode));
         }
         if !matches!(self.units_mode, 20 | 21) {
@@ -1035,7 +1026,6 @@ impl GcodeParser {
         let sequence = self.command_generator.next();
         let command = GcodeCommand::with_sequence(cleaned, sequence);
 
-
         // Update modal state
         self.update_modal_state(&command)?;
 
@@ -1072,7 +1062,6 @@ impl GcodeParser {
 
     /// Update modal state based on parsed command
     fn update_modal_state(&mut self, command: &GcodeCommand) -> Result<(), String> {
-
         let cmd_upper = command.command.to_uppercase();
 
         // Parse G-codes

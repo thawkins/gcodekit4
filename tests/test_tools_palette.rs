@@ -7,7 +7,10 @@ use gcodekit4::data::tools::*;
 #[test]
 fn test_tools_library_creation() {
     let library = init_standard_library();
-    assert!(library.len() >= 5, "Library should contain at least 5 tools");
+    assert!(
+        library.len() >= 5,
+        "Library should contain at least 5 tools"
+    );
 }
 
 #[test]
@@ -280,7 +283,11 @@ fn test_standard_tools_have_valid_params() {
     let library = init_standard_library();
 
     for tool in library.get_all_tools() {
-        assert!(tool.params.rpm > 0, "Tool {} should have non-zero RPM", tool.name);
+        assert!(
+            tool.params.rpm > 0,
+            "Tool {} should have non-zero RPM",
+            tool.name
+        );
         assert!(
             tool.params.feed_rate > 0.0,
             "Tool {} should have non-zero feed rate",
@@ -366,11 +373,21 @@ fn test_all_standard_tools_accessible() {
     let library = init_standard_library();
 
     // Check all known tools are present
-    assert!(library.get_tool(&ToolId("tool_1_4_flat".to_string())).is_some());
-    assert!(library.get_tool(&ToolId("tool_1_8_flat".to_string())).is_some());
-    assert!(library.get_tool(&ToolId("tool_vbit_90".to_string())).is_some());
-    assert!(library.get_tool(&ToolId("tool_drill_1_4".to_string())).is_some());
-    assert!(library.get_tool(&ToolId("tool_1_8_ball".to_string())).is_some());
+    assert!(library
+        .get_tool(&ToolId("tool_1_4_flat".to_string()))
+        .is_some());
+    assert!(library
+        .get_tool(&ToolId("tool_1_8_flat".to_string()))
+        .is_some());
+    assert!(library
+        .get_tool(&ToolId("tool_vbit_90".to_string()))
+        .is_some());
+    assert!(library
+        .get_tool(&ToolId("tool_drill_1_4".to_string()))
+        .is_some());
+    assert!(library
+        .get_tool(&ToolId("tool_1_8_ball".to_string()))
+        .is_some());
 }
 
 #[test]

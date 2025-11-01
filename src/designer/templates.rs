@@ -11,11 +11,11 @@
 //! - Community template sharing format
 //! - Template versioning and persistence
 
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use anyhow::{anyhow, Result};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
-use anyhow::{Result, anyhow};
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 
 /// Template categories for organizing designs
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -246,10 +246,7 @@ impl DesignTemplateLibrary {
 
     /// Get favorite templates
     pub fn list_favorites(&self) -> Vec<&DesignTemplate> {
-        self.templates
-            .values()
-            .filter(|t| t.is_favorite)
-            .collect()
+        self.templates.values().filter(|t| t.is_favorite).collect()
     }
 
     /// Search templates by query
@@ -320,10 +317,7 @@ impl DesignTemplateLibrary {
 
     /// Get categories in use
     pub fn get_categories(&self) -> Vec<TemplateCategory> {
-        let mut cats: Vec<TemplateCategory> = self.templates
-            .values()
-            .map(|t| t.category)
-            .collect();
+        let mut cats: Vec<TemplateCategory> = self.templates.values().map(|t| t.category).collect();
         cats.sort_by_key(|c| c.as_str());
         cats.dedup();
         cats
@@ -331,7 +325,8 @@ impl DesignTemplateLibrary {
 
     /// Get all tags in use
     pub fn get_all_tags(&self) -> Vec<String> {
-        let mut tags: Vec<String> = self.templates
+        let mut tags: Vec<String> = self
+            .templates
             .values()
             .flat_map(|t| t.tags.clone())
             .collect();
@@ -427,7 +422,8 @@ impl TemplateManager {
 
     /// Remove template and save
     pub fn remove_template(&mut self, id: &str) -> Result<()> {
-        self.library.remove_template(id)
+        self.library
+            .remove_template(id)
             .ok_or_else(|| anyhow!("Template not found"))?;
         self.save()?;
         Ok(())
@@ -473,7 +469,8 @@ impl TemplateManager {
         tags: Option<&[String]>,
         favorites_only: bool,
     ) -> Vec<&DesignTemplate> {
-        self.library.search_advanced(query, category, tags, favorites_only)
+        self.library
+            .search_advanced(query, category, tags, favorites_only)
     }
 
     /// Toggle favorite status
@@ -523,7 +520,10 @@ mod tests {
     #[test]
     fn test_template_category_conversion() {
         assert_eq!(TemplateCategory::Mechanical.as_str(), "mechanical");
-        assert_eq!(TemplateCategory::from_str("mechanical"), Some(TemplateCategory::Mechanical));
+        assert_eq!(
+            TemplateCategory::from_str("mechanical"),
+            Some(TemplateCategory::Mechanical)
+        );
         assert_eq!(TemplateCategory::from_str("invalid"), None);
     }
 
@@ -782,20 +782,11 @@ mod tests {
         library.add_template(t1).ok();
         library.add_template(t2).ok();
 
-        let results = library.search_advanced(
-            None,
-            Some(TemplateCategory::Mechanical),
-            None,
-            false,
-        );
+        let results =
+            library.search_advanced(None, Some(TemplateCategory::Mechanical), None, false);
         assert_eq!(results.len(), 1);
 
-        let results = library.search_advanced(
-            None,
-            None,
-            None,
-            true,
-        );
+        let results = library.search_advanced(None, None, None, true);
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].id, "tmpl-2");
     }

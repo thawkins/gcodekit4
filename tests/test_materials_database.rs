@@ -7,7 +7,10 @@ use gcodekit4::data::materials::*;
 #[test]
 fn test_materials_database_creation() {
     let library = init_standard_library();
-    assert!(library.len() >= 3, "Library should contain at least 3 materials");
+    assert!(
+        library.len() >= 3,
+        "Library should contain at least 3 materials"
+    );
 }
 
 #[test]
@@ -37,10 +40,16 @@ fn test_material_search_by_name() {
     assert!(!oak_results.is_empty(), "Should find oak materials");
 
     let aluminum_results = library.search_by_name("aluminum");
-    assert!(!aluminum_results.is_empty(), "Should find aluminum materials");
+    assert!(
+        !aluminum_results.is_empty(),
+        "Should find aluminum materials"
+    );
 
     let not_found = library.search_by_name("unobtainium");
-    assert!(not_found.is_empty(), "Should not find non-existent material");
+    assert!(
+        not_found.is_empty(),
+        "Should not find non-existent material"
+    );
 }
 
 #[test]

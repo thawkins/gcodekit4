@@ -4,7 +4,7 @@
 //! These are optimized for GRBL and include proper Z-axis movement,
 //! safe heights, and feed rate optimization.
 
-use super::{GcodeGenerator, GcodeOutput, Parameter, ParameterValue, BoundingBox};
+use super::{BoundingBox, GcodeGenerator, GcodeOutput, Parameter, ParameterValue};
 use std::collections::HashMap;
 
 /// Rectangle contour/pocket generator
@@ -37,9 +37,13 @@ impl GcodeGenerator for RectangleGenerator {
                 .with_description("Total depth to cut")
                 .with_range(0.1, 100.0)
                 .with_unit("mm"),
-            Parameter::new("mode", "Mode", ParameterValue::String("contour".to_string()))
-                .with_description("Cut mode (contour or pocket)")
-                .with_choices(vec!["contour".to_string(), "pocket".to_string()]),
+            Parameter::new(
+                "mode",
+                "Mode",
+                ParameterValue::String("contour".to_string()),
+            )
+            .with_description("Cut mode (contour or pocket)")
+            .with_choices(vec!["contour".to_string(), "pocket".to_string()]),
             Parameter::new("feed_rate", "Feed Rate", ParameterValue::Float(1000.0))
                 .with_description("Cutting feed rate")
                 .with_range(10.0, 10000.0)
@@ -92,28 +96,80 @@ impl GcodeGenerator for RectangleGenerator {
         gcode.push_str("G21           ; Metric units\n");
         gcode.push_str("G90           ; Absolute positioning\n");
         gcode.push_str(&format!("G0 Z{:.3}    ; Safe Z height\n", safe_z));
-        gcode.push_str(&format!("G0 X{:.3} Y{:.3}  ; Move to start\n", left + corner_radius, top - corner_radius));
+        gcode.push_str(&format!(
+            "G0 X{:.3} Y{:.3}  ; Move to start\n",
+            left + corner_radius,
+            top - corner_radius
+        ));
         gcode.push('\n');
 
         // Generate path
         match mode.as_str() {
             "contour" => {
                 gcode.push_str("; Contour cut\n");
-                gcode.push_str(&format!("G1 Z{:.3} F{:.0}  ; Plunge\n", -depth, plunge_rate));
-                gcode.push_str(&format!("G1 X{:.3} Y{:.3} F{:.0}  ; Bottom left corner\n", left + corner_radius, bottom + corner_radius, feed_rate));
-                gcode.push_str(&format!("G1 X{:.3} Y{:.3}  ; Bottom right corner\n", right - corner_radius, bottom + corner_radius));
-                gcode.push_str(&format!("G1 X{:.3} Y{:.3}  ; Top right corner\n", right - corner_radius, top - corner_radius));
-                gcode.push_str(&format!("G1 X{:.3} Y{:.3}  ; Top left corner\n", left + corner_radius, top - corner_radius));
-                gcode.push_str(&format!("G1 X{:.3} Y{:.3}  ; Back to start\n", left + corner_radius, top - corner_radius));
+                gcode.push_str(&format!(
+                    "G1 Z{:.3} F{:.0}  ; Plunge\n",
+                    -depth, plunge_rate
+                ));
+                gcode.push_str(&format!(
+                    "G1 X{:.3} Y{:.3} F{:.0}  ; Bottom left corner\n",
+                    left + corner_radius,
+                    bottom + corner_radius,
+                    feed_rate
+                ));
+                gcode.push_str(&format!(
+                    "G1 X{:.3} Y{:.3}  ; Bottom right corner\n",
+                    right - corner_radius,
+                    bottom + corner_radius
+                ));
+                gcode.push_str(&format!(
+                    "G1 X{:.3} Y{:.3}  ; Top right corner\n",
+                    right - corner_radius,
+                    top - corner_radius
+                ));
+                gcode.push_str(&format!(
+                    "G1 X{:.3} Y{:.3}  ; Top left corner\n",
+                    left + corner_radius,
+                    top - corner_radius
+                ));
+                gcode.push_str(&format!(
+                    "G1 X{:.3} Y{:.3}  ; Back to start\n",
+                    left + corner_radius,
+                    top - corner_radius
+                ));
             }
             "pocket" => {
                 gcode.push_str("; Pocket cut\n");
-                gcode.push_str(&format!("G1 Z{:.3} F{:.0}  ; Plunge\n", -depth, plunge_rate));
-                gcode.push_str(&format!("G1 X{:.3} Y{:.3} F{:.0}  ; Cut rectangle\n", left + corner_radius, bottom + corner_radius, feed_rate));
-                gcode.push_str(&format!("G1 X{:.3} Y{:.3}\n", right - corner_radius, bottom + corner_radius));
-                gcode.push_str(&format!("G1 X{:.3} Y{:.3}\n", right - corner_radius, top - corner_radius));
-                gcode.push_str(&format!("G1 X{:.3} Y{:.3}\n", left + corner_radius, top - corner_radius));
-                gcode.push_str(&format!("G1 X{:.3} Y{:.3}  ; Back to start\n", left + corner_radius, bottom + corner_radius));
+                gcode.push_str(&format!(
+                    "G1 Z{:.3} F{:.0}  ; Plunge\n",
+                    -depth, plunge_rate
+                ));
+                gcode.push_str(&format!(
+                    "G1 X{:.3} Y{:.3} F{:.0}  ; Cut rectangle\n",
+                    left + corner_radius,
+                    bottom + corner_radius,
+                    feed_rate
+                ));
+                gcode.push_str(&format!(
+                    "G1 X{:.3} Y{:.3}\n",
+                    right - corner_radius,
+                    bottom + corner_radius
+                ));
+                gcode.push_str(&format!(
+                    "G1 X{:.3} Y{:.3}\n",
+                    right - corner_radius,
+                    top - corner_radius
+                ));
+                gcode.push_str(&format!(
+                    "G1 X{:.3} Y{:.3}\n",
+                    left + corner_radius,
+                    top - corner_radius
+                ));
+                gcode.push_str(&format!(
+                    "G1 X{:.3} Y{:.3}  ; Back to start\n",
+                    left + corner_radius,
+                    bottom + corner_radius
+                ));
             }
             _ => return Err(format!("Unknown mode: {}", mode)),
         }
@@ -123,7 +179,14 @@ impl GcodeGenerator for RectangleGenerator {
         gcode.push_str("M2           ; Program end\n");
 
         let estimated_time = self.estimate_time(&gcode, feed_rate);
-        let bbox = BoundingBox::new(left - 1.0, right + 1.0, bottom - 1.0, top + 1.0, -depth, 0.0);
+        let bbox = BoundingBox::new(
+            left - 1.0,
+            right + 1.0,
+            bottom - 1.0,
+            top + 1.0,
+            -depth,
+            0.0,
+        );
 
         Ok(GcodeOutput::new(gcode)
             .with_time(estimated_time)
@@ -155,9 +218,13 @@ impl GcodeGenerator for CircleGenerator {
                 .with_description("Total depth to cut")
                 .with_range(0.1, 100.0)
                 .with_unit("mm"),
-            Parameter::new("mode", "Mode", ParameterValue::String("contour".to_string()))
-                .with_description("Cut mode (contour or pocket)")
-                .with_choices(vec!["contour".to_string(), "pocket".to_string()]),
+            Parameter::new(
+                "mode",
+                "Mode",
+                ParameterValue::String("contour".to_string()),
+            )
+            .with_description("Cut mode (contour or pocket)")
+            .with_choices(vec!["contour".to_string(), "pocket".to_string()]),
             Parameter::new("feed_rate", "Feed Rate", ParameterValue::Float(1000.0))
                 .with_description("Cutting feed rate")
                 .with_range(10.0, 10000.0)
@@ -202,21 +269,41 @@ impl GcodeGenerator for CircleGenerator {
         gcode.push_str("G21           ; Metric units\n");
         gcode.push_str("G90           ; Absolute positioning\n");
         gcode.push_str(&format!("G0 Z{:.3}    ; Safe Z height\n", safe_z));
-        gcode.push_str(&format!("G0 X{:.3} Y{:.3}  ; Move to circle edge\n", center_x + radius, center_y));
+        gcode.push_str(&format!(
+            "G0 X{:.3} Y{:.3}  ; Move to circle edge\n",
+            center_x + radius,
+            center_y
+        ));
         gcode.push('\n');
 
         match mode.as_str() {
             "contour" => {
                 gcode.push_str("; Contour cut\n");
-                gcode.push_str(&format!("G1 Z{:.3} F{:.0}  ; Plunge\n", -depth, plunge_rate));
-                gcode.push_str(&format!("G2 X{:.3} Y{:.3} I{:.3} J0 F{:.0}  ; Cut circle\n", 
-                    center_x + radius, center_y, -radius, feed_rate));
+                gcode.push_str(&format!(
+                    "G1 Z{:.3} F{:.0}  ; Plunge\n",
+                    -depth, plunge_rate
+                ));
+                gcode.push_str(&format!(
+                    "G2 X{:.3} Y{:.3} I{:.3} J0 F{:.0}  ; Cut circle\n",
+                    center_x + radius,
+                    center_y,
+                    -radius,
+                    feed_rate
+                ));
             }
             "pocket" => {
                 gcode.push_str("; Pocket cut\n");
-                gcode.push_str(&format!("G1 Z{:.3} F{:.0}  ; Plunge\n", -depth, plunge_rate));
-                gcode.push_str(&format!("G2 X{:.3} Y{:.3} I{:.3} J0 F{:.0}  ; Cut circle\n", 
-                    center_x + radius, center_y, -radius, feed_rate));
+                gcode.push_str(&format!(
+                    "G1 Z{:.3} F{:.0}  ; Plunge\n",
+                    -depth, plunge_rate
+                ));
+                gcode.push_str(&format!(
+                    "G2 X{:.3} Y{:.3} I{:.3} J0 F{:.0}  ; Cut circle\n",
+                    center_x + radius,
+                    center_y,
+                    -radius,
+                    feed_rate
+                ));
             }
             _ => return Err(format!("Unknown mode: {}", mode)),
         }
@@ -301,7 +388,10 @@ impl GcodeGenerator for LineGenerator {
 
         let mut gcode = String::new();
         gcode.push_str("; Line Generator\n");
-        gcode.push_str(&format!("; From ({:.1}, {:.1}) to ({:.1}, {:.1})\n", start_x, start_y, end_x, end_y));
+        gcode.push_str(&format!(
+            "; From ({:.1}, {:.1}) to ({:.1}, {:.1})\n",
+            start_x, start_y, end_x, end_y
+        ));
         gcode.push_str(&format!("; Depth: {} mm\n", depth));
         gcode.push('\n');
 
@@ -310,9 +400,18 @@ impl GcodeGenerator for LineGenerator {
         gcode.push_str("G21           ; Metric units\n");
         gcode.push_str("G90           ; Absolute positioning\n");
         gcode.push_str(&format!("G0 Z{:.3}    ; Safe Z height\n", safe_z));
-        gcode.push_str(&format!("G0 X{:.3} Y{:.3}  ; Move to start\n", start_x, start_y));
-        gcode.push_str(&format!("G1 Z{:.3} F{:.0}  ; Plunge\n", -depth, plunge_rate));
-        gcode.push_str(&format!("G1 X{:.3} Y{:.3} F{:.0}  ; Cut line\n", end_x, end_y, feed_rate));
+        gcode.push_str(&format!(
+            "G0 X{:.3} Y{:.3}  ; Move to start\n",
+            start_x, start_y
+        ));
+        gcode.push_str(&format!(
+            "G1 Z{:.3} F{:.0}  ; Plunge\n",
+            -depth, plunge_rate
+        ));
+        gcode.push_str(&format!(
+            "G1 X{:.3} Y{:.3} F{:.0}  ; Cut line\n",
+            end_x, end_y, feed_rate
+        ));
         gcode.push('\n');
         gcode.push_str(&format!("G0 Z{:.3}    ; Retract\n", safe_z));
         gcode.push_str("M2           ; Program end\n");
@@ -322,7 +421,14 @@ impl GcodeGenerator for LineGenerator {
         let max_x = start_x.max(end_x);
         let min_y = start_y.min(end_y);
         let max_y = start_y.max(end_y);
-        let bbox = BoundingBox::new(min_x - 1.0, max_x + 1.0, min_y - 1.0, max_y + 1.0, -depth, 0.0);
+        let bbox = BoundingBox::new(
+            min_x - 1.0,
+            max_x + 1.0,
+            min_y - 1.0,
+            max_y + 1.0,
+            -depth,
+            0.0,
+        );
 
         Ok(GcodeOutput::new(gcode)
             .with_time(estimated_time)
@@ -334,7 +440,11 @@ impl GcodeGenerator for LineGenerator {
 
 // Helper methods for generators
 impl RectangleGenerator {
-    fn get_float(&self, params: &HashMap<String, ParameterValue>, key: &str) -> Result<f64, String> {
+    fn get_float(
+        &self,
+        params: &HashMap<String, ParameterValue>,
+        key: &str,
+    ) -> Result<f64, String> {
         match params.get(key) {
             Some(ParameterValue::Float(v)) => Ok(*v),
             Some(ParameterValue::Integer(v)) => Ok(*v as f64),
@@ -342,7 +452,11 @@ impl RectangleGenerator {
         }
     }
 
-    fn get_string(&self, params: &HashMap<String, ParameterValue>, key: &str) -> Result<String, String> {
+    fn get_string(
+        &self,
+        params: &HashMap<String, ParameterValue>,
+        key: &str,
+    ) -> Result<String, String> {
         match params.get(key) {
             Some(ParameterValue::String(v)) => Ok(v.clone()),
             _ => Err(format!("Missing or invalid string parameter: {}", key)),
@@ -356,7 +470,11 @@ impl RectangleGenerator {
 }
 
 impl CircleGenerator {
-    fn get_float(&self, params: &HashMap<String, ParameterValue>, key: &str) -> Result<f64, String> {
+    fn get_float(
+        &self,
+        params: &HashMap<String, ParameterValue>,
+        key: &str,
+    ) -> Result<f64, String> {
         match params.get(key) {
             Some(ParameterValue::Float(v)) => Ok(*v),
             Some(ParameterValue::Integer(v)) => Ok(*v as f64),
@@ -364,7 +482,11 @@ impl CircleGenerator {
         }
     }
 
-    fn get_string(&self, params: &HashMap<String, ParameterValue>, key: &str) -> Result<String, String> {
+    fn get_string(
+        &self,
+        params: &HashMap<String, ParameterValue>,
+        key: &str,
+    ) -> Result<String, String> {
         match params.get(key) {
             Some(ParameterValue::String(v)) => Ok(v.clone()),
             _ => Err(format!("Missing or invalid string parameter: {}", key)),
@@ -377,7 +499,11 @@ impl CircleGenerator {
 }
 
 impl LineGenerator {
-    fn get_float(&self, params: &HashMap<String, ParameterValue>, key: &str) -> Result<f64, String> {
+    fn get_float(
+        &self,
+        params: &HashMap<String, ParameterValue>,
+        key: &str,
+    ) -> Result<f64, String> {
         match params.get(key) {
             Some(ParameterValue::Float(v)) => Ok(*v),
             Some(ParameterValue::Integer(v)) => Ok(*v as f64),
@@ -402,7 +528,10 @@ mod tests {
         params.insert("height".to_string(), ParameterValue::Float(80.0));
         params.insert("corner_radius".to_string(), ParameterValue::Float(0.0));
         params.insert("depth".to_string(), ParameterValue::Float(5.0));
-        params.insert("mode".to_string(), ParameterValue::String("contour".to_string()));
+        params.insert(
+            "mode".to_string(),
+            ParameterValue::String("contour".to_string()),
+        );
         params.insert("feed_rate".to_string(), ParameterValue::Float(1000.0));
         params.insert("plunge_rate".to_string(), ParameterValue::Float(500.0));
         params.insert("start_x".to_string(), ParameterValue::Float(0.0));
@@ -423,7 +552,10 @@ mod tests {
         let mut params = HashMap::new();
         params.insert("diameter".to_string(), ParameterValue::Float(50.0));
         params.insert("depth".to_string(), ParameterValue::Float(5.0));
-        params.insert("mode".to_string(), ParameterValue::String("contour".to_string()));
+        params.insert(
+            "mode".to_string(),
+            ParameterValue::String("contour".to_string()),
+        );
         params.insert("feed_rate".to_string(), ParameterValue::Float(1000.0));
         params.insert("plunge_rate".to_string(), ParameterValue::Float(500.0));
         params.insert("start_x".to_string(), ParameterValue::Float(0.0));

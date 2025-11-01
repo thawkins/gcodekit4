@@ -2,7 +2,6 @@
 //!
 //! Provides traits and implementations for managing feed rate, rapid, and spindle overrides.
 
-
 /// Override state
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct OverrideState {
@@ -116,7 +115,7 @@ impl Default for DefaultOverrideManager {
 
 impl OverrideManagerTrait for DefaultOverrideManager {
     fn set_feed_rate_override(&mut self, percentage: f64) -> anyhow::Result<()> {
-        if percentage < 0.0 || percentage > 200.0 {
+        if !(0.0..=200.0).contains(&percentage) {
             return Err(anyhow::anyhow!(
                 "Feed rate override must be between 0 and 200%, got {}",
                 percentage
@@ -140,7 +139,7 @@ impl OverrideManagerTrait for DefaultOverrideManager {
     }
 
     fn set_spindle_override(&mut self, percentage: f64) -> anyhow::Result<()> {
-        if percentage < 0.0 || percentage > 200.0 {
+        if !(0.0..=200.0).contains(&percentage) {
             return Err(anyhow::anyhow!(
                 "Spindle override must be between 0 and 200%, got {}",
                 percentage

@@ -523,7 +523,7 @@ impl I18nManager {
     ) {
         self.translations
             .entry(language)
-            .or_insert_with(HashMap::new)
+            .or_default()
             .insert(key.into(), value.into());
     }
 

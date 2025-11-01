@@ -420,7 +420,7 @@ impl SimulationMode {
             let dx = x - self.position.0;
             let dy = y - self.position.1;
             let dz = z - self.position.2;
-            let distance = ((dx * dx + dy * dy + dz * dz) as f32).sqrt();
+            let distance = ((dx * dx + dy * dy + dz * dz)).sqrt();
 
             self.distance_simulated += distance;
             self.position = (x, y, z);

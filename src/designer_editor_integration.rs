@@ -25,11 +25,7 @@ pub struct DesignExport {
 
 impl DesignExport {
     /// Create new design export
-    pub fn new(
-        name: String,
-        gcode: String,
-        parameters: ExportParameters,
-    ) -> Self {
+    pub fn new(name: String, gcode: String, parameters: ExportParameters) -> Self {
         let timestamp = chrono::Utc::now().to_rfc3339();
         Self {
             id: uuid::Uuid::new_v4().to_string(),
@@ -200,11 +196,8 @@ mod tests {
     #[test]
     fn test_design_export_creation() {
         let params = ExportParameters::default();
-        let export = DesignExport::new(
-            "Test Design".to_string(),
-            "G00 X0 Y0\n".to_string(),
-            params,
-        );
+        let export =
+            DesignExport::new("Test Design".to_string(), "G00 X0 Y0\n".to_string(), params);
 
         assert_eq!(export.name, "Test Design");
         assert_eq!(export.gcode_lines(), 1);
@@ -214,11 +207,7 @@ mod tests {
     fn test_integration_export_design() {
         let mut integration = DesignEditorIntegration::new();
         let params = ExportParameters::default();
-        let export = DesignExport::new(
-            "Test".to_string(),
-            "G-code here".to_string(),
-            params,
-        );
+        let export = DesignExport::new("Test".to_string(), "G-code here".to_string(), params);
 
         let export_id = integration.export_design(None, export);
         assert!(!export_id.is_empty());
@@ -267,11 +256,7 @@ mod tests {
     fn test_integration_delete_export() {
         let mut integration = DesignEditorIntegration::new();
         let params = ExportParameters::default();
-        let export = DesignExport::new(
-            "Test".to_string(),
-            "G-code".to_string(),
-            params,
-        );
+        let export = DesignExport::new("Test".to_string(), "G-code".to_string(), params);
 
         let export_id = integration.export_design(None, export);
         assert!(integration.get_export(&export_id).is_some());
@@ -290,11 +275,7 @@ mod tests {
             "G00 X0 Y0\nG01 X10 Y10\n".to_string(),
             params.clone(),
         );
-        let export2 = DesignExport::new(
-            "Design 2".to_string(),
-            "G00 X0 Y0\n".to_string(),
-            params,
-        );
+        let export2 = DesignExport::new("Design 2".to_string(), "G00 X0 Y0\n".to_string(), params);
 
         integration.export_design(None, export1);
         integration.export_design(None, export2);
@@ -309,11 +290,7 @@ mod tests {
         let mut integration = DesignEditorIntegration::new();
         let design_id = Some("design_123".to_string());
         let params = ExportParameters::default();
-        let export = DesignExport::new(
-            "Test".to_string(),
-            "G-code".to_string(),
-            params,
-        );
+        let export = DesignExport::new("Test".to_string(), "G-code".to_string(), params);
 
         integration.export_design(design_id.clone(), export);
 
@@ -335,11 +312,7 @@ mod tests {
     fn test_gcode_size() {
         let params = ExportParameters::default();
         let gcode = "G00 X0 Y0\nG01 X10 Y10\nM30\n".to_string();
-        let export = DesignExport::new(
-            "Test".to_string(),
-            gcode.clone(),
-            params,
-        );
+        let export = DesignExport::new("Test".to_string(), gcode.clone(), params);
 
         assert_eq!(export.gcode_size(), gcode.len());
     }

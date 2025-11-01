@@ -8,7 +8,9 @@ fn test_designer_state_complete_workflow() {
 
     // Add some shapes
     state.canvas.add_rectangle(0.0, 0.0, 50.0, 30.0);
-    state.canvas.add_circle(gcodekit4::Point::new(100.0, 100.0), 20.0);
+    state
+        .canvas
+        .add_circle(gcodekit4::Point::new(100.0, 100.0), 20.0);
     state.canvas.add_line(
         gcodekit4::Point::new(0.0, 0.0),
         gcodekit4::Point::new(100.0, 100.0),
@@ -82,12 +84,9 @@ fn test_designer_state_multi_shape_design() {
 
     // Create a complex design
     for i in 0..5 {
-        state.canvas.add_rectangle(
-            (i as f64) * 20.0,
-            0.0,
-            15.0,
-            15.0,
-        );
+        state
+            .canvas
+            .add_rectangle((i as f64) * 20.0, 0.0, 15.0, 15.0);
     }
 
     assert_eq!(state.canvas.shapes().len(), 5);

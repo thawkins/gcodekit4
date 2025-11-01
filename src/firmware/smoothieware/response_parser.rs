@@ -3,7 +3,6 @@
 //! Parses responses from Smoothieware firmware including status reports,
 //! errors, and standard responses.
 
-
 /// Parsed Smoothieware response
 #[derive(Debug, Clone, PartialEq)]
 pub enum SmoothiewareResponse {
@@ -43,7 +42,6 @@ impl SmoothiewareResponseParser {
         if line.is_empty() {
             return None;
         }
-
 
         // Check for acknowledgment
         if line == "ok" || line == "OK" {

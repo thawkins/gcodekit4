@@ -157,7 +157,6 @@ impl SettingsManager {
 
     /// Export settings to JSON file
     pub fn export_to_file(&self, path: &Path) -> anyhow::Result<()> {
-
         let settings_list: Vec<_> = self.settings.values().collect();
         let json = serde_json::to_string_pretty(&settings_list)?;
 
@@ -168,7 +167,6 @@ impl SettingsManager {
 
     /// Import settings from JSON file
     pub fn import_from_file(&mut self, path: &Path) -> anyhow::Result<()> {
-
         let contents = fs::read_to_string(path)?;
         let settings_list: Vec<Setting> = serde_json::from_str(&contents)?;
 

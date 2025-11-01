@@ -74,7 +74,6 @@ impl ConnectionWatcher {
 
     /// Start watching the connection
     pub async fn start(&self) -> anyhow::Result<()> {
-
         let config = self.config.clone();
         let last_heartbeat = Arc::clone(&self.last_heartbeat);
         let state = Arc::clone(&self.state);

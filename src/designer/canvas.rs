@@ -1,6 +1,8 @@
 //! Canvas for drawing and manipulating shapes.
 
-use super::shapes::{Circle, Line, Point, Rectangle, Shape, ShapeType};
+use super::shapes::{
+    Circle, Ellipse, Line, Point, Polygon, Rectangle, RoundRectangle, Shape, ShapeType,
+};
 use super::viewport::Viewport;
 
 /// Canvas coordinates for drawing.
@@ -35,6 +37,9 @@ pub enum DrawingMode {
     Rectangle,
     Circle,
     Line,
+    Ellipse,
+    Polygon,
+    RoundRectangle,
 }
 
 /// Drawing object on the canvas that can be selected and manipulated.
@@ -133,6 +138,41 @@ impl Canvas {
         self.next_id += 1;
         let line = Line::new(start, end);
         self.shapes.push(DrawingObject::new(id, Box::new(line)));
+        id
+    }
+
+    /// Adds an ellipse to the canvas.
+    pub fn add_ellipse(&mut self, center: Point, rx: f64, ry: f64) -> u64 {
+        let id = self.next_id;
+        self.next_id += 1;
+        let ellipse = Ellipse::new(center, rx, ry);
+        self.shapes.push(DrawingObject::new(id, Box::new(ellipse)));
+        id
+    }
+
+    /// Adds a polygon to the canvas.
+    pub fn add_polygon(&mut self, vertices: Vec<Point>) -> u64 {
+        let id = self.next_id;
+        self.next_id += 1;
+        let polygon = Polygon::new(vertices);
+        self.shapes.push(DrawingObject::new(id, Box::new(polygon)));
+        id
+    }
+
+    /// Adds a round rectangle to the canvas.
+    pub fn add_round_rectangle(
+        &mut self,
+        x: f64,
+        y: f64,
+        width: f64,
+        height: f64,
+        radius: f64,
+    ) -> u64 {
+        let id = self.next_id;
+        self.next_id += 1;
+        let round_rect = RoundRectangle::new(x, y, width, height, radius);
+        self.shapes
+            .push(DrawingObject::new(id, Box::new(round_rect)));
         id
     }
 
@@ -328,7 +368,7 @@ impl Canvas {
             if let Some(obj) = self.shapes.iter_mut().find(|o| o.id == id) {
                 // Get current bounding box
                 let (x1, y1, x2, y2) = obj.shape.bounding_box();
-                
+
                 // Replace the shape with a moved version
                 let shape = &*obj.shape;
                 let new_shape: Box<dyn Shape> = match shape.shape_type() {
@@ -341,14 +381,37 @@ impl Canvas {
                         let center_x = (x1 + x2) / 2.0;
                         let center_y = (y1 + y2) / 2.0;
                         let radius = (x2 - x1) / 2.0;
-                        Box::new(Circle::new(Point::new(center_x + dx, center_y + dy), radius))
-                    }
-                    ShapeType::Line => {
-                        Box::new(Line::new(
-                            Point::new(x1 + dx, y1 + dy),
-                            Point::new(x2 + dx, y2 + dy),
+                        Box::new(Circle::new(
+                            Point::new(center_x + dx, center_y + dy),
+                            radius,
                         ))
                     }
+                    ShapeType::Line => Box::new(Line::new(
+                        Point::new(x1 + dx, y1 + dy),
+                        Point::new(x2 + dx, y2 + dy),
+                    )),
+                    ShapeType::Ellipse => {
+                        let center_x = (x1 + x2) / 2.0;
+                        let center_y = (y1 + y2) / 2.0;
+                        let rx = (x2 - x1) / 2.0;
+                        let ry = (y2 - y1) / 2.0;
+                        Box::new(Ellipse::new(
+                            Point::new(center_x + dx, center_y + dy),
+                            rx,
+                            ry,
+                        ))
+                    }
+                    ShapeType::Polygon => {
+                        // For polygon, move all vertices
+                        obj.shape.clone_shape()
+                    }
+                    ShapeType::RoundRectangle => Box::new(RoundRectangle::new(
+                        x1 + dx,
+                        y1 + dy,
+                        x2 - x1,
+                        y2 - y1,
+                        ((y2 - y1) * 0.20).max(1.0),
+                    )),
                 };
                 obj.shape = new_shape;
             }
@@ -361,7 +424,7 @@ impl Canvas {
             if let Some(obj) = self.shapes.iter_mut().find(|o| o.id == id) {
                 let (x1, y1, x2, y2) = obj.shape.bounding_box();
                 let shape = &*obj.shape;
-                
+
                 let new_shape: Box<dyn Shape> = match shape.shape_type() {
                     ShapeType::Rectangle => {
                         let (new_x1, new_y1, new_x2, new_y2) = match handle {
@@ -372,43 +435,56 @@ impl Canvas {
                             4 => (x1 + dx, y1 + dy, x2 + dx, y2 + dy), // Center (move)
                             _ => (x1, y1, x2, y2),
                         };
-                        
+
                         let width = (new_x2 - new_x1).abs();
                         let height = (new_y2 - new_y1).abs();
-                        Box::new(Rectangle::new(new_x1.min(new_x2), new_y1.min(new_y2), width, height))
+                        Box::new(Rectangle::new(
+                            new_x1.min(new_x2),
+                            new_y1.min(new_y2),
+                            width,
+                            height,
+                        ))
                     }
                     ShapeType::Circle => {
                         let center_x = (x1 + x2) / 2.0;
                         let center_y = (y1 + y2) / 2.0;
                         let radius = (x2 - x1) / 2.0;
-                        
+
                         let (new_cx, new_cy, new_r) = match handle {
                             0 => {
                                 // Top-left: calculate new radius from handle position to center
                                 let new_handle_x = x1 + dx;
                                 let new_handle_y = y1 + dy;
-                                let new_r = ((center_x - new_handle_x).abs() + (center_y - new_handle_y).abs()) / 1.414;
+                                let new_r = ((center_x - new_handle_x).abs()
+                                    + (center_y - new_handle_y).abs())
+                                    / 1.414;
                                 (center_x, center_y, new_r.max(5.0))
                             }
                             1 => {
                                 // Top-right: calculate new radius from handle position to center
                                 let new_handle_x = x2 + dx;
                                 let new_handle_y = y1 + dy;
-                                let new_r = ((center_x - new_handle_x).abs() + (center_y - new_handle_y).abs()) / 1.414;
+                                let new_r = ((center_x - new_handle_x).abs()
+                                    + (center_y - new_handle_y).abs())
+                                    / 1.414;
                                 (center_x, center_y, new_r.max(5.0))
                             }
                             2 => {
                                 // Bottom-left: calculate new radius from handle position to center
                                 let new_handle_x = x1 + dx;
                                 let new_handle_y = y2 + dy;
-                                let new_r = ((center_x - new_handle_x).abs() + (center_y - new_handle_y).abs()) / 1.414;
+                                let new_r = ((center_x - new_handle_x).abs()
+                                    + (center_y - new_handle_y).abs())
+                                    / 1.414;
                                 (center_x, center_y, new_r.max(5.0))
                             }
                             3 => {
                                 // Bottom-right: calculate new radius from handle position to center
                                 let new_handle_x = x2 + dx;
                                 let new_handle_y = y2 + dy;
-                                let new_r = ((center_x - new_handle_x).abs() + (center_y - new_handle_y).abs()) / 1.414;
+                                let new_r = ((center_x - new_handle_x).abs()
+                                    + (center_y - new_handle_y).abs())
+                                    / 1.414;
                                 (center_x, center_y, new_r.max(5.0))
                             }
                             4 => (center_x + dx, center_y + dy, radius), // Center (move)
@@ -423,7 +499,76 @@ impl Canvas {
                             4 => (x1 + dx, y1 + dy, x2 + dx, y2 + dy), // Move both
                             _ => (x1, y1, x2, y2),
                         };
-                        Box::new(Line::new(Point::new(new_x1, new_y1), Point::new(new_x2, new_y2)))
+                        Box::new(Line::new(
+                            Point::new(new_x1, new_y1),
+                            Point::new(new_x2, new_y2),
+                        ))
+                    }
+                    ShapeType::Ellipse => {
+                        let center_x = (x1 + x2) / 2.0;
+                        let center_y = (y1 + y2) / 2.0;
+                        let rx = (x2 - x1) / 2.0;
+                        let ry = (y2 - y1) / 2.0;
+
+                        let (new_cx, new_cy, new_rx, new_ry) = match handle {
+                            0 => {
+                                // Top-left: resize
+                                let new_rx = ((center_x - (x1 + dx)) / 1.0).abs().max(5.0);
+                                let new_ry = ((center_y - (y1 + dy)) / 1.0).abs().max(5.0);
+                                (center_x, center_y, new_rx, new_ry)
+                            }
+                            1 => {
+                                // Top-right: resize
+                                let new_rx = ((center_x - (x2 + dx)) / 1.0).abs().max(5.0);
+                                let new_ry = ((center_y - (y1 + dy)) / 1.0).abs().max(5.0);
+                                (center_x, center_y, new_rx, new_ry)
+                            }
+                            2 => {
+                                // Bottom-left: resize
+                                let new_rx = ((center_x - (x1 + dx)) / 1.0).abs().max(5.0);
+                                let new_ry = ((center_y - (y2 + dy)) / 1.0).abs().max(5.0);
+                                (center_x, center_y, new_rx, new_ry)
+                            }
+                            3 => {
+                                // Bottom-right: resize
+                                let new_rx = ((center_x - (x2 + dx)) / 1.0).abs().max(5.0);
+                                let new_ry = ((center_y - (y2 + dy)) / 1.0).abs().max(5.0);
+                                (center_x, center_y, new_rx, new_ry)
+                            }
+                            4 => (center_x + dx, center_y + dy, rx, ry), // Center (move)
+                            _ => (center_x, center_y, rx, ry),
+                        };
+                        Box::new(Ellipse::new(Point::new(new_cx, new_cy), new_rx, new_ry))
+                    }
+                    ShapeType::Polygon => {
+                        // For polygon, apply move only
+                        if handle == 4 {
+                            // Center move: move all vertices
+                            obj.shape.clone_shape()
+                        } else {
+                            obj.shape.clone_shape()
+                        }
+                    }
+                    ShapeType::RoundRectangle => {
+                        let (new_x1, new_y1, new_x2, new_y2) = match handle {
+                            0 => (x1 + dx, y1 + dy, x2, y2),           // Top-left
+                            1 => (x1, y1 + dy, x2 + dx, y2),           // Top-right
+                            2 => (x1 + dx, y1, x2, y2 + dy),           // Bottom-left
+                            3 => (x1, y1, x2 + dx, y2 + dy),           // Bottom-right
+                            4 => (x1 + dx, y1 + dy, x2 + dx, y2 + dy), // Center (move)
+                            _ => (x1, y1, x2, y2),
+                        };
+
+                        let width = (new_x2 - new_x1).abs();
+                        let height = (new_y2 - new_y1).abs();
+                        let radius = (height * 0.20).max(1.0);
+                        Box::new(RoundRectangle::new(
+                            new_x1.min(new_x2),
+                            new_y1.min(new_y2),
+                            width,
+                            height,
+                            radius,
+                        ))
                     }
                 };
                 obj.shape = new_shape;
@@ -438,27 +583,51 @@ impl Canvas {
                 let (x1, y1, x2, y2) = obj.shape.bounding_box();
                 let width = x2 - x1;
                 let height = y2 - y1;
-                
+
                 // Snap the top-left corner and dimensions to whole mm
                 let snapped_x1 = (x1 + 0.5).floor();
                 let snapped_y1 = (y1 + 0.5).floor();
                 let snapped_width = (width + 0.5).floor();
                 let snapped_height = (height + 0.5).floor();
-                
+
                 // Replace the shape with snapped position and dimensions
                 let shape = &*obj.shape;
                 let new_shape: Box<dyn Shape> = match shape.shape_type() {
-                    ShapeType::Rectangle => {
-                        Box::new(Rectangle::new(snapped_x1, snapped_y1, snapped_width, snapped_height))
-                    }
+                    ShapeType::Rectangle => Box::new(Rectangle::new(
+                        snapped_x1,
+                        snapped_y1,
+                        snapped_width,
+                        snapped_height,
+                    )),
                     ShapeType::Circle => {
                         let radius = snapped_width / 2.0;
-                        Box::new(Circle::new(Point::new(snapped_x1 + radius, snapped_y1 + radius), radius))
+                        Box::new(Circle::new(
+                            Point::new(snapped_x1 + radius, snapped_y1 + radius),
+                            radius,
+                        ))
                     }
-                    ShapeType::Line => {
-                        Box::new(Line::new(
-                            Point::new(snapped_x1, snapped_y1),
-                            Point::new(snapped_x1 + snapped_width, snapped_y1 + snapped_height),
+                    ShapeType::Line => Box::new(Line::new(
+                        Point::new(snapped_x1, snapped_y1),
+                        Point::new(snapped_x1 + snapped_width, snapped_y1 + snapped_height),
+                    )),
+                    ShapeType::Ellipse => {
+                        let rx = snapped_width / 2.0;
+                        let ry = snapped_height / 2.0;
+                        Box::new(Ellipse::new(
+                            Point::new(snapped_x1 + rx, snapped_y1 + ry),
+                            rx,
+                            ry,
+                        ))
+                    }
+                    ShapeType::Polygon => obj.shape.clone_shape(),
+                    ShapeType::RoundRectangle => {
+                        let radius = (snapped_height * 0.20).max(1.0);
+                        Box::new(RoundRectangle::new(
+                            snapped_x1,
+                            snapped_y1,
+                            snapped_width,
+                            snapped_height,
+                            radius,
                         ))
                     }
                 };
@@ -528,18 +697,18 @@ mod tests {
         let mut canvas = Canvas::with_size(800.0, 600.0);
         canvas.add_rectangle(0.0, 0.0, 100.0, 100.0);
         canvas.select_at(&Point::new(50.0, 50.0));
-        
+
         // Verify initial state
         let shape = &canvas.shapes()[0];
         let (x1, y1, x2, y2) = shape.shape.bounding_box();
         assert_eq!((x1, y1, x2, y2), (0.0, 0.0, 100.0, 100.0));
-        
+
         // Drag bottom-left handle down by 20
         canvas.resize_selected(2, 0.0, 20.0);
         let shape = &canvas.shapes()[0];
         let (x1, y1, x2, y2) = shape.shape.bounding_box();
         assert_eq!((x1, y1, x2, y2), (0.0, 0.0, 100.0, 120.0));
-        
+
         // Drag center handle by (10, 10)
         canvas.resize_selected(4, 10.0, 10.0);
         let shape = &canvas.shapes()[0];
@@ -553,17 +722,17 @@ mod tests {
     fn test_deselect_by_clicking_empty_space() {
         let mut canvas = Canvas::new();
         let rect_id = canvas.add_rectangle(0.0, 0.0, 10.0, 10.0);
-        
+
         // Select the rectangle
         let p = Point::new(5.0, 5.0);
         let selected = canvas.select_at(&p);
         assert_eq!(selected, Some(rect_id));
         assert_eq!(canvas.selected_id(), Some(rect_id));
-        
+
         // Click on empty space (far away from rectangle)
         let empty_point = Point::new(100.0, 100.0);
         let result = canvas.select_at(&empty_point);
-        
+
         // Should return None (no shape at that point)
         assert_eq!(result, None);
         // And selected_id should be None (deselected)

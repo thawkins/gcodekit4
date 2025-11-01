@@ -67,7 +67,11 @@ pub struct SemanticVersion {
 impl SemanticVersion {
     /// Create a new semantic version
     pub fn new(major: u32, minor: u32, patch: u32) -> Self {
-        Self { major, minor, patch }
+        Self {
+            major,
+            minor,
+            patch,
+        }
     }
 
     /// Parse from string (e.g., "1.1f", "3.0.0", "1.0.0-alpha")
@@ -80,19 +84,34 @@ impl SemanticVersion {
             return None;
         }
 
-        let major = parts[0].trim_end_matches(|c: char| !c.is_numeric()).parse::<u32>().ok()?;
+        let major = parts[0]
+            .trim_end_matches(|c: char| !c.is_numeric())
+            .parse::<u32>()
+            .ok()?;
         let minor = if parts.len() > 1 {
-            parts[1].trim_end_matches(|c: char| !c.is_numeric()).parse::<u32>().ok().unwrap_or(0)
+            parts[1]
+                .trim_end_matches(|c: char| !c.is_numeric())
+                .parse::<u32>()
+                .ok()
+                .unwrap_or(0)
         } else {
             0
         };
         let patch = if parts.len() > 2 {
-            parts[2].trim_end_matches(|c: char| !c.is_numeric()).parse::<u32>().ok().unwrap_or(0)
+            parts[2]
+                .trim_end_matches(|c: char| !c.is_numeric())
+                .parse::<u32>()
+                .ok()
+                .unwrap_or(0)
         } else {
             0
         };
 
-        Some(Self { major, minor, patch })
+        Some(Self {
+            major,
+            minor,
+            patch,
+        })
     }
 
     /// Check if this version is at least the given version
@@ -127,12 +146,10 @@ impl PartialOrd for SemanticVersion {
 impl Ord for SemanticVersion {
     fn cmp(&self, other: &Self) -> Ordering {
         match self.major.cmp(&other.major) {
-            Ordering::Equal => {
-                match self.minor.cmp(&other.minor) {
-                    Ordering::Equal => self.patch.cmp(&other.patch),
-                    other_ord => other_ord,
-                }
-            }
+            Ordering::Equal => match self.minor.cmp(&other.minor) {
+                Ordering::Equal => self.patch.cmp(&other.patch),
+                other_ord => other_ord,
+            },
             other_ord => other_ord,
         }
     }
@@ -218,7 +235,10 @@ impl FirmwareVersion {
             "{} {}{}",
             self.firmware_type,
             self.version,
-            self.variant.as_ref().map(|v| format!(" ({})", v)).unwrap_or_default()
+            self.variant
+                .as_ref()
+                .map(|v| format!(" ({})", v))
+                .unwrap_or_default()
         )
     }
 }
@@ -239,7 +259,10 @@ mod tests {
         assert_eq!(FirmwareType::from_string("grbl"), FirmwareType::Grbl);
         assert_eq!(FirmwareType::from_string("TinyG"), FirmwareType::TinyG);
         assert_eq!(FirmwareType::from_string("g2core"), FirmwareType::G2Core);
-        assert_eq!(FirmwareType::from_string("Smoothieware"), FirmwareType::Smoothieware);
+        assert_eq!(
+            FirmwareType::from_string("Smoothieware"),
+            FirmwareType::Smoothieware
+        );
         assert_eq!(FirmwareType::from_string("FluidNC"), FirmwareType::FluidNC);
         assert_eq!(FirmwareType::from_string("Unknown"), FirmwareType::Unknown);
     }

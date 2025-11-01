@@ -198,8 +198,8 @@ impl FileValidationPanel {
     /// Export issues as formatted text
     pub fn export_as_text(&self) -> String {
         let mut output = String::new();
-        output.push_str(&format!("File Validation Report\n"));
-        output.push_str(&format!("======================\n"));
+        output.push_str(&"File Validation Report\n".to_string());
+        output.push_str(&"======================\n".to_string());
         output.push_str(&format!("Status: {}\n", self.summary));
         output.push_str(&format!("Total Lines: {}\n\n", self.total_lines));
 

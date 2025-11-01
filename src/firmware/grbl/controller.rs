@@ -69,7 +69,6 @@ pub struct GrblController {
 impl GrblController {
     /// Create a new GRBL controller
     pub fn new(connection_params: ConnectionParams, name: Option<String>) -> anyhow::Result<Self> {
-
         let communicator = Arc::new(GrblCommunicator::new(
             Box::new(NoOpCommunicator::new()),
             GrblCommunicatorConfig::default(),
@@ -87,7 +86,6 @@ impl GrblController {
 
     /// Initialize the controller and query its capabilities
     fn initialize(&self) -> anyhow::Result<()> {
-
         // Send soft reset
         self.communicator.send_command("$RST=*")?;
         std::thread::sleep(Duration::from_millis(100));
@@ -106,7 +104,6 @@ impl GrblController {
 
     /// Start the status polling task
     fn start_polling(&mut self) -> anyhow::Result<()> {
-
         let notify = Arc::new(tokio::sync::Notify::new());
         *self.shutdown_signal.write() = Some(notify.clone());
 
@@ -144,7 +141,6 @@ impl GrblController {
 
     /// Stop the status polling task
     fn stop_polling(&mut self) -> anyhow::Result<()> {
-
         if let Some(notify) = self.shutdown_signal.write().take() {
             notify.notify_one();
         }
@@ -168,7 +164,7 @@ impl ControllerTrait for GrblController {
     }
 
     fn get_status(&self) -> ControllerStatus {
-        self.state.read().status.clone()
+        self.state.read().status
     }
 
     fn get_override_state(&self) -> OverrideState {
@@ -176,7 +172,6 @@ impl ControllerTrait for GrblController {
     }
 
     async fn connect(&mut self) -> anyhow::Result<()> {
-
         self.communicator.connect(&self.connection_params)?;
         *self.state.write() = GrblControllerState::default();
 
@@ -192,7 +187,6 @@ impl ControllerTrait for GrblController {
     }
 
     async fn disconnect(&mut self) -> anyhow::Result<()> {
-
         self.stop_polling()?;
         self.communicator.disconnect()?;
 
@@ -205,7 +199,6 @@ impl ControllerTrait for GrblController {
     }
 
     async fn send_command(&mut self, command: &str) -> anyhow::Result<()> {
-
         // Check if ready to send (character counting)
         let command_size = command.len() + 1; // +1 for newline
         if !self.communicator.is_ready_to_send(command_size) {
@@ -221,8 +214,7 @@ impl ControllerTrait for GrblController {
 
         // Read OK response
         let response = self.communicator.read_line()?;
-        if !response.contains("ok") {
-        }
+        !response.contains("ok");
 
         Ok(())
     }
@@ -254,7 +246,6 @@ impl ControllerTrait for GrblController {
         direction: i32,
         feed_rate: f64,
     ) -> anyhow::Result<()> {
-
         if direction == 0 {
             return Err(anyhow::anyhow!("Direction must be non-zero"));
         }
@@ -278,7 +269,6 @@ impl ControllerTrait for GrblController {
         distance: f64,
         feed_rate: f64,
     ) -> anyhow::Result<()> {
-
         // Format: $J=G91 G0 X{signed_distance} F{feed_rate}
         // distance already includes sign from the caller
         let cmd = format!("$J=G91 G0 {}{:.3} F{:.0}", axis, distance, feed_rate);
@@ -315,7 +305,6 @@ impl ControllerTrait for GrblController {
     }
 
     async fn probe_z(&mut self, feed_rate: f64) -> anyhow::Result<PartialPosition> {
-
         let cmd = format!("G38.2Z-100F{}", feed_rate);
         self.send_command(&cmd).await?;
 
@@ -327,7 +316,6 @@ impl ControllerTrait for GrblController {
     }
 
     async fn probe_x(&mut self, feed_rate: f64) -> anyhow::Result<PartialPosition> {
-
         let cmd = format!("G38.2X100F{}", feed_rate);
         self.send_command(&cmd).await?;
 
@@ -339,7 +327,6 @@ impl ControllerTrait for GrblController {
     }
 
     async fn probe_y(&mut self, feed_rate: f64) -> anyhow::Result<PartialPosition> {
-
         let cmd = format!("G38.2Y100F{}", feed_rate);
         self.send_command(&cmd).await?;
 
@@ -351,7 +338,6 @@ impl ControllerTrait for GrblController {
     }
 
     async fn set_feed_override(&mut self, percentage: u16) -> anyhow::Result<()> {
-
         if percentage > 200 {
             return Err(anyhow::anyhow!("Feed override must be 0-200%"));
         }
@@ -368,7 +354,6 @@ impl ControllerTrait for GrblController {
     }
 
     async fn set_rapid_override(&mut self, percentage: u8) -> anyhow::Result<()> {
-
         if ![25, 50, 100].contains(&percentage) {
             return Err(anyhow::anyhow!("Rapid override must be 25, 50, or 100"));
         }
@@ -378,7 +363,6 @@ impl ControllerTrait for GrblController {
     }
 
     async fn set_spindle_override(&mut self, percentage: u16) -> anyhow::Result<()> {
-
         if percentage > 200 {
             return Err(anyhow::anyhow!("Spindle override must be 0-200%"));
         }
@@ -410,8 +394,7 @@ impl ControllerTrait for GrblController {
     }
 
     async fn set_work_coordinate_system(&mut self, wcs: u8) -> anyhow::Result<()> {
-
-        if wcs < 54 || wcs > 59 {
+        if !(54..=59).contains(&wcs) {
             return Err(anyhow::anyhow!("Work coordinate system must be 54-59"));
         }
 

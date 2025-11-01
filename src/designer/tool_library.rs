@@ -93,12 +93,7 @@ impl Tool {
     }
 
     /// Sets the cutting parameters for this tool.
-    pub fn set_cutting_parameters(
-        &mut self,
-        feed_rate: f64,
-        plunge_rate: f64,
-        spindle_speed: u32,
-    ) {
+    pub fn set_cutting_parameters(&mut self, feed_rate: f64, plunge_rate: f64, spindle_speed: u32) {
         self.feed_rate = feed_rate;
         self.plunge_rate = plunge_rate;
         self.spindle_speed = spindle_speed;
@@ -205,9 +200,7 @@ impl ToolLibrary {
 
     /// Gets the default tool.
     pub fn get_default_tool(&self) -> Option<&Tool> {
-        self.default_tool
-            .as_ref()
-            .and_then(|id| self.tools.get(id))
+        self.default_tool.as_ref().and_then(|id| self.tools.get(id))
     }
 
     /// Sets the default tool.

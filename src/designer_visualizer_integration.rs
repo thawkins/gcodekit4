@@ -52,14 +52,7 @@ pub struct VisualizationBounds {
 
 impl VisualizationBounds {
     /// Create new bounds
-    pub fn new(
-        min_x: f64,
-        min_y: f64,
-        min_z: f64,
-        max_x: f64,
-        max_y: f64,
-        max_z: f64,
-    ) -> Self {
+    pub fn new(min_x: f64, min_y: f64, min_z: f64, max_x: f64, max_y: f64, max_z: f64) -> Self {
         Self {
             min_x: min_x.min(max_x),
             min_y: min_y.min(max_y),
@@ -421,6 +414,11 @@ mod tests {
         integration.load_design(viz);
         integration.enable_realtime_updates(true);
 
-        assert!(integration.current_visualization().unwrap().real_time_updates);
+        assert!(
+            integration
+                .current_visualization()
+                .unwrap()
+                .real_time_updates
+        );
     }
 }

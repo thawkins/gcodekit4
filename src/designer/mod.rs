@@ -1,7 +1,7 @@
 //! # Designer Module
 //!
 //! Provides a 2D CAD/CAM design tool for creating CNC projects and generating G-code.
-//! 
+//!
 //! The designer module includes:
 //! - Shape drawing and manipulation
 //! - Canvas with zoom/pan controls with proper coordinate mapping
@@ -37,61 +37,63 @@
 //! - `templates` - Design template management system for saving and organizing designs
 //! - `history` - Undo/redo functionality for all design operations
 
+pub mod adaptive;
+pub mod arrays;
 pub mod canvas;
+pub mod drilling_patterns;
+pub mod dxf_parser;
 pub mod gcode_gen;
+pub mod history;
+pub mod import;
+pub mod multipass;
+pub mod parametric;
+pub mod pocket_operations;
+pub mod render_optimizer;
 pub mod renderer;
 pub mod shapes;
-pub mod toolpath;
-pub mod viewport;
-pub mod tool_library;
-pub mod pocket_operations;
-pub mod drilling_patterns;
-pub mod multipass;
-pub mod toolpath_simulation;
-pub mod import;
-pub mod arrays;
-pub mod vcarve;
-pub mod adaptive;
-pub mod dxf_parser;
-pub mod parametric;
-pub mod templates;
-pub mod history;
 pub mod spatial_index;
-pub mod render_optimizer;
+pub mod templates;
+pub mod tool_library;
+pub mod toolpath;
+pub mod toolpath_simulation;
+pub mod vcarve;
+pub mod viewport;
 
-pub use canvas::{Canvas, CanvasPoint, DrawingMode};
-pub use gcode_gen::ToolpathToGcode;
-pub use shapes::{Circle, Line, Point, Rectangle, Shape, ShapeType};
-pub use toolpath::{Toolpath, ToolpathGenerator, ToolpathSegment, ToolpathSegmentType};
-pub use viewport::Viewport;
-pub use tool_library::{Tool, ToolLibrary, ToolType, CoolantType, MaterialProfile};
-pub use pocket_operations::{PocketOperation, PocketGenerator, Island};
-pub use drilling_patterns::{DrillOperation, DrillingPattern, DrillingPatternGenerator, PatternType};
-pub use multipass::{MultiPassConfig, MultiPassToolpathGenerator, DepthStrategy};
-pub use toolpath_simulation::{ToolpathSimulator, ToolpathAnalyzer, SimulationState, ToolPosition};
-pub use import::{SvgImporter, DxfImporter, ImportedDesign, FileFormat};
-pub use arrays::{
-    ArrayOperation, ArrayType, ArrayGenerator, LinearArrayParams, CircularArrayParams,
-    GridArrayParams,
-};
-pub use vcarve::{VBitTool, VCarveParams, VCarveSegment, VCarveGenerator};
 pub use adaptive::{
-    AdaptiveClearing, MaterialProperties, MaterialType, LoadMonitor, DynamicStepover,
-    AdaptiveAlgorithm,
+    AdaptiveAlgorithm, AdaptiveClearing, DynamicStepover, LoadMonitor, MaterialProperties,
+    MaterialType,
+};
+pub use arrays::{
+    ArrayGenerator, ArrayOperation, ArrayType, CircularArrayParams, GridArrayParams,
+    LinearArrayParams,
+};
+pub use canvas::{Canvas, CanvasPoint, DrawingMode};
+pub use drilling_patterns::{
+    DrillOperation, DrillingPattern, DrillingPatternGenerator, PatternType,
 };
 pub use dxf_parser::{
-    DxfFile, DxfEntity, DxfParser, DxfUnit, DxfLine, DxfCircle, DxfArc, DxfPolyline,
-    DxfText, DxfHeader, DxfEntityType,
+    DxfArc, DxfCircle, DxfEntity, DxfEntityType, DxfFile, DxfHeader, DxfLine, DxfParser,
+    DxfPolyline, DxfText, DxfUnit,
 };
+pub use gcode_gen::ToolpathToGcode;
+pub use history::{ActionType, HistoryAction, HistoryTransaction, UndoRedoManager};
+pub use import::{DxfImporter, FileFormat, ImportedDesign, SvgImporter};
+pub use multipass::{DepthStrategy, MultiPassConfig, MultiPassToolpathGenerator};
 pub use parametric::{
-    ParametricTemplate, TemplateLibrary, ParameterSet, Parameter, ParameterType,
-    ParameterConstraint, ParametricGenerator,
+    Parameter, ParameterConstraint, ParameterSet, ParameterType, ParametricGenerator,
+    ParametricTemplate, TemplateLibrary,
 };
-pub use templates::{
-    DesignTemplate, DesignTemplateLibrary, TemplateCategory, TemplatePersistence, TemplateManager,
-};
-pub use history::{
-    UndoRedoManager, HistoryAction, ActionType, HistoryTransaction,
-};
-pub use spatial_index::{SpatialIndex, Bounds, SpatialIndexStats};
+pub use pocket_operations::{Island, PocketGenerator, PocketOperation};
 pub use render_optimizer::{RenderOptimizer, RenderStats};
+pub use shapes::{
+    Circle, Ellipse, Line, Point, Polygon, Rectangle, RoundRectangle, Shape, ShapeType,
+};
+pub use spatial_index::{Bounds, SpatialIndex, SpatialIndexStats};
+pub use templates::{
+    DesignTemplate, DesignTemplateLibrary, TemplateCategory, TemplateManager, TemplatePersistence,
+};
+pub use tool_library::{CoolantType, MaterialProfile, Tool, ToolLibrary, ToolType};
+pub use toolpath::{Toolpath, ToolpathGenerator, ToolpathSegment, ToolpathSegmentType};
+pub use toolpath_simulation::{SimulationState, ToolPosition, ToolpathAnalyzer, ToolpathSimulator};
+pub use vcarve::{VBitTool, VCarveGenerator, VCarveParams, VCarveSegment};
+pub use viewport::Viewport;

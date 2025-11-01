@@ -103,16 +103,17 @@ impl SerialPortInfo {
 /// - Linux: /dev/ttyUSB*, /dev/ttyACM*
 /// - macOS: /dev/cu.usbserial-*, /dev/cu.usbmodem*
 pub fn list_ports() -> Result<Vec<SerialPortInfo>> {
-
     match serialport::available_ports() {
         Ok(ports) => {
             let port_infos: Vec<SerialPortInfo> = ports
                 .iter()
                 .filter(|port| is_valid_cnc_port(&port.port_name))
                 .map(|port| {
-                    let info = SerialPortInfo::new(&port.port_name, get_port_description(&port));
+                    let info = SerialPortInfo::new(&port.port_name, get_port_description(port));
 
-                    let info = match &port.port_type {
+                    
+
+                    match &port.port_type {
                         serialport::SerialPortType::UsbPort(usb_info) => {
                             let mut info = info.with_usb_ids(usb_info.vid, usb_info.pid);
                             if let Some(ref mfg) = usb_info.manufacturer {
@@ -124,9 +125,7 @@ pub fn list_ports() -> Result<Vec<SerialPortInfo>> {
                             info
                         }
                         _ => info,
-                    };
-
-                    info
+                    }
                 })
                 .collect();
 
@@ -252,11 +251,9 @@ impl RealSerialPort {
             });
 
         match builder.open_native() {
-            Ok(port) => {
-                Ok(RealSerialPort {
-                    port: Box::new(port),
-                })
-            }
+            Ok(port) => Ok(RealSerialPort {
+                port: Box::new(port),
+            }),
             Err(e) => {
                 tracing::error!("Failed to open serial port {}: {}", params.port, e);
                 Err(Error::other(format!(

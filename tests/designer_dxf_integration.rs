@@ -1,8 +1,8 @@
 //! Integration tests for DXF import and parsing (Phase 4.5)
 
 use gcodekit4::designer::{
-    DxfFile, DxfEntity, DxfParser, DxfUnit, DxfLine, DxfCircle, DxfArc, DxfPolyline,
-    DxfText, DxfHeader, DxfEntityType, Point,
+    DxfArc, DxfCircle, DxfEntity, DxfEntityType, DxfFile, DxfHeader, DxfLine, DxfParser,
+    DxfPolyline, DxfText, DxfUnit, Point,
 };
 
 #[test]
@@ -125,10 +125,26 @@ fn test_dxf_polyline_bounds() {
         color: 256,
     };
 
-    let min_x = polyline.vertices.iter().map(|p| p.x).fold(f64::INFINITY, f64::min);
-    let max_x = polyline.vertices.iter().map(|p| p.x).fold(f64::NEG_INFINITY, f64::max);
-    let min_y = polyline.vertices.iter().map(|p| p.y).fold(f64::INFINITY, f64::min);
-    let max_y = polyline.vertices.iter().map(|p| p.y).fold(f64::NEG_INFINITY, f64::max);
+    let min_x = polyline
+        .vertices
+        .iter()
+        .map(|p| p.x)
+        .fold(f64::INFINITY, f64::min);
+    let max_x = polyline
+        .vertices
+        .iter()
+        .map(|p| p.x)
+        .fold(f64::NEG_INFINITY, f64::max);
+    let min_y = polyline
+        .vertices
+        .iter()
+        .map(|p| p.y)
+        .fold(f64::INFINITY, f64::min);
+    let max_y = polyline
+        .vertices
+        .iter()
+        .map(|p| p.y)
+        .fold(f64::NEG_INFINITY, f64::max);
 
     assert_eq!(min_x, 0.0);
     assert_eq!(max_x, 20.0);

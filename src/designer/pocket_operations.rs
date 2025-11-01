@@ -102,14 +102,13 @@ impl PocketGenerator {
 
     /// Checks if a point is in any island.
     fn is_in_island(&self, point: &Point) -> bool {
-        self.islands.iter().any(|island| island.contains_point(point))
+        self.islands
+            .iter()
+            .any(|island| island.contains_point(point))
     }
 
     /// Generates a pocket toolpath for a rectangular outline.
-    pub fn generate_rectangular_pocket(
-        &self,
-        rect: &Rectangle,
-    ) -> Toolpath {
+    pub fn generate_rectangular_pocket(&self, rect: &Rectangle) -> Toolpath {
         let mut toolpath = Toolpath::new(self.operation.tool_diameter, self.operation.depth);
 
         let half_tool = self.operation.tool_diameter / 2.0;
@@ -132,13 +131,11 @@ impl PocketGenerator {
 
             let _depth = -(self.operation.depth * pass as f64 / passes as f64);
 
-            let points = vec![
-                Point::new(inset_x, inset_y),
+            let points = [Point::new(inset_x, inset_y),
                 Point::new(inset_x + inset_width, inset_y),
                 Point::new(inset_x + inset_width, inset_y + inset_height),
                 Point::new(inset_x, inset_y + inset_height),
-                Point::new(inset_x, inset_y),
-            ];
+                Point::new(inset_x, inset_y)];
 
             for window in points.windows(2) {
                 let start = window[0];
@@ -210,11 +207,7 @@ impl PocketGenerator {
     }
 
     /// Generates offset paths for the pocket boundary.
-    pub fn generate_offset_paths(
-        &self,
-        rect: &Rectangle,
-        offset_count: u32,
-    ) -> Vec<Vec<Point>> {
+    pub fn generate_offset_paths(&self, rect: &Rectangle, offset_count: u32) -> Vec<Vec<Point>> {
         let mut paths = Vec::new();
 
         for offset_idx in 1..=offset_count {

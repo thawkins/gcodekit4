@@ -1,8 +1,8 @@
 //! Integration tests for Designer array operations (Phase 4.2)
 
 use gcodekit4::designer::{
-    ArrayOperation, ArrayType, ArrayGenerator, LinearArrayParams, CircularArrayParams,
-    GridArrayParams, Point,
+    ArrayGenerator, ArrayOperation, ArrayType, CircularArrayParams, GridArrayParams,
+    LinearArrayParams, Point,
 };
 
 #[test]
@@ -220,17 +220,18 @@ fn test_grid_array_bounds_calculation() {
 
     // Array width = 10 + (3-1)*10 = 30
     // Array height = 10 + (2-1)*15 = 25
-    assert_eq!(bounds.0, 0.0);   // min_x
-    assert_eq!(bounds.1, 0.0);   // min_y
-    assert_eq!(bounds.2, 30.0);  // max_x
-    assert_eq!(bounds.3, 25.0);  // max_y
+    assert_eq!(bounds.0, 0.0); // min_x
+    assert_eq!(bounds.1, 0.0); // min_y
+    assert_eq!(bounds.2, 30.0); // max_x
+    assert_eq!(bounds.3, 25.0); // max_y
 }
 
 #[test]
 fn test_array_types_distinct() {
     let linear_op = ArrayOperation::Linear(LinearArrayParams::new(2, 2, 10.0, 10.0));
     let center = Point::new(0.0, 0.0);
-    let circular_op = ArrayOperation::Circular(CircularArrayParams::new(4, center, 10.0, 0.0, false));
+    let circular_op =
+        ArrayOperation::Circular(CircularArrayParams::new(4, center, 10.0, 0.0, false));
     let grid_op = ArrayOperation::Grid(GridArrayParams::new(2, 2, 10.0, 10.0));
 
     assert_ne!(linear_op.array_type(), circular_op.array_type());
@@ -245,9 +246,8 @@ fn test_array_large_copies() {
     assert_eq!(large_linear.total_copies(), 100);
 
     let center = Point::new(0.0, 0.0);
-    let large_circular = ArrayOperation::Circular(CircularArrayParams::new(
-        50, center, 10.0, 0.0, false,
-    ));
+    let large_circular =
+        ArrayOperation::Circular(CircularArrayParams::new(50, center, 10.0, 0.0, false));
     assert_eq!(large_circular.total_copies(), 50);
 
     let large_grid = ArrayOperation::Grid(GridArrayParams::new(20, 20, 2.0, 2.0));

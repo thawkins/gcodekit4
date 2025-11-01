@@ -121,10 +121,7 @@ impl CircularArrayParams {
         };
 
         let angle_rad = angle.to_radians();
-        (
-            self.radius * angle_rad.cos(),
-            self.radius * angle_rad.sin(),
-        )
+        (self.radius * angle_rad.cos(), self.radius * angle_rad.sin())
     }
 }
 
@@ -154,10 +151,7 @@ impl GridArrayParams {
 
     /// Validate parameters
     pub fn is_valid(&self) -> bool {
-        self.columns > 0
-            && self.rows > 0
-            && self.column_spacing >= 0.0
-            && self.row_spacing >= 0.0
+        self.columns > 0 && self.rows > 0 && self.column_spacing >= 0.0 && self.row_spacing >= 0.0
     }
 
     /// Get total number of copies
@@ -458,7 +452,8 @@ mod tests {
         assert_eq!(linear.total_copies(), 4);
 
         let center = Point::new(0.0, 0.0);
-        let circular = ArrayOperation::Circular(CircularArrayParams::new(6, center, 20.0, 0.0, false));
+        let circular =
+            ArrayOperation::Circular(CircularArrayParams::new(6, center, 20.0, 0.0, false));
         assert_eq!(circular.array_type(), ArrayType::Circular);
         assert!(circular.is_valid());
         assert_eq!(circular.total_copies(), 6);

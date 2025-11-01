@@ -134,15 +134,15 @@ impl VCarveParams {
     pub fn passes_needed(&self) -> u32 {
         let total_depth = self.total_depth();
         let raw_passes = total_depth / self.max_depth_per_pass;
-        
+
         // Handle floating point precision - if very close to integer, round down
         let passes = if (raw_passes.fract()).abs() < 1e-9 {
             raw_passes as u32
         } else {
             raw_passes.ceil() as u32
         };
-        
-        passes.max(1)  // Ensure at least 1 pass
+
+        passes.max(1) // Ensure at least 1 pass
     }
 
     /// Calculate actual depth per pass (may be less than max for final pass)
@@ -237,12 +237,8 @@ impl VCarveGenerator {
 
             // Generate segments for this pass
             for i in 0..(path_points.len() - 1) {
-                let segment = VCarveSegment::new(
-                    path_points[i],
-                    path_points[i + 1],
-                    actual_depth,
-                    radius,
-                );
+                let segment =
+                    VCarveSegment::new(path_points[i], path_points[i + 1], actual_depth, radius);
                 pass_segments.push(segment);
             }
 
@@ -253,10 +249,7 @@ impl VCarveGenerator {
     }
 
     /// Calculate time estimate for V-carving operation (in minutes)
-    pub fn estimate_time(
-        params: &VCarveParams,
-        path_points: &[Point],
-    ) -> Result<f64> {
+    pub fn estimate_time(params: &VCarveParams, path_points: &[Point]) -> Result<f64> {
         if path_points.len() < 2 {
             return Err(anyhow::anyhow!("Path must have at least 2 points"));
         }

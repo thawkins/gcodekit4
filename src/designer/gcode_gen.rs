@@ -13,8 +13,8 @@ pub struct ToolpathToGcode {
 impl ToolpathToGcode {
     /// Creates a new G-code generator.
     pub fn new(units: Units, safe_z: f64) -> Self {
-        Self { 
-            units, 
+        Self {
+            units,
             safe_z,
             line_numbers_enabled: false,
         }
@@ -35,17 +35,23 @@ impl ToolpathToGcode {
 
         // Header
         gcode.push_str("; Generated G-code from Designer tool\n");
-        gcode.push_str(&format!("; Tool diameter: {:.3}mm\n", toolpath.tool_diameter));
+        gcode.push_str(&format!(
+            "; Tool diameter: {:.3}mm\n",
+            toolpath.tool_diameter
+        ));
         gcode.push_str(&format!("; Cut depth: {:.3}mm\n", toolpath.depth));
-        gcode.push_str(&format!("; Total path length: {:.3}mm\n", toolpath.total_length()));
-        gcode.push_str("\n");
+        gcode.push_str(&format!(
+            "; Total path length: {:.3}mm\n",
+            toolpath.total_length()
+        ));
+        gcode.push('\n');
 
         // Setup
         gcode.push_str("G90         ; Absolute positioning\n");
         gcode.push_str("G21         ; Millimeter units\n");
         gcode.push_str("G17         ; XY plane\n");
         gcode.push_str("M3          ; Spindle on\n");
-        gcode.push_str("\n");
+        gcode.push('\n');
 
         // Generate moves for each segment
         let mut line_number = 10;
@@ -76,9 +82,7 @@ impl ToolpathToGcode {
                         };
                         gcode.push_str(&format!(
                             "{}G01 Z{:.3} F{:.0}\n",
-                            line_prefix,
-                            toolpath.depth,
-                            segment.feed_rate
+                            line_prefix, toolpath.depth, segment.feed_rate
                         ));
                         line_number += 10;
                         current_z = toolpath.depth;
@@ -91,9 +95,7 @@ impl ToolpathToGcode {
                         };
                         gcode.push_str(&format!(
                             "{}G01 Z{:.3} F{:.0}\n",
-                            line_prefix,
-                            toolpath.depth,
-                            segment.feed_rate
+                            line_prefix, toolpath.depth, segment.feed_rate
                         ));
                         line_number += 10;
                         current_z = toolpath.depth;
@@ -128,7 +130,7 @@ impl ToolpathToGcode {
         }
 
         // Cleanup
-        gcode.push_str("\n");
+        gcode.push('\n');
         gcode.push_str("M5          ; Spindle off\n");
         gcode.push_str("G00 Z10     ; Raise tool\n");
         gcode.push_str("G00 X0 Y0   ; Return to origin\n");
@@ -147,8 +149,8 @@ impl Default for ToolpathToGcode {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::designer::toolpath::ToolpathGenerator;
     use crate::designer::shapes::Rectangle;
+    use crate::designer::toolpath::ToolpathGenerator;
 
     #[test]
     fn test_gcode_generation() {

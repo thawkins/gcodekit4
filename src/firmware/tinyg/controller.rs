@@ -70,7 +70,6 @@ pub struct TinyGController {
 impl TinyGController {
     /// Create a new TinyG controller
     pub fn new(connection_params: ConnectionParams, name: Option<String>) -> anyhow::Result<Self> {
-
         Ok(Self {
             name: name.unwrap_or_else(|| "TinyG".to_string()),
             state: Arc::new(RwLock::new(TinyGControllerState::default())),
@@ -83,7 +82,6 @@ impl TinyGController {
     /// Initialize the controller and query its capabilities
     #[allow(dead_code)]
     fn initialize(&self) -> anyhow::Result<()> {
-
         // Query firmware version
 
         Ok(())
@@ -128,11 +126,11 @@ impl ControllerTrait for TinyGController {
     }
 
     fn get_state(&self) -> crate::data::ControllerState {
-        self.state.read().state.clone()
+        self.state.read().state
     }
 
     fn get_status(&self) -> ControllerStatus {
-        self.state.read().status.clone()
+        self.state.read().status
     }
 
     fn get_override_state(&self) -> crate::core::OverrideState {
@@ -140,7 +138,6 @@ impl ControllerTrait for TinyGController {
     }
 
     async fn connect(&mut self) -> anyhow::Result<()> {
-
         // Update state to connecting
         {
             let mut state = self.state.write();
@@ -163,7 +160,6 @@ impl ControllerTrait for TinyGController {
     }
 
     async fn disconnect(&mut self) -> anyhow::Result<()> {
-
         // Stop polling
         self.stop_polling();
 
@@ -177,7 +173,6 @@ impl ControllerTrait for TinyGController {
     }
 
     async fn send_command(&mut self, command: &str) -> anyhow::Result<()> {
-
         if !self.is_connected() {
             anyhow::bail!("TinyG controller not connected");
         }
@@ -188,7 +183,6 @@ impl ControllerTrait for TinyGController {
     }
 
     async fn home(&mut self) -> anyhow::Result<()> {
-
         if !self.is_connected() {
             anyhow::bail!("TinyG controller not connected");
         }
@@ -199,7 +193,6 @@ impl ControllerTrait for TinyGController {
     }
 
     async fn reset(&mut self) -> anyhow::Result<()> {
-
         if !self.is_connected() {
             anyhow::bail!("TinyG controller not connected");
         }
@@ -211,7 +204,6 @@ impl ControllerTrait for TinyGController {
     }
 
     async fn clear_alarm(&mut self) -> anyhow::Result<()> {
-
         if !self.is_connected() {
             anyhow::bail!("TinyG controller not connected");
         }
@@ -223,7 +215,6 @@ impl ControllerTrait for TinyGController {
     }
 
     async fn unlock(&mut self) -> anyhow::Result<()> {
-
         if !self.is_connected() {
             anyhow::bail!("TinyG controller not connected");
         }
@@ -239,7 +230,6 @@ impl ControllerTrait for TinyGController {
         _direction: i32,
         _feed_rate: f64,
     ) -> anyhow::Result<()> {
-
         if !self.is_connected() {
             anyhow::bail!("TinyG controller not connected");
         }
@@ -248,7 +238,6 @@ impl ControllerTrait for TinyGController {
     }
 
     async fn jog_stop(&mut self) -> anyhow::Result<()> {
-
         if !self.is_connected() {
             anyhow::bail!("TinyG controller not connected");
         }
@@ -265,7 +254,6 @@ impl ControllerTrait for TinyGController {
         _distance: f64,
         _feed_rate: f64,
     ) -> anyhow::Result<()> {
-
         if !self.is_connected() {
             anyhow::bail!("TinyG controller not connected");
         }
@@ -274,7 +262,6 @@ impl ControllerTrait for TinyGController {
     }
 
     async fn start_streaming(&mut self) -> anyhow::Result<()> {
-
         if !self.is_connected() {
             anyhow::bail!("TinyG controller not connected");
         }
@@ -286,7 +273,6 @@ impl ControllerTrait for TinyGController {
     }
 
     async fn pause_streaming(&mut self) -> anyhow::Result<()> {
-
         if !self.is_connected() {
             anyhow::bail!("TinyG controller not connected");
         }
@@ -298,7 +284,6 @@ impl ControllerTrait for TinyGController {
     }
 
     async fn resume_streaming(&mut self) -> anyhow::Result<()> {
-
         if !self.is_connected() {
             anyhow::bail!("TinyG controller not connected");
         }
@@ -310,7 +295,6 @@ impl ControllerTrait for TinyGController {
     }
 
     async fn cancel_streaming(&mut self) -> anyhow::Result<()> {
-
         if !self.is_connected() {
             anyhow::bail!("TinyG controller not connected");
         }
@@ -322,7 +306,6 @@ impl ControllerTrait for TinyGController {
     }
 
     async fn probe_z(&mut self, _feed_rate: f64) -> anyhow::Result<crate::data::PartialPosition> {
-
         if !self.is_connected() {
             anyhow::bail!("TinyG controller not connected");
         }
@@ -331,7 +314,6 @@ impl ControllerTrait for TinyGController {
     }
 
     async fn probe_x(&mut self, _feed_rate: f64) -> anyhow::Result<crate::data::PartialPosition> {
-
         if !self.is_connected() {
             anyhow::bail!("TinyG controller not connected");
         }
@@ -340,7 +322,6 @@ impl ControllerTrait for TinyGController {
     }
 
     async fn probe_y(&mut self, _feed_rate: f64) -> anyhow::Result<crate::data::PartialPosition> {
-
         if !self.is_connected() {
             anyhow::bail!("TinyG controller not connected");
         }
@@ -349,7 +330,6 @@ impl ControllerTrait for TinyGController {
     }
 
     async fn set_feed_override(&mut self, _percentage: u16) -> anyhow::Result<()> {
-
         if !self.is_connected() {
             anyhow::bail!("TinyG controller not connected");
         }
@@ -358,7 +338,6 @@ impl ControllerTrait for TinyGController {
     }
 
     async fn set_rapid_override(&mut self, _percentage: u8) -> anyhow::Result<()> {
-
         if !self.is_connected() {
             anyhow::bail!("TinyG controller not connected");
         }
@@ -367,7 +346,6 @@ impl ControllerTrait for TinyGController {
     }
 
     async fn set_spindle_override(&mut self, _percentage: u16) -> anyhow::Result<()> {
-
         if !self.is_connected() {
             anyhow::bail!("TinyG controller not connected");
         }
@@ -376,7 +354,6 @@ impl ControllerTrait for TinyGController {
     }
 
     async fn set_work_zero(&mut self) -> anyhow::Result<()> {
-
         if !self.is_connected() {
             anyhow::bail!("TinyG controller not connected");
         }
@@ -385,7 +362,6 @@ impl ControllerTrait for TinyGController {
     }
 
     async fn set_work_zero_axes(&mut self, _axes: &str) -> anyhow::Result<()> {
-
         if !self.is_connected() {
             anyhow::bail!("TinyG controller not connected");
         }
@@ -394,7 +370,6 @@ impl ControllerTrait for TinyGController {
     }
 
     async fn go_to_work_zero(&mut self) -> anyhow::Result<()> {
-
         if !self.is_connected() {
             anyhow::bail!("TinyG controller not connected");
         }
@@ -403,7 +378,6 @@ impl ControllerTrait for TinyGController {
     }
 
     async fn set_work_coordinate_system(&mut self, _wcs: u8) -> anyhow::Result<()> {
-
         if !self.is_connected() {
             anyhow::bail!("TinyG controller not connected");
         }
@@ -412,21 +386,18 @@ impl ControllerTrait for TinyGController {
     }
 
     async fn get_wcs_offset(&self, _wcs: u8) -> anyhow::Result<crate::data::PartialPosition> {
-
         Ok(crate::data::PartialPosition::default())
     }
 
     async fn query_status(&mut self) -> anyhow::Result<ControllerStatus> {
-
         if !self.is_connected() {
             anyhow::bail!("TinyG controller not connected");
         }
 
-        Ok(self.state.read().status.clone())
+        Ok(self.state.read().status)
     }
 
     async fn query_settings(&mut self) -> anyhow::Result<()> {
-
         if !self.is_connected() {
             anyhow::bail!("TinyG controller not connected");
         }
@@ -435,7 +406,6 @@ impl ControllerTrait for TinyGController {
     }
 
     async fn query_parser_state(&mut self) -> anyhow::Result<()> {
-
         if !self.is_connected() {
             anyhow::bail!("TinyG controller not connected");
         }

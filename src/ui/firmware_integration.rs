@@ -33,7 +33,6 @@ impl FirmwareSettingsIntegration {
 
     /// Load GRBL firmware settings
     pub fn load_grbl_defaults(&mut self) -> Result<()> {
-
         self.firmware_panel = FirmwareSettingsPanel::new("GRBL", "1.1");
 
         // GRBL 1.1 Standard Settings
@@ -271,12 +270,10 @@ impl FirmwareSettingsIntegration {
             self.cached_parameters
                 .insert(param.code.clone(), param.clone());
         }
-
     }
 
     /// Update firmware parameters from dialog
     pub fn update_from_dialog(&mut self, dialog: &SettingsDialog) -> Result<()> {
-
         let params_to_update: Vec<(String, String)> = self
             .firmware_panel
             .list_parameters()
@@ -294,8 +291,7 @@ impl FirmwareSettingsIntegration {
                 .firmware_panel
                 .set_parameter_value(&param_code, new_value.clone())
             {
-                Ok(_) => {
-                }
+                Ok(_) => {}
                 Err(e) => {
                     warn!("Failed to update parameter {}: {}", param_code, e);
                 }
@@ -319,7 +315,7 @@ impl FirmwareSettingsIntegration {
     pub fn restore_from_backup(&mut self) -> Result<()> {
         self.firmware_panel
             .restore_backup()
-            .map_err(|e| crate::error::Error::other(e))
+            .map_err(crate::error::Error::other)
     }
 
     /// Reset all parameters to defaults

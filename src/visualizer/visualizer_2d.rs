@@ -118,7 +118,15 @@ struct CoordTransform {
 }
 
 impl CoordTransform {
-    fn new(min_x: f32, min_y: f32, scale: f32, width: f32, height: f32, x_offset: f32, y_offset: f32) -> Self {
+    fn new(
+        min_x: f32,
+        min_y: f32,
+        scale: f32,
+        width: f32,
+        height: f32,
+        x_offset: f32,
+        y_offset: f32,
+    ) -> Self {
         Self {
             min_x,
             min_y,

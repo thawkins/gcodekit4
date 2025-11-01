@@ -19,8 +19,10 @@ use std::path::{Path, PathBuf};
 
 /// File format options for export
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Default)]
 pub enum FileFormat {
     /// Standard G-code (.nc)
+    #[default]
     GCode,
     /// Generic G-code (.gcode)
     GenericGCode,
@@ -58,11 +60,6 @@ impl FileFormat {
     }
 }
 
-impl Default for FileFormat {
-    fn default() -> Self {
-        FileFormat::GCode
-    }
-}
 
 /// Export options
 #[derive(Debug, Clone, Serialize, Deserialize)]

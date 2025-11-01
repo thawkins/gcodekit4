@@ -1,8 +1,7 @@
 //! Integration tests for the Designer tool
 
 use gcodekit4::{
-    Canvas, Circle, DrawingMode, Line, Point, Rectangle, ToolpathGenerator, ToolpathToGcode,
-    Units,
+    Canvas, Circle, DrawingMode, Line, Point, Rectangle, ToolpathGenerator, ToolpathToGcode, Units,
 };
 
 #[test]

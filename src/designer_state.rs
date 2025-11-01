@@ -1,8 +1,11 @@
 //! Designer state manager for UI integration.
 //! Manages the designer canvas state and handles UI callbacks.
 
-use crate::designer::{Canvas, DrawingMode, Point, Rectangle, Circle, Line, ToolpathGenerator, ToolpathToGcode};
 use crate::data::Units;
+use crate::designer::{
+    Canvas, Circle, DrawingMode, Line, Point, Polygon, Rectangle, ToolpathGenerator,
+    ToolpathToGcode,
+};
 
 /// Designer state for UI integration
 pub struct DesignerState {
@@ -30,6 +33,9 @@ impl DesignerState {
             1 => DrawingMode::Rectangle,
             2 => DrawingMode::Circle,
             3 => DrawingMode::Line,
+            4 => DrawingMode::Ellipse,
+            5 => DrawingMode::Polygon,
+            6 => DrawingMode::RoundRectangle,
             _ => DrawingMode::Select,
         };
         self.canvas.set_mode(drawing_mode);
@@ -86,7 +92,8 @@ impl DesignerState {
                     // Get circle from shape
                     let (cx, cy, _, _) = shape.shape.bounding_box();
                     // For circles, we need radius - estimate from bounds
-                    let radius = ((shape.shape.bounding_box().2 - shape.shape.bounding_box().0) / 2.0).abs();
+                    let radius =
+                        ((shape.shape.bounding_box().2 - shape.shape.bounding_box().0) / 2.0).abs();
                     let circle = Circle::new(Point::new(cx, cy), radius);
                     self.toolpath_generator.generate_circle_contour(&circle)
                 }
@@ -94,6 +101,27 @@ impl DesignerState {
                     let (x1, y1, x2, y2) = shape.shape.bounding_box();
                     let line = Line::new(Point::new(x1, y1), Point::new(x2, y2));
                     self.toolpath_generator.generate_line_contour(&line)
+                }
+                crate::designer::ShapeType::Ellipse => {
+                    // For ellipses, generate circle contour approximation
+                    let (x1, y1, x2, y2) = shape.shape.bounding_box();
+                    let cx = (x1 + x2) / 2.0;
+                    let cy = (y1 + y2) / 2.0;
+                    let radius = ((x2 - x1).abs().max((y2 - y1).abs())) / 2.0;
+                    let circle = Circle::new(Point::new(cx, cy), radius);
+                    self.toolpath_generator.generate_circle_contour(&circle)
+                }
+                crate::designer::ShapeType::Polygon => {
+                    // For polygons, generate rectangle contour as approximation
+                    let (x1, y1, x2, y2) = shape.shape.bounding_box();
+                    let rect = Rectangle::new(x1, y1, x2 - x1, y2 - y1);
+                    self.toolpath_generator.generate_rectangle_contour(&rect)
+                }
+                crate::designer::ShapeType::RoundRectangle => {
+                    // For round rectangles, generate rectangle contour (ignoring corner radius for now)
+                    let (x1, y1, x2, y2) = shape.shape.bounding_box();
+                    let rect = Rectangle::new(x1, y1, x2 - x1, y2 - y1);
+                    self.toolpath_generator.generate_rectangle_contour(&rect)
                 }
             };
 
@@ -141,7 +169,8 @@ impl DesignerState {
 
     /// Adds a test line to the canvas.
     pub fn add_test_line(&mut self) {
-        self.canvas.add_line(Point::new(10.0, 10.0), Point::new(100.0, 100.0));
+        self.canvas
+            .add_line(Point::new(10.0, 10.0), Point::new(100.0, 100.0));
     }
 
     /// Adds a shape to the canvas at the specified position based on current mode.
@@ -161,7 +190,23 @@ impl DesignerState {
             }
             DrawingMode::Line => {
                 // Draw 50 unit line from click point
-                self.canvas.add_line(Point::new(x, y), Point::new(x + 50.0, y));
+                self.canvas
+                    .add_line(Point::new(x, y), Point::new(x + 50.0, y));
+            }
+            DrawingMode::Ellipse => {
+                // Draw ellipse with rx=40, ry=25 centered at click point
+                self.canvas.add_ellipse(Point::new(x, y), 40.0, 25.0);
+            }
+            DrawingMode::Polygon => {
+                // Draw regular hexagon with radius 30 centered at click point
+                self.canvas
+                    .add_polygon(Polygon::regular(Point::new(x, y), 30.0, 6).vertices);
+            }
+            DrawingMode::RoundRectangle => {
+                // Draw 60x40 rounded rectangle with default 5% radius
+                let height = 40.0_f64;
+                let radius = (height * 0.20).max(1.0);
+                self.canvas.add_round_rectangle(x, y, 60.0, height, radius);
             }
         }
     }
@@ -210,7 +255,7 @@ mod tests {
         let mut state = DesignerState::new();
         state.set_mode(1);
         assert_eq!(state.canvas.mode(), DrawingMode::Rectangle);
-        
+
         state.set_mode(2);
         assert_eq!(state.canvas.mode(), DrawingMode::Circle);
     }
@@ -219,10 +264,10 @@ mod tests {
     fn test_zoom() {
         let mut state = DesignerState::new();
         let initial = state.canvas.zoom();
-        
+
         state.zoom_in();
         assert!(state.canvas.zoom() > initial);
-        
+
         state.zoom_out();
         assert!(state.canvas.zoom() <= initial * 1.1);
     }
@@ -231,7 +276,7 @@ mod tests {
     fn test_generate_gcode() {
         let mut state = DesignerState::new();
         state.canvas.add_rectangle(0.0, 0.0, 10.0, 10.0);
-        
+
         let gcode = state.generate_gcode();
         assert!(!gcode.is_empty());
         assert!(state.gcode_generated);

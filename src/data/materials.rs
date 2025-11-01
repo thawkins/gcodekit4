@@ -521,8 +521,7 @@ mod tests {
         let wood_materials = library.get_materials_by_category(MaterialCategory::Wood);
         assert!(!wood_materials.is_empty());
 
-        let metal_materials =
-            library.get_materials_by_category(MaterialCategory::NonFerrousMetal);
+        let metal_materials = library.get_materials_by_category(MaterialCategory::NonFerrousMetal);
         assert!(!metal_materials.is_empty());
     }
 

@@ -253,10 +253,7 @@ mod tests {
         assert_eq!(status.work_pos, (10.0, 20.0, 0.0));
         assert_eq!(status.feed_rate, Some(2000.0));
         assert_eq!(status.spindle_speed, Some(5000));
-        assert_eq!(
-            status.buffer.unwrap(),
-            BufferStatus { rx: 14, tx: 1 }
-        );
+        assert_eq!(status.buffer.unwrap(), BufferStatus { rx: 14, tx: 1 });
         assert_eq!(
             status.overrides.unwrap(),
             Overrides {
@@ -281,7 +278,8 @@ mod tests {
 
     #[test]
     fn test_running_state() {
-        let response = "<Run|MPos:100.000,50.000,10.000|WPos:100.000,50.000,10.000|Bf:10,2|F:1500|S:12000>";
+        let response =
+            "<Run|MPos:100.000,50.000,10.000|WPos:100.000,50.000,10.000|Bf:10,2|F:1500|S:12000>";
         let status = DeviceStatus::parse_grbl_status(response).unwrap();
 
         assert_eq!(status.state, MachineStateType::Run);

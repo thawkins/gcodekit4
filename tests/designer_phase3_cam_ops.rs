@@ -1,10 +1,10 @@
 //! Integration tests for Phase 3 CAM operations.
 
 use gcodekit4::designer::{
-    DrillOperation, DrillingPattern, DrillingPatternGenerator, MultiPassConfig,
+    DepthStrategy, DrillOperation, DrillingPattern, DrillingPatternGenerator, MultiPassConfig,
     MultiPassToolpathGenerator, PatternType, PocketGenerator, PocketOperation, Point, Rectangle,
-    ToolLibrary, ToolType, ToolpathAnalyzer, ToolpathSimulator, Toolpath, ToolpathSegment,
-    ToolpathSegmentType, DepthStrategy,
+    ToolLibrary, ToolType, Toolpath, ToolpathAnalyzer, ToolpathSegment, ToolpathSegmentType,
+    ToolpathSimulator,
 };
 
 #[test]
@@ -60,11 +60,7 @@ fn test_phase3_drilling_linear_pattern() {
     let op = DrillOperation::new("drill1".to_string(), 6.35, 6.35, -15.0);
     let gen = DrillingPatternGenerator::new(op);
 
-    let toolpath = gen.generate_linear_pattern(
-        Point::new(0.0, 0.0),
-        Point::new(100.0, 0.0),
-        5,
-    );
+    let toolpath = gen.generate_linear_pattern(Point::new(0.0, 0.0), Point::new(100.0, 0.0), 5);
     assert_eq!(toolpath.segments.len(), 5);
 }
 
@@ -73,11 +69,7 @@ fn test_phase3_drilling_circular_pattern() {
     let op = DrillOperation::new("drill1".to_string(), 6.35, 6.35, -15.0);
     let gen = DrillingPatternGenerator::new(op);
 
-    let toolpath = gen.generate_circular_pattern(
-        Point::new(50.0, 50.0),
-        25.0,
-        8,
-    );
+    let toolpath = gen.generate_circular_pattern(Point::new(50.0, 50.0), 25.0, 8);
     assert_eq!(toolpath.segments.len(), 8);
 }
 
@@ -86,13 +78,7 @@ fn test_phase3_drilling_grid_pattern() {
     let op = DrillOperation::new("drill1".to_string(), 6.35, 6.35, -15.0);
     let gen = DrillingPatternGenerator::new(op);
 
-    let toolpath = gen.generate_grid_pattern(
-        Point::new(0.0, 0.0),
-        10.0,
-        10.0,
-        5,
-        3,
-    );
+    let toolpath = gen.generate_grid_pattern(Point::new(0.0, 0.0), 10.0, 10.0, 5, 3);
     assert_eq!(toolpath.segments.len(), 15);
 }
 
@@ -159,12 +145,7 @@ fn test_phase3_spiral_ramp() {
     let config = MultiPassConfig::new(-10.0, 10.0);
     let gen = MultiPassToolpathGenerator::new(config);
 
-    let toolpath = gen.generate_spiral_ramp(
-        Point::new(50.0, 50.0),
-        10.0,
-        -10.0,
-        100.0,
-    );
+    let toolpath = gen.generate_spiral_ramp(Point::new(50.0, 50.0), 10.0, -10.0, 100.0);
     assert!(toolpath.segments.len() > 0);
 }
 
@@ -174,12 +155,18 @@ fn test_phase3_toolpath_simulation_lifecycle() {
     let mut sim = ToolpathSimulator::new(toolpath);
 
     assert_eq!(sim.get_state(), gcodekit4::designer::SimulationState::Idle);
-    
+
     sim.start();
-    assert_eq!(sim.get_state(), gcodekit4::designer::SimulationState::Running);
+    assert_eq!(
+        sim.get_state(),
+        gcodekit4::designer::SimulationState::Running
+    );
 
     sim.pause();
-    assert_eq!(sim.get_state(), gcodekit4::designer::SimulationState::Paused);
+    assert_eq!(
+        sim.get_state(),
+        gcodekit4::designer::SimulationState::Paused
+    );
 
     sim.reset();
     assert_eq!(sim.get_state(), gcodekit4::designer::SimulationState::Idle);

@@ -1,8 +1,8 @@
 //! Integration tests for parametric design system (Phase 4.6)
 
 use gcodekit4::designer::{
-    ParametricTemplate, TemplateLibrary, ParameterSet, Parameter, ParameterType,
-    ParameterConstraint, ParametricGenerator,
+    Parameter, ParameterConstraint, ParameterSet, ParameterType, ParametricGenerator,
+    ParametricTemplate, TemplateLibrary,
 };
 
 #[test]
@@ -99,11 +99,8 @@ fn test_gear_template() {
 
 #[test]
 fn test_parameter_set_with_template() {
-    let mut template = ParametricTemplate::new(
-        "box".to_string(),
-        "Box".to_string(),
-        "A box".to_string(),
-    );
+    let mut template =
+        ParametricTemplate::new("box".to_string(), "Box".to_string(), "A box".to_string());
 
     let constraint = ParameterConstraint::new(10.0, 100.0, 50.0, 1.0);
     let param = Parameter::new(

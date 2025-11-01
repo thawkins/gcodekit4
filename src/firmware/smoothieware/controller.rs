@@ -52,7 +52,6 @@ pub struct SmoothiewareController {
 impl SmoothiewareController {
     /// Create a new Smoothieware controller
     pub fn new(connection_params: ConnectionParams, name: Option<String>) -> anyhow::Result<Self> {
-
         Ok(Self {
             name: name.unwrap_or_else(|| "Smoothieware".to_string()),
             connection_params,
@@ -97,8 +96,7 @@ impl SmoothiewareController {
     /// Parse a response line
     pub fn parse_response(&self, line: &str) {
         let mut parser = self.parser.write();
-        if let Some(response) = parser.parse_line(line) {
-        }
+        if let Some(response) = parser.parse_line(line) {}
     }
 }
 

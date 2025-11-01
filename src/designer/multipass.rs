@@ -3,8 +3,8 @@
 //! Implements depth ramping and stepping for multi-pass cutting operations,
 //! enabling deep cuts while maintaining tool safety and surface finish quality.
 
-use super::toolpath::{Toolpath, ToolpathSegment, ToolpathSegmentType};
 use super::shapes::Point;
+use super::toolpath::{Toolpath, ToolpathSegment, ToolpathSegmentType};
 
 /// Depth cutting strategy for multiple passes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -90,7 +90,8 @@ impl MultiPassConfig {
         let start_depth = -self.minimum_depth;
         let end_depth = -self.max_depth_per_pass;
 
-        let ramp_progress = (progress * passes - (passes - self.ramp_start_depth)) / self.ramp_start_depth;
+        let ramp_progress =
+            (progress * passes - (passes - self.ramp_start_depth)) / self.ramp_start_depth;
         let clamped = ramp_progress.max(0.0).min(1.0);
 
         start_depth + (end_depth - start_depth) * clamped
@@ -160,7 +161,12 @@ impl MultiPassToolpathGenerator {
     }
 
     /// Generates depth ramp-down segments from current Z to target depth.
-    pub fn generate_ramp_down(&self, start: Point, end_xy: Point, target_depth: f64) -> Vec<ToolpathSegment> {
+    pub fn generate_ramp_down(
+        &self,
+        start: Point,
+        end_xy: Point,
+        target_depth: f64,
+    ) -> Vec<ToolpathSegment> {
         let mut segments = Vec::new();
         let ramp_steps = 20;
 
@@ -306,12 +312,7 @@ mod tests {
         let config = MultiPassConfig::new(-10.0, 10.0);
         let gen = MultiPassToolpathGenerator::new(config);
 
-        let toolpath = gen.generate_spiral_ramp(
-            Point::new(50.0, 50.0),
-            10.0,
-            -10.0,
-            100.0,
-        );
+        let toolpath = gen.generate_spiral_ramp(Point::new(50.0, 50.0), 10.0, -10.0, 100.0);
         assert!(toolpath.segments.len() > 0);
     }
 }

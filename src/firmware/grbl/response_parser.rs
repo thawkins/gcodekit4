@@ -207,7 +207,7 @@ impl GrblResponseParser {
             return None;
         }
 
-        let x = coords.get(0).copied().unwrap_or(0.0);
+        let x = coords.first().copied().unwrap_or(0.0);
         let y = coords.get(1).copied().unwrap_or(0.0);
         let z = coords.get(2).copied().unwrap_or(0.0);
         let a = coords.get(3).copied().unwrap_or(0.0);

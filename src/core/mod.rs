@@ -263,7 +263,7 @@ impl ControllerTrait for SimpleController {
     }
 
     fn get_status(&self) -> ControllerStatus {
-        self.status.read().clone()
+        *self.status.read()
     }
 
     fn get_override_state(&self) -> OverrideState {

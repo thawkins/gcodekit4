@@ -62,6 +62,7 @@ pub struct ControllerState {
 
 /// File state
 #[derive(Debug, Clone)]
+#[derive(Default)]
 pub struct FileState {
     /// Current file path
     pub current_file: Option<String>,
@@ -75,17 +76,6 @@ pub struct FileState {
     pub is_dirty: bool,
 }
 
-impl Default for FileState {
-    fn default() -> Self {
-        Self {
-            current_file: None,
-            file_loaded: false,
-            total_lines: 0,
-            current_line: 0,
-            is_dirty: false,
-        }
-    }
-}
 
 /// Machine state
 #[derive(Debug, Clone, Default)]

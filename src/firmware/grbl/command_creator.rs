@@ -282,7 +282,7 @@ impl CommandCreator {
     pub fn set_work_offset(axes: &[&str]) -> String {
         let mut cmd = "G10 P0".to_string();
         for axis in axes {
-            cmd.push_str(" ");
+            cmd.push(' ');
             cmd.push_str(axis);
             cmd.push('0');
         }

@@ -36,8 +36,8 @@ pub mod config;
 pub mod core;
 pub mod data;
 pub mod designer;
-pub mod designer_state;
 pub mod designer_editor_integration;
+pub mod designer_state;
 pub mod designer_visualizer_integration;
 pub mod error;
 pub mod firmware;
@@ -69,8 +69,8 @@ pub use data::{
     MachineStatusSnapshot, PartialPosition, Position, Units,
 };
 pub use designer::{
-    Canvas, CanvasPoint, Circle, DrawingMode, Line, Point, Rectangle, Shape, ShapeType,
-    Toolpath, ToolpathGenerator, ToolpathSegment, ToolpathSegmentType, ToolpathToGcode,
+    Canvas, CanvasPoint, Circle, DrawingMode, Line, Point, Rectangle, Shape, ShapeType, Toolpath,
+    ToolpathGenerator, ToolpathSegment, ToolpathSegmentType, ToolpathToGcode,
 };
 pub use designer_state::DesignerState;
 pub use error::{ConnectionError, ControllerError, Error, FirmwareError, GcodeError, Result};

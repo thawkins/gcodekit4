@@ -16,6 +16,7 @@ pub use response_parser::FluidNCResponseParser;
 
 /// FluidNC version information
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Default)]
 pub struct FluidNCVersion {
     /// Major version
     pub major: u32,
@@ -31,12 +32,3 @@ impl std::fmt::Display for FluidNCVersion {
     }
 }
 
-impl Default for FluidNCVersion {
-    fn default() -> Self {
-        Self {
-            major: 0,
-            minor: 0,
-            patch: 0,
-        }
-    }
-}

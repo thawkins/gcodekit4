@@ -232,23 +232,13 @@ impl DrillingPatternGenerator {
     }
 
     /// Generates toolpaths for a linear pattern.
-    pub fn generate_linear_pattern(
-        &self,
-        start: Point,
-        end: Point,
-        count: u32,
-    ) -> Toolpath {
+    pub fn generate_linear_pattern(&self, start: Point, end: Point, count: u32) -> Toolpath {
         let pattern = DrillingPattern::linear(start, end, count);
         self.generate_toolpath(&pattern)
     }
 
     /// Generates toolpaths for a circular pattern.
-    pub fn generate_circular_pattern(
-        &self,
-        center: Point,
-        radius: f64,
-        count: u32,
-    ) -> Toolpath {
+    pub fn generate_circular_pattern(&self, center: Point, radius: f64, count: u32) -> Toolpath {
         let pattern = DrillingPattern::circular(center, radius, count);
         self.generate_toolpath(&pattern)
     }
@@ -297,20 +287,13 @@ mod tests {
 
     #[test]
     fn test_drilling_pattern_circular() {
-        let pattern =
-            DrillingPattern::circular(Point::new(50.0, 50.0), 25.0, 8);
+        let pattern = DrillingPattern::circular(Point::new(50.0, 50.0), 25.0, 8);
         assert_eq!(pattern.hole_count(), 8);
     }
 
     #[test]
     fn test_drilling_pattern_grid() {
-        let pattern = DrillingPattern::grid(
-            Point::new(0.0, 0.0),
-            10.0,
-            10.0,
-            5,
-            3,
-        );
+        let pattern = DrillingPattern::grid(Point::new(0.0, 0.0), 10.0, 10.0, 5, 3);
         assert_eq!(pattern.hole_count(), 15);
     }
 
@@ -330,11 +313,7 @@ mod tests {
         let op = DrillOperation::new("drill1".to_string(), 6.35, 6.35, -15.0);
         let gen = DrillingPatternGenerator::new(op);
 
-        let toolpath = gen.generate_linear_pattern(
-            Point::new(0.0, 0.0),
-            Point::new(100.0, 0.0),
-            5,
-        );
+        let toolpath = gen.generate_linear_pattern(Point::new(0.0, 0.0), Point::new(100.0, 0.0), 5);
         assert_eq!(toolpath.segments.len(), 5);
     }
 
@@ -343,11 +322,7 @@ mod tests {
         let op = DrillOperation::new("drill1".to_string(), 6.35, 6.35, -15.0);
         let gen = DrillingPatternGenerator::new(op);
 
-        let toolpath = gen.generate_circular_pattern(
-            Point::new(50.0, 50.0),
-            25.0,
-            8,
-        );
+        let toolpath = gen.generate_circular_pattern(Point::new(50.0, 50.0), 25.0, 8);
         assert_eq!(toolpath.segments.len(), 8);
     }
 
@@ -356,13 +331,7 @@ mod tests {
         let op = DrillOperation::new("drill1".to_string(), 6.35, 6.35, -15.0);
         let gen = DrillingPatternGenerator::new(op);
 
-        let toolpath = gen.generate_grid_pattern(
-            Point::new(0.0, 0.0),
-            10.0,
-            10.0,
-            5,
-            3,
-        );
+        let toolpath = gen.generate_grid_pattern(Point::new(0.0, 0.0), 10.0, 10.0, 5, 3);
         assert_eq!(toolpath.segments.len(), 15);
     }
 

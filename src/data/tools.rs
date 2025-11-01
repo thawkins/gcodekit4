@@ -544,9 +544,15 @@ mod tests {
         let library = init_standard_library();
         assert!(library.len() >= 5);
 
-        assert!(library.get_tool(&ToolId("tool_1_4_flat".to_string())).is_some());
-        assert!(library.get_tool(&ToolId("tool_vbit_90".to_string())).is_some());
-        assert!(library.get_tool(&ToolId("tool_drill_1_4".to_string())).is_some());
+        assert!(library
+            .get_tool(&ToolId("tool_1_4_flat".to_string()))
+            .is_some());
+        assert!(library
+            .get_tool(&ToolId("tool_vbit_90".to_string()))
+            .is_some());
+        assert!(library
+            .get_tool(&ToolId("tool_drill_1_4".to_string()))
+            .is_some());
     }
 
     #[test]

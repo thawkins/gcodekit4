@@ -39,7 +39,6 @@ impl SettingsPersistence {
 
     /// Populate SettingsDialog from config
     pub fn populate_dialog(&self, dialog: &mut SettingsDialog) {
-
         // Connection Settings
         self.add_connection_settings(dialog);
 
@@ -55,7 +54,6 @@ impl SettingsPersistence {
 
     /// Load settings from dialog into config
     pub fn load_from_dialog(&mut self, dialog: &SettingsDialog) -> Result<()> {
-
         // Update connection settings
         self.update_connection_settings(dialog)?;
 
@@ -166,7 +164,6 @@ impl SettingsPersistence {
             .with_description("Automatically reconnect on connection loss")
             .with_category(SettingsCategory::Controller),
         );
-
     }
 
     /// Add UI settings to dialog
@@ -233,7 +230,6 @@ impl SettingsPersistence {
             .with_description("Show the status bar at the bottom")
             .with_category(SettingsCategory::UserInterface),
         );
-
     }
 
     /// Add file processing settings to dialog
@@ -272,7 +268,6 @@ impl SettingsPersistence {
             .with_description("Maximum characters per line in output files")
             .with_category(SettingsCategory::FileProcessing),
         );
-
     }
 
     /// Add keyboard shortcuts to dialog
@@ -297,12 +292,10 @@ impl SettingsPersistence {
         for shortcut in shortcuts {
             dialog.add_shortcut(shortcut);
         }
-
     }
 
     /// Update connection settings in config from dialog
     fn update_connection_settings(&mut self, dialog: &SettingsDialog) -> Result<()> {
-
         if let Some(setting) = dialog.get_setting("connection_type") {
             let conn_type = match setting.value.as_str().as_str() {
                 "TCP/IP" => ConnectionType::Tcp,
@@ -345,7 +338,6 @@ impl SettingsPersistence {
 
     /// Update UI settings in config from dialog
     fn update_ui_settings(&mut self, dialog: &SettingsDialog) -> Result<()> {
-
         if let Some(setting) = dialog.get_setting("theme") {
             self.config.ui.theme = setting.value.as_str();
         }
@@ -385,7 +377,6 @@ impl SettingsPersistence {
 
     /// Update file processing settings in config from dialog
     fn update_file_processing_settings(&mut self, dialog: &SettingsDialog) -> Result<()> {
-
         if let Some(setting) = dialog.get_setting("preserve_comments") {
             if let Ok(value) = setting.value.as_str().parse::<bool>() {
                 self.config.file_processing.preserve_comments = value;

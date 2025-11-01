@@ -3,7 +3,6 @@
 //! Provides real-time override management for GRBL firmware,
 //! including feed rate, rapid, and spindle speed overrides.
 
-
 /// GRBL real-time override commands
 /// According to GRBL protocol specification
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -139,11 +138,7 @@ impl OverrideManager {
 
     /// Decrease feed rate override by 10%
     pub fn decrease_feed_10(&mut self) -> anyhow::Result<()> {
-        let new_value = if self.feed_override > 10 {
-            self.feed_override - 10
-        } else {
-            0
-        };
+        let new_value = self.feed_override.saturating_sub(10);
         self.set_feed_override(new_value)?;
         Ok(())
     }
@@ -225,11 +220,7 @@ impl OverrideManager {
 
     /// Decrease spindle override by 10%
     pub fn decrease_spindle_10(&mut self) -> anyhow::Result<()> {
-        let new_value = if self.spindle_override > 10 {
-            self.spindle_override - 10
-        } else {
-            0
-        };
+        let new_value = self.spindle_override.saturating_sub(10);
         self.set_spindle_override(new_value)?;
         Ok(())
     }
