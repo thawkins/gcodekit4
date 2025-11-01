@@ -96,7 +96,7 @@ impl FluidNCController {
     /// Parse a response line
     pub fn parse_response(&self, line: &str) {
         let mut parser = self.parser.write();
-        if let Some(response) = parser.parse_line(line) {}
+        if let Some(_response) = parser.parse_line(line) {}
     }
 }
 

@@ -171,7 +171,7 @@ impl StringStreamReader {
             .map(|line| line.to_string())
             .collect::<Vec<_>>();
 
-        let total = lines.len();
+        let _total = lines.len();
 
         Self {
             lines,

@@ -371,7 +371,7 @@ impl AdaptiveAlgorithm {
         }
 
         let mut passes = Vec::new();
-        let volume_per_pass = material_volume / passes_needed as f64;
+        let _volume_per_pass = material_volume / passes_needed as f64;
 
         for pass in 0..passes_needed {
             // Simulate load increase as tool wears

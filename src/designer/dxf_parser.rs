@@ -410,7 +410,7 @@ impl DxfParser {
     }
 
     /// Parse a LINE entity
-    fn parse_line(lines: &[&str], _index: &mut usize) -> Result<DxfLine> {
+    fn parse_line(_lines: &[&str], _index: &mut usize) -> Result<DxfLine> {
         Ok(DxfLine {
             start: Point::new(0.0, 0.0),
             end: Point::new(10.0, 10.0),
@@ -420,7 +420,7 @@ impl DxfParser {
     }
 
     /// Parse a CIRCLE entity
-    fn parse_circle(lines: &[&str], _index: &mut usize) -> Result<DxfCircle> {
+    fn parse_circle(_lines: &[&str], _index: &mut usize) -> Result<DxfCircle> {
         Ok(DxfCircle {
             center: Point::new(0.0, 0.0),
             radius: 5.0,
@@ -430,7 +430,7 @@ impl DxfParser {
     }
 
     /// Parse an ARC entity
-    fn parse_arc(lines: &[&str], _index: &mut usize) -> Result<DxfArc> {
+    fn parse_arc(_lines: &[&str], _index: &mut usize) -> Result<DxfArc> {
         Ok(DxfArc {
             center: Point::new(0.0, 0.0),
             radius: 5.0,

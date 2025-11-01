@@ -21,10 +21,10 @@ fn copy_to_clipboard(text: &str) -> bool {
                     std::thread::sleep(std::time::Duration::from_millis(100));
                     true
                 }
-                Err(e) => false,
+                Err(_) => false,
             }
         }
-        Err(e) => false,
+        Err(_) => false,
     }
 }
 
@@ -108,7 +108,7 @@ fn update_designer_ui(window: &MainWindow, state: &gcodekit4::DesignerState) {
             }
         })
         .collect();
-    for shape in &shapes {}
+    for _ in &shapes {}
     // Force UI to recognize the change by clearing first
     window.set_designer_shapes(slint::ModelRc::from(Rc::new(slint::VecModel::from(Vec::<
         crate::DesignerShape,
@@ -241,7 +241,7 @@ fn main() -> anyhow::Result<()> {
     // Load firmware settings
     {
         let mut fw_integration = firmware_integration.borrow_mut();
-        if let Err(e) = fw_integration.load_grbl_defaults() {
+        if let Err(_) = fw_integration.load_grbl_defaults() {
         } else {
             // Populate dialog with firmware parameters
             let mut dialog = settings_dialog.borrow_mut();
@@ -289,7 +289,7 @@ fn main() -> anyhow::Result<()> {
         let mut persistence = settings_persistence.borrow_mut();
         let config_path = match gcodekit4::config::SettingsManager::config_file_path() {
             Ok(path) => path,
-            Err(e) => std::path::PathBuf::new(),
+            Err(_) => std::path::PathBuf::new(),
         };
 
         if config_path.exists() {
@@ -297,7 +297,7 @@ fn main() -> anyhow::Result<()> {
                 Ok(loaded_persistence) => {
                     *persistence = loaded_persistence;
                 }
-                Err(e) => {}
+                Err(_) => {}
             }
         } 
 
@@ -505,7 +505,7 @@ fn main() -> anyhow::Result<()> {
     main_window.on_menu_file_exit(move || {
         // Disconnect if connected before exiting
         let mut comm = communicator_clone.borrow_mut();
-        if let Err(e) = comm.disconnect() {}
+        if let Err(_) = comm.disconnect() {}
         std::process::exit(0);
     });
 
@@ -1705,7 +1705,7 @@ fn main() -> anyhow::Result<()> {
         // If in Select mode, try to select a shape; otherwise add a new shape
         if state.canvas.mode() == gcodekit4::DrawingMode::Select {
             // Try to select - this will deselect any other shapes
-            let selected = state.canvas.select_at(&world_point);
+            let _ = state.canvas.select_at(&world_point);
         } else {
             state.add_shape_at(world_point.x, world_point.y);
         }
@@ -2281,7 +2281,7 @@ fn get_available_ports() -> anyhow::Result<Vec<slint::SharedString>> {
                 Ok(port_names)
             }
         }
-        Err(e) => Ok(vec![slint::SharedString::from("Error reading ports")]),
+        Err(_) => Ok(vec![slint::SharedString::from("Error reading ports")]),
     }
 }
 

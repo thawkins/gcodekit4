@@ -118,7 +118,7 @@ impl GrblController {
                 tokio::select! {
                     _ = interval.tick() => {
                         // Send status query
-                        if let Err(e) = communicator.send_realtime_byte(b'?') {
+                        if let Err(_e) = communicator.send_realtime_byte(b'?') {
                             continue;
                         }
 
@@ -214,7 +214,7 @@ impl ControllerTrait for GrblController {
 
         // Read OK response
         let response = self.communicator.read_line()?;
-        !response.contains("ok");
+        let _ = !response.contains("ok");
 
         Ok(())
     }

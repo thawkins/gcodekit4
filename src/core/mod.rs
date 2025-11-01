@@ -280,7 +280,7 @@ impl ControllerTrait for SimpleController {
         Ok(())
     }
 
-    async fn send_command(&mut self, command: &str) -> anyhow::Result<()> {
+    async fn send_command(&mut self, _command: &str) -> anyhow::Result<()> {
         Ok(())
     }
 
@@ -306,9 +306,9 @@ impl ControllerTrait for SimpleController {
 
     async fn jog_start(
         &mut self,
-        axis: char,
-        direction: i32,
-        feed_rate: f64,
+        _axis: char,
+        _direction: i32,
+        _feed_rate: f64,
     ) -> anyhow::Result<()> {
         Ok(())
     }
@@ -319,9 +319,9 @@ impl ControllerTrait for SimpleController {
 
     async fn jog_incremental(
         &mut self,
-        axis: char,
-        distance: f64,
-        feed_rate: f64,
+        _axis: char,
+        _distance: f64,
+        _feed_rate: f64,
     ) -> anyhow::Result<()> {
         Ok(())
     }
@@ -346,27 +346,27 @@ impl ControllerTrait for SimpleController {
         Ok(())
     }
 
-    async fn probe_z(&mut self, feed_rate: f64) -> anyhow::Result<PartialPosition> {
+    async fn probe_z(&mut self, _feed_rate: f64) -> anyhow::Result<PartialPosition> {
         Ok(PartialPosition::default())
     }
 
-    async fn probe_x(&mut self, feed_rate: f64) -> anyhow::Result<PartialPosition> {
+    async fn probe_x(&mut self, _feed_rate: f64) -> anyhow::Result<PartialPosition> {
         Ok(PartialPosition::default())
     }
 
-    async fn probe_y(&mut self, feed_rate: f64) -> anyhow::Result<PartialPosition> {
+    async fn probe_y(&mut self, _feed_rate: f64) -> anyhow::Result<PartialPosition> {
         Ok(PartialPosition::default())
     }
 
-    async fn set_feed_override(&mut self, percentage: u16) -> anyhow::Result<()> {
+    async fn set_feed_override(&mut self, _percentage: u16) -> anyhow::Result<()> {
         Ok(())
     }
 
-    async fn set_rapid_override(&mut self, percentage: u8) -> anyhow::Result<()> {
+    async fn set_rapid_override(&mut self, _percentage: u8) -> anyhow::Result<()> {
         Ok(())
     }
 
-    async fn set_spindle_override(&mut self, percentage: u16) -> anyhow::Result<()> {
+    async fn set_spindle_override(&mut self, _percentage: u16) -> anyhow::Result<()> {
         Ok(())
     }
 
@@ -374,7 +374,7 @@ impl ControllerTrait for SimpleController {
         Ok(())
     }
 
-    async fn set_work_zero_axes(&mut self, axes: &str) -> anyhow::Result<()> {
+    async fn set_work_zero_axes(&mut self, _axes: &str) -> anyhow::Result<()> {
         Ok(())
     }
 
@@ -382,11 +382,11 @@ impl ControllerTrait for SimpleController {
         Ok(())
     }
 
-    async fn set_work_coordinate_system(&mut self, wcs: u8) -> anyhow::Result<()> {
+    async fn set_work_coordinate_system(&mut self, _wcs: u8) -> anyhow::Result<()> {
         Ok(())
     }
 
-    async fn get_wcs_offset(&self, wcs: u8) -> anyhow::Result<PartialPosition> {
+    async fn get_wcs_offset(&self, _wcs: u8) -> anyhow::Result<PartialPosition> {
         Ok(PartialPosition::default())
     }
 

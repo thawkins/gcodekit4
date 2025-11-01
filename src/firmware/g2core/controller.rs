@@ -201,7 +201,7 @@ impl ControllerTrait for G2CoreController {
         Ok(())
     }
 
-    async fn send_command(&mut self, command: &str) -> anyhow::Result<()> {
+    async fn send_command(&mut self, _command: &str) -> anyhow::Result<()> {
         if !self.is_connected() {
             anyhow::bail!("g2core controller not connected");
         }

@@ -172,7 +172,7 @@ impl ControllerTrait for TinyGController {
         Ok(())
     }
 
-    async fn send_command(&mut self, command: &str) -> anyhow::Result<()> {
+    async fn send_command(&mut self, _command: &str) -> anyhow::Result<()> {
         if !self.is_connected() {
             anyhow::bail!("TinyG controller not connected");
         }
