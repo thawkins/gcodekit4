@@ -33,6 +33,18 @@ impl ToolpathToGcode {
     pub fn generate(&self, toolpath: &Toolpath) -> String {
         let mut gcode = String::new();
 
+        // Get spindle speed and feed rate from first segment (all should have same parameters)
+        let spindle_speed = toolpath
+            .segments
+            .first()
+            .map(|s| s.spindle_speed)
+            .unwrap_or(1000);
+        let feed_rate = toolpath
+            .segments
+            .first()
+            .map(|s| s.feed_rate)
+            .unwrap_or(100.0);
+
         // Header
         gcode.push_str("; Generated G-code from Designer tool\n");
         gcode.push_str(&format!(
@@ -40,6 +52,14 @@ impl ToolpathToGcode {
             toolpath.tool_diameter
         ));
         gcode.push_str(&format!("; Cut depth: {:.3}mm\n", toolpath.depth));
+        gcode.push_str(&format!(
+            "; Feed rate: {:.0} mm/min\n",
+            feed_rate
+        ));
+        gcode.push_str(&format!(
+            "; Spindle speed: {} RPM\n",
+            spindle_speed
+        ));
         gcode.push_str(&format!(
             "; Total path length: {:.3}mm\n",
             toolpath.total_length()
@@ -50,7 +70,7 @@ impl ToolpathToGcode {
         gcode.push_str("G90         ; Absolute positioning\n");
         gcode.push_str("G21         ; Millimeter units\n");
         gcode.push_str("G17         ; XY plane\n");
-        gcode.push_str("M3          ; Spindle on\n");
+        gcode.push_str(&format!("M3 S{}      ; Spindle on at {} RPM\n", spindle_speed, spindle_speed));
         gcode.push('\n');
 
         // Generate moves for each segment

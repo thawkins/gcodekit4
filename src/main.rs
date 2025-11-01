@@ -216,6 +216,21 @@ fn main() -> anyhow::Result<()> {
     // Initialize Designer state (Phase 2)
     let designer_mgr = Rc::new(RefCell::new(gcodekit4::DesignerState::new()));
 
+    // Initialize designer toolpath parameters in UI and backend
+    main_window.set_designer_feed_rate(120.0);
+    main_window.set_designer_spindle_speed(3000.0);
+    main_window.set_designer_tool_diameter(3.175);
+    main_window.set_designer_cut_depth(-5.0);
+    
+    // Sync initial values to backend
+    {
+        let mut state = designer_mgr.borrow_mut();
+        state.toolpath_generator.set_feed_rate(120.0);
+        state.toolpath_generator.set_spindle_speed(3000);
+        state.toolpath_generator.set_tool_diameter(3.175);
+        state.toolpath_generator.set_cut_depth(-5.0);
+    }
+
     // Shift key state for snapping in designer
     let shift_pressed = Rc::new(RefCell::new(false));
 
@@ -1475,6 +1490,16 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
+    // Set up menu-view-gcode-visualizer callback
+    let window_weak = main_window.as_weak();
+    main_window.on_menu_view_gcode_visualizer(move || {
+        if let Some(window) = window_weak.upgrade() {
+            window.set_current_view(slint::SharedString::from("gcode-visualizer"));
+            window.invoke_refresh_visualization();
+            window.set_connection_status(slint::SharedString::from("Visualizer panel activated"));
+        }
+    });
+
     // Set up menu-help-about callback
     let window_weak = main_window.as_weak();
     main_window.on_menu_help_about(move || {
@@ -1913,6 +1938,34 @@ fn main() -> anyhow::Result<()> {
             };
             window.set_designer_state(ui_state);
         }
+    });
+
+    // Designer: Update feed rate
+    let designer_mgr_clone = designer_mgr.clone();
+    main_window.on_designer_update_feed_rate(move |rate: f32| {
+        let mut state = designer_mgr_clone.borrow_mut();
+        state.toolpath_generator.set_feed_rate(rate as f64);
+    });
+
+    // Designer: Update spindle speed
+    let designer_mgr_clone = designer_mgr.clone();
+    main_window.on_designer_update_spindle_speed(move |speed: f32| {
+        let mut state = designer_mgr_clone.borrow_mut();
+        state.toolpath_generator.set_spindle_speed(speed as u32);
+    });
+
+    // Designer: Update tool diameter
+    let designer_mgr_clone = designer_mgr.clone();
+    main_window.on_designer_update_tool_diameter(move |diameter: f32| {
+        let mut state = designer_mgr_clone.borrow_mut();
+        state.toolpath_generator.set_tool_diameter(diameter as f64);
+    });
+
+    // Designer: Update cut depth
+    let designer_mgr_clone = designer_mgr.clone();
+    main_window.on_designer_update_cut_depth(move |depth: f32| {
+        let mut state = designer_mgr_clone.borrow_mut();
+        state.toolpath_generator.set_cut_depth(depth as f64);
     });
 
     // Zoom state tracking (Arc for shared state across closures)

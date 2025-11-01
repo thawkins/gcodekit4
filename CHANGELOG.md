@@ -7,11 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.25.2-alpha] - 2025-11-01
 
+### ✨ Designer Properties Panel Enhancements
+
+**Complete Properties Panel Overhaul** - Redesigned SpinBox controls, added fractional value support, and fixed property persistence and G-code generation integration.
+
+### Added
+
+- **Custom CompactSpinBox Component**: Created custom SpinBox with reduced size (22px height, 11px buttons)
+  - Supports floating-point values with configurable step increments
+  - Clean minimal design that fits properly without clipping
+  - Step sizes: Feed rate (10), Spindle speed (100), Tool diameter (0.1), Cut depth (0.1)
+  
+- **Fractional Value Support**: Tool diameter and cut depth now accept decimal values
+  - Examples: 3.175mm, 5.2mm, 6.34mm
+  - Full precision passed through to G-code generation
+
+### Fixed
+
+- **Property Persistence**: Properties no longer reset when switching tabs
+  - Implemented two-way binding between UI and backend
+  - Feed rate, spindle speed, tool diameter, and depth maintained across view changes
+  
+- **G-Code Generation Integration**: Designer properties now correctly applied to generated G-code
+  - Spindle speed properly output as `M3 S<speed>` command
+  - Feed rate, tool diameter, and cut depth included in output
+  - Header comments show all configured parameters
+  - Initial values synced between UI and backend on startup
+
+- **Visualizer Grid Display**: Fixed grid not showing on initial view
+  - Added missing `on_menu_view_gcode_visualizer` callback
+  - Grid now displays correctly with proper checkbox state
+  - Automatic refresh when switching to visualizer view
+
 ### 🐛 Logging & Performance Optimization
 
 **Logging Cleanup Complete** - Removed all remaining INFO level tracing calls from performance-critical code paths.
-
-### ✨ Fixed
 
 - **Removed INFO logging from hot paths**: Eliminated 100+ additional `info!()` calls from:
   - Designer canvas handle detection and resize operations
@@ -22,7 +52,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### ✅ Testing
 - All 667 unit tests passing
-- Designer responsive and stable
+- Designer properties panel fully functional
+- G-code generation using correct parameters
+- Visualizer grid display working correctly
 - No console spam during user interactions
 
 ## [0.25.1-alpha] - 2025-11-01

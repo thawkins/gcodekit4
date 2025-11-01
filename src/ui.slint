@@ -100,10 +100,10 @@ export component MainWindow inherits Window {
         pan_y: 0.0,
         selected_id: -1,
     };
-    in property <float> designer-feed-rate: 120.0;
-    in property <float> designer-spindle-speed: 3000.0;
-    in property <float> designer-tool-diameter: 3.175;
-    in property <float> designer-cut-depth: -5.0;
+    in-out property <float> designer-feed-rate: 120.0;
+    in-out property <float> designer-spindle-speed: 3000.0;
+    in-out property <float> designer-tool-diameter: 3.175;
+    in-out property <float> designer-cut-depth: -5.0;
     in property <float> designer-safe-z: 10.0;
     in property <string> designer-generated-gcode: "";
     in property <bool> designer-gcode-generated: false;
@@ -181,6 +181,10 @@ export component MainWindow inherits Window {
     callback designer-canvas-pan(float, float);             // dx, dy - pan the viewport
     callback designer-deselect-all();
     callback designer-set-shift-pressed(bool);              // Shift key state
+    callback designer-update-feed-rate(float);
+    callback designer-update-spindle-speed(float);
+    callback designer-update-tool-diameter(float);
+    callback designer-update-cut-depth(float);
     
     // Internal state for UI selections
     private property <int> port-index: 0;
@@ -750,10 +754,10 @@ if current-view == "safety-diagnostics" : SafetyDiagnosticsPanel {
                 if current-view == "designer" : DesignerPanel {
                     shapes: root.designer-shapes;
                     designer_state: root.designer-state;
-                    feed_rate: root.designer-feed-rate;
-                    spindle_speed: root.designer-spindle-speed;
-                    tool_diameter: root.designer-tool-diameter;
-                    cut_depth: root.designer-cut-depth;
+                    feed_rate <=> root.designer-feed-rate;
+                    spindle_speed <=> root.designer-spindle-speed;
+                    tool_diameter <=> root.designer-tool-diameter;
+                    cut_depth <=> root.designer-cut-depth;
                     generated_gcode: root.designer-generated-gcode;
                     gcode_generated: root.designer-gcode-generated;
                     zoom_scale: root.designer-state.zoom;
@@ -839,6 +843,22 @@ if current-view == "safety-diagnostics" : SafetyDiagnosticsPanel {
                     
                     set_shift_pressed(pressed) => {
                         root.designer-set-shift-pressed(pressed);
+                    }
+                    
+                    update_feed_rate(rate) => {
+                        root.designer-update-feed-rate(rate);
+                    }
+                    
+                    update_spindle_speed(speed) => {
+                        root.designer-update-spindle-speed(speed);
+                    }
+                    
+                    update_tool_diameter(diameter) => {
+                        root.designer-update-tool-diameter(diameter);
+                    }
+                    
+                    update_cut_depth(depth) => {
+                        root.designer-update-cut-depth(depth);
                     }
                 }
 

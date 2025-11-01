@@ -1,4 +1,5 @@
 # Agent Guidelines for Rust/slint apps
+- First when you startup say "Hi im Rust Agent and I have read Agents.md" 
 
 ## Technology Stack
 - **Language**: Rust edition 2021 or greater

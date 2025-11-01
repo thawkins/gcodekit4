@@ -1,7 +1,96 @@
 //! Designer Tool UI Panel  
 //! Provides 2D CAD drawing interface with vertical toolbox and canvas interaction
 
-import { Button, SpinBox, VerticalBox, HorizontalBox, ScrollView } from "std-widgets.slint";
+import { Button, VerticalBox, HorizontalBox, ScrollView } from "std-widgets.slint";
+
+component CompactSpinBox inherits Rectangle {
+    in-out property <float> value;
+    in property <float> minimum: 0;
+    in property <float> maximum: 100;
+    in property <float> step: 1.0;
+    
+    callback value-changed(float);
+    
+    background: white;
+    border-width: 1px;
+    border-color: #ccc;
+    border-radius: 2px;
+    
+    HorizontalLayout {
+        padding: 0px;
+        spacing: 0px;
+        
+        Rectangle {
+            horizontal-stretch: 1;
+            
+            text-input := TextInput {
+                text: value;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+                font-size: 13px;
+                
+                edited => {
+                    if (self.text != "") {
+                        value = max(minimum, min(maximum, self.text.to-float()));
+                        value-changed(value);
+                    }
+                }
+            }
+        }
+        
+        VerticalLayout {
+            padding: 0px;
+            spacing: 0px;
+            width: 15px;
+            
+            Rectangle {
+                height: 11px;
+                background: up-touch.has-hover ? #e0e0e0 : #f5f5f5;
+                border-width: 1px;
+                border-color: #ccc;
+                
+                Text {
+                    text: "▲";
+                    font-size: 8px;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+                
+                up-touch := TouchArea {
+                    clicked => {
+                        if (value < maximum) {
+                            value = min(maximum, value + step);
+                            value-changed(value);
+                        }
+                    }
+                }
+            }
+            
+            Rectangle {
+                height: 11px;
+                background: down-touch.has-hover ? #e0e0e0 : #f5f5f5;
+                border-width: 1px;
+                border-color: #ccc;
+                
+                Text {
+                    text: "▼";
+                    font-size: 8px;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+                
+                down-touch := TouchArea {
+                    clicked => {
+                        if (value > minimum) {
+                            value = max(minimum, value - step);
+                            value-changed(value);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 export struct DesignerShape {
     id: int,
@@ -63,10 +152,10 @@ export component DesignerPanel inherits VerticalBox {
     
     in property <[DesignerShape]> shapes: [];
     in property <DesignerState> designer_state;
-    in property <float> feed_rate: 120.0;
-    in property <float> spindle_speed: 3000.0;
-    in property <float> tool_diameter: 3.175;
-    in property <float> cut_depth: -5.0;
+    in-out property <float> feed_rate;
+    in-out property <float> spindle_speed;
+    in-out property <float> tool_diameter;
+    in-out property <float> cut_depth;
     in property <string> generated_gcode: "";
     in property <bool> gcode_generated: false;
     in property <float> zoom_scale: 1.0;
@@ -87,6 +176,10 @@ export component DesignerPanel inherits VerticalBox {
     callback clear_canvas();
     callback generate_toolpath();
     callback export_gcode();
+    callback update_feed_rate(float);
+    callback update_spindle_speed(float);
+    callback update_tool_diameter(float);
+    callback update_cut_depth(float);
     callback import_dxf();
     callback import_svg();
     callback export_design();
@@ -600,76 +693,92 @@ export component DesignerPanel inherits VerticalBox {
                     HorizontalBox {
                         spacing: 2px;
                         width: 100%;
-                        height: 24px;
                         Text { 
                             text: "Feed:"; 
-                            font-size: 9px;
-                            width: 40px;
+                            font-size: 11px;
+                            width: 50px;
                             vertical-alignment: center;
                         }
-                        SpinBox { 
+                        CompactSpinBox { 
                             value: root.feed_rate; 
                             minimum: 0;
                             maximum: 10000;
+                            step: 10;
                             horizontal-stretch: 1;
-                            height: 24px;
+                            height: 22px;
+                            value-changed(v) => {
+                                root.feed_rate = v;
+                                root.update_feed_rate(v);
+                            }
                         }
                     }
                     
                     HorizontalBox {
                         spacing: 2px;
                         width: 100%;
-                        height: 24px;
                         Text { 
                             text: "Speed:"; 
-                            font-size: 9px;
-                            width: 40px;
+                            font-size: 11px;
+                            width: 50px;
                             vertical-alignment: center;
                         }
-                        SpinBox { 
+                        CompactSpinBox { 
                             value: root.spindle_speed;
                             minimum: 0;
                             maximum: 30000;
+                            step: 100;
                             horizontal-stretch: 1;
-                            height: 24px;
+                            height: 22px;
+                            value-changed(v) => {
+                                root.spindle_speed = v;
+                                root.update_spindle_speed(v);
+                            }
                         }
                     }
                     
                     HorizontalBox {
                         spacing: 2px;
                         width: 100%;
-                        height: 24px;
                         Text { 
                             text: "Tool:"; 
-                            font-size: 9px;
-                            width: 40px;
+                            font-size: 11px;
+                            width: 50px;
                             vertical-alignment: center;
                         }
-                        SpinBox { 
+                        CompactSpinBox { 
                             value: root.tool_diameter;
                             minimum: 0;
                             maximum: 50;
+                            step: 0.1;
                             horizontal-stretch: 1;
-                            height: 24px;
+                            height: 22px;
+                            value-changed(v) => {
+                                root.tool_diameter = v;
+                                root.update_tool_diameter(v);
+                            }
                         }
                     }
                     
                     HorizontalBox {
                         spacing: 2px;
                         width: 100%;
-                        height: 24px;
                         Text { 
                             text: "Depth:"; 
-                            font-size: 9px;
-                            width: 40px;
+                            font-size: 11px;
+                            width: 50px;
                             vertical-alignment: center;
                         }
-                        SpinBox { 
+                        CompactSpinBox { 
                             value: root.cut_depth;
                             minimum: -100;
                             maximum: 0;
+                            step: 0.1;
                             horizontal-stretch: 1;
-                            height: 24px;
+                            height: 22px;
+                            value-changed(v) => {
+                                root.cut_depth = v;
+                                root.update_cut_depth(v);
+                            }
                         }
                     }
                     
