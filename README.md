@@ -40,6 +40,8 @@ GCodeKit4 is a Rust-based implementation of Universal G-Code Sender, providing a
   - Import vector files: SVG and DXF formats
   - Generate toolpaths and G-code from designs
   - Zoom, pan, and interactive editing controls
+  - Precise shape positioning with X, Y, Width, Height controls
+  - Properties dialog for detailed shape adjustments
 - 14 G-Code preprocessors
 - Coordinate system management (G54-G59)
 - Real-time overrides (feed rate, rapid, spindle)

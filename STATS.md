@@ -11,6 +11,8 @@
 - Test files: $(find tests -name "*.rs" 2>/dev/null | wc -l)
 
 ## Recent Activity (November 2025)
+- Added X, Y, Width, Height controls to shape properties dialog
+- Implemented precise numeric positioning for all shape types
 - Converted designer to SVG canvas rendering
 - Implemented CAD coordinate system (0,0 bottom-left, +Y up)
 - Added right-click context menu and properties dialog

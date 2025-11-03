@@ -196,7 +196,8 @@ export component MainWindow inherits Window {
     callback designer-canvas-pan(float, float);             // dx, dy - pan the viewport
     callback designer-deselect-all();
     callback designer-set-shift-pressed(bool);              // Shift key state
-    callback designer-save-shape-properties(float);         // corner_radius
+    callback designer-save-shape-properties();              // Save all properties
+    callback designer-update-shape-property(int, float);    // property_id, value
     callback designer-update-feed-rate(float);
     callback designer-update-spindle-speed(float);
     callback designer-update-tool-diameter(float);
@@ -866,8 +867,12 @@ if current-view == "safety-diagnostics" : SafetyDiagnosticsPanel {
                         root.designer-set-shift-pressed(pressed);
                     }
                     
-                    save_shape_properties(corner_radius) => {
-                        root.designer-save-shape-properties(corner_radius);
+                    save_shape_properties() => {
+                        root.designer-save-shape-properties();
+                    }
+                    
+                    update_shape_property(prop_id, value) => {
+                        root.designer-update-shape-property(prop_id, value);
                     }
                     
                     update_feed_rate(rate) => {

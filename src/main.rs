@@ -2054,13 +2054,31 @@ fn main() -> anyhow::Result<()> {
     });
     
     // Designer: Save shape properties (corner radius)
-    let designer_mgr_clone = designer_mgr.clone();
-    let window_weak = main_window.as_weak();
-    main_window.on_designer_save_shape_properties(move |corner_radius: f32| {
-        let mut state = designer_mgr_clone.borrow_mut();
-        state.set_selected_corner_radius(corner_radius as f64);
+    let pending_properties = Rc::new(RefCell::new((0.0f64, 0.0f64, 0.0f64, 0.0f64, 0.0f64)));
+    
+    let pending_clone = pending_properties.clone();
+    main_window.on_designer_update_shape_property(move |prop_id: i32, value: f32| {
+        let mut props = pending_clone.borrow_mut();
+        match prop_id {
+            0 => props.0 = value as f64, // x
+            1 => props.1 = value as f64, // y
+            2 => props.2 = value as f64, // w
+            3 => props.3 = value as f64, // h
+            4 => props.4 = value as f64, // radius
+            _ => {}
+        }
+    });
+    
+    let designer_mgr_clone2 = designer_mgr.clone();
+    let window_weak2 = main_window.as_weak();
+    let pending_clone2 = pending_properties.clone();
+    main_window.on_designer_save_shape_properties(move || {
+        let props = pending_clone2.borrow();
+        let mut state = designer_mgr_clone2.borrow_mut();
+        state.set_selected_position_and_size(props.0, props.1, props.2, props.3);
+        state.set_selected_corner_radius(props.4);
         
-        if let Some(window) = window_weak.upgrade() {
+        if let Some(window) = window_weak2.upgrade() {
             update_designer_ui(&window, &mut state);
         }
     });

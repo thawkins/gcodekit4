@@ -1,9 +1,13 @@
 ## [0.25.2-alpha] - 2025-11-03
 
 ### Added
+- **Shape Properties Dialog** - Complete X, Y, Width, Height controls for precise positioning
+  - Numeric spinbox inputs for all shape dimensions (0.1mm precision)
+  - Support for all shape types: Rectangle, Circle, Line, Ellipse, Polygon, RoundRectangle
+  - Live preview of values with min/max bounds (-1000 to 1000mm for position, 0.1 to 1000mm for size)
+  - Accessible via right-click context menu → Properties
 - SVG canvas rendering for designer (replaced image-based rendering)
 - Right-click context menu on selected shapes (Delete, Properties)
-- Properties dialog for editing shape attributes
 - Corner radius editor for RoundRectangle shapes (0.1mm increments)
 - Modal dialog system with backdrop and proper event handling
 
@@ -12,6 +16,7 @@
 - Selection handles increased to 8x8px for better visibility
 - Viewport size now updates dynamically to match canvas size
 - Initial canvas size changed from 1600x1200 to 800x600 for consistency
+- Properties dialog height increased from 200px to 350px to accommodate new controls
 
 ### Fixed
 - Y-axis coordinate flipping in all designer transformations

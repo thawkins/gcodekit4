@@ -256,6 +256,48 @@ impl DesignerState {
             }
         }
     }
+
+    pub fn set_selected_position_and_size(&mut self, x: f64, y: f64, w: f64, h: f64) {
+        use crate::designer::shapes::*;
+        
+        if let Some(id) = self.canvas.selected_id() {
+            if let Some(obj) = self.canvas.shapes_mut().iter_mut().find(|o| o.id == id) {
+                let (old_x, old_y, old_x2, old_y2) = obj.shape.bounding_box();
+                let old_w = old_x2 - old_x;
+                let old_h = old_y2 - old_y;
+                
+                match obj.shape.shape_type() {
+                    crate::designer::ShapeType::Rectangle => {
+                        obj.shape = Box::new(Rectangle::new(x, y, w, h));
+                    }
+                    crate::designer::ShapeType::Circle => {
+                        let radius = w.min(h) / 2.0;
+                        obj.shape = Box::new(Circle::new(Point::new(x + radius, y + radius), radius));
+                    }
+                    crate::designer::ShapeType::Line => {
+                        obj.shape = Box::new(Line::new(Point::new(x, y), Point::new(x + w, y + h)));
+                    }
+                    crate::designer::ShapeType::Ellipse => {
+                        let center = Point::new(x + w / 2.0, y + h / 2.0);
+                        obj.shape = Box::new(Ellipse::new(center, w / 2.0, h / 2.0));
+                    }
+                    crate::designer::ShapeType::Polygon => {
+                        // For polygon, we recreate a regular hexagon at the new position/size
+                        obj.shape = Box::new(Polygon::regular(Point::new(x + w / 2.0, y + h / 2.0), w.min(h) / 2.0, 6));
+                    }
+                    crate::designer::ShapeType::RoundRectangle => {
+                        // Get current radius from bounding box, preserve it
+                        let current_radius = if old_w > 0.0 && old_h > 0.0 {
+                            5.0 // Default radius, will be overridden in set_selected_corner_radius
+                        } else {
+                            5.0
+                        };
+                        obj.shape = Box::new(RoundRectangle::new(x, y, w, h, current_radius));
+                    }
+                }
+            }
+        }
+    }
 }
 
 impl Default for DesignerState {

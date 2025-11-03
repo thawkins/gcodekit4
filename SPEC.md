@@ -1,16 +1,14 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.25.0-alpha  
-**Last Updated**: 2025-10-31  
+**Version**: 0.25.2-alpha  
+**Last Updated**: 2025-11-03  
 **Status**: COMPLETE (All 7 Phases Complete - 150/150 Tasks, Phase 8 In Progress)
 
-### Latest Release (v0.25.0-alpha)
-- ✅ **CAM Tools Palette Phase 1** - Core tool library with 5+ tools, specifications, and parameters (43 tests)
-- ✅ **Materials Database Phase 1** - Core database with 3+ materials, properties, and cutting params (31 tests)
-- ✅ **Designer Snapping Feature** - Shift-key constraint detection for position/move operations
-- ✅ **Firmware Capabilities Database** - Version-aware feature tracking for all controllers
-- ✅ **70+ New Tests** - Comprehensive coverage, 100% pass rate
-- ✅ **Production Ready** - All systems passing, ready for Phase 8 integration
+### Latest Release (v0.25.2-alpha)
+- ✅ **Designer Shape Properties Dialog** - Added X, Y, Width, Height controls for precise shape positioning
+- ✅ **Enhanced Properties Panel** - Full numeric control over shape dimensions and position
+- ✅ **Multi-Shape Support** - Works with rectangles, circles, lines, ellipses, polygons, and round rectangles
+- ✅ **Previous**: CAM Tools Palette, Materials Database, Snapping, Firmware Capabilities (v0.25.0)
 - ✅ **Previous**: Designer Polish Phase 5, Visualizer UI, Issue Tracking
 
 ## 1. Executive Summary

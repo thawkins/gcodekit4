@@ -150,12 +150,16 @@ component ShapePropertiesDialog inherits Dialog {
     in-out property <bool> show: false;
     in property <int> shape_type: 0;
     in-out property <float> corner_radius: 5.0;
+    in-out property <float> shape_x: 0.0;
+    in-out property <float> shape_y: 0.0;
+    in-out property <float> shape_w: 0.0;
+    in-out property <float> shape_h: 0.0;
     
     callback save_properties();
     callback cancel_properties();
     
     width: 300px;
-    height: 200px;
+    height: 350px;
     
     VerticalBox {
         padding: 10px;
@@ -167,6 +171,124 @@ component ShapePropertiesDialog inherits Dialog {
             font-weight: 700;
         }
         
+        // Position controls
+        HorizontalBox {
+            spacing: 10px;
+            alignment: start;
+            
+            Text {
+                text: "X Position (mm):";
+                vertical-alignment: center;
+                width: 120px;
+            }
+            
+            Rectangle {
+                width: 100px;
+                height: 30px;
+                
+                CompactSpinBox {
+                    width: 100%;
+                    height: 100%;
+                    value <=> shape_x;
+                    minimum: -1000.0;
+                    maximum: 1000.0;
+                    step: 0.1;
+                    
+                    value-changed(val) => {
+                        shape_x = val;
+                    }
+                }
+            }
+        }
+        
+        HorizontalBox {
+            spacing: 10px;
+            alignment: start;
+            
+            Text {
+                text: "Y Position (mm):";
+                vertical-alignment: center;
+                width: 120px;
+            }
+            
+            Rectangle {
+                width: 100px;
+                height: 30px;
+                
+                CompactSpinBox {
+                    width: 100%;
+                    height: 100%;
+                    value <=> shape_y;
+                    minimum: -1000.0;
+                    maximum: 1000.0;
+                    step: 0.1;
+                    
+                    value-changed(val) => {
+                        shape_y = val;
+                    }
+                }
+            }
+        }
+        
+        // Size controls
+        HorizontalBox {
+            spacing: 10px;
+            alignment: start;
+            
+            Text {
+                text: "Width (mm):";
+                vertical-alignment: center;
+                width: 120px;
+            }
+            
+            Rectangle {
+                width: 100px;
+                height: 30px;
+                
+                CompactSpinBox {
+                    width: 100%;
+                    height: 100%;
+                    value <=> shape_w;
+                    minimum: 0.1;
+                    maximum: 1000.0;
+                    step: 0.1;
+                    
+                    value-changed(val) => {
+                        shape_w = val;
+                    }
+                }
+            }
+        }
+        
+        HorizontalBox {
+            spacing: 10px;
+            alignment: start;
+            
+            Text {
+                text: "Height (mm):";
+                vertical-alignment: center;
+                width: 120px;
+            }
+            
+            Rectangle {
+                width: 100px;
+                height: 30px;
+                
+                CompactSpinBox {
+                    width: 100%;
+                    height: 100%;
+                    value <=> shape_h;
+                    minimum: 0.1;
+                    maximum: 1000.0;
+                    step: 0.1;
+                    
+                    value-changed(val) => {
+                        shape_h = val;
+                    }
+                }
+            }
+        }
+        
         // Only show corner radius for RoundRectangle (shape_type == 5)
         if shape_type == 5: HorizontalBox {
             spacing: 10px;
@@ -175,6 +297,7 @@ component ShapePropertiesDialog inherits Dialog {
             Text {
                 text: "Corner Radius (mm):";
                 vertical-alignment: center;
+                width: 120px;
             }
             
             Rectangle {
@@ -345,7 +468,8 @@ export component DesignerPanel inherits VerticalBox {
     callback deselect_all();
     callback set_shift_pressed(bool);              // Notify backend of Shift key state
     callback show_context_menu(float, float);      // x, y - show context menu
-    callback save_shape_properties(float);         // corner_radius
+    callback save_shape_properties();              // Save all properties from current dialog values
+    callback update_shape_property(int, float);    // property_id, value (0=x, 1=y, 2=w, 3=h, 4=radius)
     
     // Context menu and dialog state
     private property <bool> context_menu_visible: false;
@@ -353,6 +477,10 @@ export component DesignerPanel inherits VerticalBox {
     private property <float> context_menu_y: 0;
     private property <bool> properties_dialog_visible: false;
     private property <float> current_corner_radius: 5.0;
+    private property <float> current_shape_x: 0.0;
+    private property <float> current_shape_y: 0.0;
+    private property <float> current_shape_w: 0.0;
+    private property <float> current_shape_h: 0.0;
     
     // Track last delta sent to backend (per shape) to compute incremental changes
     private property <float> drag_start_x: 0.0;
@@ -1036,6 +1164,10 @@ export component DesignerPanel inherits VerticalBox {
         menu_properties => {
             root.properties_dialog_visible = true;
             root.current_corner_radius = root.selected_shape_radius;
+            root.current_shape_x = root.selected_shape_x;
+            root.current_shape_y = root.selected_shape_y;
+            root.current_shape_w = root.selected_shape_w;
+            root.current_shape_h = root.selected_shape_h;
         }
     }
     
@@ -1055,9 +1187,18 @@ export component DesignerPanel inherits VerticalBox {
             show <=> root.properties_dialog_visible;
             shape_type: root.selected_shape_type;
             corner_radius <=> root.current_corner_radius;
+            shape_x <=> root.current_shape_x;
+            shape_y <=> root.current_shape_y;
+            shape_w <=> root.current_shape_w;
+            shape_h <=> root.current_shape_h;
             
             save_properties => {
-                save_shape_properties(root.current_corner_radius);
+                update_shape_property(0, root.current_shape_x);
+                update_shape_property(1, root.current_shape_y);
+                update_shape_property(2, root.current_shape_w);
+                update_shape_property(3, root.current_shape_h);
+                update_shape_property(4, root.current_corner_radius);
+                save_shape_properties();
                 root.properties_dialog_visible = false;
             }
             
