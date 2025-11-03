@@ -56,9 +56,9 @@ fn test_dxf_importer_with_scale() {
 }
 
 #[test]
-fn test_dxf_import_empty_bytes() {
+fn test_dxf_import_empty_content() {
     let importer = DxfImporter::new(1.0, 0.0, 0.0);
-    let result = importer.import_bytes(b"");
+    let result = importer.import_string("0\nSECTION\n2\nENTITIES\n0\nENDSEC\n0\nEOF");
 
     assert!(result.is_ok());
     let design = result.unwrap();
@@ -85,12 +85,14 @@ fn test_svg_scaling() {
 
 #[test]
 fn test_dxf_scaling() {
+    let dxf_content = "0\nSECTION\n2\nENTITIES\n0\nENDSEC\n0\nEOF";
+    
     let importer_1x = DxfImporter::new(1.0, 0.0, 0.0);
-    let result_1x = importer_1x.import_bytes(b"");
+    let result_1x = importer_1x.import_string(dxf_content);
     assert!(result_1x.is_ok());
 
     let importer_5x = DxfImporter::new(5.0, 0.0, 0.0);
-    let result_5x = importer_5x.import_bytes(b"");
+    let result_5x = importer_5x.import_string(dxf_content);
     assert!(result_5x.is_ok());
 }
 
@@ -107,7 +109,7 @@ fn test_svg_with_offset() {
 #[test]
 fn test_dxf_with_offset() {
     let importer = DxfImporter::new(1.0, 100.0, 200.0);
-    let result = importer.import_bytes(b"");
+    let result = importer.import_string("0\nSECTION\n2\nENTITIES\n0\nENDSEC\n0\nEOF");
 
     assert!(result.is_ok());
     let design = result.unwrap();
@@ -146,10 +148,11 @@ fn test_multiple_svg_imports() {
 #[test]
 fn test_multiple_dxf_imports() {
     let importer = DxfImporter::new(1.0, 0.0, 0.0);
+    let dxf_content = "0\nSECTION\n2\nENTITIES\n0\nENDSEC\n0\nEOF";
 
-    let result1 = importer.import_bytes(b"");
-    let result2 = importer.import_bytes(b"");
-    let result3 = importer.import_bytes(b"");
+    let result1 = importer.import_string(dxf_content);
+    let result2 = importer.import_string(dxf_content);
+    let result3 = importer.import_string(dxf_content);
 
     assert!(result1.is_ok());
     assert!(result2.is_ok());
@@ -176,8 +179,10 @@ fn test_svg_import_complex_svg() {
     assert!(result.is_ok());
     let design = result.unwrap();
     assert_eq!(design.format, FileFormat::Svg);
-    // Framework currently returns default dimensions
-    assert_eq!(design.dimensions, (100.0, 100.0));
+    // SVG parser now correctly extracts dimensions from width/height attributes
+    assert_eq!(design.dimensions, (200.0, 200.0));
+    // Should import: rect(1) + circle(1) + line(1) + path(3 lines from M L L Z) = 6 shapes
+    assert_eq!(design.shapes.len(), 6);
 }
 
 #[test]
@@ -198,15 +203,203 @@ fn test_svg_import_framework_ready() {
 
 #[test]
 fn test_dxf_import_framework_ready() {
-    // This test confirms that the DXF import framework is ready
-    // and can be extended with full DXF parsing later
     let importer = DxfImporter::new(1.0, 0.0, 0.0);
 
-    let result = importer.import_bytes(b"SECTION\n  2\nENTITIES\nENDSEC\nEOF");
+    let dxf_content = r#"0
+SECTION
+2
+ENTITIES
+0
+LINE
+10
+0.0
+20
+0.0
+11
+10.0
+21
+10.0
+0
+ENDSEC
+0
+EOF"#;
+
+    let result = importer.import_string(dxf_content);
 
     assert!(result.is_ok());
     let design = result.unwrap();
     assert_eq!(design.format, FileFormat::Dxf);
+    assert_eq!(design.shapes.len(), 1);
+}
 
-    // Framework ready for Phase 4 implementation
+#[test]
+fn test_dxf_import_with_circles() {
+    let importer = DxfImporter::new(1.0, 0.0, 0.0);
+
+    let dxf_content = r#"0
+SECTION
+2
+ENTITIES
+0
+CIRCLE
+10
+50.0
+20
+50.0
+40
+25.0
+0
+ENDSEC
+0
+EOF"#;
+
+    let result = importer.import_string(dxf_content);
+
+    assert!(result.is_ok());
+    let design = result.unwrap();
+    assert_eq!(design.format, FileFormat::Dxf);
+    assert_eq!(design.shapes.len(), 1);
+}
+
+#[test]
+fn test_dxf_import_multiple_shapes() {
+    let importer = DxfImporter::new(1.0, 0.0, 0.0);
+
+    let dxf_content = r#"0
+SECTION
+2
+ENTITIES
+0
+LINE
+10
+0.0
+20
+0.0
+11
+10.0
+21
+10.0
+0
+CIRCLE
+10
+20.0
+20
+20.0
+40
+5.0
+0
+LINE
+10
+30.0
+20
+30.0
+11
+40.0
+21
+40.0
+0
+ENDSEC
+0
+EOF"#;
+
+    let result = importer.import_string(dxf_content);
+
+    assert!(result.is_ok());
+    let design = result.unwrap();
+    assert_eq!(design.format, FileFormat::Dxf);
+    assert_eq!(design.shapes.len(), 3);
+}
+
+#[test]
+fn test_dxf_import_with_scaling() {
+    let importer = DxfImporter::new(2.0, 0.0, 0.0);
+
+    let dxf_content = r#"0
+SECTION
+2
+ENTITIES
+0
+LINE
+10
+0.0
+20
+0.0
+11
+10.0
+21
+10.0
+0
+ENDSEC
+0
+EOF"#;
+
+    let result = importer.import_string(dxf_content);
+
+    assert!(result.is_ok());
+    let design = result.unwrap();
+    assert_eq!(design.shapes.len(), 1);
+}
+
+#[test]
+fn test_dxf_import_with_offset() {
+    let importer = DxfImporter::new(1.0, 100.0, 200.0);
+
+    let dxf_content = r#"0
+SECTION
+2
+ENTITIES
+0
+CIRCLE
+10
+0.0
+20
+0.0
+40
+10.0
+0
+ENDSEC
+0
+EOF"#;
+
+    let result = importer.import_string(dxf_content);
+
+    assert!(result.is_ok());
+    let design = result.unwrap();
+    assert_eq!(design.shapes.len(), 1);
+}
+
+#[test]
+fn test_dxf_import_polyline_conversion() {
+    let importer = DxfImporter::new(1.0, 0.0, 0.0);
+
+    let dxf_content = r#"0
+SECTION
+2
+ENTITIES
+0
+LWPOLYLINE
+70
+1
+10
+0.0
+20
+0.0
+10
+10.0
+20
+0.0
+10
+10.0
+20
+10.0
+0
+ENDSEC
+0
+EOF"#;
+
+    let result = importer.import_string(dxf_content);
+
+    assert!(result.is_ok());
+    let design = result.unwrap();
+    assert!(design.shapes.len() >= 2);
 }

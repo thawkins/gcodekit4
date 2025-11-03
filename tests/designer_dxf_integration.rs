@@ -441,3 +441,163 @@ fn test_dxf_file_layer_retrieval() {
     let missing = file.get_layer_entities("NonExistent");
     assert!(missing.is_none());
 }
+
+#[test]
+fn test_dxf_parser_real_line() {
+    let dxf_content = r#"0
+SECTION
+2
+ENTITIES
+0
+LINE
+8
+TestLayer
+62
+1
+10
+10.5
+20
+20.5
+11
+30.5
+21
+40.5
+0
+ENDSEC
+0
+EOF"#;
+
+    let result = DxfParser::parse(dxf_content);
+    assert!(result.is_ok());
+    
+    let file = result.unwrap();
+    assert_eq!(file.entity_count(), 1);
+    
+    if let DxfEntity::Line(line) = &file.entities[0] {
+        assert_eq!(line.layer, "TestLayer");
+        assert_eq!(line.color, 1);
+        assert!((line.start.x - 10.5).abs() < 0.01);
+        assert!((line.start.y - 20.5).abs() < 0.01);
+        assert!((line.end.x - 30.5).abs() < 0.01);
+        assert!((line.end.y - 40.5).abs() < 0.01);
+    } else {
+        panic!("Expected line entity");
+    }
+}
+
+#[test]
+fn test_dxf_parser_real_circle() {
+    let dxf_content = r#"0
+SECTION
+2
+ENTITIES
+0
+CIRCLE
+8
+Circles
+62
+2
+10
+50.0
+20
+60.0
+40
+15.0
+0
+ENDSEC
+0
+EOF"#;
+
+    let result = DxfParser::parse(dxf_content);
+    assert!(result.is_ok());
+    
+    let file = result.unwrap();
+    assert_eq!(file.entity_count(), 1);
+    
+    if let DxfEntity::Circle(circle) = &file.entities[0] {
+        assert_eq!(circle.layer, "Circles");
+        assert_eq!(circle.color, 2);
+        assert!((circle.center.x - 50.0).abs() < 0.01);
+        assert!((circle.center.y - 60.0).abs() < 0.01);
+        assert!((circle.radius - 15.0).abs() < 0.01);
+    } else {
+        panic!("Expected circle entity");
+    }
+}
+
+#[test]
+fn test_dxf_parser_real_arc() {
+    let dxf_content = r#"0
+SECTION
+2
+ENTITIES
+0
+ARC
+8
+Arcs
+10
+0.0
+20
+0.0
+40
+10.0
+50
+0.0
+51
+90.0
+0
+ENDSEC
+0
+EOF"#;
+
+    let result = DxfParser::parse(dxf_content);
+    assert!(result.is_ok());
+    
+    let file = result.unwrap();
+    assert_eq!(file.entity_count(), 1);
+    
+    if let DxfEntity::Arc(arc) = &file.entities[0] {
+        assert_eq!(arc.layer, "Arcs");
+        assert!((arc.radius - 10.0).abs() < 0.01);
+        assert!((arc.start_angle - 0.0).abs() < 0.01);
+        assert!((arc.end_angle - 90.0).abs() < 0.01);
+    } else {
+        panic!("Expected arc entity");
+    }
+}
+
+#[test]
+fn test_dxf_parser_multiple_entities() {
+    let dxf_content = r#"0
+SECTION
+2
+ENTITIES
+0
+LINE
+10
+0.0
+20
+0.0
+11
+10.0
+21
+10.0
+0
+CIRCLE
+10
+20.0
+20
+20.0
+40
+5.0
+0
+ENDSEC
+0
+EOF"#;
+
+    let result = DxfParser::parse(dxf_content);
+    assert!(result.is_ok());
+    
+    let file = result.unwrap();
+    assert_eq!(file.entity_count(), 2);
+}

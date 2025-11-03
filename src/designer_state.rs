@@ -19,7 +19,7 @@ impl DesignerState {
     /// Creates a new designer state.
     pub fn new() -> Self {
         Self {
-            canvas: Canvas::with_size(1600.0, 1200.0),
+            canvas: Canvas::with_size(800.0, 600.0),
             toolpath_generator: ToolpathGenerator::new(),
             generated_gcode: String::new(),
             gcode_generated: false,
@@ -230,6 +230,31 @@ impl DesignerState {
     /// Deselects all shapes.
     pub fn deselect_all(&mut self) {
         self.canvas.deselect_all();
+    }
+    
+    /// Updates the corner radius of the selected shape (if it's a RoundRectangle)
+    pub fn set_selected_corner_radius(&mut self, radius: f64) {
+        use crate::designer::shapes::RoundRectangle;
+        
+        if let Some(id) = self.canvas.selected_id() {
+            if let Some(obj) = self.canvas.shapes_mut().iter_mut().find(|o| o.id == id) {
+                // Check if it's a RoundRectangle
+                if obj.shape.shape_type() == crate::designer::ShapeType::RoundRectangle {
+                    let (x, y, x2, y2) = obj.shape.bounding_box();
+                    let width = (x2 - x).abs();
+                    let height = (y2 - y).abs();
+                    
+                    // Create new RoundRectangle with updated radius
+                    obj.shape = Box::new(RoundRectangle::new(
+                        x.min(x2),
+                        y.min(y2),
+                        width,
+                        height,
+                        radius,
+                    ));
+                }
+            }
+        }
     }
 }
 

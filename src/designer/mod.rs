@@ -52,6 +52,7 @@ pub mod render_optimizer;
 pub mod renderer;
 pub mod shapes;
 pub mod spatial_index;
+pub mod svg_renderer;
 pub mod templates;
 pub mod tool_library;
 pub mod toolpath;

@@ -47,6 +47,10 @@ crossbeam-channel = "0.5"
 num = "0.4"
 arboard = "3.4"
 
+# SVG parsing
+roxmltree = "0.20"
+svgtypes = "0.15"
+
 # Configuration
 config = "0.15.18"
 toml = "0.9.8"

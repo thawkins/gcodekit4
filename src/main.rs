@@ -72,27 +72,41 @@ fn sync_capabilities_to_ui(window: &MainWindow, capability_manager: &CapabilityM
 }
 
 /// Update designer UI with current shapes from state
-fn update_designer_ui(window: &MainWindow, state: &gcodekit4::DesignerState) {
-    // Render canvas to image - using larger size to reduce stretching artifacts
-    let canvas_width = 1600u32;
-    let canvas_height = 1200u32;
-    let img = gcodekit4::designer::renderer::render_canvas(
+fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState) {
+    // Get canvas dimensions from window (or use defaults)
+    let canvas_width = 800u32;  // Will be overridden by actual canvas size
+    let canvas_height = 600u32;
+    
+    // Update viewport canvas size to match actual rendering size
+    state.canvas.viewport_mut().set_canvas_size(canvas_width as f64, canvas_height as f64);
+    
+    // Render canvas using SVG paths
+    let crosshair_data = gcodekit4::designer::svg_renderer::render_crosshair(
         &state.canvas,
         canvas_width,
         canvas_height,
-        state.canvas.zoom() as f32,
-        state.canvas.pan_offset().0 as f32,
-        state.canvas.pan_offset().1 as f32,
     );
-
-    // Convert to Slint image
-    let buffer = slint::SharedPixelBuffer::<slint::Rgb8Pixel>::clone_from_slice(
-        img.as_raw(),
+    let shapes_data = gcodekit4::designer::svg_renderer::render_shapes(
+        &state.canvas,
         canvas_width,
         canvas_height,
     );
-    let slint_image = slint::Image::from_rgb8(buffer);
-    window.set_designer_canvas_image(slint_image);
+    let selected_shapes_data = gcodekit4::designer::svg_renderer::render_selected_shapes(
+        &state.canvas,
+        canvas_width,
+        canvas_height,
+    );
+    let handles_data = gcodekit4::designer::svg_renderer::render_selection_handles(
+        &state.canvas,
+        canvas_width,
+        canvas_height,
+    );
+    
+    // Update UI with SVG path data
+    window.set_designer_canvas_crosshair_data(slint::SharedString::from(crosshair_data));
+    window.set_designer_canvas_shapes_data(slint::SharedString::from(shapes_data));
+    window.set_designer_canvas_selected_shapes_data(slint::SharedString::from(selected_shapes_data));
+    window.set_designer_canvas_handles_data(slint::SharedString::from(handles_data));
 
     // Still update shapes array for metadata (could be used for debugging/info)
     let shapes: Vec<crate::DesignerShape> = state
@@ -138,12 +152,16 @@ fn update_designer_ui(window: &MainWindow, state: &gcodekit4::DesignerState) {
         window.set_designer_selected_shape_y(selected_shape.y);
         window.set_designer_selected_shape_w(selected_shape.width);
         window.set_designer_selected_shape_h(selected_shape.height);
+        window.set_designer_selected_shape_type(selected_shape.shape_type);
+        window.set_designer_selected_shape_radius(selected_shape.radius);
     } else {
         // No shape selected - clear indicators
         window.set_designer_selected_shape_x(0.0);
         window.set_designer_selected_shape_y(0.0);
         window.set_designer_selected_shape_w(0.0);
         window.set_designer_selected_shape_h(0.0);
+        window.set_designer_selected_shape_type(0);
+        window.set_designer_selected_shape_radius(5.0);
     }
 
     // Increment update counter to force UI re-render
@@ -661,11 +679,12 @@ fn main() -> anyhow::Result<()> {
 
                     // Use Slint's invoke_from_event_loop to safely update UI from background thread
                     std::thread::spawn(move || {
-                        while let Ok((progress, status, image_data)) = rx.recv() {
-                            // Use invoke_from_event_loop to update UI safely
+                        while let Ok((progress, status, path_data, grid_data, origin_data)) = rx.recv() {
                             let window_handle = window_weak.clone();
                             let status_clone = status.clone();
-                            let image_clone = image_data.clone();
+                            let path_clone = path_data.clone();
+                            let grid_clone = grid_data.clone();
+                            let origin_clone = origin_data.clone();
 
                             slint::invoke_from_event_loop(move || {
                                 if let Some(window) = window_handle.upgrade() {
@@ -674,21 +693,15 @@ fn main() -> anyhow::Result<()> {
                                         status_clone.clone(),
                                     ));
 
-                                    if let Some(png_bytes) = image_clone {
-                                        if let Ok(img) = image::load_from_memory_with_format(
-                                            &png_bytes,
-                                            image::ImageFormat::Png,
-                                        ) {
-                                            let rgba_img = img.to_rgba8();
-                                            let img_buffer = slint::Image::from_rgba8(
-                                                slint::SharedPixelBuffer::clone_from_slice(
-                                                    &rgba_img,
-                                                    rgba_img.width(),
-                                                    rgba_img.height(),
-                                                ),
-                                            );
-                                            window.set_visualization_image(img_buffer);
-                                        }
+                                    // Set canvas path data if available
+                                    if let Some(path) = path_clone {
+                                        window.set_visualization_path_data(slint::SharedString::from(path));
+                                    }
+                                    if let Some(grid) = grid_clone {
+                                        window.set_visualization_grid_data(slint::SharedString::from(grid));
+                                    }
+                                    if let Some(origin) = origin_clone {
+                                        window.set_visualization_origin_data(slint::SharedString::from(origin));
                                     }
                                 }
                             })
@@ -1539,7 +1552,9 @@ fn main() -> anyhow::Result<()> {
     main_window.on_menu_view_gcode_visualizer(move || {
         if let Some(window) = window_weak.upgrade() {
             window.set_current_view(slint::SharedString::from("gcode-visualizer"));
-            window.invoke_refresh_visualization();
+            let canvas_width = window.get_visualizer_canvas_width();
+            let canvas_height = window.get_visualizer_canvas_height();
+            window.invoke_refresh_visualization(canvas_width, canvas_height);
             window.set_connection_status(slint::SharedString::from("Visualizer panel activated"));
         }
     });
@@ -1629,7 +1644,7 @@ fn main() -> anyhow::Result<()> {
         let mut state = designer_mgr_clone.borrow_mut();
         state.zoom_in();
         if let Some(window) = window_weak.upgrade() {
-            update_designer_ui(&window, &state);
+            update_designer_ui(&window, &mut state);
             // Create UI state struct from Rust state
             let ui_state = crate::DesignerState {
                 mode: state.canvas.mode() as i32,
@@ -1650,7 +1665,7 @@ fn main() -> anyhow::Result<()> {
         let mut state = designer_mgr_clone.borrow_mut();
         state.zoom_out();
         if let Some(window) = window_weak.upgrade() {
-            update_designer_ui(&window, &state);
+            update_designer_ui(&window, &mut state);
             let ui_state = crate::DesignerState {
                 mode: state.canvas.mode() as i32,
                 zoom: state.canvas.zoom() as f32,
@@ -1670,7 +1685,7 @@ fn main() -> anyhow::Result<()> {
         let mut state = designer_mgr_clone.borrow_mut();
         state.zoom_fit();
         if let Some(window) = window_weak.upgrade() {
-            update_designer_ui(&window, &state);
+            update_designer_ui(&window, &mut state);
             let ui_state = crate::DesignerState {
                 mode: state.canvas.mode() as i32,
                 zoom: state.canvas.zoom() as f32,
@@ -1694,7 +1709,7 @@ fn main() -> anyhow::Result<()> {
         let (pan_x, pan_y) = state.canvas.pan_offset();
         state.canvas.pan(-pan_x, -pan_y);
         if let Some(window) = window_weak.upgrade() {
-            update_designer_ui(&window, &state);
+            update_designer_ui(&window, &mut state);
             let ui_state = crate::DesignerState {
                 mode: state.canvas.mode() as i32,
                 zoom: state.canvas.zoom() as f32,
@@ -1714,7 +1729,7 @@ fn main() -> anyhow::Result<()> {
         let mut state = designer_mgr_clone.borrow_mut();
         state.delete_selected();
         if let Some(window) = window_weak.upgrade() {
-            update_designer_ui(&window, &state);
+            update_designer_ui(&window, &mut state);
             window.set_connection_status(slint::SharedString::from(format!(
                 "Shapes: {}",
                 state.canvas.shapes().len()
@@ -1729,7 +1744,7 @@ fn main() -> anyhow::Result<()> {
         let mut state = designer_mgr_clone.borrow_mut();
         state.clear_canvas();
         if let Some(window) = window_weak.upgrade() {
-            update_designer_ui(&window, &state);
+            update_designer_ui(&window, &mut state);
             window.set_designer_gcode_generated(false);
             window.set_connection_status(slint::SharedString::from("Canvas cleared"));
         }
@@ -1791,7 +1806,7 @@ fn main() -> anyhow::Result<()> {
                                                    dxf_file.entity_count(), 
                                                    dxf_file.layer_names().len())
                                         ));
-                                        update_designer_ui(&window, &state);
+                                        update_designer_ui(&window, &mut state);
                                     }
                                     Err(e) => {
                                         window.set_connection_status(slint::SharedString::from(
@@ -1846,7 +1861,7 @@ fn main() -> anyhow::Result<()> {
                                            shape_count, 
                                            layer_count)
                                 ));
-                                update_designer_ui(&window, &state);
+                                update_designer_ui(&window, &mut state);
                             }
                             Err(e) => {
                                 window.set_connection_status(slint::SharedString::from(
@@ -1891,7 +1906,7 @@ fn main() -> anyhow::Result<()> {
         }
 
         if let Some(window) = window_weak.upgrade() {
-            update_designer_ui(&window, &state);
+            update_designer_ui(&window, &mut state);
 
             // Update UI state with selected shape ID
             let mut ui_state = window.get_designer_state();
@@ -1913,14 +1928,15 @@ fn main() -> anyhow::Result<()> {
 
         // Convert pixel delta to world delta using viewport zoom
         // At zoom level Z, moving 1 pixel is equivalent to 1/Z world units
+        // Note: Y-axis is flipped - positive pixel dy (down) = negative world dy
         let viewport = state.canvas.viewport();
         let world_dx = dx as f64 / viewport.zoom();
-        let world_dy = dy as f64 / viewport.zoom();
+        let world_dy = -(dy as f64) / viewport.zoom(); // Flip Y direction
 
         state.move_selected(world_dx, world_dy);
 
         if let Some(window) = window_weak.upgrade() {
-            update_designer_ui(&window, &state);
+            update_designer_ui(&window, &mut state);
         }
     });
 
@@ -1981,9 +1997,10 @@ fn main() -> anyhow::Result<()> {
         let mut state = designer_mgr_clone.borrow_mut();
 
         // Convert pixel delta to world delta using viewport zoom
+        // Note: Y-axis is flipped - positive pixel dy (down) = negative world dy
         let viewport = state.canvas.viewport();
         let mut world_dx = dx as f64 / viewport.zoom();
-        let mut world_dy = dy as f64 / viewport.zoom();
+        let mut world_dy = -(dy as f64) / viewport.zoom(); // Flip Y direction
 
         // If Shift is pressed and this is a MOVE (not resize), snap deltas to whole mm
         if *shift_pressed_clone.borrow() && (handle == -1 || handle == 4) {
@@ -2010,7 +2027,7 @@ fn main() -> anyhow::Result<()> {
         }
 
         if let Some(window) = window_weak.upgrade() {
-            update_designer_ui(&window, &state);
+            update_designer_ui(&window, &mut state);
         }
     });
 
@@ -2021,7 +2038,7 @@ fn main() -> anyhow::Result<()> {
         let mut state = designer_mgr_clone.borrow_mut();
         state.deselect_all();
         if let Some(window) = window_weak.upgrade() {
-            update_designer_ui(&window, &state);
+            update_designer_ui(&window, &mut state);
 
             // Update UI state with no selected shape
             let mut ui_state = window.get_designer_state();
@@ -2035,6 +2052,18 @@ fn main() -> anyhow::Result<()> {
     main_window.on_designer_set_shift_pressed(move |pressed: bool| {
         *shift_pressed_clone.borrow_mut() = pressed;
     });
+    
+    // Designer: Save shape properties (corner radius)
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_save_shape_properties(move |corner_radius: f32| {
+        let mut state = designer_mgr_clone.borrow_mut();
+        state.set_selected_corner_radius(corner_radius as f64);
+        
+        if let Some(window) = window_weak.upgrade() {
+            update_designer_ui(&window, &mut state);
+        }
+    });
 
     // Designer: Canvas pan callback (drag on empty canvas)
     let designer_mgr_clone = designer_mgr.clone();
@@ -2043,21 +2072,23 @@ fn main() -> anyhow::Result<()> {
     main_window.on_designer_canvas_pan(move |dx: f32, dy: f32| {
         let mut state = designer_mgr_clone.borrow_mut();
 
-        // Pan is in pixel space, convert to world space
-        let viewport = state.canvas.viewport();
-        let mut world_dx = dx as f64 / viewport.zoom();
-        let mut world_dy = dy as f64 / viewport.zoom();
+        // Pan is in pixel space - direct pan offset adjustment
+        // Note: Since Y-axis is flipped in world coordinates, pan_y follows screen coordinates
+        // Dragging down (positive dy) increases pan_y to show content that was higher up
+        // No need to flip Y for panning - pan offsets are in screen space
+        let mut pan_dx = dx as f64;
+        let mut pan_dy = dy as f64;
 
-        // Apply snapping to whole mm if Shift is pressed
+        // Apply snapping to whole pixels if Shift is pressed
         if *shift_pressed_clone.borrow() {
-            world_dx = snap_to_mm(world_dx);
-            world_dy = snap_to_mm(world_dy);
+            pan_dx = pan_dx.round();
+            pan_dy = pan_dy.round();
         }
 
-        state.canvas.pan_by(world_dx, world_dy);
+        state.canvas.pan_by(pan_dx, pan_dy);
 
         if let Some(window) = window_weak.upgrade() {
-            update_designer_ui(&window, &state);
+            update_designer_ui(&window, &mut state);
             // Update UI state with new pan values
             let ui_state = crate::DesignerState {
                 mode: state.canvas.mode() as i32,
@@ -2108,28 +2139,41 @@ fn main() -> anyhow::Result<()> {
     let window_weak = main_window.as_weak();
     let zoom_for_refresh = zoom_scale.clone();
     let pan_for_refresh = pan_offset.clone();
-    main_window.on_refresh_visualization(move || {
+    main_window.on_refresh_visualization(move |canvas_width, canvas_height| {
         // Get the current G-code content
         if let Some(window) = window_weak.upgrade() {
             let content = window.get_gcode_content();
 
+            // Reset progress
+            window.set_visualizer_progress(0.0);
+            
             if content.is_empty() {
-                window.set_visualizer_status(slint::SharedString::from("No G-code loaded"));
+                // No G-code loaded, but still generate grid and origin
+                window.set_visualizer_status(slint::SharedString::from("Ready"));
+                window.set_visualization_path_data(slint::SharedString::from(""));
+                
+                // Generate empty visualizer with just grid and origin
+                use gcodekit4::visualizer::{Visualizer2D, render_grid_to_path, render_origin_to_path};
+                let visualizer = Visualizer2D::new();
+                let show_grid = window.get_visualizer_show_grid();
+                let grid_data = if show_grid {
+                    render_grid_to_path(&visualizer, canvas_width as u32, canvas_height as u32)
+                } else {
+                    String::new()
+                };
+                let origin_data = render_origin_to_path(&visualizer, canvas_width as u32, canvas_height as u32);
+                window.set_visualization_grid_data(slint::SharedString::from(grid_data));
+                window.set_visualization_origin_data(slint::SharedString::from(origin_data));
                 return;
             }
 
-            // Reset progress
-            window.set_visualizer_progress(0.0);
             window.set_visualizer_status(slint::SharedString::from("Refreshing..."));
-
-            // Clear current image to show loading state
-            window.set_visualization_image(slint::Image::default());
 
             // Spawn rendering thread
             let content_owned = content.to_string();
             
-            // Message format: (progress, status, path_data, grid_data, image_bytes)
-            let (tx, rx) = std::sync::mpsc::channel::<(f32, String, Option<String>, Option<String>, Option<Vec<u8>>)>();
+            // Message format: (progress, status, path_data, grid_data, origin_data)
+            let (tx, rx) = std::sync::mpsc::channel::<(f32, String, Option<String>, Option<String>, Option<String>)>();
             let window_weak_render = window_weak.clone();
             let zoom_scale_render = zoom_for_refresh.clone();
             let pan_offset_render = pan_for_refresh.clone();
@@ -2138,10 +2182,9 @@ fn main() -> anyhow::Result<()> {
 
             // Get show_grid state before spawning thread
             let show_grid = window.get_visualizer_show_grid();
-            let use_canvas = window.get_visualizer_use_canvas_rendering();
 
             std::thread::spawn(move || {
-                use gcodekit4::visualizer::{Visualizer2D, render_toolpath_to_path, render_grid_to_path};
+                use gcodekit4::visualizer::{Visualizer2D, render_toolpath_to_path, render_grid_to_path, render_origin_to_path};
 
                 let _ = tx.send((0.1, "Parsing G-code...".to_string(), None, None, None));
 
@@ -2149,6 +2192,9 @@ fn main() -> anyhow::Result<()> {
                 visualizer.show_grid = show_grid;
 
                 visualizer.parse_gcode(&content_owned);
+                
+                // Set default view to position origin at bottom-left
+                visualizer.set_default_view(canvas_width, canvas_height);
 
                 // Apply zoom scale
                 if let Ok(scale) = zoom_scale_render.lock() {
@@ -2164,37 +2210,29 @@ fn main() -> anyhow::Result<()> {
                 let _ = tx.send((0.3, "Rendering...".to_string(), None, None, None));
 
                 // Generate canvas path data
-                let path_data = render_toolpath_to_path(&visualizer, 800, 600);
+                let path_data = render_toolpath_to_path(&visualizer, canvas_width as u32, canvas_height as u32);
                 let grid_data = if show_grid {
-                    render_grid_to_path(&visualizer, 800, 600)
+                    render_grid_to_path(&visualizer, canvas_width as u32, canvas_height as u32)
                 } else {
                     String::new()
                 };
+                let origin_data = render_origin_to_path(&visualizer, canvas_width as u32, canvas_height as u32);
 
-                if use_canvas && !path_data.is_empty() {
-                    // Use canvas rendering
-                    let _ = tx.send((1.0, "Complete (canvas)".to_string(), Some(path_data), Some(grid_data), None));
+                if !path_data.is_empty() {
+                    let _ = tx.send((1.0, "Complete".to_string(), Some(path_data), Some(grid_data), Some(origin_data)));
                 } else {
-                    // Fallback to image rendering
-                    let _ = tx.send((0.5, "Generating image...".to_string(), None, None, None));
-                    let image_bytes = visualizer.render(800, 600);
-
-                    if !image_bytes.is_empty() {
-                        let _ = tx.send((1.0, "Complete (image)".to_string(), None, None, Some(image_bytes)));
-                    } else {
-                        let _ = tx.send((1.0, "Error: no data".to_string(), None, None, None));
-                    }
+                    let _ = tx.send((1.0, "Error: no data".to_string(), None, None, None));
                 }
             });
 
             // Process messages from rendering thread
             std::thread::spawn(move || {
-                while let Ok((progress, status, path_data, grid_data, image_data)) = rx.recv() {
+                while let Ok((progress, status, path_data, grid_data, origin_data)) = rx.recv() {
                     let window_handle = window_weak_render.clone();
                     let status_clone = status.clone();
                     let path_clone = path_data.clone();
                     let grid_clone = grid_data.clone();
-                    let image_clone = image_data.clone();
+                    let origin_clone = origin_data.clone();
                     let zoom_for_closure = zoom_scale_for_msg.clone();
                     let pan_for_closure = pan_offset_for_msg.clone();
 
@@ -2208,27 +2246,12 @@ fn main() -> anyhow::Result<()> {
                             // Set canvas path data if available
                             if let Some(path) = path_clone {
                                 window.set_visualization_path_data(slint::SharedString::from(path));
-                                if let Some(grid) = grid_clone {
-                                    window.set_visualization_grid_data(slint::SharedString::from(grid));
-                                }
                             }
-
-                            // Set image data if available (fallback)
-                            if let Some(png_bytes) = image_clone {
-                                if let Ok(img) = image::load_from_memory_with_format(
-                                    &png_bytes,
-                                    image::ImageFormat::Png,
-                                ) {
-                                    let rgba_img = img.to_rgba8();
-                                    let img_buffer = slint::Image::from_rgba8(
-                                        slint::SharedPixelBuffer::clone_from_slice(
-                                            &rgba_img,
-                                            rgba_img.width(),
-                                            rgba_img.height(),
-                                        ),
-                                    );
-                                    window.set_visualization_image(img_buffer);
-                                }
+                            if let Some(grid) = grid_clone {
+                                window.set_visualization_grid_data(slint::SharedString::from(grid));
+                            }
+                            if let Some(origin) = origin_clone {
+                                window.set_visualization_origin_data(slint::SharedString::from(origin));
                             }
 
                             // Update indicator properties
@@ -2250,7 +2273,7 @@ fn main() -> anyhow::Result<()> {
     // Handle zoom in button
     let zoom_scale_in = zoom_scale.clone();
     let window_weak_zoom_in = main_window.as_weak();
-    main_window.on_zoom_in(move || {
+    main_window.on_zoom_in(move |_canvas_width, _canvas_height| {
         if let Ok(mut scale) = zoom_scale_in.lock() {
             *scale *= 1.1;
             // Clamp to reasonable values (10% to 500%)
@@ -2261,7 +2284,9 @@ fn main() -> anyhow::Result<()> {
             // Update UI immediately
             if let Some(window) = window_weak_zoom_in.upgrade() {
                 window.set_visualizer_zoom_scale(*scale);
-                window.invoke_refresh_visualization();
+                let canvas_width = window.get_visualizer_canvas_width();
+                let canvas_height = window.get_visualizer_canvas_height();
+                window.invoke_refresh_visualization(canvas_width, canvas_height);
             }
         }
     });
@@ -2269,7 +2294,7 @@ fn main() -> anyhow::Result<()> {
     // Handle zoom out button
     let zoom_scale_out = zoom_scale.clone();
     let window_weak_zoom_out = main_window.as_weak();
-    main_window.on_zoom_out(move || {
+    main_window.on_zoom_out(move |_canvas_width, _canvas_height| {
         if let Ok(mut scale) = zoom_scale_out.lock() {
             *scale /= 1.1;
             // Clamp to reasonable values (10% to 500%)
@@ -2280,7 +2305,9 @@ fn main() -> anyhow::Result<()> {
             // Update UI immediately
             if let Some(window) = window_weak_zoom_out.upgrade() {
                 window.set_visualizer_zoom_scale(*scale);
-                window.invoke_refresh_visualization();
+                let canvas_width = window.get_visualizer_canvas_width();
+                let canvas_height = window.get_visualizer_canvas_height();
+                window.invoke_refresh_visualization(canvas_width, canvas_height);
             }
         }
     });
@@ -2289,11 +2316,12 @@ fn main() -> anyhow::Result<()> {
     let zoom_scale_reset = zoom_scale.clone();
     let pan_offset_reset = pan_offset.clone();
     let window_weak_reset = main_window.as_weak();
-    main_window.on_reset_view(move || {
+    main_window.on_reset_view(move |_canvas_width, _canvas_height| {
         if let Ok(mut scale) = zoom_scale_reset.lock() {
             *scale = 1.0;
         }
 
+        // Reset is handled by the visualizer's reset_pan() which will be called during refresh
         if let Ok(mut offsets) = pan_offset_reset.lock() {
             offsets.0 = 0.0;
             offsets.1 = 0.0;
@@ -2304,7 +2332,9 @@ fn main() -> anyhow::Result<()> {
             window.set_visualizer_zoom_scale(1.0);
             window.set_visualizer_x_offset(0.0);
             window.set_visualizer_y_offset(0.0);
-            window.invoke_refresh_visualization();
+            let canvas_width = window.get_visualizer_canvas_width();
+            let canvas_height = window.get_visualizer_canvas_height();
+            window.invoke_refresh_visualization(canvas_width, canvas_height);
         }
     });
 
@@ -2312,7 +2342,7 @@ fn main() -> anyhow::Result<()> {
     let window_weak_fit = main_window.as_weak();
     let zoom_for_fit = zoom_scale.clone();
     let pan_for_fit = pan_offset.clone();
-    main_window.on_fit_to_view(move || {
+    main_window.on_fit_to_view(move |canvas_width, canvas_height| {
         if let Some(window) = window_weak_fit.upgrade() {
             let content = window.get_gcode_content();
 
@@ -2324,9 +2354,6 @@ fn main() -> anyhow::Result<()> {
             // Reset progress
             window.set_visualizer_progress(0.0);
             window.set_visualizer_status(slint::SharedString::from("Fitting to view..."));
-
-            // Clear current image to show loading state
-            window.set_visualization_image(slint::Image::default());
 
             // Spawn calculation thread
             let content_owned = content.to_string();
@@ -2341,17 +2368,14 @@ fn main() -> anyhow::Result<()> {
             std::thread::spawn(move || {
                 use gcodekit4::visualizer::Visualizer2D;
 
-                let _ = tx.send((0.1, "Parsing G-code...".to_string(), None));
+                let _ = tx.send((0.1, "Calculating fit...".to_string()));
 
                 let mut visualizer = Visualizer2D::new();
                 visualizer.show_grid = show_grid;
-
                 visualizer.parse_gcode(&content_owned);
 
-                let _ = tx.send((0.2, "Calculating bounding box...".to_string(), None));
-
-                // Calculate fit parameters (canvas is 800x600)
-                visualizer.fit_to_view(800.0, 600.0);
+                // Calculate fit parameters using actual canvas dimensions
+                visualizer.fit_to_view(canvas_width, canvas_height);
 
                 // Apply fit parameters to shared state
                 if let Ok(mut scale) = zoom_fit_render.lock() {
@@ -2363,26 +2387,16 @@ fn main() -> anyhow::Result<()> {
                     offsets.1 = visualizer.y_offset;
                 }
 
-                let _ = tx.send((0.3, "Rendering image...".to_string(), None));
-
-                let image_bytes = visualizer.render(800, 600);
-
-                if !image_bytes.is_empty() {
-                    let _ = tx.send((0.7, "Encoding PNG...".to_string(), None));
-                    let _ = tx.send((1.0, "Complete".to_string(), Some(image_bytes)));
-                } else {
-                    let _ = tx.send((1.0, "Error: no image data".to_string(), None));
-                }
+                let _ = tx.send((1.0, "Complete".to_string()));
             });
 
             // Process messages from rendering thread
             let zoom_for_closure_fit = zoom_for_fit.clone();
             let pan_for_closure_fit = pan_for_fit.clone();
             std::thread::spawn(move || {
-                while let Ok((progress, status, image_data)) = rx.recv() {
+                while let Ok((progress, status)) = rx.recv() {
                     let window_handle = window_weak_render.clone();
                     let status_clone = status.clone();
-                    let image_clone = image_data.clone();
                     let zoom_for_closure = zoom_for_closure_fit.clone();
                     let pan_for_closure = pan_for_closure_fit.clone();
 
@@ -2391,30 +2405,20 @@ fn main() -> anyhow::Result<()> {
                             window.set_visualizer_progress(progress);
                             window.set_visualizer_status(slint::SharedString::from(status_clone));
 
-                            if let Some(png_bytes) = image_clone {
-                                if let Ok(img) = image::load_from_memory_with_format(
-                                    &png_bytes,
-                                    image::ImageFormat::Png,
-                                ) {
-                                    let rgba_img = img.to_rgba8();
-                                    let img_buffer = slint::Image::from_rgba8(
-                                        slint::SharedPixelBuffer::clone_from_slice(
-                                            &rgba_img,
-                                            rgba_img.width(),
-                                            rgba_img.height(),
-                                        ),
-                                    );
-                                    window.set_visualization_image(img_buffer);
+                            // Update indicator properties
+                            if let Ok(scale) = zoom_for_closure.lock() {
+                                window.set_visualizer_zoom_scale(*scale);
+                            }
+                            if let Ok(offsets) = pan_for_closure.lock() {
+                                window.set_visualizer_x_offset(offsets.0);
+                                window.set_visualizer_y_offset(offsets.1);
+                            }
 
-                                    // Update indicator properties
-                                    if let Ok(scale) = zoom_for_closure.lock() {
-                                        window.set_visualizer_zoom_scale(*scale);
-                                    }
-                                    if let Ok(offsets) = pan_for_closure.lock() {
-                                        window.set_visualizer_x_offset(offsets.0);
-                                        window.set_visualizer_y_offset(offsets.1);
-                                    }
-                                }
+                            // Trigger refresh to re-render with new zoom/pan
+                            if progress >= 1.0 {
+                                let canvas_width = window.get_visualizer_canvas_width();
+                                let canvas_height = window.get_visualizer_canvas_height();
+                                window.invoke_refresh_visualization(canvas_width, canvas_height);
                             }
                         }
                     })
@@ -2424,62 +2428,21 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
-    // Handle pan left button
-    let pan_left_clone = pan_offset.clone();
-    let window_weak_pan_left = main_window.as_weak();
-    main_window.on_pan_left(move || {
-        if let Ok(mut offsets) = pan_left_clone.lock() {
-            offsets.0 -= 80.0; // 10% of 800px canvas
+    // Handle mouse pan (drag)
+    let pan_mouse_clone = pan_offset.clone();
+    let window_weak_pan_mouse = main_window.as_weak();
+    main_window.on_pan_by_mouse(move |dx, dy| {
+        if let Ok(mut offsets) = pan_mouse_clone.lock() {
+            // Apply mouse delta directly to offsets
+            offsets.0 += dx;
+            offsets.1 += dy;
 
-            if let Some(window) = window_weak_pan_left.upgrade() {
+            if let Some(window) = window_weak_pan_mouse.upgrade() {
                 window.set_visualizer_x_offset(offsets.0);
                 window.set_visualizer_y_offset(offsets.1);
-                window.invoke_refresh_visualization();
-            }
-        }
-    });
-
-    // Handle pan right button
-    let pan_right_clone = pan_offset.clone();
-    let window_weak_pan_right = main_window.as_weak();
-    main_window.on_pan_right(move || {
-        if let Ok(mut offsets) = pan_right_clone.lock() {
-            offsets.0 += 80.0; // 10% of 800px canvas
-
-            if let Some(window) = window_weak_pan_right.upgrade() {
-                window.set_visualizer_x_offset(offsets.0);
-                window.set_visualizer_y_offset(offsets.1);
-                window.invoke_refresh_visualization();
-            }
-        }
-    });
-
-    // Handle pan up button
-    let pan_up_clone = pan_offset.clone();
-    let window_weak_pan_up = main_window.as_weak();
-    main_window.on_pan_up(move || {
-        if let Ok(mut offsets) = pan_up_clone.lock() {
-            offsets.1 -= 60.0; // 10% of 600px canvas (down in screen coords)
-
-            if let Some(window) = window_weak_pan_up.upgrade() {
-                window.set_visualizer_x_offset(offsets.0);
-                window.set_visualizer_y_offset(offsets.1);
-                window.invoke_refresh_visualization();
-            }
-        }
-    });
-
-    // Handle pan down button
-    let pan_down_clone = pan_offset.clone();
-    let window_weak_pan_down = main_window.as_weak();
-    main_window.on_pan_down(move || {
-        if let Ok(mut offsets) = pan_down_clone.lock() {
-            offsets.1 += 60.0; // 10% of 600px canvas (up in screen coords)
-
-            if let Some(window) = window_weak_pan_down.upgrade() {
-                window.set_visualizer_x_offset(offsets.0);
-                window.set_visualizer_y_offset(offsets.1);
-                window.invoke_refresh_visualization();
+                let canvas_width = window.get_visualizer_canvas_width();
+                let canvas_height = window.get_visualizer_canvas_height();
+                window.invoke_refresh_visualization(canvas_width, canvas_height);
             }
         }
     });
@@ -2488,7 +2451,9 @@ fn main() -> anyhow::Result<()> {
     let window_weak_grid = main_window.as_weak();
     main_window.on_toggle_grid(move || {
         if let Some(window) = window_weak_grid.upgrade() {
-            window.invoke_refresh_visualization();
+            let canvas_width = window.get_visualizer_canvas_width();
+            let canvas_height = window.get_visualizer_canvas_height();
+            window.invoke_refresh_visualization(canvas_width, canvas_height);
         }
     });
 
@@ -2521,64 +2486,29 @@ fn get_available_ports() -> anyhow::Result<Vec<slint::SharedString>> {
     }
 }
 
-/// Render G-code visualization to an image
-#[allow(dead_code)]
-fn render_gcode_visualization(window: &MainWindow, gcode_content: &str) {
-    use gcodekit4::visualizer::Visualizer2D;
-
-    // Parse G-code
-    let mut visualizer = Visualizer2D::new();
-    visualizer.parse_gcode(gcode_content);
-
-    // Render to image
-    let image_bytes = visualizer.render(800, 600);
-
-    if !image_bytes.is_empty() {
-        // Convert PNG bytes to slint Image
-        if let Ok(img) = image::load_from_memory_with_format(&image_bytes, image::ImageFormat::Png)
-        {
-            let rgba_img = img.to_rgba8();
-            let img_buffer = slint::Image::from_rgba8(slint::SharedPixelBuffer::clone_from_slice(
-                &rgba_img,
-                rgba_img.width(),
-                rgba_img.height(),
-            ));
-            window.set_visualization_image(img_buffer);
-        } 
-    } 
-}
-
 /// Render G-code visualization in background thread using message passing
 fn render_gcode_visualization_background_channel(
     gcode_content: String,
-    tx: std::sync::mpsc::Sender<(f32, String, Option<Vec<u8>>)>,
+    tx: std::sync::mpsc::Sender<(f32, String, Option<String>, Option<String>, Option<String>)>,
 ) {
-    use gcodekit4::visualizer::Visualizer2D;
+    use gcodekit4::visualizer::{Visualizer2D, render_toolpath_to_path, render_grid_to_path, render_origin_to_path};
 
-    let _ = tx.send((0.1, "Parsing G-code...".to_string(), None));
+    let _ = tx.send((0.1, "Parsing G-code...".to_string(), None, None, None));
 
     // Parse G-code
     let mut visualizer = Visualizer2D::new();
     visualizer.parse_gcode(&gcode_content);
 
-    let _ = tx.send((0.3, "Rendering image...".to_string(), None));
+    let _ = tx.send((0.3, "Rendering...".to_string(), None, None, None));
 
-    // Render to image (for initial load, we use image mode)
-    let image_bytes = visualizer.render(800, 600);
+    // Generate canvas path data
+    let path_data = render_toolpath_to_path(&visualizer, 1600, 1200);
+    let grid_data = render_grid_to_path(&visualizer, 1600, 1200);
+    let origin_data = render_origin_to_path(&visualizer, 1600, 1200);
 
-    if !image_bytes.is_empty() {
-        let _ = tx.send((0.7, "Encoding PNG...".to_string(), None));
-        let _ = tx.send((1.0, "Complete".to_string(), Some(image_bytes)));
+    if !path_data.is_empty() {
+        let _ = tx.send((1.0, "Complete".to_string(), Some(path_data), Some(grid_data), Some(origin_data)));
     } else {
-        let _ = tx.send((1.0, "Error: no image data".to_string(), None));
+        let _ = tx.send((1.0, "Error: no data".to_string(), None, None, None));
     }
-}
-
-/// Render G-code visualization in background thread
-#[allow(dead_code)]
-fn render_gcode_visualization_background(
-    _window_weak: slint::Weak<MainWindow>,
-    _gcode_content: String,
-) {
-    // This function is deprecated - use render_gcode_visualization_background_channel instead
 }

@@ -13,7 +13,7 @@ export component GcodeVisualizerPanel inherits VerticalBox {
     in property <string> gcode-content: "";
     in property <string> visualization-path-data: "";
     in property <string> visualization-grid-data: "";
-    in property <image> visualization-image;
+    in property <string> visualization-origin-data: "";
     in property <string> machine-x: "0.000";
     in property <string> machine-y: "0.000";
     in property <string> machine-z: "0.000";
@@ -26,18 +26,16 @@ export component GcodeVisualizerPanel inherits VerticalBox {
     in property <float> y-offset: 0.0;
     in property <float> zoom-scale: 1.0;
     in-out property <bool> show-grid: true;
-    in property <bool> use-canvas-rendering: true;
+    out property <float> canvas-width: canvas-rect.width / 1px;
+    out property <float> canvas-height: canvas-rect.height / 1px;
     
-    callback refresh-visualization();
-    callback zoom-in();
-    callback zoom-out();
-    callback fit-to-view();
-    callback reset-view();
-    callback pan-left();
-    callback pan-right();
-    callback pan-up();
-    callback pan-down();
+    callback refresh-visualization(/* canvas_width */ float, /* canvas_height */ float);
+    callback zoom-in(/* canvas_width */ float, /* canvas_height */ float);
+    callback zoom-out(/* canvas_width */ float, /* canvas_height */ float);
+    callback fit-to-view(/* canvas_width */ float, /* canvas_height */ float);
+    callback reset-view(/* canvas_width */ float, /* canvas_height */ float);
     callback toggle-grid();
+    callback pan-by-mouse(/* dx */ float, /* dy */ float);
 
     VerticalBox {
         spacing: 2px;
@@ -45,7 +43,7 @@ export component GcodeVisualizerPanel inherits VerticalBox {
 
         // Toolbar - all controls on one line
         HorizontalBox {
-            min-height: 40px;
+            min-height: 50px;
             spacing: 8px;
             vertical-stretch: 0;
 
@@ -67,7 +65,7 @@ export component GcodeVisualizerPanel inherits VerticalBox {
                     text: "🔄 Refresh";
                     width: 100px;
                     clicked => {
-                        root.refresh-visualization();
+                        root.refresh-visualization(root.canvas-width, root.canvas-height);
                     }
                 }
 
@@ -75,7 +73,7 @@ export component GcodeVisualizerPanel inherits VerticalBox {
                     text: "🔍+ Zoom In";
                     width: 100px;
                     clicked => {
-                        root.zoom-in();
+                        root.zoom-in(root.canvas-width, root.canvas-height);
                     }
                 }
 
@@ -83,7 +81,7 @@ export component GcodeVisualizerPanel inherits VerticalBox {
                     text: "🔍- Zoom Out";
                     width: 100px;
                     clicked => {
-                        root.zoom-out();
+                        root.zoom-out(root.canvas-width, root.canvas-height);
                     }
                 }
 
@@ -91,7 +89,7 @@ export component GcodeVisualizerPanel inherits VerticalBox {
                     text: "⊡ Fit";
                     width: 80px;
                     clicked => {
-                        root.fit-to-view();
+                        root.fit-to-view(root.canvas-width, root.canvas-height);
                     }
                 }
 
@@ -99,59 +97,27 @@ export component GcodeVisualizerPanel inherits VerticalBox {
                     text: "↺ Reset";
                     width: 80px;
                     clicked => {
-                        root.reset-view();
+                        root.reset-view(root.canvas-width, root.canvas-height);
                     }
                 }
             }
 
-            // Spacer to push pan controls to the right
+            // Spacer to push show grid checkbox to the right
             Rectangle {
                 horizontal-stretch: 1.0;
             }
 
-            // Right side - pan controls
+            // Right side - grid toggle checkbox
             HorizontalBox {
-                spacing: 8px;
+                spacing: 6px;
                 alignment: end;
                 vertical-stretch: 0;
 
-                Text {
-                    text: "Pan:";
-                    font-weight: 700;
-                    font-size: 12px;
-                    color: #2c3e50;
-                    vertical-alignment: center;
-                }
-
-                Button {
-                    text: "← Left";
-                    width: 80px;
-                    clicked => {
-                        root.pan-left();
-                    }
-                }
-
-                Button {
-                    text: "→ Right";
-                    width: 80px;
-                    clicked => {
-                        root.pan-right();
-                    }
-                }
-
-                Button {
-                    text: "↑ Up";
-                    width: 80px;
-                    clicked => {
-                        root.pan-up();
-                    }
-                }
-
-                Button {
-                    text: "↓ Down";
-                    width: 80px;
-                    clicked => {
-                        root.pan-down();
+                CheckBox {
+                    text: "Show Grid";
+                    checked <=> root.show-grid;
+                    toggled => {
+                        root.toggle-grid();
                     }
                 }
             }
@@ -165,7 +131,7 @@ export component GcodeVisualizerPanel inherits VerticalBox {
             padding-top: 2px;
             padding-bottom: 2px;
             alignment: start;
-            min-height: 20px;
+            min-height: 30px;
             vertical-stretch: 0;
 
             // Zoom Scale
@@ -243,78 +209,77 @@ export component GcodeVisualizerPanel inherits VerticalBox {
                 }
             }
 
-            // Spacer to push grid checkbox to the right
-            Rectangle {
-                horizontal-stretch: 1.0;
-            }
 
-            // Grid toggle checkbox
-            HorizontalBox {
-                spacing: 6px;
-                alignment: end;
-
-                CheckBox {
-                    text: "Show Grid";
-                    checked <=> root.show-grid;
-                    toggled => {
-                        root.toggle-grid();
-                    }
-                }
-            }
         }
 
-        // Main visualization area with scrollview
-        ScrollView {
-            // 2D Visualizer - Rendered Toolpath
-            Rectangle {
-                width: 100%;
-                background: #f5f5f5;
-                border-width: 2px;
-                border-color: #000;
-                border-radius: 4px;
-                
-                VerticalBox {
-                    alignment: center;
-                    padding-left: 2px;
-                    padding-right: 2px;
-                    padding-top: 2px;
-                    padding-bottom: 2px;
-                    
-                    // Canvas-based rendering using Path elements
-                    if root.use-canvas-rendering && root.gcode-content != "" && root.visualization-path-data != "" : Rectangle {
-                        width: 800px;
-                        height: 600px;
-                        background: white;
+        // Main visualization area - 2D Visualizer
+        canvas-rect := Rectangle {
+            horizontal-stretch: 1;
+            vertical-stretch: 1;
+            background: black;
+            border-width: 0px;
+            clip: true;
                         
                         // Grid layer
                         if root.show-grid && root.visualization-grid-data != "" : Path {
+                            width: 100%;
+                            height: 100%;
                             fill: transparent;
-                            stroke: #c8c8c8;
+                            stroke: #808080;
                             stroke-width: 1px;
                             commands: root.visualization-grid-data;
-                            viewbox-width: 800;
-                            viewbox-height: 600;
+                            viewbox-width: canvas-rect.width / 1px;
+                            viewbox-height: canvas-rect.height / 1px;
+                        }
+                        
+                        // Origin marker layer (yellow cross at 0,0)
+                        if root.visualization-origin-data != "" : Path {
+                            width: 100%;
+                            height: 100%;
+                            fill: transparent;
+                            stroke: yellow;
+                            stroke-width: 3px;
+                            commands: root.visualization-origin-data;
+                            viewbox-width: canvas-rect.width / 1px;
+                            viewbox-height: canvas-rect.height / 1px;
                         }
                         
                         // Toolpath layer
-                        Path {
+                        if root.visualization-path-data != "" : Path {
+                            width: 100%;
+                            height: 100%;
                             fill: transparent;
                             stroke: #0064c8;
                             stroke-width: 2px;
                             commands: root.visualization-path-data;
-                            viewbox-width: 800;
-                            viewbox-height: 600;
+                            viewbox-width: canvas-rect.width / 1px;
+                            viewbox-height: canvas-rect.height / 1px;
                         }
+                        
+            // Mouse drag support for panning
+            TouchArea {
+                width: 100%;
+                height: 100%;
+                mouse-cursor: self.pressed ? grabbing : grab;
+                
+                property <length> drag-start-x;
+                property <length> drag-start-y;
+                
+                moved => {
+                    if (self.pressed) {
+                        root.pan-by-mouse(
+                            (self.mouse-x - self.drag-start-x) / 1px,
+                            (self.mouse-y - self.drag-start-y) / 1px
+                        );
+                        self.drag-start-x = self.mouse-x;
+                        self.drag-start-y = self.mouse-y;
                     }
-                    
-                    // Fallback to image-based rendering
-                    if !root.use-canvas-rendering && root.gcode-content != "" && root.visualization-image.width > 0 : Image {
-                        source: root.visualization-image;
-                        // Calculate proportional dimensions while maintaining aspect ratio
-                        width: root.visualization-image.width / root.visualization-image.height * parent.height;
-                        height: parent.height;
-                        horizontal-alignment: center;
-                        vertical-alignment: center;
+                }
+                
+                pointer-event(event) => {
+                    if (event.kind == PointerEventKind.down) {
+                        self.drag-start-x = self.mouse-x;
+                        self.drag-start-y = self.mouse-y;
                     }
                 }
             }

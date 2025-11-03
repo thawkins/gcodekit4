@@ -77,7 +77,6 @@ export component MainWindow inherits Window {
     in property <string> console-output: "[INFO] GCodeKit4 initialized\n[INFO] Ready for operation\n";
     in-out property <string> gcode-content: "";
     in-out property <string> current-view: "gcode-editor";
-    in-out property <image> visualization-image;
     in-out property <string> gcode-filename: "untitled.gcode";
     in property <int> console-scroll-trigger: 0;
     
@@ -99,9 +98,11 @@ export component MainWindow inherits Window {
     in property <float> visualizer-y-offset: 0.0;
     in property <float> visualizer-zoom-scale: 1.0;
     in-out property <bool> visualizer-show-grid: true;
-    in-out property <bool> visualizer-use-canvas-rendering: true;
+    in-out property <float> visualizer-canvas-width: 800.0;
+    in-out property <float> visualizer-canvas-height: 600.0;
     in-out property <string> visualization-path-data: "";
     in-out property <string> visualization-grid-data: "";
+    in-out property <string> visualization-origin-data: "";
     
     // Designer panel properties (Phase 2)
     in property <[DesignerShape]> designer-shapes: [];
@@ -119,11 +120,16 @@ export component MainWindow inherits Window {
     in property <float> designer-safe-z: 10.0;
     in property <string> designer-generated-gcode: "";
     in property <bool> designer-gcode-generated: false;
-    in property <image> designer-canvas-image;
+    in property <string> designer-canvas-crosshair-data: "";
+    in property <string> designer-canvas-shapes-data: "";
+    in property <string> designer-canvas-selected-shapes-data: "";
+    in property <string> designer-canvas-handles-data: "";
     in property <float> designer-selected-shape-x: 0.0;
     in property <float> designer-selected-shape-y: 0.0;
     in property <float> designer-selected-shape-w: 0.0;
     in property <float> designer-selected-shape-h: 0.0;
+    in property <int> designer-selected-shape-type: 0;
+    in property <float> designer-selected-shape-radius: 5.0;
     
     callback refresh-ports();
     callback connect(string, int);
@@ -162,16 +168,13 @@ export component MainWindow inherits Window {
     callback update-setting(string, string);
     callback console-clear-clicked();
     callback console-copy-clicked();
-    callback refresh-visualization();
-    callback zoom-in();
-    callback zoom-out();
-    callback reset-view();
-    callback fit-to-view();
-    callback pan-left();
-    callback pan-right();
-    callback pan-up();
-    callback pan-down();
+    callback refresh-visualization(/* canvas_width */ float, /* canvas_height */ float);
+    callback zoom-in(/* canvas_width */ float, /* canvas_height */ float);
+    callback zoom-out(/* canvas_width */ float, /* canvas_height */ float);
+    callback reset-view(/* canvas_width */ float, /* canvas_height */ float);
+    callback fit-to-view(/* canvas_width */ float, /* canvas_height */ float);
     callback toggle-grid();
+    callback pan-by-mouse(/* dx */ float, /* dy */ float);
     
     // Designer callbacks (Phase 2)
     callback designer-set-mode(int);
@@ -193,6 +196,7 @@ export component MainWindow inherits Window {
     callback designer-canvas-pan(float, float);             // dx, dy - pan the viewport
     callback designer-deselect-all();
     callback designer-set-shift-pressed(bool);              // Shift key state
+    callback designer-save-shape-properties(float);         // corner_radius
     callback designer-update-feed-rate(float);
     callback designer-update-spindle-speed(float);
     callback designer-update-tool-diameter(float);
@@ -704,13 +708,12 @@ if current-view == "safety-diagnostics" : SafetyDiagnosticsPanel {
                 }
 
                 // GCode Visualizer View
-                if current-view == "gcode-visualizer" : GcodeVisualizerPanel {
+                if current-view == "gcode-visualizer" : visualizer-panel := GcodeVisualizerPanel {
                     gcode-filename <=> root.gcode-filename;
                     gcode-content <=> root.gcode-content;
-                    visualization-image: root.visualization-image;
                     visualization-path-data: root.visualization-path-data;
                     visualization-grid-data: root.visualization-grid-data;
-                    use-canvas-rendering <=> root.visualizer-use-canvas-rendering;
+                    visualization-origin-data: root.visualization-origin-data;
                     machine-x: Math.round(root.position-x * 1000) / 1000 + "";
                     machine-y: Math.round(root.position-y * 1000) / 1000 + "";
                     machine-z: Math.round(root.position-z * 1000) / 1000 + "";
@@ -724,44 +727,42 @@ if current-view == "safety-diagnostics" : SafetyDiagnosticsPanel {
                     zoom-scale: root.visualizer-zoom-scale;
                     show-grid <=> root.visualizer-show-grid;
                     
-                    refresh-visualization => {
-                        root.refresh-visualization();
+                    refresh-visualization(canvas-width, canvas-height) => {
+                        root.visualizer-canvas-width = canvas-width;
+                        root.visualizer-canvas-height = canvas-height;
+                        root.refresh-visualization(canvas-width, canvas-height);
                     }
                     
-                    zoom-in => {
-                        root.zoom-in();
+                    zoom-in(canvas-width, canvas-height) => {
+                        root.visualizer-canvas-width = canvas-width;
+                        root.visualizer-canvas-height = canvas-height;
+                        root.zoom-in(canvas-width, canvas-height);
                     }
                     
-                    zoom-out => {
-                        root.zoom-out();
+                    zoom-out(canvas-width, canvas-height) => {
+                        root.visualizer-canvas-width = canvas-width;
+                        root.visualizer-canvas-height = canvas-height;
+                        root.zoom-out(canvas-width, canvas-height);
                     }
                     
-                    reset-view => {
-                        root.reset-view();
+                    reset-view(canvas-width, canvas-height) => {
+                        root.visualizer-canvas-width = canvas-width;
+                        root.visualizer-canvas-height = canvas-height;
+                        root.reset-view(canvas-width, canvas-height);
                     }
                     
-                    fit-to-view => {
-                        root.fit-to-view();
-                    }
-                    
-                    pan-left => {
-                        root.pan-left();
-                    }
-                    
-                    pan-right => {
-                        root.pan-right();
-                    }
-                    
-                    pan-up => {
-                        root.pan-up();
-                    }
-                    
-                    pan-down => {
-                        root.pan-down();
+                    fit-to-view(canvas-width, canvas-height) => {
+                        root.visualizer-canvas-width = canvas-width;
+                        root.visualizer-canvas-height = canvas-height;
+                        root.fit-to-view(canvas-width, canvas-height);
                     }
                     
                     toggle-grid => {
                         root.toggle-grid();
+                    }
+                    
+                    pan-by-mouse(dx, dy) => {
+                        root.pan-by-mouse(dx, dy);
                     }
                 }
 
@@ -778,11 +779,16 @@ if current-view == "safety-diagnostics" : SafetyDiagnosticsPanel {
                     zoom_scale: root.designer-state.zoom;
                     x_offset: root.designer-state.pan_x;
                     y_offset: root.designer-state.pan_y;
-                    canvas_image: root.designer-canvas-image;
+                    canvas_crosshair_data: root.designer-canvas-crosshair-data;
+                    canvas_shapes_data: root.designer-canvas-shapes-data;
+                    canvas_selected_shapes_data: root.designer-canvas-selected-shapes-data;
+                    canvas_handles_data: root.designer-canvas-handles-data;
                     selected_shape_x: root.designer-selected-shape-x;
                     selected_shape_y: root.designer-selected-shape-y;
                     selected_shape_w: root.designer-selected-shape-w;
                     selected_shape_h: root.designer-selected-shape-h;
+                    selected_shape_type: root.designer-selected-shape-type;
+                    selected_shape_radius: root.designer-selected-shape-radius;
                     
                     set_mode(m) => {
                         root.designer-set-mode(m);
@@ -858,6 +864,10 @@ if current-view == "safety-diagnostics" : SafetyDiagnosticsPanel {
                     
                     set_shift_pressed(pressed) => {
                         root.designer-set-shift-pressed(pressed);
+                    }
+                    
+                    save_shape_properties(corner_radius) => {
+                        root.designer-save-shape-properties(corner_radius);
                     }
                     
                     update_feed_rate(rate) => {

@@ -132,6 +132,14 @@ impl Canvas {
         id
     }
 
+    /// Adds a generic shape to the canvas.
+    pub fn add_shape(&mut self, shape: Box<dyn Shape>) -> u64 {
+        let id = self.next_id;
+        self.next_id += 1;
+        self.shapes.push(DrawingObject::new(id, shape));
+        id
+    }
+
     /// Adds a line to the canvas.
     pub fn add_line(&mut self, start: Point, end: Point) -> u64 {
         let id = self.next_id;
@@ -199,6 +207,11 @@ impl Canvas {
     /// Gets all shapes on the canvas.
     pub fn shapes(&self) -> &[DrawingObject] {
         &self.shapes
+    }
+    
+    /// Returns a mutable reference to the shapes array.
+    pub fn shapes_mut(&mut self) -> &mut [DrawingObject] {
+        &mut self.shapes
     }
 
     /// Gets the selected shape ID.
@@ -452,40 +465,29 @@ impl Canvas {
 
                         let (new_cx, new_cy, new_r) = match handle {
                             0 => {
-                                // Top-left: calculate new radius from handle position to center
-                                let new_handle_x = x1 + dx;
-                                let new_handle_y = y1 + dy;
-                                let new_r = ((center_x - new_handle_x).abs()
-                                    + (center_y - new_handle_y).abs())
-                                    / 1.414;
-                                (center_x, center_y, new_r.max(5.0))
+                                // Top-left: adjust radius by the average of dx and dy movement
+                                // Moving handle away from center increases radius
+                                let delta = ((-dx) + (-dy)) / 2.0;
+                                let new_r = (radius + delta).max(5.0);
+                                (center_x, center_y, new_r)
                             }
                             1 => {
-                                // Top-right: calculate new radius from handle position to center
-                                let new_handle_x = x2 + dx;
-                                let new_handle_y = y1 + dy;
-                                let new_r = ((center_x - new_handle_x).abs()
-                                    + (center_y - new_handle_y).abs())
-                                    / 1.414;
-                                (center_x, center_y, new_r.max(5.0))
+                                // Top-right: adjust radius by the average of dx and dy movement
+                                let delta = (dx + (-dy)) / 2.0;
+                                let new_r = (radius + delta).max(5.0);
+                                (center_x, center_y, new_r)
                             }
                             2 => {
-                                // Bottom-left: calculate new radius from handle position to center
-                                let new_handle_x = x1 + dx;
-                                let new_handle_y = y2 + dy;
-                                let new_r = ((center_x - new_handle_x).abs()
-                                    + (center_y - new_handle_y).abs())
-                                    / 1.414;
-                                (center_x, center_y, new_r.max(5.0))
+                                // Bottom-left: adjust radius by the average of dx and dy movement
+                                let delta = ((-dx) + dy) / 2.0;
+                                let new_r = (radius + delta).max(5.0);
+                                (center_x, center_y, new_r)
                             }
                             3 => {
-                                // Bottom-right: calculate new radius from handle position to center
-                                let new_handle_x = x2 + dx;
-                                let new_handle_y = y2 + dy;
-                                let new_r = ((center_x - new_handle_x).abs()
-                                    + (center_y - new_handle_y).abs())
-                                    / 1.414;
-                                (center_x, center_y, new_r.max(5.0))
+                                // Bottom-right: adjust radius by the average of dx and dy movement
+                                let delta = (dx + dy) / 2.0;
+                                let new_r = (radius + delta).max(5.0);
+                                (center_x, center_y, new_r)
                             }
                             4 => (center_x + dx, center_y + dy, radius), // Center (move)
                             _ => (center_x, center_y, radius),

@@ -145,6 +145,153 @@ component ToolButton inherits Rectangle {
     }
 }
 
+// Shape Properties Dialog
+component ShapePropertiesDialog inherits Dialog {
+    in-out property <bool> show: false;
+    in property <int> shape_type: 0;
+    in-out property <float> corner_radius: 5.0;
+    
+    callback save_properties();
+    callback cancel_properties();
+    
+    width: 300px;
+    height: 200px;
+    
+    VerticalBox {
+        padding: 10px;
+        spacing: 10px;
+        
+        Text {
+            text: "Shape Properties";
+            font-size: 16px;
+            font-weight: 700;
+        }
+        
+        // Only show corner radius for RoundRectangle (shape_type == 5)
+        if shape_type == 5: HorizontalBox {
+            spacing: 10px;
+            alignment: start;
+            
+            Text {
+                text: "Corner Radius (mm):";
+                vertical-alignment: center;
+            }
+            
+            Rectangle {
+                width: 100px;
+                height: 30px;
+                
+                CompactSpinBox {
+                    width: 100%;
+                    height: 100%;
+                    value <=> corner_radius;
+                    minimum: 0.0;
+                    maximum: 100.0;
+                    step: 0.1;
+                    
+                    value-changed(val) => {
+                        corner_radius = val;
+                    }
+                }
+            }
+        }
+        
+        Rectangle {
+            vertical-stretch: 1;
+        }
+        
+        HorizontalBox {
+            spacing: 10px;
+            alignment: end;
+            
+            Button {
+                text: "Save";
+                clicked => {
+                    root.save_properties();
+                }
+            }
+            
+            Button {
+                text: "Cancel";
+                clicked => {
+                    root.cancel_properties();
+                }
+            }
+        }
+    }
+}
+
+// Context Menu for shapes
+component ContextMenu inherits Rectangle {
+    in-out property <bool> show: false;
+    in-out property <float> menu_x: 0;
+    in-out property <float> menu_y: 0;
+    
+    callback menu_delete();
+    callback menu_properties();
+    
+    width: 150px;
+    height: 60px;
+    x: root.menu_x * 1px;
+    y: root.menu_y * 1px;
+    background: white;
+    border-width: 1px;
+    border-color: #ccc;
+    drop-shadow-blur: 4px;
+    drop-shadow-color: #00000040;
+    
+    VerticalBox {
+        padding: 2px;
+        spacing: 0px;
+        
+        Rectangle {
+            height: 28px;
+            background: menu-item-1.has-hover ? #e0e0e0 : transparent;
+            
+            HorizontalBox {
+                padding-left: 10px;
+                padding-right: 10px;
+                
+                Text {
+                    text: "Delete";
+                    vertical-alignment: center;
+                    font-size: 13px;
+                }
+            }
+            
+            menu-item-1 := TouchArea {
+                clicked => {
+                    root.show = false;
+                    root.menu_delete();
+                }
+            }
+        }
+        
+        Rectangle {
+            height: 28px;
+            background: menu-item-2.has-hover ? #e0e0e0 : transparent;
+            
+            HorizontalBox {
+                padding-left: 10px;
+                padding-right: 10px;
+                
+                Text {
+                    text: "Properties...";
+                    vertical-alignment: center;
+                    font-size: 13px;
+                }
+            }
+            
+            menu-item-2 := TouchArea {
+                clicked => {
+                    root.show = false;
+                    root.menu_properties();
+                }
+            }
+        }
+    }
+}
+
 export component DesignerPanel inherits VerticalBox {
     spacing: 0px;
     horizontal-stretch: 1.0;
@@ -161,11 +308,18 @@ export component DesignerPanel inherits VerticalBox {
     in property <float> zoom_scale: 1.0;
     in property <float> x_offset: 0.0;
     in property <float> y_offset: 0.0;
-    in property <image> canvas_image;
+    in property <string> canvas_crosshair_data: "";
+    in property <string> canvas_shapes_data: "";
+    in property <string> canvas_selected_shapes_data: "";
+    in property <string> canvas_handles_data: "";
+    out property <float> canvas-width: canvas-rect.width / 1px;
+    out property <float> canvas-height: canvas-rect.height / 1px;
     in property <float> selected_shape_x: 0.0;
     in property <float> selected_shape_y: 0.0;
     in property <float> selected_shape_w: 0.0;
     in property <float> selected_shape_h: 0.0;
+    in property <int> selected_shape_type: 0;
+    in property <float> selected_shape_radius: 5.0;
     
     callback set_mode(int);
     callback zoom_in();
@@ -190,6 +344,15 @@ export component DesignerPanel inherits VerticalBox {
     callback canvas_pan(float, float);             // dx, dy - pan the viewport
     callback deselect_all();
     callback set_shift_pressed(bool);              // Notify backend of Shift key state
+    callback show_context_menu(float, float);      // x, y - show context menu
+    callback save_shape_properties(float);         // corner_radius
+    
+    // Context menu and dialog state
+    private property <bool> context_menu_visible: false;
+    private property <float> context_menu_x: 0;
+    private property <float> context_menu_y: 0;
+    private property <bool> properties_dialog_visible: false;
+    private property <float> current_corner_radius: 5.0;
     
     // Track last delta sent to backend (per shape) to compute incremental changes
     private property <float> drag_start_x: 0.0;
@@ -401,13 +564,13 @@ export component DesignerPanel inherits VerticalBox {
                 padding: 2px;
                 
                 Button {
-                    text: "⇧";
+                    text: "DXF";
                     width: 50px;
                     height: 40px;
                     clicked => { import_dxf(); }
                 }
                 Button {
-                    text: "⇨";
+                    text: "SVG";
                     width: 50px;
                     height: 40px;
                     clicked => { import_svg(); }
@@ -534,23 +697,66 @@ export component DesignerPanel inherits VerticalBox {
                                 reject
                             }
                             
-                            // Display rendered canvas image at native resolution (no scaling)
-                            // ScrollView with TouchArea overlay for interaction
-                            canvas_scroll := ScrollView {
-                                viewport-width: 1600px;
-                                viewport-height: 1200px;
+                            // Display rendered canvas using SVG paths
+                            canvas-rect := Rectangle {
+                                width: 100%;
+                                height: 100%;
+                                clip: true;
+                                background: #34495e;
                             
                             Rectangle {
-                                width: 1600px;
-                                height: 1200px;
+                                width: 100%;
+                                height: 100%;
                                 
-                                if root.canvas_image.width > 0 : Image {
-                                    source: root.canvas_image;
-                                    width: 1600px;
-                                    height: 1200px;
+                                // Crosshair layer (yellow)
+                                if root.canvas_crosshair_data != "" : Path {
+                                    width: 100%;
+                                    height: 100%;
+                                    fill: transparent;
+                                    stroke: yellow;
+                                    stroke-width: 2px;
+                                    commands: root.canvas_crosshair_data;
+                                    viewbox-width: canvas-rect.width / 1px;
+                                    viewbox-height: canvas-rect.height / 1px;
                                 }
                                 
-                                // Interactive layer on top of image
+                                // Normal shapes layer (blue)
+                                if root.canvas_shapes_data != "" : Path {
+                                    width: 100%;
+                                    height: 100%;
+                                    fill: transparent;
+                                    stroke: #3498db;
+                                    stroke-width: 2px;
+                                    commands: root.canvas_shapes_data;
+                                    viewbox-width: canvas-rect.width / 1px;
+                                    viewbox-height: canvas-rect.height / 1px;
+                                }
+                                
+                                // Selected shapes layer (yellow)
+                                if root.canvas_selected_shapes_data != "" : Path {
+                                    width: 100%;
+                                    height: 100%;
+                                    fill: transparent;
+                                    stroke: #ffeb3b;
+                                    stroke-width: 3px;
+                                    commands: root.canvas_selected_shapes_data;
+                                    viewbox-width: canvas-rect.width / 1px;
+                                    viewbox-height: canvas-rect.height / 1px;
+                                }
+                                
+                                // Selection handles layer (yellow filled squares)
+                                if root.canvas_handles_data != "" : Path {
+                                    width: 100%;
+                                    height: 100%;
+                                    fill: #ffeb3b;
+                                    stroke: black;
+                                    stroke-width: 1px;
+                                    commands: root.canvas_handles_data;
+                                    viewbox-width: canvas-rect.width / 1px;
+                                    viewbox-height: canvas-rect.height / 1px;
+                                }
+                                
+                                // Interactive layer on top of canvas
                                 TouchArea {
                                     width: 100%;
                                     height: 100%;
@@ -572,9 +778,9 @@ export component DesignerPanel inherits VerticalBox {
                                     clicked => {
                                         // Don't handle click if a drag just occurred
                                         if !root.drag_occurred {
-                                            // Adjust for scroll offset
-                                            let adjusted_x = self.mouse-x / 1px + canvas_scroll.viewport-x / 1px;
-                                            let adjusted_y = self.mouse-y / 1px + canvas_scroll.viewport-y / 1px;
+                                            // Direct mouse coordinates (no scroll offset)
+                                            let adjusted_x = self.mouse-x / 1px;
+                                            let adjusted_y = self.mouse-y / 1px;
                                             canvas_click(adjusted_x, adjusted_y);
                                         }
                                         root.drag_occurred = false;
@@ -583,12 +789,25 @@ export component DesignerPanel inherits VerticalBox {
                                     // Detect handle on press down
                                     pointer-event(event) => {
                                         if event.kind == PointerEventKind.down {
+                                            // Handle right-click for context menu
+                                            if event.button == PointerEventButton.right {
+                                                if designer_state.selected_id > 0 {
+                                                    root.context_menu_x = self.mouse-x / 1px;
+                                                    root.context_menu_y = self.mouse-y / 1px;
+                                                    root.context_menu_visible = true;
+                                                }
+                                                return;
+                                            }
+                                            
+                                            // Hide context menu on left click
+                                            root.context_menu_visible = false;
+                                            
                                             // Ensure FocusScope has focus so key events are captured
                                             canvas_focus.focus();
                                             if designer_state.mode == 0 {
                                                 // Ask backend to detect which handle (if any) we're on
-                                                let adjusted_x = self.pressed-x / 1px + canvas_scroll.viewport-x / 1px;
-                                                let adjusted_y = self.pressed-y / 1px + canvas_scroll.viewport-y / 1px;
+                                                let adjusted_x = self.pressed-x / 1px;
+                                                let adjusted_y = self.pressed-y / 1px;
                                                 root.dragging_handle = detect_handle(adjusted_x, adjusted_y);
                                                 // Reset drag tracking for new press
                                                 root.drag_start_initialized = false;
@@ -600,8 +819,8 @@ export component DesignerPanel inherits VerticalBox {
                                     moved => {
                                         if designer_state.mode == 0 {
                                             // Check which handle we're hovering over
-                                            let adjusted_x = self.mouse-x / 1px + canvas_scroll.viewport-x / 1px;
-                                            let adjusted_y = self.mouse-y / 1px + canvas_scroll.viewport-y / 1px;
+                                            let adjusted_x = self.mouse-x / 1px;
+                                            let adjusted_y = self.mouse-y / 1px;
                                             root.hovered_handle = detect_handle(adjusted_x, adjusted_y);
                                         }
                                         
@@ -651,17 +870,6 @@ export component DesignerPanel inherits VerticalBox {
                             }
                         }
                         }
-                    }
-                    
-                    Text {
-                        text: "Canvas - " + shapes.length + " shapes | Mode: " + 
-                              (designer_state.mode == 0 ? "Select" :
-                               designer_state.mode == 1 ? "Rectangle" :
-                               designer_state.mode == 2 ? "Circle" :
-                               designer_state.mode == 3 ? "Line" :
-                               designer_state.mode == 4 ? "Ellipse" :
-                               designer_state.mode == 5 ? "Polygon" : "Round Rectangle");
-                        font-size: 11px;
                     }
                 }
             }
@@ -811,6 +1019,50 @@ export component DesignerPanel inherits VerticalBox {
                     
                     VerticalBox { }
                 }
+            }
+        }
+    }
+    
+    // Context menu overlay (on top of everything)
+    if root.context_menu_visible: ContextMenu {
+        show <=> root.context_menu_visible;
+        menu_x: root.context_menu_x;
+        menu_y: root.context_menu_y;
+        
+        menu_delete => {
+            delete_selected();
+        }
+        
+        menu_properties => {
+            root.properties_dialog_visible = true;
+            root.current_corner_radius = root.selected_shape_radius;
+        }
+    }
+    
+    // Properties dialog overlay
+    if root.properties_dialog_visible: Rectangle {
+        width: 100%;
+        height: 100%;
+        background: #00000080;
+        
+        TouchArea {
+            clicked => {
+                root.properties_dialog_visible = false;
+            }
+        }
+        
+        ShapePropertiesDialog {
+            show <=> root.properties_dialog_visible;
+            shape_type: root.selected_shape_type;
+            corner_radius <=> root.current_corner_radius;
+            
+            save_properties => {
+                save_shape_properties(root.current_corner_radius);
+                root.properties_dialog_visible = false;
+            }
+            
+            cancel_properties => {
+                root.properties_dialog_visible = false;
             }
         }
     }

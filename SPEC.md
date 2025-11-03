@@ -1412,3 +1412,38 @@ See [FIRMWARE_CAPABILITIES_DATABASE.md](docs/FIRMWARE_CAPABILITIES_DATABASE.md) 
 **Document Status**: Draft for Review
 **Last Updated**: 2024-10-21
 **Next Review**: Upon completion of Phase 1 implementation
+
+## Designer UI Updates (November 2025)
+
+### SVG Canvas Rendering
+- Converted designer from image-based rendering to SVG Path elements
+- Separate layers for crosshair, shapes, selected shapes, and selection handles
+- Better performance and scalability at any zoom level
+
+### Coordinate System
+- Implemented CAD-standard coordinate system: (0,0) at bottom-left, +Y up, +X right
+- 20px margin for origin positioning
+- Fixed Y-axis flipping for all transformations (viewport, drag, resize)
+
+### Shape Interaction
+- Fixed shape movement Y-direction to match coordinate system
+- Fixed circle resize to use incremental deltas (not absolute positioning)
+- Improved selection handle rendering (8x8px, symmetric positioning)
+- Fixed handle detection for Y-axis flip
+
+### Context Menu & Properties
+- Right-click context menu on selected shapes (Delete, Properties)
+- Properties dialog for shape editing
+- Corner radius editor for RoundRectangle shapes (0.1mm increments, 0-100mm range)
+- Modal dialog with save/cancel functionality
+
+### Coordinate System Fixes
+- Fixed 740mm vertical offset by matching viewport size to canvas size
+- Viewport updates on every render to maintain consistency
+- Crosshair visibility improved with 10px buffer outside canvas bounds
+
+### UI Cleanup
+- Removed canvas status text (object count and mode display)
+- Removed all eprintln! debug statements
+- Cleaner console output
+

@@ -35,6 +35,11 @@ GCodeKit4 is a Rust-based implementation of Universal G-Code Sender, providing a
 - Customizable macros
 
 ### Advanced Features
+- **2D CAD/CAM Designer Tool** with file import support
+  - Draw shapes: rectangles, circles, ellipses, lines, polygons
+  - Import vector files: SVG and DXF formats
+  - Generate toolpaths and G-code from designs
+  - Zoom, pan, and interactive editing controls
 - 14 G-Code preprocessors
 - Coordinate system management (G54-G59)
 - Real-time overrides (feed rate, rapid, spindle)
@@ -286,3 +291,20 @@ See [CHANGELOG.md](CHANGELOG.md) for version history and changes.
 ---
 
 **Made with ❤️ by CNC enthusiasts**
+
+## Recent Updates (November 2025)
+
+### Designer Enhancements
+- **SVG Canvas Rendering**: Converted from image-based to SVG paths for better performance and scalability
+- **CAD Coordinate System**: Proper coordinate system with (0,0) at bottom-left, +Y up
+- **Context Menu**: Right-click menu on selected shapes with Delete and Properties options
+- **Properties Dialog**: Edit shape properties (corner radius for round rectangles)
+- **Improved Interactions**: Fixed all shape movement, resize, and selection handle positioning
+
+### Bug Fixes
+- Fixed Y-axis coordinate flipping throughout the designer
+- Fixed circle resize sensitivity issues
+- Fixed selection handle asymmetry
+- Fixed 740mm coordinate offset issue
+- Removed debug output (eprintln statements)
+

@@ -376,30 +376,49 @@ impl DxfParser {
             // Exit entities section
             if in_entities && line == "ENDSEC" {
                 in_entities = false;
+                i += 1;
+                continue;
             }
 
-            // Parse entity data
-            if in_entities && !line.is_empty() {
-                if line == "LINE" {
-                    if let Ok(line_entity) = Self::parse_line(&lines, &mut i) {
-                        file.add_entity(DxfEntity::Line(line_entity));
+            // Parse entity data - look for entity type markers after "0" code
+            if in_entities && line == "0" {
+                i += 1;
+                if i < lines.len() {
+                    let entity_type = lines[i].trim();
+                    match entity_type {
+                        "LINE" => {
+                            i += 1;
+                            if let Ok(line_entity) = Self::parse_line(&lines, &mut i) {
+                                file.add_entity(DxfEntity::Line(line_entity));
+                            }
+                        }
+                        "CIRCLE" => {
+                            i += 1;
+                            if let Ok(circle_entity) = Self::parse_circle(&lines, &mut i) {
+                                file.add_entity(DxfEntity::Circle(circle_entity));
+                            }
+                        }
+                        "ARC" => {
+                            i += 1;
+                            if let Ok(arc_entity) = Self::parse_arc(&lines, &mut i) {
+                                file.add_entity(DxfEntity::Arc(arc_entity));
+                            }
+                        }
+                        "LWPOLYLINE" | "POLYLINE" => {
+                            i += 1;
+                            if let Ok(polyline_entity) = Self::parse_polyline(&lines, &mut i) {
+                                file.add_entity(DxfEntity::Polyline(polyline_entity));
+                            }
+                        }
+                        "TEXT" => {
+                            i += 1;
+                            if let Ok(text_entity) = Self::parse_text(&lines, &mut i) {
+                                file.add_entity(DxfEntity::Text(text_entity));
+                            }
+                        }
+                        _ => i += 1,
                     }
-                } else if line == "CIRCLE" {
-                    if let Ok(circle_entity) = Self::parse_circle(&lines, &mut i) {
-                        file.add_entity(DxfEntity::Circle(circle_entity));
-                    }
-                } else if line == "ARC" {
-                    if let Ok(arc_entity) = Self::parse_arc(&lines, &mut i) {
-                        file.add_entity(DxfEntity::Arc(arc_entity));
-                    }
-                } else if line == "LWPOLYLINE" || line == "POLYLINE" {
-                    if let Ok(polyline_entity) = Self::parse_polyline(&lines, &mut i) {
-                        file.add_entity(DxfEntity::Polyline(polyline_entity));
-                    }
-                } else if line == "TEXT" {
-                    if let Ok(text_entity) = Self::parse_text(&lines, &mut i) {
-                        file.add_entity(DxfEntity::Text(text_entity));
-                    }
+                    continue;
                 }
             }
 
@@ -410,60 +429,233 @@ impl DxfParser {
     }
 
     /// Parse a LINE entity
-    fn parse_line(_lines: &[&str], _index: &mut usize) -> Result<DxfLine> {
+    fn parse_line(lines: &[&str], index: &mut usize) -> Result<DxfLine> {
+        let mut start = Point::new(0.0, 0.0);
+        let mut end = Point::new(0.0, 0.0);
+        let mut layer = "0".to_string();
+        let mut color = 256u16;
+
+        while *index < lines.len() {
+            let code = lines[*index].trim();
+            *index += 1;
+            
+            if *index >= lines.len() {
+                break;
+            }
+            
+            let value = lines[*index].trim();
+            
+            if code == "0" && !value.is_empty() {
+                *index -= 1;
+                break;
+            }
+            
+            match code {
+                "8" => layer = value.to_string(),
+                "62" => color = value.parse().unwrap_or(256),
+                "10" => start.x = value.parse().unwrap_or(0.0),
+                "20" => start.y = value.parse().unwrap_or(0.0),
+                "11" => end.x = value.parse().unwrap_or(0.0),
+                "21" => end.y = value.parse().unwrap_or(0.0),
+                _ => {}
+            }
+            
+            *index += 1;
+        }
+
         Ok(DxfLine {
-            start: Point::new(0.0, 0.0),
-            end: Point::new(10.0, 10.0),
-            layer: "0".to_string(),
-            color: 256,
+            start,
+            end,
+            layer,
+            color,
         })
     }
 
     /// Parse a CIRCLE entity
-    fn parse_circle(_lines: &[&str], _index: &mut usize) -> Result<DxfCircle> {
+    fn parse_circle(lines: &[&str], index: &mut usize) -> Result<DxfCircle> {
+        let mut center = Point::new(0.0, 0.0);
+        let mut radius = 0.0;
+        let mut layer = "0".to_string();
+        let mut color = 256u16;
+
+        while *index < lines.len() {
+            let code = lines[*index].trim();
+            *index += 1;
+            
+            if *index >= lines.len() {
+                break;
+            }
+            
+            let value = lines[*index].trim();
+            
+            if code == "0" && !value.is_empty() {
+                *index -= 1;
+                break;
+            }
+            
+            match code {
+                "8" => layer = value.to_string(),
+                "62" => color = value.parse().unwrap_or(256),
+                "10" => center.x = value.parse().unwrap_or(0.0),
+                "20" => center.y = value.parse().unwrap_or(0.0),
+                "40" => radius = value.parse().unwrap_or(0.0),
+                _ => {}
+            }
+            
+            *index += 1;
+        }
+
         Ok(DxfCircle {
-            center: Point::new(0.0, 0.0),
-            radius: 5.0,
-            layer: "0".to_string(),
-            color: 256,
+            center,
+            radius,
+            layer,
+            color,
         })
     }
 
     /// Parse an ARC entity
-    fn parse_arc(_lines: &[&str], _index: &mut usize) -> Result<DxfArc> {
+    fn parse_arc(lines: &[&str], index: &mut usize) -> Result<DxfArc> {
+        let mut center = Point::new(0.0, 0.0);
+        let mut radius = 0.0;
+        let mut start_angle = 0.0;
+        let mut end_angle = 0.0;
+        let mut layer = "0".to_string();
+        let mut color = 256u16;
+
+        while *index < lines.len() {
+            let code = lines[*index].trim();
+            *index += 1;
+            
+            if *index >= lines.len() {
+                break;
+            }
+            
+            let value = lines[*index].trim();
+            
+            if code == "0" && !value.is_empty() {
+                *index -= 1;
+                break;
+            }
+            
+            match code {
+                "8" => layer = value.to_string(),
+                "62" => color = value.parse().unwrap_or(256),
+                "10" => center.x = value.parse().unwrap_or(0.0),
+                "20" => center.y = value.parse().unwrap_or(0.0),
+                "40" => radius = value.parse().unwrap_or(0.0),
+                "50" => start_angle = value.parse().unwrap_or(0.0),
+                "51" => end_angle = value.parse().unwrap_or(0.0),
+                _ => {}
+            }
+            
+            *index += 1;
+        }
+
         Ok(DxfArc {
-            center: Point::new(0.0, 0.0),
-            radius: 5.0,
-            start_angle: 0.0,
-            end_angle: 90.0,
-            layer: "0".to_string(),
-            color: 256,
+            center,
+            radius,
+            start_angle,
+            end_angle,
+            layer,
+            color,
         })
     }
 
     /// Parse a POLYLINE entity
-    fn parse_polyline(_lines: &[&str], _index: &mut usize) -> Result<DxfPolyline> {
+    fn parse_polyline(lines: &[&str], index: &mut usize) -> Result<DxfPolyline> {
+        let mut vertices = Vec::new();
+        let mut closed = false;
+        let mut layer = "0".to_string();
+        let mut color = 256u16;
+        let mut current_x = 0.0;
+
+        while *index < lines.len() {
+            let code = lines[*index].trim();
+            *index += 1;
+            
+            if *index >= lines.len() {
+                break;
+            }
+            
+            let value = lines[*index].trim();
+            
+            match code {
+                "0" => {
+                    if value != "VERTEX" {
+                        break;
+                    }
+                }
+                "8" => layer = value.to_string(),
+                "62" => color = value.parse().unwrap_or(256),
+                "70" => {
+                    if let Ok(flags) = value.parse::<i32>() {
+                        closed = (flags & 1) != 0;
+                    }
+                }
+                "10" => current_x = value.parse().unwrap_or(0.0),
+                "20" => {
+                    let current_y = value.parse().unwrap_or(0.0);
+                    vertices.push(Point::new(current_x, current_y));
+                }
+                _ => {}
+            }
+            
+            *index += 1;
+        }
+
         Ok(DxfPolyline {
-            vertices: vec![
-                Point::new(0.0, 0.0),
-                Point::new(10.0, 0.0),
-                Point::new(10.0, 10.0),
-            ],
-            closed: false,
-            layer: "0".to_string(),
-            color: 256,
+            vertices,
+            closed,
+            layer,
+            color,
         })
     }
 
     /// Parse a TEXT entity
-    fn parse_text(_lines: &[&str], _index: &mut usize) -> Result<DxfText> {
+    fn parse_text(lines: &[&str], index: &mut usize) -> Result<DxfText> {
+        let mut content = String::new();
+        let mut position = Point::new(0.0, 0.0);
+        let mut height = 2.5;
+        let mut rotation = 0.0;
+        let mut layer = "0".to_string();
+        let mut color = 256u16;
+
+        while *index < lines.len() {
+            let code = lines[*index].trim();
+            *index += 1;
+            
+            if *index >= lines.len() {
+                break;
+            }
+            
+            let value = lines[*index].trim();
+            
+            if code == "0" && !value.is_empty() {
+                *index -= 1;
+                break;
+            }
+            
+            match code {
+                "1" => content = value.to_string(),
+                "8" => layer = value.to_string(),
+                "62" => color = value.parse().unwrap_or(256),
+                "10" => position.x = value.parse().unwrap_or(0.0),
+                "20" => position.y = value.parse().unwrap_or(0.0),
+                "40" => height = value.parse().unwrap_or(2.5),
+                "50" => rotation = value.parse().unwrap_or(0.0),
+                _ => {}
+            }
+            
+            *index += 1;
+        }
+
         Ok(DxfText {
-            content: "Text".to_string(),
-            position: Point::new(0.0, 0.0),
-            height: 2.5,
-            rotation: 0.0,
-            layer: "0".to_string(),
-            color: 256,
+            content,
+            position,
+            height,
+            rotation,
+            layer,
+            color,
         })
     }
 

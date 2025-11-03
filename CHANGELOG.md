@@ -1,3 +1,33 @@
+## [0.25.2-alpha] - 2025-11-03
+
+### Added
+- SVG canvas rendering for designer (replaced image-based rendering)
+- Right-click context menu on selected shapes (Delete, Properties)
+- Properties dialog for editing shape attributes
+- Corner radius editor for RoundRectangle shapes (0.1mm increments)
+- Modal dialog system with backdrop and proper event handling
+
+### Changed
+- Designer coordinate system: (0,0) now at bottom-left, +Y up (CAD standard)
+- Selection handles increased to 8x8px for better visibility
+- Viewport size now updates dynamically to match canvas size
+- Initial canvas size changed from 1600x1200 to 800x600 for consistency
+
+### Fixed
+- Y-axis coordinate flipping in all designer transformations
+- Shape movement Y-direction now correct with flipped coordinate system
+- Circle resize sensitivity (changed from absolute to incremental)
+- Selection handle positioning (now symmetric and properly aligned)
+- Handle detection accounting for Y-axis flip
+- 740mm vertical coordinate offset issue
+- Crosshair visibility (relaxed bounds checking with 10px buffer)
+- Canvas pan direction with Y-axis flip
+
+### Removed
+- Canvas status text showing object count and mode
+- All eprintln! debug statements for cleaner console output
+- Image-based canvas rendering and associated buffer management
+
 # Changelog
 
 All notable changes to this project should be documented in this file.

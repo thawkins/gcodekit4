@@ -9,6 +9,7 @@
 
 pub mod capabilities;
 pub mod capabilities_db;
+pub mod capability_manager;
 pub mod connection_watch;
 pub mod device_db;
 pub mod device_status;
@@ -23,6 +24,7 @@ pub mod smoothieware;
 pub mod tinyg;
 
 pub use capabilities::{CapabilitiesTrait, Capability, DefaultCapabilities};
+pub use capability_manager::{CapabilityManager, CapabilityState};
 pub use connection_watch::{ConnectionWatchConfig, ConnectionWatchState, ConnectionWatcher};
 pub use file_service::{FileInfo, FileServiceTrait, NoOpFileService, StorageInfo};
 pub use fluidnc::{FluidNCCapabilities, FluidNCController, FluidNCVersion};

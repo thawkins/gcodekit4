@@ -1,7 +1,6 @@
 //! 2D G-Code Visualizer
-//! Renders G-Code toolpaths as 2D images using image crate
+//! Parses G-Code toolpaths for canvas-based visualization
 
-use image::{ImageBuffer, Rgba, RgbaImage};
 use std::collections::HashMap;
 
 const CANVAS_PADDING: f32 = 20.0;
@@ -81,10 +80,14 @@ impl Bounds {
         let padding_x = (self.max_x - self.min_x) * padding_factor;
         let padding_y = (self.max_y - self.min_y) * padding_factor;
 
+        // Always ensure (0,0) is at bottom-left by including it in bounds
+        let final_min_x = (self.min_x - padding_x).min(0.0);
+        let final_min_y = (self.min_y - padding_y).min(0.0);
+
         (
-            self.min_x - padding_x,
+            final_min_x,
             self.max_x + padding_x,
-            self.min_y - padding_y,
+            final_min_y,
             self.max_y + padding_y,
         )
     }
@@ -140,7 +143,8 @@ impl CoordTransform {
 
     fn world_to_screen(&self, x: f32, y: f32) -> (i32, i32) {
         let screen_x = (x - self.min_x) * self.scale + CANVAS_PADDING + self.x_offset;
-        let screen_y = self.height - (y - self.min_y) * self.scale - CANVAS_PADDING + self.y_offset;
+        // Flip Y axis: higher Y values should move up the screen (smaller screen_y)
+        let screen_y = self.height - ((y - self.min_y) * self.scale + CANVAS_PADDING - self.y_offset);
         (safe_to_i32(screen_x), safe_to_i32(screen_y))
     }
 
@@ -175,10 +179,10 @@ impl Visualizer2D {
     pub fn new() -> Self {
         Self {
             commands: Vec::new(),
-            min_x: 0.0,
-            max_x: 100.0,
-            min_y: 0.0,
-            max_y: 100.0,
+            min_x: -1000.0,
+            max_x: 1000.0,
+            min_y: -1000.0,
+            max_y: 1000.0,
             current_pos: Point2D::new(0.0, 0.0),
             zoom_scale: 1.0,
             x_offset: 0.0,
@@ -186,6 +190,22 @@ impl Visualizer2D {
             show_grid: true,
             scale_factor: DEFAULT_SCALE_FACTOR,
         }
+    }
+    
+    /// Calculate and set offsets to position origin (0,0) at bottom-left of canvas
+    pub fn set_default_view(&mut self, _canvas_width: f32, canvas_height: f32) {
+        // Target position: 5px from left, 5px from bottom
+        let target_x = 5.0;
+        let target_y = canvas_height - 5.0;
+        let padding = 20.0;
+        
+        // screen_x = (0 - min_x) * scale + padding + x_offset
+        // x_offset = target_x - ((0 - min_x) * scale + padding)
+        self.x_offset = target_x - ((0.0 - self.min_x) + padding);
+        
+        // screen_y = height - ((0 - min_y) * scale + padding - y_offset)
+        // y_offset = (0 - min_y) * scale + padding - (height - target_y)
+        self.y_offset = (0.0 - self.min_y) + padding - (canvas_height - target_y);
     }
 
     /// Toggle grid visibility
@@ -242,7 +262,12 @@ impl Visualizer2D {
         let is_rapid = line.starts_with("G0");
         let params = Self::extract_params(line, &['X', 'Y']);
 
-        if let (Some(&new_x), Some(&new_y)) = (params.get(&'X'), params.get(&'Y')) {
+        // Get new position, using current position if X or Y not specified
+        let new_x = params.get(&'X').copied().unwrap_or(current_pos.x);
+        let new_y = params.get(&'Y').copied().unwrap_or(current_pos.y);
+
+        // Only create a command if at least one axis changed
+        if new_x != current_pos.x || new_y != current_pos.y {
             let to = Point2D::new(new_x, new_y);
             self.commands.push(GCodeCommand::Move {
                 from: *current_pos,
@@ -353,8 +378,7 @@ impl Visualizer2D {
 
     /// Reset pan to center (offset = 0)
     pub fn reset_pan(&mut self) {
-        self.x_offset = 0.0;
-        self.y_offset = 0.0;
+        self.set_default_view(1600.0, 1200.0);
     }
 
     /// Calculate zoom and offset to fit all cutting commands in view with 5% margin
@@ -376,8 +400,7 @@ impl Visualizer2D {
 
         if !bounds.is_valid() {
             self.zoom_scale = 1.0;
-            self.x_offset = 0.0;
-            self.y_offset = 0.0;
+            self.set_default_view(canvas_width, canvas_height);
             return;
         }
 
@@ -403,205 +426,8 @@ impl Visualizer2D {
         self.y_offset = center_y + (bbox_min_y_padded * scale) + CANVAS_PADDING;
     }
 
-    /// Render the 2D visualization to an image
-    pub fn render(&self, width: u32, height: u32) -> Vec<u8> {
-        let mut img: RgbaImage = ImageBuffer::new(width, height);
-
-        for pixel in img.pixels_mut() {
-            *pixel = Rgba([255, 255, 255, 255]);
-        }
-
-        if self.commands.is_empty() {
-            return encode_image_to_bytes(&img);
-        }
-
-        let scale = self.calculate_scale(width, height);
-        let transform = CoordTransform::new(
-            self.min_x,
-            self.min_y,
-            scale,
-            width as f32,
-            height as f32,
-            self.x_offset,
-            self.y_offset,
-        );
-
-        if self.show_grid {
-            self.draw_grid(&mut img, width, height, &transform, scale);
-        }
-
-        self.draw_origin(&mut img, &transform);
-        self.draw_commands(&mut img, &transform);
-        self.draw_markers(&mut img, &transform);
-
-        encode_image_to_bytes(&img)
-    }
-
-    fn calculate_scale(&self, width: u32, height: u32) -> f32 {
-        let x_range = self.max_x - self.min_x;
-        let y_range = self.max_y - self.min_y;
-
-        let scale_x = if x_range > 0.0 && x_range.is_finite() {
-            (width as f32 - CANVAS_PADDING_2X) / x_range
-        } else {
-            self.scale_factor
-        };
-
-        let scale_y = if y_range > 0.0 && y_range.is_finite() {
-            (height as f32 - CANVAS_PADDING_2X) / y_range
-        } else {
-            self.scale_factor
-        };
-
-        scale_x.min(scale_y).clamp(MIN_SCALE, MAX_SCALE) * self.zoom_scale * self.scale_factor
-    }
-
-    fn draw_grid(
-        &self,
-        img: &mut RgbaImage,
-        width: u32,
-        height: u32,
-        transform: &CoordTransform,
-        effective_scale: f32,
-    ) {
-        // Only show major grid (1cm) if zoom scale is greater than 0.3 (30%)
-        if self.zoom_scale < GRID_MAJOR_VISIBILITY_SCALE {
-            return;
-        }
-
-        let major_color = Rgba([200, 200, 200, 255]); // Light gray for 1cm grid
-        let minor_color = Rgba([173, 216, 230, 255]); // Light blue for 1mm grid
-
-        let screen_width = width as f32 - CANVAS_PADDING_2X;
-        let screen_height = height as f32 - CANVAS_PADDING_2X;
-
-        let view_min_x = transform.min_x - CANVAS_PADDING / effective_scale;
-        let view_max_x = view_min_x + screen_width / effective_scale;
-        let view_min_y = transform.min_y - CANVAS_PADDING / effective_scale;
-        let view_max_y = view_min_y + screen_height / effective_scale;
-
-        // Draw minor grid lines (1mm spacing) first if zoom > 3.0 (300%)
-        if self.zoom_scale >= GRID_MINOR_VISIBILITY_SCALE {
-            // Draw vertical 1mm lines
-            let start_x = (view_min_x / GRID_MINOR_STEP_MM).floor() * GRID_MINOR_STEP_MM;
-            let mut x = start_x;
-            let mut iterations = 0;
-
-            while x <= view_max_x && iterations < MAX_GRID_ITERATIONS {
-                // Skip lines that coincide with major grid (every 10mm)
-                if (x / GRID_MAJOR_STEP_MM).fract().abs() > 0.01 {
-                    let (screen_x, _) = transform.world_to_screen(x, 0.0);
-                    if screen_x >= 0 && screen_x < width as i32 {
-                        draw_line(img, screen_x, 0, screen_x, height as i32, minor_color);
-                    }
-                }
-                x += GRID_MINOR_STEP_MM;
-                iterations += 1;
-            }
-
-            // Draw horizontal 1mm lines
-            let start_y = (view_min_y / GRID_MINOR_STEP_MM).floor() * GRID_MINOR_STEP_MM;
-            let mut y = start_y;
-            iterations = 0;
-
-            while y <= view_max_y && iterations < MAX_GRID_ITERATIONS {
-                // Skip lines that coincide with major grid (every 10mm)
-                if (y / GRID_MAJOR_STEP_MM).fract().abs() > 0.01 {
-                    let (_, screen_y) = transform.world_to_screen(0.0, y);
-                    if screen_y >= 0 && screen_y < height as i32 {
-                        draw_line(img, 0, screen_y, width as i32, screen_y, minor_color);
-                    }
-                }
-                y += GRID_MINOR_STEP_MM;
-                iterations += 1;
-            }
-        }
-
-        // Draw major grid lines (1cm spacing) on top with 2px width
-        let start_x = (view_min_x / GRID_MAJOR_STEP_MM).floor() * GRID_MAJOR_STEP_MM;
-        let mut x = start_x;
-        let mut iterations = 0;
-
-        while x <= view_max_x && iterations < MAX_GRID_ITERATIONS {
-            let (screen_x, _) = transform.world_to_screen(x, 0.0);
-            if screen_x >= 0 && screen_x < width as i32 {
-                draw_thick_line(img, screen_x, 0, screen_x, height as i32, major_color);
-            }
-            x += GRID_MAJOR_STEP_MM;
-            iterations += 1;
-        }
-
-        let start_y = (view_min_y / GRID_MAJOR_STEP_MM).floor() * GRID_MAJOR_STEP_MM;
-        let mut y = start_y;
-        iterations = 0;
-
-        while y <= view_max_y && iterations < MAX_GRID_ITERATIONS {
-            let (_, screen_y) = transform.world_to_screen(0.0, y);
-            if screen_y >= 0 && screen_y < height as i32 {
-                draw_thick_line(img, 0, screen_y, width as i32, screen_y, major_color);
-            }
-            y += GRID_MAJOR_STEP_MM;
-            iterations += 1;
-        }
-    }
-
-    fn draw_origin(&self, img: &mut RgbaImage, transform: &CoordTransform) {
-        let (origin_x, origin_y) = transform.world_to_screen(0.0, 0.0);
-        draw_cross(
-            img,
-            origin_x,
-            origin_y,
-            ORIGIN_CROSS_SIZE,
-            Rgba([100, 100, 100, 200]),
-        );
-    }
-
-    fn draw_commands(&self, img: &mut RgbaImage, transform: &CoordTransform) {
-        for cmd in &self.commands {
-            match cmd {
-                GCodeCommand::Move { from, to, rapid } => {
-                    let (x1, y1) = transform.point_to_screen(*from);
-                    let (x2, y2) = transform.point_to_screen(*to);
-
-                    let color = if *rapid {
-                        Rgba([150, 150, 150, 200])
-                    } else {
-                        Rgba([0, 100, 200, 255])
-                    };
-
-                    draw_line(img, x1, y1, x2, y2, color);
-                }
-                GCodeCommand::Arc {
-                    from,
-                    to,
-                    center,
-                    clockwise,
-                } => {
-                    draw_arc(
-                        img,
-                        *from,
-                        *to,
-                        *center,
-                        *clockwise,
-                        transform,
-                        Rgba([200, 50, 50, 255]),
-                    );
-                }
-            }
-        }
-    }
-
-    fn draw_markers(&self, img: &mut RgbaImage, transform: &CoordTransform) {
-        if let Some(start_point) = self.get_start_point() {
-            let (start_x, start_y) = transform.point_to_screen(start_point);
-            draw_circle(img, start_x, start_y, MARKER_RADIUS, Rgba([0, 200, 0, 255]));
-        }
-
-        let (end_x, end_y) = transform.point_to_screen(self.current_pos);
-        draw_circle(img, end_x, end_y, MARKER_RADIUS, Rgba([200, 0, 0, 255]));
-    }
-
-    fn get_start_point(&self) -> Option<Point2D> {
+    /// Get the start point of the toolpath (for debugging/testing)
+    pub fn get_start_point(&self) -> Option<Point2D> {
         self.commands.first().map(|cmd| match cmd {
             GCodeCommand::Move { from, .. } => *from,
             GCodeCommand::Arc { from, .. } => *from,
@@ -621,151 +447,4 @@ fn safe_to_i32(value: f32) -> i32 {
         return 0;
     }
     value.clamp(i32::MIN as f32 + 1.0, i32::MAX as f32 - 1.0) as i32
-}
-
-/// Draw a line using Bresenham's line algorithm
-fn draw_line(img: &mut RgbaImage, x0: i32, y0: i32, x1: i32, y1: i32, color: Rgba<u8>) {
-    let (width, height) = img.dimensions();
-
-    let x0 = x0.clamp(i32::MIN + 1, i32::MAX - 1);
-    let y0 = y0.clamp(i32::MIN + 1, i32::MAX - 1);
-    let x1 = x1.clamp(i32::MIN + 1, i32::MAX - 1);
-    let y1 = y1.clamp(i32::MIN + 1, i32::MAX - 1);
-
-    let mut x = x0;
-    let mut y = y0;
-    let dx = ((x1 - x0).abs() as i64).min(width as i64);
-    let dy = ((y1 - y0).abs() as i64).min(height as i64);
-    let sx = if x0 < x1 { 1i32 } else { -1i32 };
-    let sy = if y0 < y1 { 1i32 } else { -1i32 };
-    let mut err = if dx > dy { dx - dy } else { dy - dx };
-
-    // Safety: limit iterations to prevent infinite loops
-    let max_iterations = (dx + dy).min(100000) as usize;
-    let mut iterations = 0;
-
-    loop {
-        if x >= 0 && x < width as i32 && y >= 0 && y < height as i32 {
-            img.put_pixel(x as u32, y as u32, color);
-        }
-
-        if x == x1 && y == y1 {
-            break;
-        }
-
-        iterations += 1;
-        if iterations > max_iterations {
-            break; // Safety exit
-        }
-
-        let e2 = 2 * err;
-        if e2 > -dy {
-            err -= dy;
-            x = x.saturating_add(sx);
-        }
-        if e2 < dx {
-            err += dx;
-            y = y.saturating_add(sy);
-        }
-    }
-}
-
-/// Draw a thick line (2 pixels wide)
-fn draw_thick_line(img: &mut RgbaImage, x0: i32, y0: i32, x1: i32, y1: i32, color: Rgba<u8>) {
-    // Draw the main line
-    draw_line(img, x0, y0, x1, y1, color);
-
-    // Draw parallel line to make it 2 pixels thick
-    if x0 == x1 {
-        // Vertical line - draw one pixel to the right
-        draw_line(img, x0 + 1, y0, x1 + 1, y1, color);
-    } else if y0 == y1 {
-        // Horizontal line - draw one pixel down
-        draw_line(img, x0, y0 + 1, x1, y1 + 1, color);
-    }
-}
-
-/// Draw a circle
-fn draw_circle(img: &mut RgbaImage, cx: i32, cy: i32, radius: i32, color: Rgba<u8>) {
-    let (width, height) = img.dimensions();
-    let r2 = radius * radius;
-
-    for dy in -radius..=radius {
-        for dx in -radius..=radius {
-            if dx * dx + dy * dy <= r2 {
-                let x = cx + dx;
-                let y = cy + dy;
-                if x >= 0 && x < width as i32 && y >= 0 && y < height as i32 {
-                    img.put_pixel(x as u32, y as u32, color);
-                }
-            }
-        }
-    }
-}
-
-/// Draw a cross marker
-fn draw_cross(img: &mut RgbaImage, cx: i32, cy: i32, size: i32, color: Rgba<u8>) {
-    for i in -size..=size {
-        draw_line(img, cx - size, cy + i, cx + size, cy + i, color);
-        draw_line(img, cx + i, cy - size, cx + i, cy + size, color);
-    }
-}
-
-/// Draw an arc segment
-fn draw_arc(
-    img: &mut RgbaImage,
-    from: Point2D,
-    to: Point2D,
-    center: Point2D,
-    _clockwise: bool,
-    transform: &CoordTransform,
-    color: Rgba<u8>,
-) {
-    let radius = ((from.x - center.x).powi(2) + (from.y - center.y).powi(2)).sqrt();
-
-    if !radius.is_finite() || radius < 0.001 {
-        return;
-    }
-
-    let start_angle = (from.y - center.y).atan2(from.x - center.x);
-    let end_angle = (to.y - center.y).atan2(to.x - center.x);
-    let angle_diff = (end_angle - start_angle).abs();
-
-    let steps = ((radius * angle_diff) as i32).clamp(10, 1000) as usize;
-
-    let (mut prev_x, mut prev_y) = transform.point_to_screen(from);
-
-    for i in 1..=steps {
-        let t = i as f32 / steps as f32;
-        let angle = start_angle + (end_angle - start_angle) * t;
-
-        let x = center.x + radius * angle.cos();
-        let y = center.y + radius * angle.sin();
-
-        let (screen_x, screen_y) = transform.world_to_screen(x, y);
-
-        draw_line(img, prev_x, prev_y, screen_x, screen_y, color);
-
-        prev_x = screen_x;
-        prev_y = screen_y;
-    }
-}
-
-/// Encode RGBA image to PNG bytes
-fn encode_image_to_bytes(img: &RgbaImage) -> Vec<u8> {
-    use image::ImageEncoder;
-    let mut bytes = Vec::new();
-    let encoder = image::codecs::png::PngEncoder::new(&mut bytes);
-    match encoder.write_image(
-        img.as_raw(),
-        img.width(),
-        img.height(),
-        image::ExtendedColorType::Rgba8,
-    ) {
-        Ok(_) => bytes,
-        Err(e) => {
-            tracing::error!("PNG encoding error: {}", e);
-            Vec::new()
-        }
-    }
 }
