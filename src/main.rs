@@ -1,8 +1,8 @@
 use gcodekit4::{
-    init_logging, list_ports, Communicator, ConnectionDriver, ConnectionParams, ConsoleListener,
-    DeviceConsoleManager, DeviceMessageType, FirmwareSettingsIntegration, GcodeEditor,
-    SerialCommunicator, SerialParity, SettingValue, SettingsDialog, SettingsPersistence,
-    BUILD_DATE, VERSION,
+    init_logging, list_ports, CapabilityManager, Communicator, ConnectionDriver,
+    ConnectionParams, ConsoleListener, DeviceConsoleManager, DeviceMessageType,
+    FirmwareSettingsIntegration, GcodeEditor, SerialCommunicator, SerialParity, SettingValue,
+    SettingsDialog, SettingsPersistence, BUILD_DATE, VERSION,
 };
 use slint::VecModel;
 use std::cell::RefCell;
@@ -54,6 +54,21 @@ fn transform_screen_to_canvas(
 /// Rounds to nearest 1.0 mm
 fn snap_to_mm(value: f64) -> f64 {
     (value + 0.5).floor()
+}
+
+/// Sync firmware capabilities to UI properties
+fn sync_capabilities_to_ui(window: &MainWindow, capability_manager: &CapabilityManager) {
+    let state = capability_manager.get_state();
+    
+    window.set_firmware_capabilities(slint::SharedString::from(state.get_summary()));
+    window.set_cap_supports_arcs(state.supports_arcs);
+    window.set_cap_supports_probing(state.supports_probing);
+    window.set_cap_supports_tool_change(state.supports_tool_change);
+    window.set_cap_supports_variable_spindle(state.supports_variable_spindle);
+    window.set_cap_supports_homing(state.supports_homing);
+    window.set_cap_supports_overrides(state.supports_overrides);
+    window.set_cap_max_axes(state.max_axes as i32);
+    window.set_cap_coordinate_systems(state.coordinate_systems as i32);
 }
 
 /// Update designer UI with current shapes from state
@@ -194,6 +209,17 @@ fn main() -> anyhow::Result<()> {
     main_window.set_position_x(0.0);
     main_window.set_position_y(0.0);
     main_window.set_position_z(0.0);
+    
+    // Initialize capability properties with defaults (no firmware detected)
+    main_window.set_firmware_capabilities(slint::SharedString::from("No firmware detected"));
+    main_window.set_cap_supports_arcs(false);
+    main_window.set_cap_supports_probing(false);
+    main_window.set_cap_supports_tool_change(false);
+    main_window.set_cap_supports_variable_spindle(false);
+    main_window.set_cap_supports_homing(false);
+    main_window.set_cap_supports_overrides(false);
+    main_window.set_cap_max_axes(3);
+    main_window.set_cap_coordinate_systems(1);
 
     // Shared state for communicator
     let communicator = Rc::new(RefCell::new(SerialCommunicator::new()));
@@ -252,6 +278,9 @@ fn main() -> anyhow::Result<()> {
     let firmware_integration = Rc::new(RefCell::new(FirmwareSettingsIntegration::new(
         "GRBL", "1.1",
     )));
+
+    // Initialize capability manager for firmware-aware UI
+    let capability_manager = Rc::new(CapabilityManager::new());
 
     // Load firmware settings
     {
@@ -335,6 +364,7 @@ fn main() -> anyhow::Result<()> {
     let communicator_clone = communicator.clone();
     let console_manager_clone = console_manager.clone();
     let polling_stop_connect = status_polling_stop.clone();
+    let capability_manager_clone = capability_manager.clone();
     main_window.on_connect(move |port: slint::SharedString, baud: i32| {
         let port_str = port.to_string();
 
@@ -383,6 +413,15 @@ fn main() -> anyhow::Result<()> {
                     window.set_machine_state(slint::SharedString::from("IDLE"));
                     let console_output = console_manager_clone.get_output();
                     window.set_console_output(slint::SharedString::from(console_output));
+                    
+                    // Detect firmware and update capabilities
+                    // TODO: Replace with actual firmware detection from response
+                    // For now, assume GRBL 1.1 as default
+                    use gcodekit4::firmware::firmware_version::{FirmwareType, SemanticVersion};
+                    let firmware_type = FirmwareType::Grbl;
+                    let version = SemanticVersion::new(1, 1, 0);
+                    capability_manager_clone.update_firmware(firmware_type, version);
+                    sync_capabilities_to_ui(&window, &capability_manager_clone);
                 }
 
                 // Start status polling thread
@@ -472,6 +511,7 @@ fn main() -> anyhow::Result<()> {
     let communicator_clone = communicator.clone();
     let console_manager_clone = console_manager.clone();
     let polling_stop_clone = status_polling_stop.clone();
+    let capability_manager_disconnect = capability_manager.clone();
     main_window.on_disconnect(move || {
         console_manager_clone.add_message(DeviceMessageType::Output, "Disconnecting from device");
 
@@ -501,6 +541,10 @@ fn main() -> anyhow::Result<()> {
                     window.set_position_z(0.0);
                     let console_output = console_manager_clone.get_output();
                     window.set_console_output(slint::SharedString::from(console_output));
+                    
+                    // Reset capabilities to defaults
+                    capability_manager_disconnect.reset();
+                    sync_capabilities_to_ui(&window, &capability_manager_disconnect);
                 }
             }
             Err(e) => {
@@ -1720,17 +1764,104 @@ fn main() -> anyhow::Result<()> {
 
     // Designer: Import DXF callback
     let window_weak = main_window.as_weak();
+    let designer_mgr_clone = designer_mgr.clone();
     main_window.on_designer_import_dxf(move || {
-        if let Some(window) = window_weak.upgrade() {
-            window.set_connection_status(slint::SharedString::from("DXF import: Select file to import"));
+        use rfd::FileDialog;
+        use gcodekit4::designer::{DxfImporter, DxfParser};
+        
+        if let Some(path) = FileDialog::new()
+            .add_filter("DXF Files", &["dxf"])
+            .set_title("Import DXF File")
+            .pick_file()
+        {
+            if let Some(window) = window_weak.upgrade() {
+                match std::fs::read_to_string(&path) {
+                    Ok(content) => {
+                        match DxfParser::parse(&content) {
+                            Ok(dxf_file) => {
+                                let importer = DxfImporter::new(1.0, 0.0, 0.0);
+                                match importer.import_string(&content) {
+                                    Ok(design) => {
+                                        let mut state = designer_mgr_clone.borrow_mut();
+                                        for shape in design.shapes {
+                                            state.canvas.add_shape(shape);
+                                        }
+                                        window.set_connection_status(slint::SharedString::from(
+                                            format!("DXF imported: {} entities from {} layers", 
+                                                   dxf_file.entity_count(), 
+                                                   dxf_file.layer_names().len())
+                                        ));
+                                        update_designer_ui(&window, &state);
+                                    }
+                                    Err(e) => {
+                                        window.set_connection_status(slint::SharedString::from(
+                                            format!("DXF import failed: {}", e)
+                                        ));
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                window.set_connection_status(slint::SharedString::from(
+                                    format!("DXF parse error: {}", e)
+                                ));
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        window.set_connection_status(slint::SharedString::from(
+                            format!("Failed to read file: {}", e)
+                        ));
+                    }
+                }
+            }
         }
     });
 
     // Designer: Import SVG callback
     let window_weak = main_window.as_weak();
+    let designer_mgr_clone = designer_mgr.clone();
     main_window.on_designer_import_svg(move || {
-        if let Some(window) = window_weak.upgrade() {
-            window.set_connection_status(slint::SharedString::from("SVG import: Select file to import"));
+        use rfd::FileDialog;
+        use gcodekit4::designer::SvgImporter;
+        
+        if let Some(path) = FileDialog::new()
+            .add_filter("SVG Files", &["svg"])
+            .set_title("Import SVG File")
+            .pick_file()
+        {
+            if let Some(window) = window_weak.upgrade() {
+                match std::fs::read_to_string(&path) {
+                    Ok(content) => {
+                        let importer = SvgImporter::new(1.0, 0.0, 0.0);
+                        match importer.import_string(&content) {
+                            Ok(design) => {
+                                let shape_count = design.shapes.len();
+                                let layer_count = design.layer_count;
+                                let mut state = designer_mgr_clone.borrow_mut();
+                                for shape in design.shapes {
+                                    state.canvas.add_shape(shape);
+                                }
+                                window.set_connection_status(slint::SharedString::from(
+                                    format!("SVG imported: {} shapes from {} layers", 
+                                           shape_count, 
+                                           layer_count)
+                                ));
+                                update_designer_ui(&window, &state);
+                            }
+                            Err(e) => {
+                                window.set_connection_status(slint::SharedString::from(
+                                    format!("SVG import failed: {}", e)
+                                ));
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        window.set_connection_status(slint::SharedString::from(
+                            format!("Failed to read file: {}", e)
+                        ));
+                    }
+                }
+            }
         }
     });
 
@@ -1996,7 +2127,9 @@ fn main() -> anyhow::Result<()> {
 
             // Spawn rendering thread
             let content_owned = content.to_string();
-            let (tx, rx) = std::sync::mpsc::channel();
+            
+            // Message format: (progress, status, path_data, grid_data, image_bytes)
+            let (tx, rx) = std::sync::mpsc::channel::<(f32, String, Option<String>, Option<String>, Option<Vec<u8>>)>();
             let window_weak_render = window_weak.clone();
             let zoom_scale_render = zoom_for_refresh.clone();
             let pan_offset_render = pan_for_refresh.clone();
@@ -2005,11 +2138,12 @@ fn main() -> anyhow::Result<()> {
 
             // Get show_grid state before spawning thread
             let show_grid = window.get_visualizer_show_grid();
+            let use_canvas = window.get_visualizer_use_canvas_rendering();
 
             std::thread::spawn(move || {
-                use gcodekit4::visualizer::Visualizer2D;
+                use gcodekit4::visualizer::{Visualizer2D, render_toolpath_to_path, render_grid_to_path};
 
-                let _ = tx.send((0.1, "Parsing G-code...".to_string(), None));
+                let _ = tx.send((0.1, "Parsing G-code...".to_string(), None, None, None));
 
                 let mut visualizer = Visualizer2D::new();
                 visualizer.show_grid = show_grid;
@@ -2027,23 +2161,39 @@ fn main() -> anyhow::Result<()> {
                     visualizer.y_offset = offsets.1;
                 }
 
-                let _ = tx.send((0.3, "Rendering image...".to_string(), None));
+                let _ = tx.send((0.3, "Rendering...".to_string(), None, None, None));
 
-                let image_bytes = visualizer.render(800, 600);
-
-                if !image_bytes.is_empty() {
-                    let _ = tx.send((0.7, "Encoding PNG...".to_string(), None));
-                    let _ = tx.send((1.0, "Complete".to_string(), Some(image_bytes)));
+                // Generate canvas path data
+                let path_data = render_toolpath_to_path(&visualizer, 800, 600);
+                let grid_data = if show_grid {
+                    render_grid_to_path(&visualizer, 800, 600)
                 } else {
-                    let _ = tx.send((1.0, "Error: no image data".to_string(), None));
+                    String::new()
+                };
+
+                if use_canvas && !path_data.is_empty() {
+                    // Use canvas rendering
+                    let _ = tx.send((1.0, "Complete (canvas)".to_string(), Some(path_data), Some(grid_data), None));
+                } else {
+                    // Fallback to image rendering
+                    let _ = tx.send((0.5, "Generating image...".to_string(), None, None, None));
+                    let image_bytes = visualizer.render(800, 600);
+
+                    if !image_bytes.is_empty() {
+                        let _ = tx.send((1.0, "Complete (image)".to_string(), None, None, Some(image_bytes)));
+                    } else {
+                        let _ = tx.send((1.0, "Error: no data".to_string(), None, None, None));
+                    }
                 }
             });
 
             // Process messages from rendering thread
             std::thread::spawn(move || {
-                while let Ok((progress, status, image_data)) = rx.recv() {
+                while let Ok((progress, status, path_data, grid_data, image_data)) = rx.recv() {
                     let window_handle = window_weak_render.clone();
                     let status_clone = status.clone();
+                    let path_clone = path_data.clone();
+                    let grid_clone = grid_data.clone();
                     let image_clone = image_data.clone();
                     let zoom_for_closure = zoom_scale_for_msg.clone();
                     let pan_for_closure = pan_offset_for_msg.clone();
@@ -2055,6 +2205,15 @@ fn main() -> anyhow::Result<()> {
                                 status_clone.clone(),
                             ));
 
+                            // Set canvas path data if available
+                            if let Some(path) = path_clone {
+                                window.set_visualization_path_data(slint::SharedString::from(path));
+                                if let Some(grid) = grid_clone {
+                                    window.set_visualization_grid_data(slint::SharedString::from(grid));
+                                }
+                            }
+
+                            // Set image data if available (fallback)
                             if let Some(png_bytes) = image_clone {
                                 if let Ok(img) = image::load_from_memory_with_format(
                                     &png_bytes,
@@ -2069,16 +2228,16 @@ fn main() -> anyhow::Result<()> {
                                         ),
                                     );
                                     window.set_visualization_image(img_buffer);
-
-                                    // Update indicator properties
-                                    if let Ok(scale) = zoom_for_closure.lock() {
-                                        window.set_visualizer_zoom_scale(*scale);
-                                    }
-                                    if let Ok(offsets) = pan_for_closure.lock() {
-                                        window.set_visualizer_x_offset(offsets.0);
-                                        window.set_visualizer_y_offset(offsets.1);
-                                    }
                                 }
+                            }
+
+                            // Update indicator properties
+                            if let Ok(scale) = zoom_for_closure.lock() {
+                                window.set_visualizer_zoom_scale(*scale);
+                            }
+                            if let Ok(offsets) = pan_for_closure.lock() {
+                                window.set_visualizer_x_offset(offsets.0);
+                                window.set_visualizer_y_offset(offsets.1);
                             }
                         }
                     })
@@ -2404,7 +2563,7 @@ fn render_gcode_visualization_background_channel(
 
     let _ = tx.send((0.3, "Rendering image...".to_string(), None));
 
-    // Render to image
+    // Render to image (for initial load, we use image mode)
     let image_bytes = visualizer.render(800, 600);
 
     if !image_bytes.is_empty() {

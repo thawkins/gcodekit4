@@ -5,7 +5,151 @@ All notable changes to this project should be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### ✨ Canvas-Based Visualizer Rendering (gcodekit4-83)
+
+**Vector Graphics Rendering** - Visualizer now uses Slint Path elements for GPU-accelerated vector rendering instead of raster images.
+
+### Added
+
+- **Canvas Renderer Module** (`visualizer/canvas_renderer.rs`)
+  - `render_toolpath_to_path()` - Converts G-Code commands to SVG path data
+  - `render_grid_to_path()` - Generates grid as vector paths
+  - Dual rendering modes: Canvas (default) or Image (fallback)
+  
+- **UI Enhancements**
+  - Path elements for vector-based toolpath rendering
+  - Separate grid and toolpath layers
+  - `use-canvas-rendering` property to toggle rendering modes
+  - `visualization-path-data` and `visualization-grid-data` properties
+
+### Changed
+
+- Visualizer defaults to canvas rendering for better performance
+- Grid rendering now uses vector graphics
+- Improved zoom quality with resolution-independent vectors
+
+### Benefits
+
+- Reduced memory usage (vectors vs raster images)
+- GPU-accelerated rendering
+- Smooth scaling at all zoom levels
+- Better anti-aliasing
+- Foundation for interactive features
+
 ## [0.25.2-alpha] - 2025-11-01
+
+### ✨ Firmware Capabilities Database
+
+**Version-Aware Feature Management** - Complete firmware capabilities database tracks features by controller type and version.
+
+### Added
+
+- **CapabilitiesDatabase**: Comprehensive database of firmware capabilities
+  - GRBL: v0.9, v1.0, v1.1, v1.2, v1.3 profiles
+  - TinyG: v2.x full-featured profile
+  - g2core: v3.x advanced profile
+  - Smoothieware: v1.x multi-axis profile
+  - FluidNC: v3.x modern feature set
+  
+- **Feature Tracking**: 
+  - Core motion (axes, arcs, feed modes)
+  - Spindle control (variable, direction, CSS)
+  - Tool management (change, offsets)
+  - Probing (G38.x commands)
+  - Coolant/mist control
+  - Homing (soft/hard/multi-position)
+  - Work coordinate systems (G54-G59)
+  - Macro support and conditional blocks
+  - Communication (status reports, real-time commands)
+  - Safety features (limits, alarms, door interlock)
+  
+- **Version-Aware Queries**:
+  - Get capabilities for specific firmware version
+  - Check if capability is supported
+  - List all supported firmware types
+  - Custom capability registration
+
+- **12 Unit Tests**: Complete test coverage for all firmware profiles
+
+### 🎨 Firmware Capability UI Integration
+
+**Smart UI Features** - UI now automatically adapts based on connected firmware capabilities.
+
+### Added
+
+- **CapabilityManager**: Thread-safe capability state management
+  - Real-time firmware detection
+  - Automatic capability updates
+  - UI-friendly state queries
+  - 5 comprehensive unit tests
+  
+- **UI Capability Properties**: Nine new properties in main window
+  - `firmware-capabilities`: Human-readable summary
+  - `cap-supports-arcs`: Arc motion (G2/G3) support flag
+  - `cap-supports-probing`: Probing (G38.x) support flag
+  - `cap-supports-tool-change`: Tool change (M6) support flag
+  - `cap-supports-variable-spindle`: Variable spindle speed flag
+  - `cap-supports-homing`: Homing cycle support flag
+  - `cap-supports-overrides`: Real-time override support flag
+  - `cap-max-axes`: Number of supported axes (3-9)
+  - `cap-coordinate-systems`: Work coordinate systems (1-9)
+  
+- **Feature-Aware UI**: UI components can now:
+  - Enable/disable features based on firmware
+  - Show/hide unsupported options
+  - Display capability-appropriate controls
+  - Provide context for disabled features
+
+- **Documentation**: Complete integration guide
+  - Usage examples for UI panels
+  - Testing procedures
+  - Future enhancement plans
+
+- **Main Application Integration**: Full capability tracking lifecycle
+  - CapabilityManager created on startup
+  - Firmware detection on connection (defaults to GRBL 1.1)
+  - Automatic capability sync to UI properties
+  - Capability reset on disconnect
+  - Helper function `sync_capabilities_to_ui()` for updates
+
+### ✨ Designer Origin Crosshair
+
+**Visual Origin Reference** - Added bright yellow crosshair at world origin (0,0) for better spatial reference.
+
+### Added
+
+- **Origin Crosshair**: Bright yellow (255, 255, 0) crosshair lines marking the world coordinate origin
+  - Horizontal line extends across entire canvas width
+  - Vertical line extends across entire canvas height
+  - 3-pixel thickness for high visibility
+  - Properly transforms with viewport zoom and pan
+  - Always visible regardless of canvas content
+
+### ✨ SVG Import Feature
+
+**Full SVG Import Support** - Added comprehensive SVG file import functionality to the Designer tool with support for all basic SVG shapes and path elements.
+
+### Added
+
+- **SVG File Import**: Click the "SVG" button to import vector graphics from external applications
+  - Supports rectangles, circles, ellipses, lines, polylines, and polygons
+  - Path element parsing with MoveTo, LineTo, HorizontalLineTo, VerticalLineTo, and ClosePath commands
+  - Configurable scale factor and offset transformations
+  - Status messages show import results (number of shapes imported)
+  
+- **SVG Parser Module**: Complete SVG parsing using `roxmltree` and `svgtypes` libraries
+  - XML document parsing with proper error handling
+  - Automatic dimension detection from SVG width/height attributes
+  - Unit conversion support (px, mm, cm, in)
+  - Coordinate transformation and scaling
+  
+- **Designer Integration**: SVG import seamlessly integrated into Designer UI
+  - File dialog with SVG filter
+  - Imported shapes added to canvas with proper coordinate mapping
+  - Works alongside existing DXF import functionality
+  - Comprehensive documentation in `docs/designer_svg_import.md`
 
 ### ✨ Designer Properties Panel Enhancements
 

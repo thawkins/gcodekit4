@@ -53,6 +53,15 @@ export component MainWindow inherits Window {
     in property <bool> connected: false;
     in property <string> connection-status: "Disconnected";
     in property <string> device-version: "Unknown";
+    in property <string> firmware-capabilities: "No firmware detected";
+    in property <bool> cap-supports-arcs: false;
+    in property <bool> cap-supports-probing: false;
+    in property <bool> cap-supports-tool-change: false;
+    in property <bool> cap-supports-variable-spindle: false;
+    in property <bool> cap-supports-homing: false;
+    in property <bool> cap-supports-overrides: false;
+    in property <int> cap-max-axes: 3;
+    in property <int> cap-coordinate-systems: 1;
     in property <[SettingItem]> all-settings: [];
     in property <float> position-x: 0.0;
     in property <float> position-y: 0.0;
@@ -90,6 +99,9 @@ export component MainWindow inherits Window {
     in property <float> visualizer-y-offset: 0.0;
     in property <float> visualizer-zoom-scale: 1.0;
     in-out property <bool> visualizer-show-grid: true;
+    in-out property <bool> visualizer-use-canvas-rendering: true;
+    in-out property <string> visualization-path-data: "";
+    in-out property <string> visualization-grid-data: "";
     
     // Designer panel properties (Phase 2)
     in property <[DesignerShape]> designer-shapes: [];
@@ -696,6 +708,9 @@ if current-view == "safety-diagnostics" : SafetyDiagnosticsPanel {
                     gcode-filename <=> root.gcode-filename;
                     gcode-content <=> root.gcode-content;
                     visualization-image: root.visualization-image;
+                    visualization-path-data: root.visualization-path-data;
+                    visualization-grid-data: root.visualization-grid-data;
+                    use-canvas-rendering <=> root.visualizer-use-canvas-rendering;
                     machine-x: Math.round(root.position-x * 1000) / 1000 + "";
                     machine-y: Math.round(root.position-y * 1000) / 1000 + "";
                     machine-z: Math.round(root.position-z * 1000) / 1000 + "";

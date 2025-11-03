@@ -11,6 +11,8 @@ export component GcodeVisualizerPanel inherits VerticalBox {
 
     in property <string> gcode-filename: "untitled.gcode";
     in property <string> gcode-content: "";
+    in property <string> visualization-path-data: "";
+    in property <string> visualization-grid-data: "";
     in property <image> visualization-image;
     in property <string> machine-x: "0.000";
     in property <string> machine-y: "0.000";
@@ -24,6 +26,7 @@ export component GcodeVisualizerPanel inherits VerticalBox {
     in property <float> y-offset: 0.0;
     in property <float> zoom-scale: 1.0;
     in-out property <bool> show-grid: true;
+    in property <bool> use-canvas-rendering: true;
     
     callback refresh-visualization();
     callback zoom-in();
@@ -277,7 +280,35 @@ export component GcodeVisualizerPanel inherits VerticalBox {
                     padding-top: 2px;
                     padding-bottom: 2px;
                     
-                    if root.gcode-content != "" && root.visualization-image.width > 0 : Image {
+                    // Canvas-based rendering using Path elements
+                    if root.use-canvas-rendering && root.gcode-content != "" && root.visualization-path-data != "" : Rectangle {
+                        width: 800px;
+                        height: 600px;
+                        background: white;
+                        
+                        // Grid layer
+                        if root.show-grid && root.visualization-grid-data != "" : Path {
+                            fill: transparent;
+                            stroke: #c8c8c8;
+                            stroke-width: 1px;
+                            commands: root.visualization-grid-data;
+                            viewbox-width: 800;
+                            viewbox-height: 600;
+                        }
+                        
+                        // Toolpath layer
+                        Path {
+                            fill: transparent;
+                            stroke: #0064c8;
+                            stroke-width: 2px;
+                            commands: root.visualization-path-data;
+                            viewbox-width: 800;
+                            viewbox-height: 600;
+                        }
+                    }
+                    
+                    // Fallback to image-based rendering
+                    if !root.use-canvas-rendering && root.gcode-content != "" && root.visualization-image.width > 0 : Image {
                         source: root.visualization-image;
                         // Calculate proportional dimensions while maintaining aspect ratio
                         width: root.visualization-image.width / root.visualization-image.height * parent.height;

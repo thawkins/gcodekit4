@@ -6,12 +6,14 @@
 //! - Interactive camera controls (controls)
 //! - Grid and axis rendering
 
+pub mod canvas_renderer;
 pub mod controls;
 pub mod features;
 pub mod setup;
 pub mod toolpath_rendering;
 pub mod visualizer_2d;
 
+pub use canvas_renderer::{render_grid_to_path, render_toolpath_to_path};
 pub use controls::{CameraController, ViewPreset, VisualizerControls};
 pub use features::{
     BoundingBox, GridConfig, MachineLimits, SceneFeatures, ToolMarker, WorkCoordinateSystem,
