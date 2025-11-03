@@ -29,6 +29,7 @@ All Phase 6 tasks are tracked in the bd issue system:
 - **Phase 6.5**: gcodekit4-87 - Tabbed Operations
 - **Phase 6.6**: gcodekit4-88 - Design Validation & Analysis
 - **Phase 6.7**: gcodekit4-89 - Nesting & Array Operations Enhancement
+- **Phase 6.8**: gcodekit4-90 - Design File Operations (Open, Save, Save As)
 
 Use `bd show <issue-id>` for detailed information on each task.
 Use `bd ready` to see which tasks are ready to work on.
@@ -359,6 +360,91 @@ impl Canvas {
 
 ---
 
+### Phase 6.8: Design File Operations (Open, Save, Save As)
+**Issue**: gcodekit4-90  
+**Estimated Effort**: 3-4 hours  
+**Status**: Open
+
+#### Features
+- Native design file format (.gck4 - JSON based)
+- Save complete design state (shapes, layers, viewport, settings)
+- Open operation restores full design
+- Save As prompts for new filename
+- Recent files tracking
+- Unsaved changes detection
+- Modified indicator in UI
+- Confirmation prompt on close with unsaved changes
+- Optional auto-save/recovery
+
+#### File Format
+```json
+{
+  "version": "1.0",
+  "metadata": {
+    "name": "My Design",
+    "created": "2025-11-03T19:00:00Z",
+    "modified": "2025-11-03T19:30:00Z",
+    "author": "User"
+  },
+  "viewport": {
+    "zoom": 1.0,
+    "pan_x": 0.0,
+    "pan_y": 0.0
+  },
+  "layers": [
+    {"name": "Layer 1", "visible": true, "locked": false, "color": [255, 0, 0]}
+  ],
+  "shapes": [
+    {"id": 1, "type": "rectangle", "x": 0, "y": 0, "width": 100, "height": 50, "layer": "Layer 1"}
+  ],
+  "toolpath_params": {
+    "feed_rate": 1000,
+    "spindle_speed": 3000,
+    "tool_diameter": 3.175,
+    "cut_depth": -5.0
+  }
+}
+```
+
+#### State Management
+```rust
+pub struct DesignFileState {
+    pub current_file: Option<PathBuf>,
+    pub is_modified: bool,
+    pub recent_files: Vec<PathBuf>,
+}
+
+impl DesignerState {
+    pub fn save_to_file(&self, path: &Path) -> Result<()>
+    pub fn load_from_file(&mut self, path: &Path) -> Result<()>
+    pub fn mark_modified(&mut self)
+    pub fn add_recent_file(&mut self, path: PathBuf)
+}
+```
+
+#### UI Components
+- File menu in designer panel (New, Open, Save, Save As, Recent Files)
+- File picker dialog for Open/Save As
+- Modified indicator (* in title bar or status)
+- Unsaved changes confirmation dialog
+- Recent files submenu (last 10 files)
+
+#### Callbacks
+- `on_file_new()` - Clear canvas, reset state
+- `on_file_open()` - Show file picker, load design
+- `on_file_save()` - Save to current path or prompt if new
+- `on_file_save_as()` - Always prompt for new path
+- `on_before_close()` - Check for unsaved changes
+
+#### Files to Modify
+- `src/designer/serialization.rs` (NEW) - JSON serialization/deserialization
+- `src/designer_state.rs` - Add file state tracking
+- `src/ui_panels/designer.slint` - File menu UI
+- `src/main.rs` - File operation callbacks
+- `src/utils/file_io.rs` - Recent files management (already exists)
+
+---
+
 ## Implementation Order
 
 ### Week 1: Core Layer System
@@ -374,6 +460,7 @@ impl Canvas {
 6. Phase 6.5: Tabbed Operations (Day 1-2)
 7. Phase 6.6: Design Validation (Day 2-3)
 8. Phase 6.7: Nesting & Arrays (Day 3-4)
+9. Phase 6.8: File Operations (Day 4)
 
 ### Week 4: Integration & Polish
 - Integration testing
