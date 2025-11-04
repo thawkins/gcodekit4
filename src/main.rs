@@ -648,6 +648,10 @@ fn main() -> anyhow::Result<()> {
     let gcode_editor_clone = gcode_editor.clone();
     let console_manager_clone = console_manager.clone();
     main_window.on_menu_file_open(move || {
+        if let Some(window) = window_weak.upgrade() {
+            window.set_is_busy(true);
+        }
+        
         // Open file dialog and load file
         match gcode_editor_clone.open_and_load_file() {
             Ok(path) => {
@@ -796,12 +800,18 @@ fn main() -> anyhow::Result<()> {
                 if let Some(window) = window_weak.upgrade() {
                     window
                         .set_connection_status(slint::SharedString::from(format!("Error: {}", e)));
+                    window.set_is_busy(false);
 
                     // Update console display
                     let console_output = console_manager_clone.get_output();
                     window.set_console_output(slint::SharedString::from(console_output));
                 }
             }
+        }
+        
+        // Always clear busy state at end
+        if let Some(window) = window_weak.upgrade() {
+            window.set_is_busy(false);
         }
     });
 
@@ -2087,16 +2097,23 @@ fn main() -> anyhow::Result<()> {
             window.set_is_busy(true);
         }
         
-        let mut state = designer_mgr_clone.borrow_mut();
-        let gcode = state.generate_gcode();
+        let window_weak_inner = window_weak.clone();
+        let designer_mgr_inner = designer_mgr_clone.clone();
         
-        if let Some(window) = window_weak.upgrade() {
-            window.set_designer_generated_gcode(slint::SharedString::from(gcode));
-            window.set_designer_gcode_generated(true);
-            window
-                .set_connection_status(slint::SharedString::from("G-code generated successfully"));
-            window.set_is_busy(false);
-        }
+        // Use timer to allow UI to update cursor before blocking operation
+        slint::Timer::single_shot(std::time::Duration::from_millis(50), move || {
+            let gcode = {
+                let mut state = designer_mgr_inner.borrow_mut();
+                state.generate_gcode()
+            };
+            
+            if let Some(window) = window_weak_inner.upgrade() {
+                window.set_designer_generated_gcode(slint::SharedString::from(gcode));
+                window.set_designer_gcode_generated(true);
+                window.set_connection_status(slint::SharedString::from("G-code generated successfully"));
+                window.set_is_busy(false);
+            }
+        });
     });
 
     // Designer: Export G-code callback
@@ -2107,15 +2124,23 @@ fn main() -> anyhow::Result<()> {
             window.set_is_busy(true);
         }
         
-        let mut state = designer_mgr_clone.borrow_mut();
-        let gcode = state.generate_gcode();
+        let window_weak_inner = window_weak.clone();
+        let designer_mgr_inner = designer_mgr_clone.clone();
         
-        if let Some(window) = window_weak.upgrade() {
-            window.set_gcode_content(slint::SharedString::from(gcode));
-            window.set_current_view(slint::SharedString::from("gcode-editor"));
-            window.set_connection_status(slint::SharedString::from("G-code exported to editor"));
-            window.set_is_busy(false);
-        }
+        // Use timer to allow UI to update cursor before blocking operation
+        slint::Timer::single_shot(std::time::Duration::from_millis(50), move || {
+            let gcode = {
+                let mut state = designer_mgr_inner.borrow_mut();
+                state.generate_gcode()
+            };
+            
+            if let Some(window) = window_weak_inner.upgrade() {
+                window.set_gcode_content(slint::SharedString::from(gcode));
+                window.set_current_view(slint::SharedString::from("gcode-editor"));
+                window.set_connection_status(slint::SharedString::from("G-code exported to editor"));
+                window.set_is_busy(false);
+            }
+        });
     });
 
     // Designer: Import DXF callback
