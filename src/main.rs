@@ -2614,6 +2614,7 @@ fn main() -> anyhow::Result<()> {
                 // No G-code loaded, but still generate grid and origin
                 window.set_visualizer_status(slint::SharedString::from("Ready"));
                 window.set_visualization_path_data(slint::SharedString::from(""));
+                window.set_visualization_rapid_moves_data(slint::SharedString::from(""));
                 
                 // Generate empty visualizer with just grid and origin
                 use gcodekit4::visualizer::{Visualizer2D, render_grid_to_path, render_origin_to_path};

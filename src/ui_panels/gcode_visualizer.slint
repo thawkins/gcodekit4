@@ -229,50 +229,58 @@ export component GcodeVisualizerPanel inherits VerticalBox {
                         
                         // Grid layer
                         if root.show-grid && root.visualization-grid-data != "" : Path {
+                            viewbox-x: 0;
+                            viewbox-y: 0;
+                            viewbox-width: canvas-rect.width / 1px;
+                            viewbox-height: canvas-rect.height / 1px;
                             width: 100%;
                             height: 100%;
                             fill: transparent;
                             stroke: #808080;
                             stroke-width: 1px;
                             commands: root.visualization-grid-data;
-                            viewbox-width: canvas-rect.width / 1px;
-                            viewbox-height: canvas-rect.height / 1px;
                         }
                         
                         // Origin marker layer (yellow cross at 0,0)
                         if root.visualization-origin-data != "" : Path {
+                            viewbox-x: 0;
+                            viewbox-y: 0;
+                            viewbox-width: canvas-rect.width / 1px;
+                            viewbox-height: canvas-rect.height / 1px;
                             width: 100%;
                             height: 100%;
                             fill: transparent;
                             stroke: yellow;
                             stroke-width: 3px;
                             commands: root.visualization-origin-data;
-                            viewbox-width: canvas-rect.width / 1px;
-                            viewbox-height: canvas-rect.height / 1px;
                         }
                         
                         // Rapid moves layer (G0) - light blue, 20% opacity
                         if root.show-rapid-moves && root.visualization-rapid-moves-data != "" : Path {
+                            viewbox-x: 0;
+                            viewbox-y: 0;
+                            viewbox-width: canvas-rect.width / 1px;
+                            viewbox-height: canvas-rect.height / 1px;
                             width: 100%;
                             height: 100%;
                             fill: transparent;
                             stroke: #ADD8E633;  // Light blue with 20% opacity
                             stroke-width: 1px;
                             commands: root.visualization-rapid-moves-data;
-                            viewbox-width: canvas-rect.width / 1px;
-                            viewbox-height: canvas-rect.height / 1px;
                         }
                         
                         // Toolpath layer (G1) - blue
                         if root.visualization-path-data != "" : Path {
+                            viewbox-x: 0;
+                            viewbox-y: 0;
+                            viewbox-width: canvas-rect.width / 1px;
+                            viewbox-height: canvas-rect.height / 1px;
                             width: 100%;
                             height: 100%;
                             fill: transparent;
                             stroke: #0064c8;
                             stroke-width: 2px;
                             commands: root.visualization-path-data;
-                            viewbox-width: canvas-rect.width / 1px;
-                            viewbox-height: canvas-rect.height / 1px;
                         }
                         
             // Mouse drag support for panning
