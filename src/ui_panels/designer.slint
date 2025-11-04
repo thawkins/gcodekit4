@@ -159,11 +159,11 @@ component ShapePropertiesDialog inherits Dialog {
     callback cancel_properties();
     
     width: 300px;
-    height: 350px;
+    height: shape_type == 5 ? 400px : 350px;
     
     VerticalBox {
-        padding: 10px;
-        spacing: 10px;
+        padding: 8px;
+        spacing: 8px;
         
         Text {
             text: "Shape Properties";
@@ -173,7 +173,7 @@ component ShapePropertiesDialog inherits Dialog {
         
         // Position controls
         HorizontalBox {
-            spacing: 10px;
+            spacing: 8px;
             alignment: start;
             
             Text {
@@ -202,7 +202,7 @@ component ShapePropertiesDialog inherits Dialog {
         }
         
         HorizontalBox {
-            spacing: 10px;
+            spacing: 8px;
             alignment: start;
             
             Text {
@@ -232,7 +232,7 @@ component ShapePropertiesDialog inherits Dialog {
         
         // Size controls
         HorizontalBox {
-            spacing: 10px;
+            spacing: 8px;
             alignment: start;
             
             Text {
@@ -261,7 +261,7 @@ component ShapePropertiesDialog inherits Dialog {
         }
         
         HorizontalBox {
-            spacing: 10px;
+            spacing: 8px;
             alignment: start;
             
             Text {
@@ -291,7 +291,7 @@ component ShapePropertiesDialog inherits Dialog {
         
         // Only show corner radius for RoundRectangle (shape_type == 5)
         if shape_type == 5: HorizontalBox {
-            spacing: 10px;
+            spacing: 8px;
             alignment: start;
             
             Text {
@@ -324,7 +324,7 @@ component ShapePropertiesDialog inherits Dialog {
         }
         
         HorizontalBox {
-            spacing: 10px;
+            spacing: 8px;
             alignment: end;
             
             Button {
