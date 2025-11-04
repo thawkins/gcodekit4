@@ -4,9 +4,10 @@ use gcodekit4::{
     FirmwareSettingsIntegration, GcodeEditor, SerialCommunicator, SerialParity, SettingValue,
     SettingsDialog, SettingsPersistence, BUILD_DATE, VERSION,
 };
-use slint::VecModel;
+use slint::{Model, VecModel};
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 use tracing::{debug, warn};
 
 slint::include_modules!();
@@ -54,6 +55,79 @@ fn transform_screen_to_canvas(
 /// Rounds to nearest 1.0 mm
 fn snap_to_mm(value: f64) -> f64 {
     (value + 0.5).floor()
+}
+
+/// Parse a GRBL setting line from $$ response
+/// Format: $100=80.000
+fn parse_grbl_setting_line(line: &str) -> Option<ConfigSetting> {
+    let line = line.trim();
+    if !line.starts_with('$') {
+        return None;
+    }
+    
+    // Remove the $ and split on =
+    let line = &line[1..];
+    let parts: Vec<&str> = line.split('=').collect();
+    if parts.len() != 2 {
+        return None;
+    }
+    
+    let number = parts[0].parse::<i32>().ok()?;
+    let value = parts[1].to_string();
+    
+    // Get metadata for the setting
+    let (name, desc, unit, category) = get_grbl_setting_info(number);
+    
+    Some(ConfigSetting {
+        number,
+        name: slint::SharedString::from(name),
+        value: slint::SharedString::from(value),
+        unit: slint::SharedString::from(unit),
+        description: slint::SharedString::from(desc),
+        category: slint::SharedString::from(category),
+        read_only: false,
+    })
+}
+
+/// Get metadata for a GRBL setting number
+fn get_grbl_setting_info(number: i32) -> (&'static str, &'static str, &'static str, &'static str) {
+    match number {
+        0 => ("Step pulse time", "Step pulse duration in microseconds", "μs", "System"),
+        1 => ("Step idle delay", "Step idle delay in milliseconds", "ms", "System"),
+        2 => ("Step pulse invert", "Step pulse invert mask", "", "System"),
+        3 => ("Step direction invert", "Step direction invert mask", "", "System"),
+        4 => ("Invert step enable", "Invert step enable pin", "", "System"),
+        5 => ("Invert limit pins", "Invert limit pins", "", "Limits"),
+        6 => ("Invert probe pin", "Invert probe pin", "", "System"),
+        10 => ("Status report", "Status report mask", "", "System"),
+        11 => ("Junction deviation", "Junction deviation in mm", "mm", "System"),
+        12 => ("Arc tolerance", "Arc tolerance in mm", "mm", "System"),
+        13 => ("Report in inches", "Report in inches", "", "System"),
+        20 => ("Soft limits", "Enable soft limits", "", "Limits"),
+        21 => ("Hard limits", "Enable hard limits", "", "Limits"),
+        22 => ("Homing cycle", "Enable homing cycle", "", "Homing"),
+        23 => ("Homing direction", "Homing direction invert mask", "", "Homing"),
+        24 => ("Homing locate feed", "Homing locate feed rate", "mm/min", "Homing"),
+        25 => ("Homing search seek", "Homing search seek rate", "mm/min", "Homing"),
+        26 => ("Homing debounce", "Homing switch debounce delay", "ms", "Homing"),
+        27 => ("Homing pull-off", "Homing switch pull-off distance", "mm", "Homing"),
+        30 => ("Max spindle speed", "Maximum spindle speed", "RPM", "Spindle"),
+        31 => ("Min spindle speed", "Minimum spindle speed", "RPM", "Spindle"),
+        32 => ("Laser mode", "Enable laser mode", "", "Spindle"),
+        100 => ("X steps/mm", "X-axis steps per millimeter", "steps/mm", "Steps Per Unit"),
+        101 => ("Y steps/mm", "Y-axis steps per millimeter", "steps/mm", "Steps Per Unit"),
+        102 => ("Z steps/mm", "Z-axis steps per millimeter", "steps/mm", "Steps Per Unit"),
+        110 => ("X max rate", "X-axis maximum rate", "mm/min", "Max Rate"),
+        111 => ("Y max rate", "Y-axis maximum rate", "mm/min", "Max Rate"),
+        112 => ("Z max rate", "Z-axis maximum rate", "mm/min", "Max Rate"),
+        120 => ("X acceleration", "X-axis acceleration", "mm/sec²", "Acceleration"),
+        121 => ("Y acceleration", "Y-axis acceleration", "mm/sec²", "Acceleration"),
+        122 => ("Z acceleration", "Z-axis acceleration", "mm/sec²", "Acceleration"),
+        130 => ("X max travel", "X-axis maximum travel", "mm", "Max Travel"),
+        131 => ("Y max travel", "Y-axis maximum travel", "mm", "Max Travel"),
+        132 => ("Z max travel", "Z-axis maximum travel", "mm", "Max Travel"),
+        _ => (format!("${}", number).leak(), "Unknown setting", "", "Other"),
+    }
 }
 
 /// Sync firmware capabilities to UI properties
@@ -239,8 +313,8 @@ fn main() -> anyhow::Result<()> {
     main_window.set_cap_max_axes(3);
     main_window.set_cap_coordinate_systems(1);
 
-    // Shared state for communicator
-    let communicator = Rc::new(RefCell::new(SerialCommunicator::new()));
+    // Shared state for communicator (Arc<Mutex> for thread-safe sharing)
+    let communicator = Arc::new(Mutex::new(SerialCommunicator::new()));
 
     // Flag to control status polling
     let status_polling_active = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
@@ -252,7 +326,7 @@ fn main() -> anyhow::Result<()> {
 
     // Create and register console listener with communicator
     let console_listener = ConsoleListener::new(console_manager.clone());
-    communicator.borrow_mut().add_listener(console_listener);
+    communicator.lock().unwrap().add_listener(console_listener);
 
     // Shared state for settings dialog
     let settings_dialog = Rc::new(RefCell::new(SettingsDialog::new()));
@@ -322,22 +396,6 @@ fn main() -> anyhow::Result<()> {
 
     // Initialize console with default max lines (500)
     console_manager.set_max_lines(500);
-
-    // Initialize Phase 6 panels with sample data
-    // File Validation Panel
-    main_window.set_validation_summary(slint::SharedString::from("Ready"));
-    main_window.set_validation_error_count(0);
-    main_window.set_validation_warning_count(0);
-    main_window.set_validation_issues(Default::default());
-
-    // Advanced Features Panel
-    main_window.set_advanced_features_mode(slint::SharedString::from("None"));
-    main_window.set_simulation_state(slint::SharedString::from("Idle"));
-
-    // Safety & Diagnostics Panel
-    main_window.set_emergency_stop_armed(true);
-    main_window.set_safety_status(slint::SharedString::from("Safe"));
-    main_window.set_diagnostics_info(slint::SharedString::from("System Ready"));
 
     // Initialize G-Code editor
     let gcode_editor = Rc::new(GcodeEditor::new());
@@ -417,7 +475,7 @@ fn main() -> anyhow::Result<()> {
         };
 
         // Try to connect
-        let mut comm = communicator_clone.borrow_mut();
+        let mut comm = communicator_clone.lock().unwrap();
         match comm.connect(&params) {
             Ok(()) => {
                 console_manager_clone.add_message(
@@ -501,7 +559,6 @@ fn main() -> anyhow::Result<()> {
                                 }
                             }
                         }
-                        let _ = poll_comm.disconnect();
                     }
                     polling_active.store(false, std::sync::atomic::Ordering::Relaxed);
                 });
@@ -536,7 +593,7 @@ fn main() -> anyhow::Result<()> {
         // Stop the polling thread
         polling_stop_clone.store(true, std::sync::atomic::Ordering::Relaxed);
 
-        let mut comm = communicator_clone.borrow_mut();
+        let mut comm = communicator_clone.lock().unwrap();
         match comm.disconnect() {
             Ok(()) => {
                 // Reset the communicator to a fresh state by replacing with a new instance
@@ -545,7 +602,7 @@ fn main() -> anyhow::Result<()> {
                 // Re-register the console listener with the new communicator
                 let console_listener = ConsoleListener::new(console_manager_clone.clone());
                 new_comm.add_listener(console_listener);
-                *communicator_clone.borrow_mut() = new_comm;
+                *communicator_clone.lock().unwrap() = new_comm;
 
                 console_manager_clone
                     .add_message(DeviceMessageType::Success, "Successfully disconnected");
@@ -581,7 +638,7 @@ fn main() -> anyhow::Result<()> {
     let communicator_clone = communicator.clone();
     main_window.on_menu_file_exit(move || {
         // Disconnect if connected before exiting
-        let mut comm = communicator_clone.borrow_mut();
+        let mut comm = communicator_clone.lock().unwrap();
         if let Err(_) = comm.disconnect() {}
         std::process::exit(0);
     });
@@ -867,7 +924,7 @@ fn main() -> anyhow::Result<()> {
             let _send_content = gcode_editor_clone.get_plain_content();
 
             // Check if device is connected
-            let comm = communicator_clone.borrow();
+            let comm = communicator_clone.lock().unwrap();
             if !comm.is_connected() {
                 warn!("Send failed: Device not connected");
                 console_manager_clone.add_message(
@@ -953,7 +1010,7 @@ fn main() -> anyhow::Result<()> {
                 move || {
                     // Step 1: Handle incoming responses (minimize lock duration)
                     {
-                        let mut comm = communicator_timer.borrow_mut();
+                        let mut comm = communicator_timer.lock().unwrap();
                         match comm.receive() {
                             Ok(response) => {
                                 if !response.is_empty() {
@@ -1061,7 +1118,7 @@ fn main() -> anyhow::Result<()> {
                         if state.pending_bytes + line_length <= GRBL_RX_BUFFER_SIZE {
                             // Scope the communicator borrow to minimal duration
                             let send_result = {
-                                let mut comm = communicator_timer.borrow_mut();
+                                let mut comm = communicator_timer.lock().unwrap();
                                 let command_bytes = format!("{}\n", trimmed);
                                 comm.send(command_bytes.as_bytes())
                             };
@@ -1371,7 +1428,7 @@ fn main() -> anyhow::Result<()> {
     main_window.on_machine_jog_home(move || {
         if let Some(window) = window_weak.upgrade() {
             // Check if device is connected
-            let mut comm = communicator_clone.borrow_mut();
+            let mut comm = communicator_clone.lock().unwrap();
             if !comm.is_connected() {
                 warn!("Jog Home failed: Device not connected");
                 console_manager_clone.add_message(
@@ -1419,7 +1476,7 @@ fn main() -> anyhow::Result<()> {
     let console_manager_clone = console_manager.clone();
     main_window.on_machine_jog_x_positive(move |step_size: f32| {
         if let Some(window) = window_weak.upgrade() {
-            let mut comm = communicator_clone.borrow_mut();
+            let mut comm = communicator_clone.lock().unwrap();
             if !comm.is_connected() {
                 warn!("Jog X+ failed: Device not connected");
                 console_manager_clone
@@ -1455,7 +1512,7 @@ fn main() -> anyhow::Result<()> {
     let console_manager_clone = console_manager.clone();
     main_window.on_machine_jog_x_negative(move |step_size: f32| {
         if let Some(window) = window_weak.upgrade() {
-            let mut comm = communicator_clone.borrow_mut();
+            let mut comm = communicator_clone.lock().unwrap();
             if !comm.is_connected() {
                 warn!("Jog X- failed: Device not connected");
                 console_manager_clone
@@ -1498,33 +1555,305 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
-    // Set up menu-view-file-validation callback
+    // ═════════════════════════════════════════════════════════════
+    // Configuration Settings Callbacks
+    // ═════════════════════════════════════════════════════════════
+
+    let communicator_clone = communicator.clone();
     let window_weak = main_window.as_weak();
-    main_window.on_menu_view_file_validation(move || {
+    main_window.on_config_retrieve_settings(move || {
         if let Some(window) = window_weak.upgrade() {
-            window.set_connection_status(slint::SharedString::from(
-                "File Validation panel activated",
-            ));
+            window.set_config_status_message(slint::SharedString::from("Retrieving settings from controller..."));
+            
+            // Send $$ command to query settings
+            let mut comm = communicator_clone.lock().unwrap();
+            if let Err(e) = comm.send(b"$$\n") {
+                window.set_config_status_message(slint::SharedString::from(format!("Error: {}", e)));
+                return;
+            }
+            
+            // Brief delay for response
+            std::thread::sleep(std::time::Duration::from_millis(100));
+            
+            // Read response
+            match comm.receive() {
+                Ok(response) => {
+                    let response_str = String::from_utf8_lossy(&response);
+                    let mut settings = Vec::new();
+                    
+                    // Parse each line
+                    for line in response_str.lines() {
+                        if let Some(setting) = parse_grbl_setting_line(line) {
+                            settings.push(setting);
+                        }
+                    }
+                    
+                    // Convert to Slint model
+                    let settings_model = Rc::new(VecModel::from(settings.clone()));
+                    window.set_config_settings(slint::ModelRc::from(settings_model));
+                    
+                    // Initialize filtered settings to show all
+                    let filtered_model = Rc::new(VecModel::from(settings));
+                    window.set_config_filtered_settings(slint::ModelRc::from(filtered_model));
+                    
+                    window.set_config_has_loaded_settings(true);
+                    window.set_config_status_message(slint::SharedString::from(
+                        format!("Retrieved {} settings from controller", window.get_config_settings().row_count())
+                    ));
+                }
+                Err(e) => {
+                    window.set_config_status_message(slint::SharedString::from(format!("Error reading response: {}", e)));
+                }
+            }
         }
     });
 
-    // Set up menu-view-advanced-features callback
     let window_weak = main_window.as_weak();
-    main_window.on_menu_view_advanced_features(move || {
+    main_window.on_config_save_to_file(move || {
         if let Some(window) = window_weak.upgrade() {
-            window.set_connection_status(slint::SharedString::from(
-                "Advanced Features panel activated",
-            ));
+            // Check if we have settings to save
+            if window.get_config_settings().row_count() == 0 {
+                window.set_config_status_message(slint::SharedString::from("No settings to save. Retrieve settings first."));
+                return;
+            }
+            
+            // Open file dialog
+            if let Some(path) = rfd::FileDialog::new()
+                .set_file_name("grbl_config.json")
+                .add_filter("JSON", &["json"])
+                .save_file()
+            {
+                // Build JSON structure
+                let settings_model = window.get_config_settings();
+                let mut settings_json = Vec::new();
+                
+                for i in 0..settings_model.row_count() {
+                    if let Some(setting) = settings_model.row_data(i) {
+                        settings_json.push(serde_json::json!({
+                            "number": setting.number,
+                            "name": setting.name.as_str(),
+                            "value": setting.value.as_str(),
+                            "unit": setting.unit.as_str(),
+                            "description": setting.description.as_str(),
+                            "category": setting.category.as_str(),
+                        }));
+                    }
+                }
+                
+                let backup = serde_json::json!({
+                    "timestamp": chrono::Utc::now().to_rfc3339(),
+                    "firmware_type": "GRBL",
+                    "firmware_version": window.get_device_version().as_str(),
+                    "machine_name": "CNC Machine",
+                    "settings": settings_json,
+                    "notes": "Configuration backup from GCodeKit4",
+                });
+                
+                // Write to file
+                match std::fs::write(&path, serde_json::to_string_pretty(&backup).unwrap()) {
+                    Ok(_) => {
+                        window.set_config_status_message(slint::SharedString::from(format!(
+                            "Saved {} settings to {}",
+                            settings_model.row_count(),
+                            path.display()
+                        )));
+                    }
+                    Err(e) => {
+                        window.set_config_status_message(slint::SharedString::from(format!(
+                            "Error saving file: {}",
+                            e
+                        )));
+                    }
+                }
+            }
         }
     });
 
-    // Set up menu-view-safety-diagnostics callback
     let window_weak = main_window.as_weak();
-    main_window.on_menu_view_safety_diagnostics(move || {
+    main_window.on_config_load_from_file(move || {
         if let Some(window) = window_weak.upgrade() {
-            window.set_connection_status(slint::SharedString::from(
-                "Safety & Diagnostics panel activated",
-            ));
+            // Open file dialog
+            if let Some(path) = rfd::FileDialog::new()
+                .add_filter("JSON", &["json"])
+                .pick_file()
+            {
+                // Read and parse JSON file
+                match std::fs::read_to_string(&path) {
+                    Ok(contents) => {
+                        match serde_json::from_str::<serde_json::Value>(&contents) {
+                            Ok(json) => {
+                                let mut settings = Vec::new();
+                                
+                                if let Some(settings_array) = json["settings"].as_array() {
+                                    for setting_json in settings_array {
+                                        if let (Some(number), Some(name), Some(value)) = (
+                                            setting_json["number"].as_i64(),
+                                            setting_json["name"].as_str(),
+                                            setting_json["value"].as_str(),
+                                        ) {
+                                            settings.push(ConfigSetting {
+                                                number: number as i32,
+                                                name: slint::SharedString::from(name),
+                                                value: slint::SharedString::from(value),
+                                                unit: slint::SharedString::from(
+                                                    setting_json["unit"].as_str().unwrap_or("")
+                                                ),
+                                                description: slint::SharedString::from(
+                                                    setting_json["description"].as_str().unwrap_or("")
+                                                ),
+                                                category: slint::SharedString::from(
+                                                    setting_json["category"].as_str().unwrap_or("Other")
+                                                ),
+                                                read_only: false,
+                                            });
+                                        }
+                                    }
+                                }
+                                
+                                // Update UI
+                                let settings_model = Rc::new(VecModel::from(settings.clone()));
+                                window.set_config_settings(slint::ModelRc::from(settings_model));
+                                
+                                // Initialize filtered settings to show all
+                                let filtered_model = Rc::new(VecModel::from(settings));
+                                window.set_config_filtered_settings(slint::ModelRc::from(filtered_model));
+                                
+                                window.set_config_has_loaded_settings(true);
+                                window.set_config_status_message(slint::SharedString::from(format!(
+                                    "Loaded {} settings from {}",
+                                    window.get_config_settings().row_count(),
+                                    path.display()
+                                )));
+                            }
+                            Err(e) => {
+                                window.set_config_status_message(slint::SharedString::from(format!(
+                                    "Error parsing JSON: {}",
+                                    e
+                                )));
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        window.set_config_status_message(slint::SharedString::from(format!(
+                            "Error reading file: {}",
+                            e
+                        )));
+                    }
+                }
+            }
+        }
+    });
+
+    let communicator_clone = communicator.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_config_restore_to_device(move || {
+        if let Some(window) = window_weak.upgrade() {
+            // Check if we have settings to restore
+            if window.get_config_settings().row_count() == 0 {
+                window.set_config_status_message(slint::SharedString::from("No settings to restore. Load settings first."));
+                return;
+            }
+            
+            window.set_config_status_message(slint::SharedString::from("Restoring settings to controller..."));
+            
+            // Get all settings from model
+            let settings_model = window.get_config_settings();
+            let mut success_count = 0;
+            let mut error_count = 0;
+            
+            let mut comm = communicator_clone.lock().unwrap();
+            
+            for i in 0..settings_model.row_count() {
+                if let Some(setting) = settings_model.row_data(i) {
+                    // Skip read-only settings
+                    if setting.read_only {
+                        continue;
+                    }
+                    
+                    // Send $n=value command
+                    let command = format!("${}={}\n", setting.number, setting.value.as_str());
+                    
+                    match comm.send(command.as_bytes()) {
+                        Ok(_) => {
+                            // Brief delay between commands
+                            std::thread::sleep(std::time::Duration::from_millis(50));
+                            success_count += 1;
+                        }
+                        Err(_) => {
+                            error_count += 1;
+                        }
+                    }
+                }
+            }
+            
+            // Show results
+            if error_count == 0 {
+                window.set_config_status_message(slint::SharedString::from(format!(
+                    "Successfully restored {} settings to controller",
+                    success_count
+                )));
+            } else {
+                window.set_config_status_message(slint::SharedString::from(format!(
+                    "Restored {} settings, {} errors",
+                    success_count,
+                    error_count
+                )));
+            }
+        }
+    });
+
+    let window_weak = main_window.as_weak();
+    main_window.on_config_edit_setting(move |_number: i32| {
+        if let Some(window) = window_weak.upgrade() {
+            window.set_config_status_message(slint::SharedString::from("Edit setting dialog not yet implemented"));
+        }
+    });
+
+    let window_weak = main_window.as_weak();
+    main_window.on_config_filter_changed(move || {
+        if let Some(window) = window_weak.upgrade() {
+            // Get filter text and category
+            let filter_text = window.get_config_filter_text();
+            let category = window.get_config_selected_category();
+            
+            debug!("Filter changed - text: '{}', category: '{}'", filter_text, category);
+            
+            let settings_model = window.get_config_settings();
+            let mut filtered = Vec::new();
+            
+            let filter_lower = filter_text.to_lowercase();
+            
+            debug!("Total settings: {}", settings_model.row_count());
+            
+            for i in 0..settings_model.row_count() {
+                if let Some(setting) = settings_model.row_data(i) {
+                    // Check category filter
+                    let category_match = category == "All" || setting.category.as_str() == category.as_str();
+                    
+                    // Check text filter (matches ID, name, value, or description)
+                    let text_match = filter_lower.is_empty() || 
+                        format!("${}", setting.number).to_lowercase().contains(&filter_lower) ||
+                        setting.name.to_lowercase().contains(&filter_lower) ||
+                        setting.value.to_lowercase().contains(&filter_lower) ||
+                        setting.description.to_lowercase().contains(&filter_lower);
+                    
+                    if category_match && text_match {
+                        filtered.push(setting);
+                    }
+                }
+            }
+            
+            // Update filtered settings
+            debug!("Filtered settings count: {}", filtered.len());
+            let filtered_model = Rc::new(VecModel::from(filtered));
+            window.set_config_filtered_settings(slint::ModelRc::from(filtered_model));
+            
+            // Update status message to show filter is working
+            window.set_config_status_message(slint::SharedString::from(format!(
+                "Showing {} of {} settings",
+                window.get_config_filtered_settings().row_count(),
+                settings_model.row_count()
+            )));
         }
     });
 

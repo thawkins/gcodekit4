@@ -1,0 +1,245 @@
+/// Configuration Settings Panel
+/// Display and manage GRBL controller configuration settings
+
+import { Button, ComboBox, LineEdit, VerticalBox, HorizontalBox, ScrollView, ListView } from "std-widgets.slint";
+
+export struct ConfigSetting {
+    number: int,
+    name: string,
+    value: string,
+    unit: string,
+    description: string,
+    category: string,
+    read-only: bool,
+}
+
+export component ConfigSettingsPanel inherits VerticalBox {
+    spacing: 10px;
+    padding: 10px;
+    
+    in property <bool> connected: false;
+    in property <[ConfigSetting]> settings: [];
+    in property <[ConfigSetting]> filtered-settings: [];
+    in property <string> status-message: "";
+    in property <bool> has-loaded-settings: false;
+    in-out property <string> filter-text: "";
+    in-out property <string> selected-category: "All";
+    
+    callback retrieve-settings();
+    callback save-to-file();
+    callback load-from-file();
+    callback restore-to-device();
+    callback edit-setting(int);
+    callback filter-changed();
+    
+    // Toolbar
+    HorizontalBox {
+        spacing: 8px;
+        padding: 5px;
+        
+        Button {
+            text: "Retrieve";
+            enabled: root.connected;
+            clicked => { root.retrieve-settings(); }
+        }
+        
+        Button {
+            text: "Save";
+            enabled: root.has-loaded-settings;
+            clicked => { root.save-to-file(); }
+        }
+        
+        Button {
+            text: "Load";
+            clicked => { root.load-from-file(); }
+        }
+        
+        Button {
+            text: "Restore";
+            enabled: root.has-loaded-settings && root.connected;
+            clicked => { root.restore-to-device(); }
+        }
+    }
+    
+    // Filter bar
+    HorizontalBox {
+        spacing: 8px;
+        padding: 5px;
+        
+        Text {
+            text: "Filter:";
+            vertical-alignment: center;
+        }
+        
+        LineEdit {
+            placeholder-text: "Search settings...";
+            text <=> root.filter-text;
+            horizontal-stretch: 1;
+            edited => {
+                root.filter-changed();
+            }
+        }
+        
+        Text {
+            text: "Category:";
+            vertical-alignment: center;
+        }
+        
+        ComboBox {
+            model: ["All", "Steps Per Unit", "Max Rate", "Acceleration", "Max Travel", "Homing", "Limits", "Spindle", "System"];
+            current-value <=> root.selected-category;
+            selected => {
+                root.filter-changed();
+            }
+        }
+    }
+    
+    // Settings list header
+    Rectangle {
+        height: 30px;
+        background: #34495e;
+        
+        HorizontalBox {
+            padding: 5px;
+            spacing: 5px;
+            
+            Text {
+                text: "ID";
+                color: #ecf0f1;
+                font-weight: 700;
+                width: 50px;
+            }
+            
+            Text {
+                text: "Name";
+                color: #ecf0f1;
+                font-weight: 700;
+                width: 200px;
+            }
+            
+            Text {
+                text: "Value";
+                color: #ecf0f1;
+                font-weight: 700;
+                width: 100px;
+            }
+            
+            Text {
+                text: "Unit";
+                color: #ecf0f1;
+                font-weight: 700;
+                width: 80px;
+            }
+            
+            Text {
+                text: "Category";
+                color: #ecf0f1;
+                font-weight: 700;
+                width: 150px;
+            }
+            
+            Text {
+                text: "Description";
+                color: #ecf0f1;
+                font-weight: 700;
+                horizontal-stretch: 1;
+            }
+        }
+    }
+    
+    // Settings list
+    ScrollView {
+        vertical-stretch: 1;
+        
+        ListView {
+            for setting[index] in root.filtered-settings: Rectangle {
+                height: 40px;
+                background: Math.mod(index, 2) == 0 ? #ecf0f1 : #ffffff;
+                
+                HorizontalBox {
+                    padding: 5px;
+                    spacing: 5px;
+                    
+                    Text {
+                        text: "$" + setting.number;
+                        width: 50px;
+                        vertical-alignment: center;
+                        color: setting.read-only ? #7f8c8d : #2c3e50;
+                    }
+                    
+                    Text {
+                        text: setting.name;
+                        width: 200px;
+                        vertical-alignment: center;
+                        font-weight: 600;
+                        color: setting.read-only ? #7f8c8d : #2c3e50;
+                    }
+                    
+                    Text {
+                        text: setting.value;
+                        width: 100px;
+                        vertical-alignment: center;
+                        color: #27ae60;
+                    }
+                    
+                    Text {
+                        text: setting.unit;
+                        width: 80px;
+                        vertical-alignment: center;
+                        color: #7f8c8d;
+                        font-size: 11px;
+                    }
+                    
+                    Text {
+                        text: setting.category;
+                        width: 150px;
+                        vertical-alignment: center;
+                        color: #7f8c8d;
+                        font-size: 11px;
+                    }
+                    
+                    Text {
+                        text: setting.description;
+                        horizontal-stretch: 1;
+                        vertical-alignment: center;
+                        color: #7f8c8d;
+                        font-size: 11px;
+                        overflow: elide;
+                    }
+                }
+                
+                TouchArea {
+                    clicked => {
+                        root.edit-setting(setting.number);
+                    }
+                }
+            }
+        }
+    }
+    
+    // Status bar
+    Rectangle {
+        height: 30px;
+        background: #ecf0f1;
+        
+        HorizontalBox {
+            padding: 5px;
+            
+            Text {
+                text: root.status-message;
+                vertical-alignment: center;
+                color: #34495e;
+                font-size: 12px;
+            }
+            
+            Rectangle { horizontal-stretch: 1; }
+            
+            Text {
+                text: root.filtered-settings.length + " / " + root.settings.length + " settings";
+                vertical-alignment: center;
+                color: #7f8c8d;
+                font-size: 11px;
+            }
+        }
+    }
+}

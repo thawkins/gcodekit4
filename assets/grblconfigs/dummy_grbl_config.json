@@ -1,0 +1,281 @@
+{
+  "firmware_type": "GRBL",
+  "firmware_version": "GRBL 1.1+",
+  "machine_name": "CNC Machine",
+  "notes": "Configuration backup from GCodeKit4",
+  "settings": [
+    {
+      "category": "System",
+      "description": "Step pulse duration in microseconds",
+      "name": "Step pulse time",
+      "number": 0,
+      "unit": "μs",
+      "value": "10"
+    },
+    {
+      "category": "System",
+      "description": "Step idle delay in milliseconds",
+      "name": "Step idle delay",
+      "number": 1,
+      "unit": "ms",
+      "value": "25"
+    },
+    {
+      "category": "System",
+      "description": "Step pulse invert mask",
+      "name": "Step pulse invert",
+      "number": 2,
+      "unit": "",
+      "value": "0"
+    },
+    {
+      "category": "System",
+      "description": "Step direction invert mask",
+      "name": "Step direction invert",
+      "number": 3,
+      "unit": "",
+      "value": "0"
+    },
+    {
+      "category": "System",
+      "description": "Invert step enable pin",
+      "name": "Invert step enable",
+      "number": 4,
+      "unit": "",
+      "value": "0"
+    },
+    {
+      "category": "Limits",
+      "description": "Invert limit pins",
+      "name": "Invert limit pins",
+      "number": 5,
+      "unit": "",
+      "value": "0"
+    },
+    {
+      "category": "System",
+      "description": "Invert probe pin",
+      "name": "Invert probe pin",
+      "number": 6,
+      "unit": "",
+      "value": "0"
+    },
+    {
+      "category": "System",
+      "description": "Status report mask",
+      "name": "Status report",
+      "number": 10,
+      "unit": "",
+      "value": "1"
+    },
+    {
+      "category": "System",
+      "description": "Junction deviation in mm",
+      "name": "Junction deviation",
+      "number": 11,
+      "unit": "mm",
+      "value": "0.010"
+    },
+    {
+      "category": "System",
+      "description": "Arc tolerance in mm",
+      "name": "Arc tolerance",
+      "number": 12,
+      "unit": "mm",
+      "value": "0.002"
+    },
+    {
+      "category": "System",
+      "description": "Report in inches",
+      "name": "Report in inches",
+      "number": 13,
+      "unit": "",
+      "value": "0"
+    },
+    {
+      "category": "Limits",
+      "description": "Enable soft limits",
+      "name": "Soft limits",
+      "number": 20,
+      "unit": "",
+      "value": "0"
+    },
+    {
+      "category": "Limits",
+      "description": "Enable hard limits",
+      "name": "Hard limits",
+      "number": 21,
+      "unit": "",
+      "value": "0"
+    },
+    {
+      "category": "Homing",
+      "description": "Enable homing cycle",
+      "name": "Homing cycle",
+      "number": 22,
+      "unit": "",
+      "value": "0"
+    },
+    {
+      "category": "Homing",
+      "description": "Homing direction invert mask",
+      "name": "Homing direction",
+      "number": 23,
+      "unit": "",
+      "value": "0"
+    },
+    {
+      "category": "Homing",
+      "description": "Homing locate feed rate",
+      "name": "Homing locate feed",
+      "number": 24,
+      "unit": "mm/min",
+      "value": "25.000"
+    },
+    {
+      "category": "Homing",
+      "description": "Homing search seek rate",
+      "name": "Homing search seek",
+      "number": 25,
+      "unit": "mm/min",
+      "value": "500.000"
+    },
+    {
+      "category": "Homing",
+      "description": "Homing switch debounce delay",
+      "name": "Homing debounce",
+      "number": 26,
+      "unit": "ms",
+      "value": "250"
+    },
+    {
+      "category": "Homing",
+      "description": "Homing switch pull-off distance",
+      "name": "Homing pull-off",
+      "number": 27,
+      "unit": "mm",
+      "value": "1.000"
+    },
+    {
+      "category": "Spindle",
+      "description": "Maximum spindle speed",
+      "name": "Max spindle speed",
+      "number": 30,
+      "unit": "RPM",
+      "value": "1000"
+    },
+    {
+      "category": "Spindle",
+      "description": "Minimum spindle speed",
+      "name": "Min spindle speed",
+      "number": 31,
+      "unit": "RPM",
+      "value": "0"
+    },
+    {
+      "category": "Spindle",
+      "description": "Enable laser mode",
+      "name": "Laser mode",
+      "number": 32,
+      "unit": "",
+      "value": "0"
+    },
+    {
+      "category": "Steps Per Unit",
+      "description": "X-axis steps per millimeter",
+      "name": "X steps/mm",
+      "number": 100,
+      "unit": "steps/mm",
+      "value": "250.000"
+    },
+    {
+      "category": "Steps Per Unit",
+      "description": "Y-axis steps per millimeter",
+      "name": "Y steps/mm",
+      "number": 101,
+      "unit": "steps/mm",
+      "value": "250.000"
+    },
+    {
+      "category": "Steps Per Unit",
+      "description": "Z-axis steps per millimeter",
+      "name": "Z steps/mm",
+      "number": 102,
+      "unit": "steps/mm",
+      "value": "250.000"
+    },
+    {
+      "category": "Max Rate",
+      "description": "X-axis maximum rate",
+      "name": "X max rate",
+      "number": 110,
+      "unit": "mm/min",
+      "value": "500.000"
+    },
+    {
+      "category": "Max Rate",
+      "description": "Y-axis maximum rate",
+      "name": "Y max rate",
+      "number": 111,
+      "unit": "mm/min",
+      "value": "500.000"
+    },
+    {
+      "category": "Max Rate",
+      "description": "Z-axis maximum rate",
+      "name": "Z max rate",
+      "number": 112,
+      "unit": "mm/min",
+      "value": "500.000"
+    },
+    {
+      "category": "Acceleration",
+      "description": "X-axis acceleration",
+      "name": "X acceleration",
+      "number": 120,
+      "unit": "mm/sec²",
+      "value": "10.000"
+    },
+    {
+      "category": "Acceleration",
+      "description": "Y-axis acceleration",
+      "name": "Y acceleration",
+      "number": 121,
+      "unit": "mm/sec²",
+      "value": "10.000"
+    },
+    {
+      "category": "Acceleration",
+      "description": "Z-axis acceleration",
+      "name": "Z acceleration",
+      "number": 122,
+      "unit": "mm/sec²",
+      "value": "10.000"
+    },
+    {
+      "category": "Max Travel",
+      "description": "X-axis maximum travel",
+      "name": "X max travel",
+      "number": 130,
+      "unit": "mm",
+      "value": "200.000"
+    },
+    {
+      "category": "Max Travel",
+      "description": "Y-axis maximum travel",
+      "name": "Y max travel",
+      "number": 131,
+      "unit": "mm",
+      "value": "200.000"
+    },
+    {
+      "category": "Max Travel",
+      "description": "Z-axis maximum travel",
+      "name": "Z max travel",
+      "number": 132,
+      "unit": "mm",
+      "value": "200.000"
+    }
+  ],
+  "timestamp": "2025-11-04T13:06:26.575718884+00:00"
+}

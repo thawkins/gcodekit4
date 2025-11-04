@@ -42,6 +42,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Duplicate Connection Error**: Fixed "Device or resource busy" error during connection
+  - Refactored communicator to use `Arc<Mutex<>>` instead of `Rc<RefCell<>>` for thread-safe sharing
+  - Status polling thread now shares the same communicator instance instead of creating a duplicate connection
+  - Eliminates spurious error messages during connection
+  - No functionality changes - connections were working before but with error logs
+
+- **UI Panel Restoration**: Re-applied all UI changes that were accidentally reverted
+  - Restored Configuration Settings panel and tab (⚙️ Config)
+  - Re-removed File Validation, Advanced Features, and Safety & Diagnostics panels
+  - All config callbacks and properties properly wired
+  - Filter functionality working correctly
+
+- **Configuration Backend Integration**: Re-implemented all config callbacks that were lost
+  - `on_config_retrieve_settings()` - Queries controller with `$$`, parses and displays settings
+  - `on_config_save_to_file()` - Exports settings to JSON with metadata
+  - `on_config_load_from_file()` - Imports settings from JSON backup
+  - `on_config_restore_to_device()` - Sends settings to controller with `$n=value` commands
+  - `on_config_filter_changed()` - Live filtering by text and category
+  - Helper functions: `parse_grbl_setting_line()`, `get_grbl_setting_info()` with 30+ setting definitions
+  - Full end-to-end functionality restored
+
 ### ✨ Canvas-Based Visualizer Rendering (gcodekit4-83)
 
 **Vector Graphics Rendering** - Visualizer now uses Slint Path elements for GPU-accelerated vector rendering instead of raster images.
