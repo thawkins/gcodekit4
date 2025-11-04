@@ -2217,6 +2217,122 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
+    // Designer: File New callback
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_file_new(move || {
+        let mut state = designer_mgr_clone.borrow_mut();
+        state.new_design();
+        
+        if let Some(window) = window_weak.upgrade() {
+            update_designer_ui(&window, &mut state);
+            window.set_connection_status(slint::SharedString::from("New design created"));
+        }
+    });
+
+    // Designer: File Open callback
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_file_open(move || {
+        if let Some(path) = rfd::FileDialog::new()
+            .add_filter("GCodeKit4 Design", &["gck4", "json"])
+            .pick_file()
+        {
+            let mut state = designer_mgr_clone.borrow_mut();
+            match state.load_from_file(&path) {
+                Ok(()) => {
+                    if let Some(window) = window_weak.upgrade() {
+                        update_designer_ui(&window, &mut state);
+                        window.set_connection_status(slint::SharedString::from(format!(
+                            "Opened: {}",
+                            path.display()
+                        )));
+                    }
+                }
+                Err(e) => {
+                    if let Some(window) = window_weak.upgrade() {
+                        window.set_connection_status(slint::SharedString::from(format!(
+                            "Error opening file: {}",
+                            e
+                        )));
+                    }
+                }
+            }
+        }
+    });
+
+    // Designer: File Save callback
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_file_save(move || {
+        let mut state = designer_mgr_clone.borrow_mut();
+        
+        // If no current file, prompt for filename
+        let path = if let Some(existing_path) = &state.current_file_path {
+            existing_path.clone()
+        } else {
+            if let Some(new_path) = rfd::FileDialog::new()
+                .add_filter("GCodeKit4 Design", &["gck4"])
+                .set_file_name("design.gck4")
+                .save_file()
+            {
+                new_path
+            } else {
+                return; // User cancelled
+            }
+        };
+        
+        match state.save_to_file(&path) {
+            Ok(()) => {
+                if let Some(window) = window_weak.upgrade() {
+                    window.set_connection_status(slint::SharedString::from(format!(
+                        "Saved: {}",
+                        path.display()
+                    )));
+                }
+            }
+            Err(e) => {
+                if let Some(window) = window_weak.upgrade() {
+                    window.set_connection_status(slint::SharedString::from(format!(
+                        "Error saving file: {}",
+                        e
+                    )));
+                }
+            }
+        }
+    });
+
+    // Designer: File Save As callback
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_file_save_as(move || {
+        if let Some(path) = rfd::FileDialog::new()
+            .add_filter("GCodeKit4 Design", &["gck4"])
+            .set_file_name("design.gck4")
+            .save_file()
+        {
+            let mut state = designer_mgr_clone.borrow_mut();
+            match state.save_to_file(&path) {
+                Ok(()) => {
+                    if let Some(window) = window_weak.upgrade() {
+                        window.set_connection_status(slint::SharedString::from(format!(
+                            "Saved as: {}",
+                            path.display()
+                        )));
+                    }
+                }
+                Err(e) => {
+                    if let Some(window) = window_weak.upgrade() {
+                        window.set_connection_status(slint::SharedString::from(format!(
+                            "Error saving file: {}",
+                            e
+                        )));
+                    }
+                }
+            }
+        }
+    });
+
     // Designer: Canvas Click callback
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();

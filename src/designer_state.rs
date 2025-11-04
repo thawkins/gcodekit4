@@ -13,6 +13,9 @@ pub struct DesignerState {
     pub toolpath_generator: ToolpathGenerator,
     pub generated_gcode: String,
     pub gcode_generated: bool,
+    pub current_file_path: Option<std::path::PathBuf>,
+    pub is_modified: bool,
+    pub design_name: String,
 }
 
 impl DesignerState {
@@ -23,6 +26,9 @@ impl DesignerState {
             toolpath_generator: ToolpathGenerator::new(),
             generated_gcode: String::new(),
             gcode_generated: false,
+            current_file_path: None,
+            is_modified: false,
+            design_name: "Untitled".to_string(),
         }
     }
 
@@ -296,6 +302,94 @@ impl DesignerState {
                     }
                 }
             }
+        }
+    }
+
+    /// Save design to file
+    pub fn save_to_file(&mut self, path: impl AsRef<std::path::Path>) -> anyhow::Result<()> {
+        use crate::designer::serialization::DesignFile;
+        
+        let mut design = DesignFile::new(&self.design_name);
+        
+        // Save viewport state
+        design.viewport.zoom = self.canvas.zoom();
+        design.viewport.pan_x = self.canvas.pan_x();
+        design.viewport.pan_y = self.canvas.pan_y();
+        
+        // Save all shapes
+        for obj in self.canvas.shapes() {
+            design.shapes.push(DesignFile::from_drawing_object(obj));
+        }
+        
+        // Save to file
+        design.save_to_file(&path)?;
+        
+        // Update state
+        self.current_file_path = Some(path.as_ref().to_path_buf());
+        self.is_modified = false;
+        
+        Ok(())
+    }
+
+    /// Load design from file
+    pub fn load_from_file(&mut self, path: impl AsRef<std::path::Path>) -> anyhow::Result<()> {
+        use crate::designer::serialization::DesignFile;
+        
+        let design = DesignFile::load_from_file(&path)?;
+        
+        // Clear existing shapes
+        self.canvas.clear();
+        
+        // Restore viewport
+        self.canvas.set_zoom(design.viewport.zoom);
+        self.canvas.set_pan(design.viewport.pan_x, design.viewport.pan_y);
+        
+        // Restore shapes
+        let mut next_id = 1;
+        for shape_data in &design.shapes {
+            if let Ok(obj) = DesignFile::to_drawing_object(shape_data, next_id) {
+                self.canvas.add_shape(obj.shape);
+                next_id += 1;
+            }
+        }
+        
+        // Update state
+        self.design_name = design.metadata.name.clone();
+        self.current_file_path = Some(path.as_ref().to_path_buf());
+        self.is_modified = false;
+        
+        Ok(())
+    }
+
+    /// Create new design (clear all)
+    pub fn new_design(&mut self) {
+        self.canvas.clear();
+        self.generated_gcode.clear();
+        self.gcode_generated = false;
+        self.current_file_path = None;
+        self.is_modified = false;
+        self.design_name = "Untitled".to_string();
+    }
+
+    /// Mark design as modified
+    pub fn mark_modified(&mut self) {
+        self.is_modified = true;
+    }
+
+    /// Get display name for the design
+    pub fn display_name(&self) -> String {
+        let name = if let Some(path) = &self.current_file_path {
+            path.file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or(&self.design_name)
+        } else {
+            &self.design_name
+        };
+        
+        if self.is_modified {
+            format!("{}*", name)
+        } else {
+            name.to_string()
         }
     }
 }

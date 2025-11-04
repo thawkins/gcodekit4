@@ -1,6 +1,66 @@
-## [0.25.2-alpha] - 2025-11-03
+## [0.25.2-alpha] - 2025-11-04
 
 ### Added
+
+#### Phase 6.8: Design File Operations (Open, Save, Save As)
+- **Native Design File Format** (.gck4) - JSON-based design persistence
+  - Complete design state serialization (shapes, viewport, metadata, toolpath params)
+  - Version tracking (v1.0) for future compatibility
+  - Metadata: name, created/modified timestamps, author, description
+  - Viewport state: zoom level, pan offsets
+  - Shape serialization: type, position, dimensions, properties
+  - Toolpath parameters: feed rate, spindle speed, tool diameter, cut depth
+- **File Operations UI** - Four new buttons in Designer sidebar
+  - New - Clear canvas and start fresh design
+  - Open - Load existing .gck4 design files
+  - Save - Save to current file (prompts if new)
+  - Save As - Always prompt for new filename
+- **Design State Management**
+  - Track current file path
+  - Modified flag tracking (*asterisk indicator for unsaved changes)
+  - Display name generation (filename or "Untitled")
+  - Auto-update modified timestamp on save
+- **File I/O Implementation**
+  - Native file picker dialogs (via rfd)
+  - Error handling with user feedback
+  - Status bar updates for all operations
+  - Support for .gck4 and .json extensions
+- **Sample Design Included** - assets/designs/sample_design.gck4
+
+### Technical Implementation
+- New module: `src/designer/serialization.rs` (244 lines)
+  - DesignFile struct with full serialization
+  - ShapeData conversion to/from DrawingObject
+  - Helper functions for type mapping
+  - Comprehensive error handling with anyhow::Result
+- Extended DesignerState with file operations
+  - save_to_file(), load_from_file(), new_design()
+  - mark_modified(), display_name()
+  - current_file_path, is_modified tracking
+- UI Callbacks in main.rs
+  - on_designer_file_new() - Clear and reset
+  - on_designer_file_open() - Load with dialog
+  - on_designer_file_save() - Save or prompt
+  - on_designer_file_save_as() - Always prompt
+- Tests: 2 unit tests for serialization (passing)
+
+### Use Cases Supported
+- Save work in progress and resume later
+- Share designs with teammates
+- Version control designs in git
+- Template libraries for common patterns
+- Backup before major changes
+
+### File Format Example
+```json
+{
+  "version": "1.0",
+  "metadata": { "name": "My Design", "created": "...", ... },
+  "viewport": { "zoom": 1.0, "pan_x": 0.0, "pan_y": 0.0 },
+  "shapes": [ { "id": 1, "shape_type": "rectangle", ... } ],
+  "toolpath_params": { "feed_rate": 1000.0, ... }
+}
+```
 - **Shape Properties Dialog** - Complete X, Y, Width, Height controls for precise positioning
   - Numeric spinbox inputs for all shape dimensions (0.1mm precision)
   - Support for all shape types: Rectangle, Circle, Line, Ellipse, Polygon, RoundRectangle

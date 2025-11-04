@@ -202,6 +202,10 @@ export component MainWindow inherits Window {
     callback designer-update-spindle-speed(float);
     callback designer-update-tool-diameter(float);
     callback designer-update-cut-depth(float);
+    callback designer-file-new();
+    callback designer-file-open();
+    callback designer-file-save();
+    callback designer-file-save-as();
     
     // Internal state for UI selections
     private property <int> port-index: 0;
@@ -823,6 +827,22 @@ export component MainWindow inherits Window {
                     
                     update_cut_depth(depth) => {
                         root.designer-update-cut-depth(depth);
+                    }
+                    
+                    file_new => {
+                        root.designer-file-new();
+                    }
+                    
+                    file_open => {
+                        root.designer-file-open();
+                    }
+                    
+                    file_save => {
+                        root.designer-file-save();
+                    }
+                    
+                    file_save_as => {
+                        root.designer-file-save-as();
                     }
                 }
 

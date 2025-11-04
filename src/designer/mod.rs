@@ -50,6 +50,7 @@ pub mod parametric;
 pub mod pocket_operations;
 pub mod render_optimizer;
 pub mod renderer;
+pub mod serialization;
 pub mod shapes;
 pub mod spatial_index;
 pub mod svg_renderer;

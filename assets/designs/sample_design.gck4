@@ -1,0 +1,45 @@
+{
+  "version": "1.0",
+  "metadata": {
+    "name": "Sample Design",
+    "created": "2025-11-04T15:00:00Z",
+    "modified": "2025-11-04T15:00:00Z",
+    "author": "GCodeKit4",
+    "description": "Example design with basic shapes"
+  },
+  "viewport": {
+    "zoom": 1.0,
+    "pan_x": 0.0,
+    "pan_y": 0.0
+  },
+  "shapes": [
+    {
+      "id": 1,
+      "shape_type": "rectangle",
+      "x": 10.0,
+      "y": 10.0,
+      "width": 50.0,
+      "height": 30.0,
+      "radius": 0.0,
+      "points": [],
+      "selected": false
+    },
+    {
+      "id": 2,
+      "shape_type": "circle",
+      "x": 80.0,
+      "y": 10.0,
+      "width": 40.0,
+      "height": 40.0,
+      "radius": 20.0,
+      "points": [],
+      "selected": false
+    }
+  ],
+  "toolpath_params": {
+    "feed_rate": 1000.0,
+    "spindle_speed": 3000.0,
+    "tool_diameter": 3.175,
+    "cut_depth": -5.0
+  }
+}
