@@ -45,6 +45,9 @@ export struct DesignerState {
 export component MainWindow inherits Window {
     title: "GCodeKit4 - Universal G-Code Sender";
     
+    // Busy cursor while processing
+    in-out property <bool> is-busy: false;
+    
     // Dynamic properties exposed to Rust
     in property <[string]> available-ports: [];
     in-out property <string> selected-port: "";
@@ -320,6 +323,13 @@ export component MainWindow inherits Window {
                 }
             }
         }
+    }
+    
+    // Busy cursor overlay
+    if root.is-busy : TouchArea {
+        width: 100%;
+        height: 100%;
+        mouse-cursor: MouseCursor.wait;
     }
     
     VerticalBox {

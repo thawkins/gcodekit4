@@ -2083,13 +2083,19 @@ fn main() -> anyhow::Result<()> {
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
     main_window.on_designer_generate_toolpath(move || {
+        if let Some(window) = window_weak.upgrade() {
+            window.set_is_busy(true);
+        }
+        
         let mut state = designer_mgr_clone.borrow_mut();
         let gcode = state.generate_gcode();
+        
         if let Some(window) = window_weak.upgrade() {
             window.set_designer_generated_gcode(slint::SharedString::from(gcode));
             window.set_designer_gcode_generated(true);
             window
                 .set_connection_status(slint::SharedString::from("G-code generated successfully"));
+            window.set_is_busy(false);
         }
     });
 
@@ -2097,12 +2103,18 @@ fn main() -> anyhow::Result<()> {
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
     main_window.on_designer_export_gcode(move || {
+        if let Some(window) = window_weak.upgrade() {
+            window.set_is_busy(true);
+        }
+        
         let mut state = designer_mgr_clone.borrow_mut();
         let gcode = state.generate_gcode();
+        
         if let Some(window) = window_weak.upgrade() {
             window.set_gcode_content(slint::SharedString::from(gcode));
             window.set_current_view(slint::SharedString::from("gcode-editor"));
             window.set_connection_status(slint::SharedString::from("G-code exported to editor"));
+            window.set_is_busy(false);
         }
     });
 
