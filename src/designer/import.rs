@@ -359,6 +359,9 @@ impl DxfImporter {
     }
     
     /// Convert DXF entities to Designer shapes
+    /// 
+    /// Note: DXF coordinates are negated on X-axis to correct for coordinate system difference.
+    /// DXF uses right-handed coordinate system, Designer uses left-handed with Y-up.
     fn convert_entities_to_shapes(&self, dxf_file: &DxfFile) -> Result<Vec<Box<dyn Shape>>> {
         let mut shapes: Vec<Box<dyn Shape>> = Vec::new();
         
@@ -366,11 +369,11 @@ impl DxfImporter {
             match entity {
                 DxfEntity::Line(line) => {
                     let start = Point::new(
-                        line.start.x + self.offset_x,
+                        -line.start.x + self.offset_x,
                         line.start.y + self.offset_y,
                     );
                     let end = Point::new(
-                        line.end.x + self.offset_x,
+                        -line.end.x + self.offset_x,
                         line.end.y + self.offset_y,
                     );
                     let designer_line = DesignerLine::new(start, end);
@@ -378,7 +381,7 @@ impl DxfImporter {
                 }
                 DxfEntity::Circle(circle) => {
                     let center = Point::new(
-                        circle.center.x + self.offset_x,
+                        -circle.center.x + self.offset_x,
                         circle.center.y + self.offset_y,
                     );
                     let designer_circle = Circle::new(center, circle.radius);
@@ -391,11 +394,11 @@ impl DxfImporter {
                     // Convert polyline to multiple line segments
                     for i in 0..polyline.vertices.len().saturating_sub(1) {
                         let start = Point::new(
-                            polyline.vertices[i].x + self.offset_x,
+                            -polyline.vertices[i].x + self.offset_x,
                             polyline.vertices[i].y + self.offset_y,
                         );
                         let end = Point::new(
-                            polyline.vertices[i + 1].x + self.offset_x,
+                            -polyline.vertices[i + 1].x + self.offset_x,
                             polyline.vertices[i + 1].y + self.offset_y,
                         );
                         shapes.push(Box::new(DesignerLine::new(start, end)));
@@ -404,11 +407,11 @@ impl DxfImporter {
                     // Close polyline if needed
                     if polyline.closed && polyline.vertices.len() > 2 {
                         let start = Point::new(
-                            polyline.vertices[polyline.vertices.len() - 1].x + self.offset_x,
+                            -polyline.vertices[polyline.vertices.len() - 1].x + self.offset_x,
                             polyline.vertices[polyline.vertices.len() - 1].y + self.offset_y,
                         );
                         let end = Point::new(
-                            polyline.vertices[0].x + self.offset_x,
+                            -polyline.vertices[0].x + self.offset_x,
                             polyline.vertices[0].y + self.offset_y,
                         );
                         shapes.push(Box::new(DesignerLine::new(start, end)));
