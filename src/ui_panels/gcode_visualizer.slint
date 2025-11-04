@@ -12,6 +12,7 @@ export component GcodeVisualizerPanel inherits VerticalBox {
     in property <string> gcode-filename: "untitled.gcode";
     in property <string> gcode-content: "";
     in property <string> visualization-path-data: "";
+    in property <string> visualization-rapid-moves-data: "";
     in property <string> visualization-grid-data: "";
     in property <string> visualization-origin-data: "";
     in property <string> machine-x: "0.000";
@@ -26,6 +27,7 @@ export component GcodeVisualizerPanel inherits VerticalBox {
     in property <float> y-offset: 0.0;
     in property <float> zoom-scale: 1.0;
     in-out property <bool> show-grid: true;
+    in-out property <bool> show-rapid-moves: true;
     out property <float> canvas-width: canvas-rect.width / 1px;
     out property <float> canvas-height: canvas-rect.height / 1px;
     
@@ -102,16 +104,21 @@ export component GcodeVisualizerPanel inherits VerticalBox {
                 }
             }
 
-            // Spacer to push show grid checkbox to the right
+            // Spacer to push checkboxes to the right
             Rectangle {
                 horizontal-stretch: 1.0;
             }
 
-            // Right side - grid toggle checkbox
+            // Right side - toggle checkboxes
             HorizontalBox {
-                spacing: 6px;
+                spacing: 12px;
                 alignment: end;
                 vertical-stretch: 0;
+
+                CheckBox {
+                    text: "Show Moves";
+                    checked <=> root.show-rapid-moves;
+                }
 
                 CheckBox {
                     text: "Show Grid";
@@ -244,7 +251,19 @@ export component GcodeVisualizerPanel inherits VerticalBox {
                             viewbox-height: canvas-rect.height / 1px;
                         }
                         
-                        // Toolpath layer
+                        // Rapid moves layer (G0) - light blue, 20% opacity
+                        if root.show-rapid-moves && root.visualization-rapid-moves-data != "" : Path {
+                            width: 100%;
+                            height: 100%;
+                            fill: transparent;
+                            stroke: #ADD8E633;  // Light blue with 20% opacity
+                            stroke-width: 1px;
+                            commands: root.visualization-rapid-moves-data;
+                            viewbox-width: canvas-rect.width / 1px;
+                            viewbox-height: canvas-rect.height / 1px;
+                        }
+                        
+                        // Toolpath layer (G1) - blue
                         if root.visualization-path-data != "" : Path {
                             width: 100%;
                             height: 100%;

@@ -56,7 +56,7 @@ impl CoordTransform {
     }
 }
 
-/// Render toolpath as SVG path commands
+/// Render toolpath as SVG path commands (cutting moves only)
 pub fn render_toolpath_to_path(visualizer: &Visualizer2D, width: u32, height: u32) -> String {
     if visualizer.commands.is_empty() {
         return String::new();
@@ -74,7 +74,6 @@ pub fn render_toolpath_to_path(visualizer: &Visualizer2D, width: u32, height: u3
 
     let mut path = String::new();
     let mut last_draw_pos: Option<(f32, f32)> = None;
-    let show_rapid_moves = true; // TODO: Make this configurable
 
     for cmd in &visualizer.commands {
         match cmd {
@@ -83,13 +82,9 @@ pub fn render_toolpath_to_path(visualizer: &Visualizer2D, width: u32, height: u3
                 let (x2, y2) = transform.point_to_screen(*to);
 
                 if *rapid {
-                    // Show rapid moves if enabled, otherwise break path continuity
-                    if !show_rapid_moves {
-                        last_draw_pos = None;
-                        continue;
-                    }
-                    // Rapid moves: start new path segment
+                    // Rapid moves break path continuity (rendered separately)
                     last_draw_pos = None;
+                    continue;
                 }
                 
                 // For cutting moves, ensure we start with a move command if needed
@@ -131,6 +126,42 @@ pub fn render_toolpath_to_path(visualizer: &Visualizer2D, width: u32, height: u3
                     screen_radius, screen_radius, large_arc, sweep, x2, y2
                 ));
                 last_draw_pos = Some((x2, y2));
+            }
+        }
+    }
+
+    path
+}
+
+/// Render rapid moves (G0) as SVG path commands
+pub fn render_rapid_moves_to_path(visualizer: &Visualizer2D, width: u32, height: u32) -> String {
+    if visualizer.commands.is_empty() {
+        return String::new();
+    }
+
+    let scale = calculate_scale(visualizer, width, height);
+    let transform = CoordTransform::new(
+        visualizer.min_x,
+        visualizer.min_y,
+        scale,
+        height as f32,
+        visualizer.x_offset,
+        visualizer.y_offset,
+    );
+
+    let mut path = String::new();
+
+    for cmd in &visualizer.commands {
+        match cmd {
+            GCodeCommand::Move { from, to, rapid } => {
+                if *rapid {
+                    let (x1, y1) = transform.point_to_screen(*from);
+                    let (x2, y2) = transform.point_to_screen(*to);
+                    path.push_str(&format!("M {} {} L {} {} ", x1, y1, x2, y2));
+                }
+            }
+            GCodeCommand::Arc { .. } => {
+                // Arcs are always cutting moves, skip
             }
         }
     }

@@ -96,6 +96,7 @@ export component MainWindow inherits Window {
     in-out property <float> visualizer-canvas-width: 800.0;
     in-out property <float> visualizer-canvas-height: 600.0;
     in-out property <string> visualization-path-data: "";
+    in-out property <string> visualization-rapid-moves-data: "";
     in-out property <string> visualization-grid-data: "";
     in-out property <string> visualization-origin-data: "";
     
@@ -651,6 +652,7 @@ export component MainWindow inherits Window {
                     gcode-filename <=> root.gcode-filename;
                     gcode-content <=> root.gcode-content;
                     visualization-path-data: root.visualization-path-data;
+                    visualization-rapid-moves-data: root.visualization-rapid-moves-data;
                     visualization-grid-data: root.visualization-grid-data;
                     visualization-origin-data: root.visualization-origin-data;
                     machine-x: Math.round(root.position-x * 1000) / 1000 + "";

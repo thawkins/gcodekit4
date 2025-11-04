@@ -2635,8 +2635,8 @@ fn main() -> anyhow::Result<()> {
             // Spawn rendering thread
             let content_owned = content.to_string();
             
-            // Message format: (progress, status, path_data, grid_data, origin_data)
-            let (tx, rx) = std::sync::mpsc::channel::<(f32, String, Option<String>, Option<String>, Option<String>)>();
+            // Message format: (progress, status, path_data, rapid_moves_data, grid_data, origin_data)
+            let (tx, rx) = std::sync::mpsc::channel::<(f32, String, Option<String>, Option<String>, Option<String>, Option<String>)>();
             let window_weak_render = window_weak.clone();
             let zoom_scale_render = zoom_for_refresh.clone();
             let pan_offset_render = pan_for_refresh.clone();
@@ -2647,9 +2647,9 @@ fn main() -> anyhow::Result<()> {
             let show_grid = window.get_visualizer_show_grid();
 
             std::thread::spawn(move || {
-                use gcodekit4::visualizer::{Visualizer2D, render_toolpath_to_path, render_grid_to_path, render_origin_to_path};
+                use gcodekit4::visualizer::{Visualizer2D, render_toolpath_to_path, render_rapid_moves_to_path, render_grid_to_path, render_origin_to_path};
 
-                let _ = tx.send((0.1, "Parsing G-code...".to_string(), None, None, None));
+                let _ = tx.send((0.1, "Parsing G-code...".to_string(), None, None, None, None));
 
                 let mut visualizer = Visualizer2D::new();
                 visualizer.show_grid = show_grid;
@@ -2670,10 +2670,11 @@ fn main() -> anyhow::Result<()> {
                     visualizer.y_offset = offsets.1;
                 }
 
-                let _ = tx.send((0.3, "Rendering...".to_string(), None, None, None));
+                let _ = tx.send((0.3, "Rendering...".to_string(), None, None, None, None));
 
                 // Generate canvas path data
                 let path_data = render_toolpath_to_path(&visualizer, canvas_width as u32, canvas_height as u32);
+                let rapid_moves_data = render_rapid_moves_to_path(&visualizer, canvas_width as u32, canvas_height as u32);
                 let grid_data = if show_grid {
                     render_grid_to_path(&visualizer, canvas_width as u32, canvas_height as u32)
                 } else {
@@ -2682,18 +2683,19 @@ fn main() -> anyhow::Result<()> {
                 let origin_data = render_origin_to_path(&visualizer, canvas_width as u32, canvas_height as u32);
 
                 if !path_data.is_empty() {
-                    let _ = tx.send((1.0, "Complete".to_string(), Some(path_data), Some(grid_data), Some(origin_data)));
+                    let _ = tx.send((1.0, "Complete".to_string(), Some(path_data), Some(rapid_moves_data), Some(grid_data), Some(origin_data)));
                 } else {
-                    let _ = tx.send((1.0, "Error: no data".to_string(), None, None, None));
+                    let _ = tx.send((1.0, "Error: no data".to_string(), None, None, None, None));
                 }
             });
 
             // Process messages from rendering thread
             std::thread::spawn(move || {
-                while let Ok((progress, status, path_data, grid_data, origin_data)) = rx.recv() {
+                while let Ok((progress, status, path_data, rapid_moves_data, grid_data, origin_data)) = rx.recv() {
                     let window_handle = window_weak_render.clone();
                     let status_clone = status.clone();
                     let path_clone = path_data.clone();
+                    let rapid_moves_clone = rapid_moves_data.clone();
                     let grid_clone = grid_data.clone();
                     let origin_clone = origin_data.clone();
                     let zoom_for_closure = zoom_scale_for_msg.clone();
@@ -2709,6 +2711,9 @@ fn main() -> anyhow::Result<()> {
                             // Set canvas path data if available
                             if let Some(path) = path_clone {
                                 window.set_visualization_path_data(slint::SharedString::from(path));
+                            }
+                            if let Some(rapid_moves) = rapid_moves_clone {
+                                window.set_visualization_rapid_moves_data(slint::SharedString::from(rapid_moves));
                             }
                             if let Some(grid) = grid_clone {
                                 window.set_visualization_grid_data(slint::SharedString::from(grid));
