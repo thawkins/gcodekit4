@@ -7,7 +7,6 @@ use gcodekit4::{
 use slint::{Model, VecModel};
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::sync::{Arc, Mutex};
 use tracing::{debug, warn};
 
 slint::include_modules!();
@@ -1891,10 +1890,22 @@ fn main() -> anyhow::Result<()> {
     main_window.on_menu_view_gcode_visualizer(move || {
         if let Some(window) = window_weak.upgrade() {
             window.set_current_view(slint::SharedString::from("gcode-visualizer"));
-            let canvas_width = window.get_visualizer_canvas_width();
-            let canvas_height = window.get_visualizer_canvas_height();
-            window.invoke_refresh_visualization(canvas_width, canvas_height);
             window.set_connection_status(slint::SharedString::from("Visualizer panel activated"));
+            
+            // Defer refresh to allow canvas to be laid out first
+            let window_weak_timer = window.as_weak();
+            slint::Timer::single_shot(std::time::Duration::from_millis(50), move || {
+                if let Some(window) = window_weak_timer.upgrade() {
+                    let canvas_width = window.get_visualizer_canvas_width();
+                    let canvas_height = window.get_visualizer_canvas_height();
+                    tracing::debug!(
+                        "Deferred visualizer refresh with canvas {}x{}",
+                        canvas_width,
+                        canvas_height
+                    );
+                    window.invoke_refresh_visualization(canvas_width, canvas_height);
+                }
+            });
         }
     });
 
@@ -2640,6 +2651,16 @@ fn main() -> anyhow::Result<()> {
     let zoom_for_refresh = zoom_scale.clone();
     let pan_for_refresh = pan_offset.clone();
     main_window.on_refresh_visualization(move |canvas_width, canvas_height| {
+        // Skip if canvas dimensions are invalid (not yet laid out)
+        if canvas_width < 100.0 || canvas_height < 100.0 {
+            tracing::debug!(
+                "Skipping visualization refresh: canvas too small ({}x{})",
+                canvas_width,
+                canvas_height
+            );
+            return;
+        }
+        
         // Get the current G-code content
         if let Some(window) = window_weak.upgrade() {
             let content = window.get_gcode_content();

@@ -1,5 +1,13 @@
 ## [0.25.2-alpha] - 2025-11-04
 
+### Fixed
+- **G-Code Visualizer Race Condition** - Fixed blank visualizer display issue
+  - Added canvas dimension validation (skip rendering if < 100x100 pixels)
+  - Added 50ms deferred refresh when switching to visualizer view
+  - Ensures canvas layout completes before rendering paths
+  - Prevents invalid path generation for 0x0 canvas dimensions
+  - Grid, origin, cutting paths, and rapid moves now display correctly
+
 ### Added
 
 #### Phase 6.8: Design File Operations (Open, Save, Save As)
