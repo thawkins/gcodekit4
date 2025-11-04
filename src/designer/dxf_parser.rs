@@ -567,7 +567,7 @@ impl DxfParser {
         let mut closed = false;
         let mut layer = "0".to_string();
         let mut color = 256u16;
-        let mut current_x = 0.0;
+        let mut current_x: Option<f64> = None;
 
         while *index < lines.len() {
             let code = lines[*index].trim();
@@ -592,10 +592,13 @@ impl DxfParser {
                         closed = (flags & 1) != 0;
                     }
                 }
-                "10" => current_x = value.parse().unwrap_or(0.0),
+                "10" => current_x = value.parse().ok(),
                 "20" => {
-                    let current_y = value.parse().unwrap_or(0.0);
-                    vertices.push(Point::new(current_x, current_y));
+                    if let Some(x) = current_x {
+                        let current_y = value.parse().unwrap_or(0.0);
+                        vertices.push(Point::new(x, current_y));
+                        current_x = None;
+                    }
                 }
                 _ => {}
             }
