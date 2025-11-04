@@ -96,6 +96,7 @@ export component MainWindow inherits Window {
     in property <float> visualizer-y-offset: 0.0;
     in property <float> visualizer-zoom-scale: 1.0;
     in-out property <bool> visualizer-show-grid: true;
+    in-out property <bool> visualizer-show-rapid-moves: true;
     in-out property <float> visualizer-canvas-width: 800.0;
     in-out property <float> visualizer-canvas-height: 600.0;
     in-out property <string> visualization-path-data: "";
@@ -677,6 +678,7 @@ export component MainWindow inherits Window {
                     y-offset: root.visualizer-y-offset;
                     zoom-scale: root.visualizer-zoom-scale;
                     show-grid <=> root.visualizer-show-grid;
+                    show-rapid-moves <=> root.visualizer-show-rapid-moves;
                     
                     refresh-visualization(canvas-width, canvas-height) => {
                         root.visualizer-canvas-width = canvas-width;
