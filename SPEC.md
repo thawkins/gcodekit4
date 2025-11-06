@@ -1,15 +1,15 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.25.3-alpha  
+**Version**: 0.25.4-alpha  
 **Last Updated**: 2025-11-06  
 **Status**: COMPLETE (All 7 Phases Complete - 150/150 Tasks, Phase 8 In Progress)
 
-### Latest Release (v0.25.3-alpha)
-- ✅ **Device Info Panel** - New tab displaying firmware type, version, and 9 capabilities including laser support
-- ✅ **Visualizer Coordinate Fixes** - Improved world-to-screen transformations and fit-to-window accuracy
-- ✅ **UI Optimization** - Fixed communication system blocking (75-85% UI overhead reduction)
-- ✅ **14 New Tests** - Comprehensive coordinate transformation test coverage
-- ✅ **Previous**: Designer Shape Properties Dialog, CAM Tools, Materials Database (v0.25.2)
+### Latest Release (v0.25.4-alpha)
+- ✅ **Real-Time Status Tracking** - Machine state, positions (3-6 axes), feed rate, spindle speed
+- ✅ **Fixed Serial Port Conflict** - Status polling uses shared connection (no more "device busy")
+- ✅ **Enhanced Status Parser** - Comprehensive GRBL status parsing with machine state extraction
+- ✅ **UI Polish** - Reduced menu/tab spacing, improved layout
+- ✅ **Previous**: Device Info Panel, Visualizer Fixes, UI Optimization (v0.25.3)
 
 ## 1. Executive Summary
 

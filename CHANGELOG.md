@@ -1,3 +1,41 @@
+## [0.25.4-alpha] - 2025-11-06
+
+### Added
+
+#### Enhanced Real-Time Status Tracking (Issue #18)
+- **Machine State Parsing** - Extracts and displays machine state from GRBL status
+  - Idle, Run, Hold, Alarm, Door, Check, Home, Jog states
+  - Color-coded display in UI (green for Idle, blue for Run, orange for Hold, red for Alarm)
+- **Full Status Parser Integration**
+  - Parse machine position (X, Y, Z, A, B, C) - supports 3-6 axes
+  - Parse work position and work coordinate offsets
+  - Parse buffer state (planner and RX buffer)
+  - Parse feed rate (real-time)
+  - Parse spindle speed (real-time)
+- **Status Polling Thread** - Updates UI every 200ms with comprehensive status
+- **New Test**: `test_status_parser_machine_state()` - Validates state extraction
+- Files: `src/firmware/grbl/status_parser.rs`, `src/main.rs`
+
+### Fixed
+
+#### Serial Port "Device or resource busy" Error
+- **Root Cause**: Status polling thread was creating a second connection to the same serial port
+- **Solution**: Use shared `Arc<Mutex<SerialCommunicator>>` instead of creating new connection
+- **Result**: Status polling now works correctly without port conflicts
+- Removed duplicate connection code from polling thread
+- Uses lock/unlock pattern to safely share the serial connection
+
+#### UI Improvements
+- Reduced spacing between menu bar and tab bar (10px → 0px top padding)
+- All real-time status data now displays in Machine panel DRO
+- Machine state, feed rate, and spindle speed update in real-time
+
+### Technical Details
+- Status parser now includes `machine_state` field in `FullStatus` struct
+- Added `parse_machine_state()` function to extract state from GRBL status format
+- Polling thread uses existing communicator instead of opening duplicate port
+- Build successful with 694 tests passing (+1 from v0.25.3)
+
 ## [0.25.3-alpha] - 2025-11-06
 
 ### Added

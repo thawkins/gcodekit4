@@ -1,21 +1,21 @@
 # Project Statistics
 
 ## Overview
-- **Version:** 0.25.3-alpha
+- **Version:** 0.25.4-alpha
 - **Last Updated:** 2025-11-06
 
 ## Code Metrics
 - **Rust Code:** ~56,500 lines
 - **Slint UI:** ~5,100 lines
 - **Total:** ~61,600 lines
-- **Test Coverage:** 693 comprehensive tests
+- **Test Coverage:** 694 comprehensive tests
 - **Test Files:** 91 test modules
 
-## Recent Changes (v0.25.3)
-- **Device Info Panel**: New tab with firmware info and 9 capabilities including laser support
-- **Visualizer Fixes**: Improved coordinate transformations and fit-to-window
-- **UI Optimization**: 75-85% reduction in communication overhead
-- **14 New Tests**: Comprehensive coordinate transformation coverage
+## Recent Changes (v0.25.4)
+- **Real-Time Status Tracking**: Machine state parsing (Idle/Run/Hold/Alarm), 3-6 axis positions, feed/spindle
+- **Fixed Serial Port Conflict**: Status polling now uses shared connection instead of duplicate port open
+- **Enhanced Status Parser**: Full GRBL status parsing with machine state extraction
+- **UI Improvements**: Reduced menu/tab spacing, better layout
 
 ## Module Breakdown
 - **visualizer:** 2297 lines

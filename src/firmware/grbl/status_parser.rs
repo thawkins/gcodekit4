@@ -191,6 +191,18 @@ impl BufferRxState {
 pub struct StatusParser;
 
 impl StatusParser {
+    /// Parse machine state from status report
+    /// Extracts state from format: <Idle|...> or <Run|...>
+    pub fn parse_machine_state(status_line: &str) -> Option<String> {
+        if let Some(start) = status_line.find('<') {
+            if let Some(end) = status_line[start..].find('|') {
+                let state = &status_line[start + 1..start + end];
+                return Some(state.to_string());
+            }
+        }
+        None
+    }
+    
     /// Parse machine position from status report
     pub fn parse_mpos(status_line: &str) -> Option<MachinePosition> {
         Self::extract_field(status_line, "MPos:")
@@ -256,6 +268,7 @@ impl StatusParser {
     /// Parse complete status line into all components
     pub fn parse_full(status_line: &str) -> FullStatus {
         FullStatus {
+            machine_state: Self::parse_machine_state(status_line),
             mpos: Self::parse_mpos(status_line),
             wpos: Self::parse_wpos(status_line),
             wco: Self::parse_wco(status_line),
@@ -269,6 +282,8 @@ impl StatusParser {
 /// Complete parsed status report
 #[derive(Debug, Clone, PartialEq)]
 pub struct FullStatus {
+    /// Machine state (Idle, Run, Hold, Alarm, Door, Check, Home, Jog, etc.)
+    pub machine_state: Option<String>,
     /// Machine position
     pub mpos: Option<MachinePosition>,
     /// Work position
@@ -383,10 +398,26 @@ mod tests {
     }
 
     #[test]
+    fn test_status_parser_machine_state() {
+        let idle_status = "<Idle|MPos:10.000,20.000,30.000>";
+        assert_eq!(StatusParser::parse_machine_state(idle_status).unwrap(), "Idle");
+        
+        let run_status = "<Run|MPos:10,20,30|F:1500>";
+        assert_eq!(StatusParser::parse_machine_state(run_status).unwrap(), "Run");
+        
+        let hold_status = "<Hold:0|MPos:10,20,30>";
+        assert_eq!(StatusParser::parse_machine_state(hold_status).unwrap(), "Hold:0");
+        
+        let alarm_status = "<Alarm|MPos:0,0,0>";
+        assert_eq!(StatusParser::parse_machine_state(alarm_status).unwrap(), "Alarm");
+    }
+    
+    #[test]
     fn test_status_parser_full_parse() {
         let status = "<Run|MPos:10,20,30|WPos:5,8,2|Buf:10:100|F:1500|S:1000>";
         let full = StatusParser::parse_full(status);
 
+        assert_eq!(full.machine_state.as_deref(), Some("Run"));
         assert!(full.mpos.is_some());
         assert!(full.wpos.is_some());
         assert!(full.buffer.is_some());

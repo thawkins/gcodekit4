@@ -324,26 +324,6 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
 
 /// Parse GRBL status response and extract position
 /// Format: <Idle|MPos:10.000,20.000,0.000|WPos:10.000,20.000,0.000|...>
-fn parse_grbl_status(response: &str) -> Option<(f64, f64, f64)> {
-    // Look for MPos (Machine Position)
-    if let Some(mpos_start) = response.find("MPos:") {
-        let mpos_data = &response[mpos_start + 5..];
-        if let Some(mpos_end) = mpos_data.find('|') {
-            let coords = &mpos_data[..mpos_end];
-            let parts: Vec<&str> = coords.split(',').collect();
-            if parts.len() >= 3 {
-                if let (Ok(x), Ok(y), Ok(z)) = (
-                    parts[0].trim().parse::<f64>(),
-                    parts[1].trim().parse::<f64>(),
-                    parts[2].trim().parse::<f64>(),
-                ) {
-                    return Some((x, y, z));
-                }
-            }
-        }
-    }
-    None
-}
 
 fn main() -> anyhow::Result<()> {
     // Initialize logging
@@ -582,63 +562,69 @@ fn main() -> anyhow::Result<()> {
 
                 // Start status polling thread
                 polling_stop_connect.store(false, std::sync::atomic::Ordering::Relaxed);
-                let port_clone = port_str.clone();
-                let baud_clone = baud;
                 let window_weak_poll = window_weak.clone();
                 let polling_active = status_polling_active.clone();
                 let polling_stop = polling_stop_connect.clone();
+                let communicator_poll = communicator_clone.clone();
 
                 std::thread::spawn(move || {
                     polling_active.store(true, std::sync::atomic::Ordering::Relaxed);
-                    use gcodekit4::SerialCommunicator;
-                    let mut poll_comm = SerialCommunicator::new();
 
-                    // Connect the polling communicator
-                    let params = gcodekit4::ConnectionParams {
-                        driver: gcodekit4::ConnectionDriver::Serial,
-                        port: port_clone.clone(),
-                        network_port: 8888,
-                        baud_rate: baud_clone as u32,
-                        timeout_ms: 5000,
-                        flow_control: false,
-                        data_bits: 8,
-                        stop_bits: 1,
-                        parity: gcodekit4::SerialParity::None,
-                        auto_reconnect: true,
-                        max_retries: 3,
-                    };
+                    while !polling_stop.load(std::sync::atomic::Ordering::Relaxed) {
+                        std::thread::sleep(std::time::Duration::from_millis(200));
 
-                    if let Ok(()) = poll_comm.connect(&params) {
-                        while !polling_stop.load(std::sync::atomic::Ordering::Relaxed) {
-                            std::thread::sleep(std::time::Duration::from_millis(200));
+                        // Use the shared communicator instead of creating a new connection
+                        let mut comm = communicator_poll.lock().unwrap();
+                        if comm.is_connected() {
+                            // Send status query '?'
+                            if comm.send(b"?").is_ok() {
+                                std::thread::sleep(std::time::Duration::from_millis(10));
+                                if let Ok(response) = comm.receive() {
+                                    if !response.is_empty() {
+                                        let response_str = String::from_utf8_lossy(&response);
 
-                            if poll_comm.is_connected() {
-                                // Send status query '?'
-                                if poll_comm.send(b"?").is_ok() {
-                                    std::thread::sleep(std::time::Duration::from_millis(10));
-                                    if let Ok(response) = poll_comm.receive() {
-                                        if !response.is_empty() {
-                                            let response_str = String::from_utf8_lossy(&response);
-
-                                            // Parse position from response
-                                            if let Some((x, y, z)) =
-                                                parse_grbl_status(&response_str)
-                                            {
-                                                let window_handle = window_weak_poll.clone();
-                                                slint::invoke_from_event_loop(move || {
-                                                    if let Some(window) = window_handle.upgrade() {
-                                                        window.set_position_x(x as f32);
-                                                        window.set_position_y(y as f32);
-                                                        window.set_position_z(z as f32);
+                                        // Parse full status from response
+                                        use gcodekit4::firmware::grbl::status_parser::StatusParser;
+                                        let full_status = StatusParser::parse_full(&response_str);
+                                        
+                                        let window_handle = window_weak_poll.clone();
+                                        slint::invoke_from_event_loop(move || {
+                                            if let Some(window) = window_handle.upgrade() {
+                                                // Update machine position
+                                                if let Some(mpos) = full_status.mpos {
+                                                    window.set_position_x(mpos.x as f32);
+                                                    window.set_position_y(mpos.y as f32);
+                                                    window.set_position_z(mpos.z as f32);
+                                                    if let Some(a) = mpos.a {
+                                                        window.set_position_a(a as f32);
                                                     }
-                                                })
-                                                .ok();
+                                                    if let Some(b) = mpos.b {
+                                                        window.set_position_b(b as f32);
+                                                    }
+                                                }
+                                                
+                                                // Update machine state
+                                                if let Some(state) = full_status.machine_state {
+                                                    window.set_machine_state(slint::SharedString::from(state));
+                                                }
+                                                
+                                                // Update feed rate
+                                                if let Some(feed) = full_status.feed_rate {
+                                                    window.set_feed_rate(feed as f32);
+                                                }
+                                                
+                                                // Update spindle speed
+                                                if let Some(spindle) = full_status.spindle_speed {
+                                                    window.set_spindle_speed(spindle as f32);
+                                                }
                                             }
-                                        }
+                                        })
+                                        .ok();
                                     }
                                 }
                             }
                         }
+                        drop(comm); // Release lock before sleeping
                     }
                     polling_active.store(false, std::sync::atomic::Ordering::Relaxed);
                 });
