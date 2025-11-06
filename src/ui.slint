@@ -9,6 +9,7 @@ import { GcodeEditorPanel } from "ui_panels/gcode_editor.slint";
 import { DeviceConsolePanel } from "ui_panels/device_console.slint";
 import { MachineControlPanel } from "ui_panels/machine_control.slint";
 import { ConfigSettingsPanel, ConfigSetting } from "ui_panels/config_settings.slint";
+import { DeviceInfoPanel, CapabilityItem } from "ui_panels/device_info.slint";
 import { GcodeVisualizerPanel } from "ui_panels/gcode_visualizer.slint";
 import { DesignerPanel } from "ui_panels/designer.slint";
 import { GToolsPanel, GToolConfig } from "ui_panels/gtools.slint";
@@ -88,6 +89,12 @@ export component MainWindow inherits Window {
     in-out property <string> config-selected-category: "All";
     in property <string> config-status-message: "";
     in property <bool> config-has-loaded-settings: false;
+    
+    // Device Info Panel Properties
+    in property <string> device-firmware-type: "";
+    in property <string> device-firmware-version: "";
+    in property <string> device-name: "Unknown Device";
+    in property <[CapabilityItem]> device-capabilities: [];
     
     // Visualizer panel properties
     in property <float> visualizer-progress: 0.0;
@@ -432,6 +439,30 @@ export component MainWindow inherits Window {
                             }
                         }
                         
+                        // Device Info Tab
+                        Rectangle {
+                            width: 110px;
+                            height: 32px;
+                            background: current-view == "device-info" ? #34495e : #3d5470;
+                            border-radius: 3px;
+                            
+                            Text {
+                                text: "📱 Device Info";
+                                color: current-view == "device-info" ? white : #bdc3c7;
+                                font-size: 12px;
+                                font-weight: current-view == "device-info" ? 700 : 400;
+                                vertical-alignment: center;
+                                horizontal-alignment: center;
+                            }
+                            
+                            TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => {
+                                    current-view = "device-info";
+                                }
+                            }
+                        }
+                        
                         // Config Tab
                         Rectangle {
                             width: 100px;
@@ -621,6 +652,15 @@ export component MainWindow inherits Window {
                     jog-b-negative(step) => {
                         root.machine-jog-b-negative(step);
                     }
+                }
+                
+                // Device Info View
+                if current-view == "device-info" : device-info := DeviceInfoPanel {
+                    connected: root.connected;
+                    firmware-type: root.device-firmware-type;
+                    firmware-version: root.device-firmware-version;
+                    device-name: root.device-name;
+                    capabilities: root.device-capabilities;
                 }
                 
                 // Configuration Settings View

@@ -59,8 +59,11 @@ impl CoordTransform {
 /// Render toolpath as SVG path commands (cutting moves only)
 pub fn render_toolpath_to_path(visualizer: &Visualizer2D, width: u32, height: u32) -> String {
     if visualizer.commands.is_empty() {
+        tracing::debug!("No commands to render");
         return String::new();
     }
+
+    tracing::debug!("Rendering toolpath: {} total commands", visualizer.commands.len());
 
     let scale = calculate_scale(visualizer, width, height);
     let transform = CoordTransform::new(
@@ -72,19 +75,33 @@ pub fn render_toolpath_to_path(visualizer: &Visualizer2D, width: u32, height: u3
         visualizer.y_offset,
     );
 
+    tracing::debug!("Scale: {}, bounds: ({},{}) to ({},{}), offsets: ({},{})",
+        scale, visualizer.min_x, visualizer.min_y, visualizer.max_x, visualizer.max_y,
+        visualizer.x_offset, visualizer.y_offset);
+
     let mut path = String::new();
     let mut last_draw_pos: Option<(f32, f32)> = None;
+    let mut cutting_count = 0;
+    let mut rapid_count = 0;
 
-    for cmd in &visualizer.commands {
+    for (idx, cmd) in visualizer.commands.iter().enumerate() {
         match cmd {
             GCodeCommand::Move { from, to, rapid } => {
                 let (x1, y1) = transform.point_to_screen(*from);
                 let (x2, y2) = transform.point_to_screen(*to);
 
                 if *rapid {
+                    rapid_count += 1;
                     // Rapid moves break path continuity (rendered separately)
                     last_draw_pos = None;
                     continue;
+                }
+                
+                cutting_count += 1;
+                
+                if idx < 5 {
+                    tracing::debug!("Cutting move #{}: ({},{}) -> ({},{}) screen: ({},{}) -> ({},{})",
+                        cutting_count, from.x, from.y, to.x, to.y, x1, y1, x2, y2);
                 }
                 
                 // For cutting moves, ensure we start with a move command if needed
@@ -118,17 +135,67 @@ pub fn render_toolpath_to_path(visualizer: &Visualizer2D, width: u32, height: u3
                     path.push_str(&format!("M {} {} ", x1, y1));
                 }
 
-                // SVG arc: A rx ry x-axis-rotation large-arc-flag sweep-flag x y
-                let large_arc = 0; // For now, assume small arcs
-                let sweep = if *clockwise { 1 } else { 0 };
-                path.push_str(&format!(
-                    "A {} {} 0 {} {} {} {} ",
-                    screen_radius, screen_radius, large_arc, sweep, x2, y2
-                ));
+                // Check if this is a full circle (from == to)
+                let is_full_circle = (from.x - to.x).abs() < 0.001 && (from.y - to.y).abs() < 0.001;
+                
+                if is_full_circle {
+                    // SVG can't render a full circle arc in one command
+                    // Split into two semicircles
+                    
+                    // Calculate midpoint on opposite side of circle
+                    let mid_x_world = center.x + (center.x - from.x);
+                    let mid_y_world = center.y + (center.y - from.y);
+                    let (mid_x, mid_y) = transform.world_to_screen(mid_x_world, mid_y_world);
+                    
+                    let sweep = if *clockwise { 1 } else { 0 };
+                    
+                    // First semicircle: from start to midpoint
+                    path.push_str(&format!(
+                        "A {} {} 0 0 {} {} {} ",
+                        screen_radius, screen_radius, sweep, mid_x, mid_y
+                    ));
+                    
+                    // Second semicircle: from midpoint back to start
+                    path.push_str(&format!(
+                        "A {} {} 0 0 {} {} {} ",
+                        screen_radius, screen_radius, sweep, x2, y2
+                    ));
+                } else {
+                    // Regular arc - determine if it's a large arc (>180 degrees)
+                    let start_angle = ((from.y - center.y).atan2(from.x - center.x)).to_degrees();
+                    let end_angle = ((to.y - center.y).atan2(to.x - center.x)).to_degrees();
+                    
+                    let mut arc_angle = if *clockwise {
+                        start_angle - end_angle
+                    } else {
+                        end_angle - start_angle
+                    };
+                    
+                    if arc_angle < 0.0 {
+                        arc_angle += 360.0;
+                    }
+                    
+                    let large_arc = if arc_angle > 180.0 { 1 } else { 0 };
+                    let sweep = if *clockwise { 1 } else { 0 };
+                    
+                    path.push_str(&format!(
+                        "A {} {} 0 {} {} {} {} ",
+                        screen_radius, screen_radius, large_arc, sweep, x2, y2
+                    ));
+                }
+                
                 last_draw_pos = Some((x2, y2));
+                cutting_count += 1;
             }
         }
     }
+
+    tracing::debug!(
+        "Rendered toolpath: {} cutting moves, {} rapid moves, path length: {}",
+        cutting_count,
+        rapid_count,
+        path.len()
+    );
 
     path
 }

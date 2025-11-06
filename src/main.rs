@@ -144,6 +144,84 @@ fn sync_capabilities_to_ui(window: &MainWindow, capability_manager: &CapabilityM
     window.set_cap_coordinate_systems(state.coordinate_systems as i32);
 }
 
+/// Update device info panel with firmware and capabilities
+fn update_device_info_panel(
+    window: &MainWindow, 
+    firmware_type: gcodekit4::firmware::firmware_version::FirmwareType,
+    version: gcodekit4::firmware::firmware_version::SemanticVersion,
+    capability_manager: &CapabilityManager
+) {
+    use slint::{Model, ModelRc, VecModel};
+    
+    // Set firmware type and version
+    window.set_device_firmware_type(slint::SharedString::from(format!("{:?}", firmware_type)));
+    window.set_device_firmware_version(slint::SharedString::from(version.to_string()));
+    window.set_device_name(slint::SharedString::from(format!("{:?} Device", firmware_type)));
+    
+    // Get capabilities state
+    let state = capability_manager.get_state();
+    
+    // Build capabilities list
+    let mut capabilities = Vec::new();
+    
+    capabilities.push(CapabilityItem {
+        name: "Arc Support (G2/G3)".into(),
+        enabled: state.supports_arcs,
+        notes: "Circular interpolation commands".into(),
+    });
+    
+    capabilities.push(CapabilityItem {
+        name: "Variable Spindle (M3/M4 S)".into(),
+        enabled: state.supports_variable_spindle,
+        notes: "PWM spindle speed control".into(),
+    });
+    
+    capabilities.push(CapabilityItem {
+        name: "Probing (G38.x)".into(),
+        enabled: state.supports_probing,
+        notes: "Touch probe operations".into(),
+    });
+    
+    capabilities.push(CapabilityItem {
+        name: "Tool Change (M6 T)".into(),
+        enabled: state.supports_tool_change,
+        notes: "Automatic tool changing".into(),
+    });
+    
+    capabilities.push(CapabilityItem {
+        name: "Homing Cycle ($H)".into(),
+        enabled: state.supports_homing,
+        notes: "Machine homing to limit switches".into(),
+    });
+    
+    capabilities.push(CapabilityItem {
+        name: "Feed/Spindle Overrides".into(),
+        enabled: state.supports_overrides,
+        notes: "Real-time adjustment of feed and spindle".into(),
+    });
+    
+    capabilities.push(CapabilityItem {
+        name: "Laser Mode (M3/M4)".into(),
+        enabled: state.supports_laser,
+        notes: "Dynamic laser power control for engraving/cutting".into(),
+    });
+    
+    capabilities.push(CapabilityItem {
+        name: format!("{} Axes Support", state.max_axes).into(),
+        enabled: state.max_axes > 0,
+        notes: format!("Maximum {} axes (X,Y,Z,A,B,C)", state.max_axes).into(),
+    });
+    
+    capabilities.push(CapabilityItem {
+        name: format!("{} Coordinate Systems", state.coordinate_systems).into(),
+        enabled: state.coordinate_systems > 0,
+        notes: "Work coordinate systems (G54-G59)".into(),
+    });
+    
+    let capabilities_model = Rc::new(VecModel::from(capabilities));
+    window.set_device_capabilities(ModelRc::from(capabilities_model));
+}
+
 /// Update designer UI with current shapes from state
 fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState) {
     // Get canvas dimensions from window (or use defaults)
@@ -497,6 +575,9 @@ fn main() -> anyhow::Result<()> {
                     let version = SemanticVersion::new(1, 1, 0);
                     capability_manager_clone.update_firmware(firmware_type, version);
                     sync_capabilities_to_ui(&window, &capability_manager_clone);
+                    
+                    // Update device info panel
+                    update_device_info_panel(&window, firmware_type, version, &capability_manager_clone);
                 }
 
                 // Start status polling thread
@@ -739,10 +820,11 @@ fn main() -> anyhow::Result<()> {
 
                     // Use Slint's invoke_from_event_loop to safely update UI from background thread
                     std::thread::spawn(move || {
-                        while let Ok((progress, status, path_data, grid_data, origin_data)) = rx.recv() {
+                        while let Ok((progress, status, path_data, rapid_moves_data, grid_data, origin_data)) = rx.recv() {
                             let window_handle = window_weak.clone();
                             let status_clone = status.clone();
                             let path_clone = path_data.clone();
+                            let rapid_moves_clone = rapid_moves_data.clone();
                             let grid_clone = grid_data.clone();
                             let origin_clone = origin_data.clone();
 
@@ -756,6 +838,9 @@ fn main() -> anyhow::Result<()> {
                                     // Set canvas path data if available
                                     if let Some(path) = path_clone {
                                         window.set_visualization_path_data(slint::SharedString::from(path));
+                                    }
+                                    if let Some(rapid_moves) = rapid_moves_clone {
+                                        window.set_visualization_rapid_moves_data(slint::SharedString::from(rapid_moves));
                                     }
                                     if let Some(grid) = grid_clone {
                                         window.set_visualization_grid_data(slint::SharedString::from(grid));
@@ -2665,10 +2750,13 @@ fn main() -> anyhow::Result<()> {
         if let Some(window) = window_weak.upgrade() {
             let content = window.get_gcode_content();
 
+            debug!("Refresh visualization: content length = {}", content.len());
+
             // Reset progress
             window.set_visualizer_progress(0.0);
             
             if content.is_empty() {
+                debug!("Content is empty, clearing paths");
                 // No G-code loaded, but still generate grid and origin
                 window.set_visualizer_status(slint::SharedString::from("Ready"));
                 window.set_visualization_path_data(slint::SharedString::from(""));
@@ -2676,7 +2764,8 @@ fn main() -> anyhow::Result<()> {
                 
                 // Generate empty visualizer with just grid and origin
                 use gcodekit4::visualizer::{Visualizer2D, render_grid_to_path, render_origin_to_path};
-                let visualizer = Visualizer2D::new();
+                let mut visualizer = Visualizer2D::new();
+                visualizer.set_default_view(canvas_width, canvas_height);
                 let show_grid = window.get_visualizer_show_grid();
                 let grid_data = if show_grid {
                     render_grid_to_path(&visualizer, canvas_width as u32, canvas_height as u32)
@@ -2741,7 +2830,10 @@ fn main() -> anyhow::Result<()> {
                 };
                 let origin_data = render_origin_to_path(&visualizer, canvas_width as u32, canvas_height as u32);
 
-                if !path_data.is_empty() {
+                debug!("Refresh render complete: path={}, rapid={}, grid={}, origin={}",
+                       path_data.len(), rapid_moves_data.len(), grid_data.len(), origin_data.len());
+
+                if !path_data.is_empty() || !rapid_moves_data.is_empty() || !grid_data.is_empty() {
                     let _ = tx.send((1.0, "Complete".to_string(), Some(path_data), Some(rapid_moves_data), Some(grid_data), Some(origin_data)));
                 } else {
                     let _ = tx.send((1.0, "Error: no data".to_string(), None, None, None, None));
@@ -2769,15 +2861,19 @@ fn main() -> anyhow::Result<()> {
 
                             // Set canvas path data if available
                             if let Some(path) = path_clone {
+                                debug!("Setting visualization path data: {} chars", path.len());
                                 window.set_visualization_path_data(slint::SharedString::from(path));
                             }
                             if let Some(rapid_moves) = rapid_moves_clone {
+                                debug!("Setting visualization rapid moves data: {} chars", rapid_moves.len());
                                 window.set_visualization_rapid_moves_data(slint::SharedString::from(rapid_moves));
                             }
                             if let Some(grid) = grid_clone {
+                                debug!("Setting visualization grid data: {} chars", grid.len());
                                 window.set_visualization_grid_data(slint::SharedString::from(grid));
                             }
                             if let Some(origin) = origin_clone {
+                                debug!("Setting visualization origin data: {} chars", origin.len());
                                 window.set_visualization_origin_data(slint::SharedString::from(origin));
                             }
 
@@ -3016,26 +3112,33 @@ fn get_available_ports() -> anyhow::Result<Vec<slint::SharedString>> {
 /// Render G-code visualization in background thread using message passing
 fn render_gcode_visualization_background_channel(
     gcode_content: String,
-    tx: std::sync::mpsc::Sender<(f32, String, Option<String>, Option<String>, Option<String>)>,
+    tx: std::sync::mpsc::Sender<(f32, String, Option<String>, Option<String>, Option<String>, Option<String>)>,
 ) {
-    use gcodekit4::visualizer::{Visualizer2D, render_toolpath_to_path, render_grid_to_path, render_origin_to_path};
+    use gcodekit4::visualizer::{Visualizer2D, render_toolpath_to_path, render_rapid_moves_to_path, render_grid_to_path, render_origin_to_path};
 
-    let _ = tx.send((0.1, "Parsing G-code...".to_string(), None, None, None));
+    let _ = tx.send((0.1, "Parsing G-code...".to_string(), None, None, None, None));
 
     // Parse G-code
     let mut visualizer = Visualizer2D::new();
     visualizer.parse_gcode(&gcode_content);
+    
+    // Set default view to position origin at bottom-left
+    visualizer.set_default_view(1600.0, 1200.0);
 
-    let _ = tx.send((0.3, "Rendering...".to_string(), None, None, None));
+    let _ = tx.send((0.3, "Rendering...".to_string(), None, None, None, None));
 
     // Generate canvas path data
     let path_data = render_toolpath_to_path(&visualizer, 1600, 1200);
+    let rapid_moves_data = render_rapid_moves_to_path(&visualizer, 1600, 1200);
     let grid_data = render_grid_to_path(&visualizer, 1600, 1200);
     let origin_data = render_origin_to_path(&visualizer, 1600, 1200);
 
-    if !path_data.is_empty() {
-        let _ = tx.send((1.0, "Complete".to_string(), Some(path_data), Some(grid_data), Some(origin_data)));
+    debug!("Rendering complete: path={}, rapid={}, grid={}, origin={}", 
+           path_data.len(), rapid_moves_data.len(), grid_data.len(), origin_data.len());
+    
+    if !path_data.is_empty() || !rapid_moves_data.is_empty() || !grid_data.is_empty() {
+        let _ = tx.send((1.0, "Complete".to_string(), Some(path_data), Some(rapid_moves_data), Some(grid_data), Some(origin_data)));
     } else {
-        let _ = tx.send((1.0, "Error: no data".to_string(), None, None, None));
+        let _ = tx.send((1.0, "Error: no data".to_string(), None, None, None, None));
     }
 }

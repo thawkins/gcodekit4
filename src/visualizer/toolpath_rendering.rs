@@ -69,9 +69,9 @@ impl LineSegment {
         } else {
             match self.movement_type {
                 MovementType::Rapid => Color::orange(),
-                MovementType::Feed => Color::green(),
-                MovementType::ArcClockwise => Color::new(0.0, 0.5, 1.0),
-                MovementType::ArcCounterClockwise => Color::magenta(),
+                MovementType::Feed => Color::new(0.0, 1.0, 0.0),
+                MovementType::ArcClockwise => Color::new(1.0, 0.0, 0.0),
+                MovementType::ArcCounterClockwise => Color::new(1.0, 0.0, 0.0),
             }
         }
     }

@@ -58,6 +58,9 @@ pub struct CapabilityState {
     /// Macro support
     pub supports_macros: bool,
     
+    /// Laser mode support (M3/M4 with dynamic power)
+    pub supports_laser: bool,
+    
     /// Custom capabilities
     pub custom_capabilities: Vec<(String, bool)>,
 }
@@ -81,6 +84,7 @@ impl Default for CapabilityState {
             supports_soft_limits: false,
             supports_hard_limits: false,
             supports_macros: false,
+            supports_laser: false,
             custom_capabilities: Vec::new(),
         }
     }
@@ -99,6 +103,9 @@ impl CapabilityState {
             .map(|(k, v)| (k.clone(), *v))
             .collect();
         
+        // Check for laser mode in custom capabilities
+        let supports_laser = caps.custom.get("laser_mode").copied().unwrap_or(false);
+        
         Self {
             detected: true,
             firmware_type: Some(firmware_type),
@@ -116,6 +123,7 @@ impl CapabilityState {
             supports_soft_limits: caps.soft_limits,
             supports_hard_limits: caps.hard_limits,
             supports_macros: caps.macro_support,
+            supports_laser,
             custom_capabilities,
         }
     }

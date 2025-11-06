@@ -6,7 +6,7 @@ use std::collections::HashMap;
 const CANVAS_PADDING: f32 = 20.0;
 const CANVAS_PADDING_2X: f32 = 40.0;
 const MIN_ZOOM: f32 = 0.1;
-const MAX_ZOOM: f32 = 5.0;
+const MAX_ZOOM: f32 = 10.0;
 const ZOOM_STEP: f32 = 1.1;
 const PAN_PERCENTAGE: f32 = 0.1;
 const BOUNDS_PADDING_FACTOR: f32 = 0.1;
@@ -198,14 +198,15 @@ impl Visualizer2D {
         let target_x = 5.0;
         let target_y = canvas_height - 5.0;
         let padding = 20.0;
+        let effective_scale = self.zoom_scale * self.scale_factor;
         
         // screen_x = (0 - min_x) * scale + padding + x_offset
         // x_offset = target_x - ((0 - min_x) * scale + padding)
-        self.x_offset = target_x - ((0.0 - self.min_x) + padding);
+        self.x_offset = target_x - ((0.0 - self.min_x) * effective_scale + padding);
         
         // screen_y = height - ((0 - min_y) * scale + padding - y_offset)
         // y_offset = (0 - min_y) * scale + padding - (height - target_y)
-        self.y_offset = (0.0 - self.min_y) + padding - (canvas_height - target_y);
+        self.y_offset = (0.0 - self.min_y) * effective_scale + padding - (canvas_height - target_y);
     }
 
     /// Toggle grid visibility
@@ -233,11 +234,25 @@ impl Visualizer2D {
         self.scale_factor
     }
 
+    /// Extract G-code command number from line (e.g., "G01 X10" -> Some(1))
+    fn extract_gcode_num(line: &str) -> Option<u32> {
+        if !line.starts_with('G') {
+            return None;
+        }
+        let after_g = &line[1..];
+        let num_str: String = after_g.chars().take_while(|c| c.is_ascii_digit()).collect();
+        num_str.parse::<u32>().ok()
+    }
+
     /// Parse G-Code and extract movement commands
     pub fn parse_gcode(&mut self, gcode: &str) {
         self.commands.clear();
         let mut current_pos = Point2D::new(0.0, 0.0);
         let mut bounds = Bounds::new();
+        let mut g0_count = 0;
+        let mut g1_count = 0;
+        let mut g2_count = 0;
+        let mut g3_count = 0;
 
         for line in gcode.lines() {
             let line = line.trim();
@@ -246,20 +261,38 @@ impl Visualizer2D {
                 continue;
             }
 
-            if line.starts_with("G0") || line.starts_with("G1") {
-                self.parse_linear_move(line, &mut current_pos, &mut bounds);
-            } else if line.starts_with("G2") || line.starts_with("G3") {
-                self.parse_arc_move(line, &mut current_pos, &mut bounds);
+            if let Some(gcode_num) = Self::extract_gcode_num(line) {
+                match gcode_num {
+                    0 => {
+                        g0_count += 1;
+                        self.parse_linear_move(line, &mut current_pos, &mut bounds, true);
+                    }
+                    1 => {
+                        g1_count += 1;
+                        self.parse_linear_move(line, &mut current_pos, &mut bounds, false);
+                    }
+                    2 => {
+                        g2_count += 1;
+                        self.parse_arc_move(line, &mut current_pos, &mut bounds, true);
+                    }
+                    3 => {
+                        g3_count += 1;
+                        self.parse_arc_move(line, &mut current_pos, &mut bounds, false);
+                    }
+                    _ => {}
+                }
             }
         }
 
         (self.min_x, self.max_x, self.min_y, self.max_y) =
             bounds.finalize_with_padding(BOUNDS_PADDING_FACTOR);
         self.current_pos = current_pos;
+        
+        tracing::debug!("Parsed G-code: G0={}, G1={}, G2={}, G3={}, total commands={}",
+            g0_count, g1_count, g2_count, g3_count, self.commands.len());
     }
 
-    fn parse_linear_move(&mut self, line: &str, current_pos: &mut Point2D, bounds: &mut Bounds) {
-        let is_rapid = line.starts_with("G0");
+    fn parse_linear_move(&mut self, line: &str, current_pos: &mut Point2D, bounds: &mut Bounds, is_rapid: bool) {
         let params = Self::extract_params(line, &['X', 'Y']);
 
         // Get new position, using current position if X or Y not specified
@@ -269,6 +302,9 @@ impl Visualizer2D {
         // Only create a command if at least one axis changed
         if new_x != current_pos.x || new_y != current_pos.y {
             let to = Point2D::new(new_x, new_y);
+            tracing::debug!("Adding {} move: ({},{}) -> ({},{})", 
+                if is_rapid { "rapid" } else { "feed" },
+                current_pos.x, current_pos.y, new_x, new_y);
             self.commands.push(GCodeCommand::Move {
                 from: *current_pos,
                 to,
@@ -281,8 +317,7 @@ impl Visualizer2D {
         }
     }
 
-    fn parse_arc_move(&mut self, line: &str, current_pos: &mut Point2D, bounds: &mut Bounds) {
-        let clockwise = line.starts_with("G2");
+    fn parse_arc_move(&mut self, line: &str, current_pos: &mut Point2D, bounds: &mut Bounds, clockwise: bool) {
         let params = Self::extract_params(line, &['X', 'Y', 'I', 'J']);
 
         if let (Some(&new_x), Some(&new_y), Some(&offset_x), Some(&offset_y)) = (
@@ -378,7 +413,8 @@ impl Visualizer2D {
 
     /// Reset pan to center (offset = 0)
     pub fn reset_pan(&mut self) {
-        self.set_default_view(1600.0, 1200.0);
+        self.x_offset = 0.0;
+        self.y_offset = 0.0;
     }
 
     /// Calculate zoom and offset to fit all cutting commands in view with 5% margin
@@ -422,8 +458,8 @@ impl Visualizer2D {
         let center_y = (canvas_height - padded_height * scale) / 2.0;
 
         self.zoom_scale = scale;
-        self.x_offset = center_x - (bbox_min_x_padded * scale) - CANVAS_PADDING;
-        self.y_offset = center_y + (bbox_min_y_padded * scale) + CANVAS_PADDING;
+        self.x_offset = center_x - (bbox_min_x_padded - self.min_x) * scale - CANVAS_PADDING;
+        self.y_offset = center_y - (bbox_min_y_padded - self.min_y) * scale + CANVAS_PADDING;
     }
 
     /// Get the start point of the toolpath (for debugging/testing)

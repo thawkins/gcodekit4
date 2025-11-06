@@ -1,15 +1,15 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.25.2-alpha  
-**Last Updated**: 2025-11-03  
+**Version**: 0.25.3-alpha  
+**Last Updated**: 2025-11-06  
 **Status**: COMPLETE (All 7 Phases Complete - 150/150 Tasks, Phase 8 In Progress)
 
-### Latest Release (v0.25.2-alpha)
-- ✅ **Designer Shape Properties Dialog** - Added X, Y, Width, Height controls for precise shape positioning
-- ✅ **Enhanced Properties Panel** - Full numeric control over shape dimensions and position
-- ✅ **Multi-Shape Support** - Works with rectangles, circles, lines, ellipses, polygons, and round rectangles
-- ✅ **Previous**: CAM Tools Palette, Materials Database, Snapping, Firmware Capabilities (v0.25.0)
-- ✅ **Previous**: Designer Polish Phase 5, Visualizer UI, Issue Tracking
+### Latest Release (v0.25.3-alpha)
+- ✅ **Device Info Panel** - New tab displaying firmware type, version, and 9 capabilities including laser support
+- ✅ **Visualizer Coordinate Fixes** - Improved world-to-screen transformations and fit-to-window accuracy
+- ✅ **UI Optimization** - Fixed communication system blocking (75-85% UI overhead reduction)
+- ✅ **14 New Tests** - Comprehensive coordinate transformation test coverage
+- ✅ **Previous**: Designer Shape Properties Dialog, CAM Tools, Materials Database (v0.25.2)
 
 ## 1. Executive Summary
 

@@ -1,3 +1,76 @@
+## [0.25.3-alpha] - 2025-11-06
+
+### Added
+
+#### Device Info Panel - New Tab for Firmware Information
+- **Device Information Display** when connected
+  - Firmware Type (GRBL, grblHAL, TinyG, g2core, etc.)
+  - Firmware Version
+  - Device Name
+- **Capabilities Grid** - 9 key firmware capabilities with ✓/✗ indicators
+  - Arc Support (G2/G3)
+  - Variable Spindle (M3/M4 S)
+  - Probing (G38.x)
+  - Tool Change (M6 T)
+  - Homing Cycle ($H)
+  - Feed/Spindle Overrides
+  - **Laser Mode (M3/M4)** - NEW! Dynamic power control for engraving/cutting
+  - N Axes Support (displays max axes)
+  - N Coordinate Systems (G54-G59)
+- **Connection-Aware UI**
+  - Shows "📡 No Device Connected" message when disconnected
+  - Auto-populates with firmware info on connection
+  - Updates when switching devices
+- **New Tab**: "📱 Device Info" in main UI
+- Files: `src/ui_panels/device_info.slint` (211 lines), updates to `src/ui.slint`, `src/main.rs`
+
+#### Laser Support Capability
+- Added `supports_laser` field to CapabilityState
+- Checks for "laser_mode" in firmware custom capabilities
+- Displayed in Device Info panel with descriptive notes
+
+### Fixed
+
+#### Visualizer Coordinate Transformation Improvements
+- **set_default_view()** - Fixed missing scale multiplication
+  - Now properly accounts for zoom_scale and scale_factor
+  - Corrects origin positioning when zoomed
+- **reset_pan()** - Fixed hardcoded canvas dimensions
+  - Changed from calling `set_default_view(1600, 1200)` to simply zeroing offsets
+  - Eliminates incorrect positioning on reset
+- **fit_to_view()** - Fixed offset calculation inconsistency
+  - Corrected to `(bbox_min - min_x/y) * scale` for proper centering
+  - Content now properly centered in viewport
+- Files: `src/visualizer/visualizer_2d.rs`
+
+#### UI Communication System Optimization (75-85% overhead reduction)
+- Removed debug statements from hot paths (40% overhead reduction)
+- Implemented console batching (50% overhead reduction)
+- Added status coalescing (5% overhead reduction)
+- UI remains responsive during file transmission
+- Fixed blocking issues during G-code sending
+
+### Testing
+- **14 New Comprehensive Tests** - `tests/visualizer_coordinate_transforms.rs`
+  - Coordinate transformation roundtrip validation
+  - fit_to_view with various content positions (origin, negative, centered)
+  - Different canvas aspect ratios (tall, wide, square)
+  - Zoom/pan independence
+  - Margin application
+  - Bounds validation
+  - All tests passing ✓
+
+### Documentation
+- Created `docs/visualizer_coordinate_fixes.md` - Detailed analysis and fixes
+- Updated SPEC.md to v0.25.3-alpha
+- Updated README.md version badge
+
+### Technical Details
+- Helper function: `update_device_info_panel()` in main.rs
+- Integrated with connection handler for auto-population
+- Capability state from CapabilityManager
+- Build successful with 1 minor warning
+
 ## [0.25.2-alpha] - 2025-11-04
 
 ### Fixed

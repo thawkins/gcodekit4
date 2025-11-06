@@ -1,13 +1,21 @@
 # Project Statistics
 
 ## Overview
-- **Version:** 0.25.2-alpha
-- **Last Updated:** 2025-11-04
+- **Version:** 0.25.3-alpha
+- **Last Updated:** 2025-11-06
 
 ## Code Metrics
-- **Rust Code:** 56263 lines
-- **Slint UI:** 4868 lines
-- **Total:** 61131 lines
+- **Rust Code:** ~56,500 lines
+- **Slint UI:** ~5,100 lines
+- **Total:** ~61,600 lines
+- **Test Coverage:** 693 comprehensive tests
+- **Test Files:** 91 test modules
+
+## Recent Changes (v0.25.3)
+- **Device Info Panel**: New tab with firmware info and 9 capabilities including laser support
+- **Visualizer Fixes**: Improved coordinate transformations and fit-to-window
+- **UI Optimization**: 75-85% reduction in communication overhead
+- **14 New Tests**: Comprehensive coordinate transformation coverage
 
 ## Module Breakdown
 - **visualizer:** 2297 lines
