@@ -1946,7 +1946,7 @@ dependencies = [
 
 [[package]]
 name = "gcodekit4"
-version = "0.25.3-alpha"
+version = "0.25.4-alpha"
 dependencies = [
  "anyhow",
  "arboard",

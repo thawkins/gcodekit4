@@ -45,6 +45,7 @@ export component MachineControlPanel inherits VerticalBox {
     in property <float> position-c: 0.0;
     in property <float> feed-rate: 0.0;
     in property <float> spindle-speed: 0.0;
+    in property <string> machine-state: "DISCONNECTED";
     
     callback jog-home-clicked();
     callback jog-x-positive(float);
@@ -57,6 +58,7 @@ export component MachineControlPanel inherits VerticalBox {
     callback jog-a-negative(float);
     callback jog-b-positive(float);
     callback jog-b-negative(float);
+    callback unlock-clicked();
     
     private property <float> step-size: 1.0;
     private property <int> step-index: 1;
@@ -342,6 +344,15 @@ export component MachineControlPanel inherits VerticalBox {
                             }
                         }
                         
+                        // Unlock button - only enabled when in ALARM state
+                        JogButton {
+                            text: "🔒";
+                            step-size: 0;
+                            connected: root.connected && (root.machine-state == "ALARM" || root.machine-state == "Alarm");
+                            clicked(step) => {
+                                root.unlock-clicked();
+                            }
+                        }
 
                         Rectangle {
                             width: 5%;

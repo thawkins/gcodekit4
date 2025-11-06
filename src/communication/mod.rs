@@ -473,7 +473,7 @@ impl Communicator for SerialCommunicator {
         if let Some(port) = &mut self.port {
             match port.write(data) {
                 Ok(n) => {
-                    self.notify_listeners(CommunicatorEvent::DataSent, &format!("{} bytes", n));
+                    // Don't log byte counts - too noisy
                     Ok(n)
                 }
                 Err(e) => {
@@ -494,12 +494,7 @@ impl Communicator for SerialCommunicator {
             match port.read(&mut buf) {
                 Ok(n) => {
                     let data = buf[..n].to_vec();
-                    if n > 0 {
-                        self.notify_listeners(
-                            CommunicatorEvent::DataReceived,
-                            &format!("{} bytes", n),
-                        );
-                    }
+                    // Don't log byte counts - too noisy
                     Ok(data)
                 }
                 Err(e) => {

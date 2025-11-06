@@ -25,11 +25,20 @@ export component ConfigSettingsPanel inherits VerticalBox {
     in-out property <string> filter-text: "";
     in-out property <string> selected-category: "All";
     
+    // Edit dialog properties
+    in-out property <bool> show-edit-dialog: false;
+    in-out property <int> edit-setting-number: 0;
+    in-out property <string> edit-setting-name: "";
+    in-out property <string> edit-setting-value: "";
+    in-out property <string> edit-setting-unit: "";
+    in-out property <string> edit-setting-description: "";
+    
     callback retrieve-settings();
     callback save-to-file();
     callback load-from-file();
     callback restore-to-device();
     callback edit-setting(int);
+    callback save-edited-setting(int, string);
     callback filter-changed();
     
     // Toolbar
@@ -182,6 +191,16 @@ export component ConfigSettingsPanel inherits VerticalBox {
                         color: #27ae60;
                     }
                     
+                    // Edit button
+                    Button {
+                        text: "Edit";
+                        width: 60px;
+                        enabled: !setting.read-only && root.connected;
+                        clicked => {
+                            root.edit-setting(setting.number);
+                        }
+                    }
+                    
                     Text {
                         text: setting.unit;
                         width: 80px;
@@ -239,6 +258,119 @@ export component ConfigSettingsPanel inherits VerticalBox {
                 vertical-alignment: center;
                 color: #7f8c8d;
                 font-size: 11px;
+            }
+        }
+    }
+    
+    // Edit Dialog
+    if root.show-edit-dialog : Rectangle {
+        background: rgba(0, 0, 0, 0.5);
+        
+        Rectangle {
+            width: 500px;
+            height: 350px;
+            background: #ecf0f1;
+            border-radius: 8px;
+            
+            VerticalBox {
+                padding: 20px;
+                spacing: 15px;
+                
+                // Title
+                Text {
+                    text: "Edit Setting $" + root.edit-setting-number;
+                    font-size: 18px;
+                    font-weight: 700;
+                    color: #2c3e50;
+                }
+                
+                // Setting name
+                HorizontalBox {
+                    spacing: 10px;
+                    
+                    Text {
+                        text: "Name:";
+                        font-weight: 600;
+                        width: 100px;
+                        vertical-alignment: center;
+                    }
+                    
+                    Text {
+                        text: root.edit-setting-name;
+                        horizontal-stretch: 1;
+                        vertical-alignment: center;
+                    }
+                }
+                
+                // Setting description
+                HorizontalBox {
+                    spacing: 10px;
+                    
+                    Text {
+                        text: "Description:";
+                        font-weight: 600;
+                        width: 100px;
+                        vertical-alignment: top;
+                    }
+                    
+                    Text {
+                        text: root.edit-setting-description;
+                        horizontal-stretch: 1;
+                        wrap: word-wrap;
+                        color: #7f8c8d;
+                    }
+                }
+                
+                // Value input
+                HorizontalBox {
+                    spacing: 10px;
+                    
+                    Text {
+                        text: "Value:";
+                        font-weight: 600;
+                        width: 100px;
+                        vertical-alignment: center;
+                    }
+                    
+                    LineEdit {
+                        text <=> root.edit-setting-value;
+                        horizontal-stretch: 1;
+                        placeholder-text: "Enter new value";
+                    }
+                    
+                    Text {
+                        text: root.edit-setting-unit;
+                        width: 60px;
+                        vertical-alignment: center;
+                        color: #7f8c8d;
+                    }
+                }
+                
+                // Spacer
+                Rectangle {
+                    vertical-stretch: 1;
+                }
+                
+                // Buttons
+                HorizontalBox {
+                    spacing: 10px;
+                    alignment: end;
+                    
+                    Button {
+                        text: "Cancel";
+                        clicked => {
+                            root.show-edit-dialog = false;
+                        }
+                    }
+                    
+                    Button {
+                        text: "Save";
+                        clicked => {
+                            root.save-edited-setting(root.edit-setting-number, root.edit-setting-value);
+                            root.show-edit-dialog = false;
+                        }
+                    }
+                }
             }
         }
     }

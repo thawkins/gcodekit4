@@ -577,19 +577,24 @@ fn main() -> anyhow::Result<()> {
                         let mut comm = communicator_poll.lock().unwrap();
                         if comm.is_connected() {
                             // Send status query '?'
-                            if comm.send(b"?").is_ok() {
-                                std::thread::sleep(std::time::Duration::from_millis(10));
+                            if comm.send(b"?\n").is_ok() {
+                                std::thread::sleep(std::time::Duration::from_millis(50));
                                 if let Ok(response) = comm.receive() {
                                     if !response.is_empty() {
                                         let response_str = String::from_utf8_lossy(&response);
+                                        debug!("Status response: {}", response_str);
 
                                         // Parse full status from response
                                         use gcodekit4::firmware::grbl::status_parser::StatusParser;
                                         let full_status = StatusParser::parse_full(&response_str);
                                         
                                         let window_handle = window_weak_poll.clone();
+                                        let raw_response = response_str.to_string();
                                         slint::invoke_from_event_loop(move || {
                                             if let Some(window) = window_handle.upgrade() {
+                                                // Update raw status response
+                                                window.set_raw_status_response(slint::SharedString::from(raw_response.trim()));
+                                                
                                                 // Update machine position
                                                 if let Some(mpos) = full_status.mpos {
                                                     window.set_position_x(mpos.x as f32);
@@ -600,6 +605,9 @@ fn main() -> anyhow::Result<()> {
                                                     }
                                                     if let Some(b) = mpos.b {
                                                         window.set_position_b(b as f32);
+                                                    }
+                                                    if let Some(c) = mpos.c {
+                                                        window.set_position_c(c as f32);
                                                     }
                                                 }
                                                 
@@ -620,6 +628,8 @@ fn main() -> anyhow::Result<()> {
                                             }
                                         })
                                         .ok();
+                                    } else {
+                                        debug!("Status polling: empty response");
                                     }
                                 }
                             }
@@ -1562,8 +1572,8 @@ fn main() -> anyhow::Result<()> {
                 console_manager_clone
                     .add_message(DeviceMessageType::Error, "✗ Device not connected.");
             } else {
-                // Send jog command in positive X direction using step size and 2000mm/min feedrate
-                let jog_cmd = format!("$J=X{} F2000", step_size);
+                // Send jog command in relative mode (G91) for incremental movement
+                let jog_cmd = format!("$J=G91 X{} F2000", step_size);
                 console_manager_clone.add_message(
                     DeviceMessageType::Output,
                     format!("Jogging X+ ({} mm)...", step_size),
@@ -1598,8 +1608,8 @@ fn main() -> anyhow::Result<()> {
                 console_manager_clone
                     .add_message(DeviceMessageType::Error, "✗ Device not connected.");
             } else {
-                // Send jog command in negative X direction using step size and 2000mm/min feedrate
-                let jog_cmd = format!("$J=X-{} F2000", step_size);
+                // Send jog command in relative mode (G91) for incremental movement
+                let jog_cmd = format!("$J=G91 X-{} F2000", step_size);
                 console_manager_clone.add_message(
                     DeviceMessageType::Output,
                     format!("Jogging X- ({} mm)...", step_size),
@@ -1612,6 +1622,334 @@ fn main() -> anyhow::Result<()> {
                         console_manager_clone.add_message(
                             DeviceMessageType::Error,
                             format!("✗ Jog X- failed: {}", e),
+                        );
+                    }
+                }
+            }
+
+            let console_output = console_manager_clone.get_output();
+            window.set_console_output(slint::SharedString::from(console_output));
+        }
+    });
+
+    // Set up machine-jog-y-positive callback
+    let window_weak = main_window.as_weak();
+    let communicator_clone = communicator.clone();
+    let console_manager_clone = console_manager.clone();
+    main_window.on_machine_jog_y_positive(move |step_size: f32| {
+        if let Some(window) = window_weak.upgrade() {
+            let mut comm = communicator_clone.lock().unwrap();
+            if !comm.is_connected() {
+                warn!("Jog Y+ failed: Device not connected");
+                console_manager_clone
+                    .add_message(DeviceMessageType::Error, "✗ Device not connected.");
+            } else {
+                // Send jog command in relative mode (G91) for incremental movement
+                let jog_cmd = format!("$J=G91 Y{} F2000", step_size);
+                console_manager_clone.add_message(
+                    DeviceMessageType::Output,
+                    format!("Jogging Y+ ({} mm)...", step_size),
+                );
+
+                match comm.send(format!("{}\n", jog_cmd).as_bytes()) {
+                    Ok(_) => {}
+                    Err(e) => {
+                        warn!("Failed to send Jog Y+ command: {}", e);
+                        console_manager_clone.add_message(
+                            DeviceMessageType::Error,
+                            format!("✗ Jog Y+ failed: {}", e),
+                        );
+                    }
+                }
+            }
+
+            let console_output = console_manager_clone.get_output();
+            window.set_console_output(slint::SharedString::from(console_output));
+        }
+    });
+
+    // Set up machine-jog-y-negative callback
+    let window_weak = main_window.as_weak();
+    let communicator_clone = communicator.clone();
+    let console_manager_clone = console_manager.clone();
+    main_window.on_machine_jog_y_negative(move |step_size: f32| {
+        if let Some(window) = window_weak.upgrade() {
+            let mut comm = communicator_clone.lock().unwrap();
+            if !comm.is_connected() {
+                warn!("Jog Y- failed: Device not connected");
+                console_manager_clone
+                    .add_message(DeviceMessageType::Error, "✗ Device not connected.");
+            } else {
+                // Send jog command in relative mode (G91) for incremental movement
+                let jog_cmd = format!("$J=G91 Y-{} F2000", step_size);
+                console_manager_clone.add_message(
+                    DeviceMessageType::Output,
+                    format!("Jogging Y- ({} mm)...", step_size),
+                );
+
+                match comm.send(format!("{}\n", jog_cmd).as_bytes()) {
+                    Ok(_) => {}
+                    Err(e) => {
+                        warn!("Failed to send Jog Y- command: {}", e);
+                        console_manager_clone.add_message(
+                            DeviceMessageType::Error,
+                            format!("✗ Jog Y- failed: {}", e),
+                        );
+                    }
+                }
+            }
+
+            let console_output = console_manager_clone.get_output();
+            window.set_console_output(slint::SharedString::from(console_output));
+        }
+    });
+
+    // Set up machine-jog-z-positive callback
+    let window_weak = main_window.as_weak();
+    let communicator_clone = communicator.clone();
+    let console_manager_clone = console_manager.clone();
+    main_window.on_machine_jog_z_positive(move |step_size: f32| {
+        if let Some(window) = window_weak.upgrade() {
+            let mut comm = communicator_clone.lock().unwrap();
+            if !comm.is_connected() {
+                warn!("Jog Z+ failed: Device not connected");
+                console_manager_clone
+                    .add_message(DeviceMessageType::Error, "✗ Device not connected.");
+            } else {
+                // Send jog command in relative mode (G91) for incremental movement
+                let jog_cmd = format!("$J=G91 Z{} F2000", step_size);
+                console_manager_clone.add_message(
+                    DeviceMessageType::Output,
+                    format!("Jogging Z+ ({} mm)...", step_size),
+                );
+
+                match comm.send(format!("{}\n", jog_cmd).as_bytes()) {
+                    Ok(_) => {}
+                    Err(e) => {
+                        warn!("Failed to send Jog Z+ command: {}", e);
+                        console_manager_clone.add_message(
+                            DeviceMessageType::Error,
+                            format!("✗ Jog Z+ failed: {}", e),
+                        );
+                    }
+                }
+            }
+
+            let console_output = console_manager_clone.get_output();
+            window.set_console_output(slint::SharedString::from(console_output));
+        }
+    });
+
+    // Set up machine-jog-z-negative callback
+    let window_weak = main_window.as_weak();
+    let communicator_clone = communicator.clone();
+    let console_manager_clone = console_manager.clone();
+    main_window.on_machine_jog_z_negative(move |step_size: f32| {
+        if let Some(window) = window_weak.upgrade() {
+            let mut comm = communicator_clone.lock().unwrap();
+            if !comm.is_connected() {
+                warn!("Jog Z- failed: Device not connected");
+                console_manager_clone
+                    .add_message(DeviceMessageType::Error, "✗ Device not connected.");
+            } else {
+                // Send jog command in relative mode (G91) for incremental movement
+                let jog_cmd = format!("$J=G91 Z-{} F2000", step_size);
+                console_manager_clone.add_message(
+                    DeviceMessageType::Output,
+                    format!("Jogging Z- ({} mm)...", step_size),
+                );
+
+                match comm.send(format!("{}\n", jog_cmd).as_bytes()) {
+                    Ok(_) => {}
+                    Err(e) => {
+                        warn!("Failed to send Jog Z- command: {}", e);
+                        console_manager_clone.add_message(
+                            DeviceMessageType::Error,
+                            format!("✗ Jog Z- failed: {}", e),
+                        );
+                    }
+                }
+            }
+
+            let console_output = console_manager_clone.get_output();
+            window.set_console_output(slint::SharedString::from(console_output));
+        }
+    });
+
+    // Set up machine-jog-a-positive callback
+    let window_weak = main_window.as_weak();
+    let communicator_clone = communicator.clone();
+    let console_manager_clone = console_manager.clone();
+    main_window.on_machine_jog_a_positive(move |step_size: f32| {
+        if let Some(window) = window_weak.upgrade() {
+            let mut comm = communicator_clone.lock().unwrap();
+            if !comm.is_connected() {
+                warn!("Jog A+ failed: Device not connected");
+                console_manager_clone
+                    .add_message(DeviceMessageType::Error, "✗ Device not connected.");
+            } else {
+                // Send jog command in relative mode (G91) for incremental movement
+                let jog_cmd = format!("$J=G91 A{} F2000", step_size);
+                console_manager_clone.add_message(
+                    DeviceMessageType::Output,
+                    format!("Jogging A+ ({} deg)...", step_size),
+                );
+
+                match comm.send(format!("{}\n", jog_cmd).as_bytes()) {
+                    Ok(_) => {}
+                    Err(e) => {
+                        warn!("Failed to send Jog A+ command: {}", e);
+                        console_manager_clone.add_message(
+                            DeviceMessageType::Error,
+                            format!("✗ Jog A+ failed: {}", e),
+                        );
+                    }
+                }
+            }
+
+            let console_output = console_manager_clone.get_output();
+            window.set_console_output(slint::SharedString::from(console_output));
+        }
+    });
+
+    // Set up machine-jog-a-negative callback
+    let window_weak = main_window.as_weak();
+    let communicator_clone = communicator.clone();
+    let console_manager_clone = console_manager.clone();
+    main_window.on_machine_jog_a_negative(move |step_size: f32| {
+        if let Some(window) = window_weak.upgrade() {
+            let mut comm = communicator_clone.lock().unwrap();
+            if !comm.is_connected() {
+                warn!("Jog A- failed: Device not connected");
+                console_manager_clone
+                    .add_message(DeviceMessageType::Error, "✗ Device not connected.");
+            } else {
+                // Send jog command in relative mode (G91) for incremental movement
+                let jog_cmd = format!("$J=G91 A-{} F2000", step_size);
+                console_manager_clone.add_message(
+                    DeviceMessageType::Output,
+                    format!("Jogging A- ({} deg)...", step_size),
+                );
+
+                match comm.send(format!("{}\n", jog_cmd).as_bytes()) {
+                    Ok(_) => {}
+                    Err(e) => {
+                        warn!("Failed to send Jog A- command: {}", e);
+                        console_manager_clone.add_message(
+                            DeviceMessageType::Error,
+                            format!("✗ Jog A- failed: {}", e),
+                        );
+                    }
+                }
+            }
+
+            let console_output = console_manager_clone.get_output();
+            window.set_console_output(slint::SharedString::from(console_output));
+        }
+    });
+
+    // Set up machine-jog-b-positive callback
+    let window_weak = main_window.as_weak();
+    let communicator_clone = communicator.clone();
+    let console_manager_clone = console_manager.clone();
+    main_window.on_machine_jog_b_positive(move |step_size: f32| {
+        if let Some(window) = window_weak.upgrade() {
+            let mut comm = communicator_clone.lock().unwrap();
+            if !comm.is_connected() {
+                warn!("Jog B+ failed: Device not connected");
+                console_manager_clone
+                    .add_message(DeviceMessageType::Error, "✗ Device not connected.");
+            } else {
+                // Send jog command in relative mode (G91) for incremental movement
+                let jog_cmd = format!("$J=G91 B{} F2000", step_size);
+                console_manager_clone.add_message(
+                    DeviceMessageType::Output,
+                    format!("Jogging B+ ({} deg)...", step_size),
+                );
+
+                match comm.send(format!("{}\n", jog_cmd).as_bytes()) {
+                    Ok(_) => {}
+                    Err(e) => {
+                        warn!("Failed to send Jog B+ command: {}", e);
+                        console_manager_clone.add_message(
+                            DeviceMessageType::Error,
+                            format!("✗ Jog B+ failed: {}", e),
+                        );
+                    }
+                }
+            }
+
+            let console_output = console_manager_clone.get_output();
+            window.set_console_output(slint::SharedString::from(console_output));
+        }
+    });
+
+    // Set up machine-jog-b-negative callback
+    let window_weak = main_window.as_weak();
+    let communicator_clone = communicator.clone();
+    let console_manager_clone = console_manager.clone();
+    main_window.on_machine_jog_b_negative(move |step_size: f32| {
+        if let Some(window) = window_weak.upgrade() {
+            let mut comm = communicator_clone.lock().unwrap();
+            if !comm.is_connected() {
+                warn!("Jog B- failed: Device not connected");
+                console_manager_clone
+                    .add_message(DeviceMessageType::Error, "✗ Device not connected.");
+            } else {
+                // Send jog command in relative mode (G91) for incremental movement
+                let jog_cmd = format!("$J=G91 B-{} F2000", step_size);
+                console_manager_clone.add_message(
+                    DeviceMessageType::Output,
+                    format!("Jogging B- ({} deg)...", step_size),
+                );
+
+                match comm.send(format!("{}\n", jog_cmd).as_bytes()) {
+                    Ok(_) => {}
+                    Err(e) => {
+                        warn!("Failed to send Jog B- command: {}", e);
+                        console_manager_clone.add_message(
+                            DeviceMessageType::Error,
+                            format!("✗ Jog B- failed: {}", e),
+                        );
+                    }
+                }
+            }
+
+            let console_output = console_manager_clone.get_output();
+            window.set_console_output(slint::SharedString::from(console_output));
+        }
+    });
+
+    // Set up machine-unlock callback
+    let window_weak = main_window.as_weak();
+    let communicator_clone = communicator.clone();
+    let console_manager_clone = console_manager.clone();
+    main_window.on_machine_unlock(move || {
+        if let Some(window) = window_weak.upgrade() {
+            let mut comm = communicator_clone.lock().unwrap();
+            if !comm.is_connected() {
+                warn!("Unlock failed: Device not connected");
+                console_manager_clone
+                    .add_message(DeviceMessageType::Error, "✗ Device not connected.");
+            } else {
+                // Send unlock command $X to clear alarm state
+                console_manager_clone.add_message(
+                    DeviceMessageType::Output,
+                    "Sending unlock command ($X)...",
+                );
+
+                match comm.send(b"$X\n") {
+                    Ok(_) => {
+                        console_manager_clone.add_message(
+                            DeviceMessageType::Success,
+                            "✓ Unlock command sent",
+                        );
+                    }
+                    Err(e) => {
+                        warn!("Failed to send unlock command: {}", e);
+                        console_manager_clone.add_message(
+                            DeviceMessageType::Error,
+                            format!("✗ Unlock failed: {}", e),
                         );
                     }
                 }
@@ -1883,9 +2221,99 @@ fn main() -> anyhow::Result<()> {
     });
 
     let window_weak = main_window.as_weak();
-    main_window.on_config_edit_setting(move |_number: i32| {
+    main_window.on_config_edit_setting(move |number: i32| {
         if let Some(window) = window_weak.upgrade() {
-            window.set_config_status_message(slint::SharedString::from("Edit setting dialog not yet implemented"));
+            // Find the setting by number
+            let settings_model = window.get_config_settings();
+            for i in 0..settings_model.row_count() {
+                if let Some(setting) = settings_model.row_data(i) {
+                    if setting.number == number {
+                        // Populate edit dialog
+                        window.set_edit_setting_number(number);
+                        window.set_edit_setting_name(setting.name);
+                        window.set_edit_setting_value(setting.value);
+                        window.set_edit_setting_unit(setting.unit);
+                        window.set_edit_setting_description(setting.description);
+                        window.set_show_edit_dialog(true);
+                        break;
+                    }
+                }
+            }
+        }
+    });
+
+    let window_weak = main_window.as_weak();
+    let communicator_clone = communicator.clone();
+    let console_manager_clone = console_manager.clone();
+    main_window.on_config_save_edited_setting(move |number: i32, value: slint::SharedString| {
+        if let Some(window) = window_weak.upgrade() {
+            let mut comm = communicator_clone.lock().unwrap();
+            if comm.is_connected() {
+                // Send GRBL command to update setting: $<number>=<value>
+                let command = format!("${}={}\n", number, value);
+                console_manager_clone.add_message(
+                    DeviceMessageType::Output,
+                    format!("Updating setting ${} to {}", number, value),
+                );
+                
+                match comm.send(command.as_bytes()) {
+                    Ok(_) => {
+                        std::thread::sleep(std::time::Duration::from_millis(100));
+                        if let Ok(response) = comm.receive() {
+                            let response_str = String::from_utf8_lossy(&response);
+                            if response_str.contains("ok") {
+                                window.set_config_status_message(slint::SharedString::from(
+                                    format!("✓ Setting ${} updated successfully", number)
+                                ));
+                                console_manager_clone.add_message(
+                                    DeviceMessageType::Success,
+                                    format!("✓ Setting ${} updated to {}", number, value),
+                                );
+                                
+                                // Update the setting in the model
+                                let settings_model = window.get_config_settings();
+                                let mut updated_settings = Vec::new();
+                                for i in 0..settings_model.row_count() {
+                                    if let Some(mut setting) = settings_model.row_data(i) {
+                                        if setting.number == number {
+                                            setting.value = value.clone();
+                                        }
+                                        updated_settings.push(setting);
+                                    }
+                                }
+                                use slint::{Model, ModelRc, VecModel};
+                                let new_model = Rc::new(VecModel::from(updated_settings));
+                                window.set_config_settings(ModelRc::from(new_model));
+                                
+                                // Trigger filter update to refresh display
+                                window.invoke_config_filter_changed();
+                            } else {
+                                window.set_config_status_message(slint::SharedString::from(
+                                    format!("✗ Failed to update setting ${}", number)
+                                ));
+                                console_manager_clone.add_message(
+                                    DeviceMessageType::Error,
+                                    format!("✗ Setting update failed: {}", response_str.trim()),
+                                );
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        window.set_config_status_message(slint::SharedString::from(
+                            format!("✗ Communication error: {}", e)
+                        ));
+                        console_manager_clone.add_message(
+                            DeviceMessageType::Error,
+                            format!("✗ Failed to send command: {}", e),
+                        );
+                    }
+                }
+                
+                let console_output = console_manager_clone.get_output();
+                window.set_console_output(slint::SharedString::from(console_output));
+            } else {
+                window.set_config_status_message(slint::SharedString::from("✗ Device not connected"));
+            }
         }
     });
 

@@ -254,6 +254,11 @@ impl CommunicatorListener for ConsoleListener {
     fn on_data_received(&self, data: &[u8]) {
         if let Ok(text) = std::str::from_utf8(data) {
             let trimmed = text.trim();
+            // Suppress status polling responses (starts with '<')
+            if trimmed.starts_with('<') {
+                // Status response - don't log to console
+                return;
+            }
             if !trimmed.is_empty() {
                 self.console_manager
                     .add_message(DeviceMessageType::Output, trimmed);
@@ -264,6 +269,11 @@ impl CommunicatorListener for ConsoleListener {
     fn on_data_sent(&self, data: &[u8]) {
         if let Ok(text) = std::str::from_utf8(data) {
             let trimmed = text.trim();
+            // Suppress status polling queries (just '?')
+            if trimmed == "?" {
+                // Status query - don't log to console
+                return;
+            }
             if !trimmed.is_empty() {
                 self.console_manager
                     .add_message(DeviceMessageType::Command, trimmed);

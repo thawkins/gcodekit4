@@ -74,6 +74,7 @@ export component MainWindow inherits Window {
     in property <float> feed-rate: 0.0;
     in property <float> spindle-speed: 0.0;
     in property <string> machine-state: "DISCONNECTED";
+    in property <string> raw-status-response: "";
     in property <string> app-version: "0.9.1";
     in property <string> app-build-date: "2025-10-22";
     in property <string> console-output: "[INFO] GCodeKit4 initialized\n[INFO] Ready for operation\n";
@@ -89,6 +90,14 @@ export component MainWindow inherits Window {
     in-out property <string> config-selected-category: "All";
     in property <string> config-status-message: "";
     in property <bool> config-has-loaded-settings: false;
+    
+    // Config edit dialog properties
+    in-out property <bool> show-edit-dialog: false;
+    in-out property <int> edit-setting-number: 0;
+    in-out property <string> edit-setting-name: "";
+    in-out property <string> edit-setting-value: "";
+    in-out property <string> edit-setting-unit: "";
+    in-out property <string> edit-setting-description: "";
     
     // Device Info Panel Properties
     in property <string> device-firmware-type: "";
@@ -157,6 +166,7 @@ export component MainWindow inherits Window {
     callback machine-jog-a-negative(float);
     callback machine-jog-b-positive(float);
     callback machine-jog-b-negative(float);
+    callback machine-unlock();
     callback menu-edit-preferences();
     callback menu-settings-save();
     callback menu-settings-cancel();
@@ -176,6 +186,7 @@ export component MainWindow inherits Window {
     callback config-load-from-file();
     callback config-restore-to-device();
     callback config-edit-setting(int);
+    callback config-save-edited-setting(int, string);
     callback config-filter-changed();
     callback update-setting(string, string);
     callback console-clear-clicked();
@@ -607,6 +618,7 @@ export component MainWindow inherits Window {
                     position-c: root.position-c;
                     feed-rate: root.feed-rate;
                     spindle-speed: root.spindle-speed;
+                    machine-state: root.machine-state;
                     port-selected(port) => {
                         root.selected-port = port;
                     }
@@ -652,6 +664,9 @@ export component MainWindow inherits Window {
                     jog-b-negative(step) => {
                         root.machine-jog-b-negative(step);
                     }
+                    unlock-clicked => {
+                        root.machine-unlock();
+                    }
                 }
                 
                 // Device Info View
@@ -672,6 +687,12 @@ export component MainWindow inherits Window {
                     selected-category <=> root.config-selected-category;
                     status-message: root.config-status-message;
                     has-loaded-settings: root.config-has-loaded-settings;
+                    show-edit-dialog <=> root.show-edit-dialog;
+                    edit-setting-number <=> root.edit-setting-number;
+                    edit-setting-name <=> root.edit-setting-name;
+                    edit-setting-value <=> root.edit-setting-value;
+                    edit-setting-unit <=> root.edit-setting-unit;
+                    edit-setting-description <=> root.edit-setting-description;
                     
                     retrieve-settings => {
                         root.config-retrieve-settings();
@@ -691,6 +712,10 @@ export component MainWindow inherits Window {
                     
                     edit-setting(number) => {
                         root.config-edit-setting(number);
+                    }
+                    
+                    save-edited-setting(number, value) => {
+                        root.config-save-edited-setting(number, value);
                     }
                     
                     filter-changed => {
@@ -1006,9 +1031,9 @@ export component MainWindow inherits Window {
                     visible: root.connected;
                 }
                 
-                // Position Display (X, Y, Z) - shown only when connected
+                // Position Display (X, Y, Z, A, B, C) - shown only when connected
                 Text {
-                    text: root.connected ? "\u{2003}X: " + round(root.position-x * 1000.0) / 1000.0 + "  Y: " + round(root.position-y * 1000.0) / 1000.0 + "  Z: " + round(root.position-z * 1000.0) / 1000.0 : "";
+                    text: root.connected ? "\u{2003}X: " + round(root.position-x * 1000.0) / 1000.0 + "  Y: " + round(root.position-y * 1000.0) / 1000.0 + "  Z: " + round(root.position-z * 1000.0) / 1000.0 + "  A: " + round(root.position-a * 1000.0) / 1000.0 + "  B: " + round(root.position-b * 1000.0) / 1000.0 + "  C: " + round(root.position-c * 1000.0) / 1000.0 : "";
                     color: white;
                     font-size: 13.2px;
                     font-family: "Monospace";
