@@ -1,3 +1,10 @@
 /target
 /target/temp
 assets/screenshots/*
+
+# Node.js dependencies
+node_modules/
+
+# Backup files
+*.backup
+*.old

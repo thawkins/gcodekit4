@@ -5,6 +5,7 @@
 **Status**: COMPLETE (All 7 Phases Complete - 150/150 Tasks, Phase 8 In Progress)
 
 ### Latest Release (v0.25.4-alpha)
+- ✅ **Comprehensive User Manual** - Complete 1500+ line user guide in docs/USER.md
 - ✅ **Real-Time Status Tracking** - Machine state, positions (3-6 axes), feed rate, spindle speed
 - ✅ **Fixed Serial Port Conflict** - Status polling uses shared connection (no more "device busy")
 - ✅ **Enhanced Status Parser** - Comprehensive GRBL status parsing with machine state extraction

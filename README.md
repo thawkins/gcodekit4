@@ -370,6 +370,7 @@ See [CHANGELOG.md](CHANGELOG.md) for detailed version history and [GitHub Issues
 
 ## Documentation
 
+- **[docs/USER.md](docs/USER.md)** - **Comprehensive User Manual** (start here!)
 - **[SPEC.md](SPEC.md)** - Complete technical specification
 - **[PLAN.md](PLAN.md)** - Implementation roadmap
 - **[AGENTS.md](AGENTS.md)** - Development guidelines

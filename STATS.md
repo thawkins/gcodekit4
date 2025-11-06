@@ -12,6 +12,7 @@
 - **Test Files:** 91 test modules
 
 ## Recent Changes (v0.25.4)
+- **Comprehensive User Manual**: Added docs/USER.md with 1500+ lines of complete documentation
 - **Real-Time Status Tracking**: Machine state parsing (Idle/Run/Hold/Alarm), 3-6 axis positions, feed/spindle
 - **Fixed Serial Port Conflict**: Status polling now uses shared connection instead of duplicate port open
 - **Enhanced Status Parser**: Full GRBL status parsing with machine state extraction

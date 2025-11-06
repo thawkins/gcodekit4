@@ -2,6 +2,22 @@
 
 ### Added
 
+#### Comprehensive User Manual
+- **New Documentation**: `docs/USER.md` - Complete user manual (1500+ lines)
+  - 13 major sections covering all application features
+  - Getting started guide with connection setup
+  - Detailed UI overview and navigation
+  - Machine control operations (DRO, jogging, homing, WCS)
+  - G-Code editor usage and file operations
+  - 2D CAD/CAM Designer complete workflow
+  - Device console and intelligent filtering
+  - Configuration and settings management
+  - Advanced features (probing, tool changes, macros)
+  - Comprehensive troubleshooting guide
+  - Complete keyboard shortcuts reference
+  - Supported controllers documentation
+  - Appendix with G-Code reference, error codes, glossary
+
 #### Enhanced Real-Time Status Tracking (Issue #18)
 - **Machine State Parsing** - Extracts and displays machine state from GRBL status
   - Idle, Run, Hold, Alarm, Door, Check, Home, Jog states
