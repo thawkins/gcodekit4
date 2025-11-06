@@ -1,205 +1,268 @@
 # GCodeKit4
 
-A modern, cross-platform G-Code sender and CNC machine controller written in Rust.
+A modern, cross-platform G-Code sender and CNC machine controller written in Rust with Slint UI framework.
 
 [![Build Status](https://github.com/thawkins/gcodekit4/workflows/CI/badge.svg)](https://github.com/thawkins/gcodekit4/actions)
-[![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-0.25.4-brightgreen.svg)](CHANGELOG.md)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/Version-0.25.4--alpha-brightgreen.svg)](CHANGELOG.md)
 
 ## Overview
 
-GCodeKit4 is a Rust-based implementation of Universal G-Code Sender, providing a modern alternative for controlling CNC machines. It supports multiple controller firmware types including GRBL, TinyG, g2core, Smoothieware, and FluidNC through a unified, intuitive interface.
+GCodeKit4 is a Rust-based CNC machine controller providing a modern alternative to Universal G-Code Sender. It supports multiple controller firmware types including GRBL, grblHAL, TinyG, g2core, Smoothieware, and FluidNC through a unified, intuitive interface built with the Slint UI framework.
 
 ## Features
 
-### Core Capabilities
-- **Multi-Controller Support**: GRBL (v0.9/v1.0/v1.1), TinyG, g2core, Smoothieware, FluidNC
-- **Real-time 3D Visualization**: Interactive toolpath preview with live position tracking
-- **Advanced G-Code Processing**: Arc expansion, mesh leveling, coordinate transformations
-- **Flexible Connectivity**: Serial/USB, TCP/IP, and WebSocket support
-- **Comprehensive Machine Control**: Jogging, homing, probing, overrides, tool changes
-- **File Management**: Open, validate, process, and export G-Code files
+### 🎯 Multi-Axis CNC Control
+- **6-Axis Support**: Complete control of X, Y, Z linear axes and A, B, C rotary axes
+- **Real-time DRO**: Digital readout displays all axis positions with 0.001mm precision
+- **Live Status Bar**: Machine state, feed rate, spindle speed, and position display
+- **Raw Status View**: Debug view showing undecoded GRBL status responses
 
-### User Interface
-- Connection panel with auto-detect and auto-reconnect
-- Digital Readout (DRO) with machine and work coordinates
-- Jog controller with keyboard shortcuts
-- **2D G-Code Visualizer** with interactive controls
-  - Two-level grid system (1cm + 1mm sub-grid)
+### 🕹️ Machine Control
+- **Incremental Jogging**: Configurable step sizes (0.1, 1, 10, 100mm for linear, degrees for rotary)
+  - Linear axes (X, Y, Z) in millimeters
+  - Rotary axes (A, B) in degrees
+  - G91 relative positioning for precise incremental moves
+- **Home Command**: Automated homing cycle ($H)
+- **Unlock Function**: Clear ALARM state with single click (🔒 icon, $X command)
+- **Emergency Stop**: Immediate halt of all operations
+- **Real-time Overrides**: Feed rate, rapid rate, and spindle speed adjustments
+
+### 🔌 Device Management
+- **Auto-Detect Serial Ports**: Automatic discovery of USB CNC controllers
+- **Real-time Status Polling**: 200ms updates of position and machine state
+- **Device Information Tab**: Firmware version, build info, and capabilities
+- **Configuration Editor**: Edit and save all GRBL settings ($0-$130)
+- **Firmware Capabilities Display**:
+  - Arc support (G2/G3 circular interpolation)
+  - Variable spindle control (PWM)
+  - Homing cycle support
+  - Probe functionality
+  - Laser mode
+  - Multi-axis support (4-6 axes)
+  - Safety door feature
+  - Coolant control
+  - Tool change support
+
+### 📝 G-Code Editor
+- **Syntax Highlighting**: Color-coded commands, coordinates, and comments
+- **Line Numbers**: Easy navigation and reference
+- **File Operations**: Open, edit, and save G-code files
+- **Send to Device**: Stream G-code directly to connected controller
+- **Real-time Validation**: Syntax checking while editing
+
+### 🎨 2D CAD/CAM Designer
+- **Vector Drawing Tools**:
+  - Geometric shapes: rectangles, circles, ellipses
+  - Lines, polygons, Bezier curves, and arcs
+  - Round rectangles with adjustable corner radius
+- **File Import**: Import SVG and DXF vector files
+- **Interactive Editing**:
   - Zoom, pan, and fit-to-view controls
-  - Real-time position tracking
-  - Distance displays in mm (1px=1mm at 1x scale)
-- G-Code editor with syntax highlighting
-- Console with color-coded messages
-- Firmware settings management
-- Customizable macros
-
-### Advanced Features
-- **2D CAD/CAM Designer Tool** with file import support
-  - Draw shapes: rectangles, circles, ellipses, lines, polygons
-  - Import vector files: SVG and DXF formats
-  - Generate toolpaths and G-code from designs
-  - Zoom, pan, and interactive editing controls
-  - Precise shape positioning with X, Y, Width, Height controls
+  - Precise positioning (X, Y, Width, Height inputs)
   - Properties dialog for detailed shape adjustments
-- 14 G-Code preprocessors
-- Coordinate system management (G54-G59)
-- Real-time overrides (feed rate, rapid, spindle)
-- Single-step execution mode
-- Dry-run/simulation mode
-- Performance monitoring
+  - Dual-grid system (10mm major + 1mm minor)
+- **SVG Canvas Rendering**: High-quality vector-based canvas
+- **Context Menu**: Right-click for Delete and Properties
+- **Toolpath Generation**: Convert designs to executable G-code
 
-## Quick Start
+### 💬 Smart Device Console
+- **Command History**: Scrollable record of all device communications
+- **Color-Coded Messages**:
+  - Commands (blue/info)
+  - Responses (white/output)
+  - Errors (red)
+  - Success (green)
+  - Verbose/Debug (gray)
+- **Intelligent Filtering**: Automatically suppresses status polling spam
+  - No more "? " query logging
+  - No more `<Idle|MPos:...>` status spam
+  - No more "X bytes" messages
+- **Optional Timestamps**: Toggle timestamp display
+- **Clean Interface**: Shows only meaningful commands and responses
 
-### Installation
-
-#### Requirements
-- Rust 1.70.0 or later
-- Linux, Windows (7+), or macOS (10.13+)
-- 512MB RAM minimum (2GB recommended)
-
-#### Build from Source
-```bash
-git clone https://github.com/your-username/gcodekit4.git
-cd gcodekit4
-cargo build --release
-```
-
-The binary will be available at `target/release/gcodekit4`.
-
-### Running
-
-```bash
-# Debug build
-cargo run
-
-# Release build
-./target/release/gcodekit4
-```
-
-### First Connection
-
-1. **Connect to Controller**
-   - Select serial port from dropdown
-   - Choose appropriate baud rate (typically 115200 for GRBL)
-   - Click "Connect"
-
-2. **Home Machine**
-   - Wait for connection to establish
-   - Click "Home" button to execute homing cycle
-   - Machine will return to home position
-
-3. **Load G-Code**
-   - File → Open (or drag-and-drop)
-   - File will be parsed and validated
-   - Preview appears in 3D visualizer
-
-4. **Run Program**
-   - Click "Start" to begin streaming
-   - Use "Pause" to hold machine
-   - Click "Stop" to cancel
+### ⚙️ Configuration Management
+- **GRBL Settings Editor**: Complete access to all $0-$130 parameters
+- **Inline Editing**: Click any setting value to edit
+- **Descriptions**: Tooltips explain each parameter's purpose
+- **Value Validation**: Ensures valid ranges and data types
+- **Save/Restore**: Persist settings to controller EEPROM
+- **Import/Export**: Backup and restore configurations
 
 ## Supported Controllers
 
-### GRBL (v0.9, v1.0, v1.1)
-- Text-based protocol with character counting
-- Real-time commands (pause, resume, overrides)
-- Status reports with position feedback
-- 11 alarm types with descriptions
-- 30+ error codes
-- Settings system ($0-$32)
-- Homing, soft limits, probing
+| Controller | Versions | Protocol | Features |
+|-----------|----------|----------|----------|
+| **GRBL** | v0.9, v1.0, v1.1 | Text-based | Character counting, real-time commands, status reports |
+| **grblHAL** | Latest | Enhanced GRBL | Extended features, faster execution |
+| **TinyG** | v0.97+ | JSON | 6-axis support, macros, tool tables |
+| **g2core** | Latest | JSON | Advanced planning, file system, networking |
+| **Smoothieware** | Latest | RepRap dialect | Extensive M-codes, network support |
+| **FluidNC** | Latest | JSON + WebSocket | WiFi, web interface, SD card |
 
-### TinyG
-- JSON protocol
-- 6-axis motion support
-- Queue-based command processing
-- Macros and tool tables
-- Extended G-code support
+## Installation
 
-### g2core
-- Advanced JSON protocol
-- Extended motion planning
-- File system support (SD card)
-- Networked I/O capabilities
+### Prerequisites
+- **Rust** 1.70 or later
+- **Operating System**: Linux, macOS, or Windows
+- **Memory**: 512MB minimum (2GB recommended)
+- **Display**: 1024x768 minimum resolution
 
-### Smoothieware
-- RepRap G-code dialect
-- Extensive M-code support
-- Network connectivity
+### Build from Source
+```bash
+# Clone the repository
+git clone https://github.com/thawkins/gcodekit4.git
+cd gcodekit4
 
-### FluidNC
-- JSON protocol with WebSocket support
-- WiFi connectivity
-- File system operations
-- Web-based interface support
+# Build release version (optimized)
+cargo build --release
 
-## Documentation
+# Run the application
+cargo run --release
+```
 
-- **[SPEC.md](SPEC.md)** - Complete system specification (1,379 lines)
-- **[PLAN.md](PLAN.md)** - Implementation roadmap with 150 tasks (1,147 lines)
-- **[AGENTS.md](AGENTS.md)** - Development guidelines and code standards
-- **[CHANGELOG.md](CHANGELOG.md)** - Version history and changes
-- **[docs/MILESTONES.md](docs/MILESTONES.md)** - GitHub milestone definitions (4 milestones)
-- **[docs/MILESTONES_SETUP.md](docs/MILESTONES_SETUP.md)** - Milestone setup guide
-- **[docs/](docs/)** - Additional documentation (user guides, API reference)
+The compiled binary will be located at `target/release/gcodekit4`.
+
+### Development Build
+```bash
+# Build debug version (faster compilation, includes debug symbols)
+cargo build
+
+# Run with debug logging
+RUST_LOG=debug cargo run
+```
+
+## Quick Start Guide
+
+### 1. Connect to Your CNC Controller
+1. Launch GCodeKit4
+2. Click **"Refresh Ports"** to detect available serial devices
+3. Select your controller's port from the dropdown
+4. Choose baud rate (typically **115200** for GRBL)
+5. Click **"Connect"**
+6. Wait for "Device connected" message in console
+
+### 2. Initialize Machine
+1. Click the **Home** button (⌂) to run homing cycle
+2. Machine will move to home position
+3. DRO will display current position
+4. Status bar shows machine state (Idle/Run/Hold/Alarm)
+
+### 3. Jog Machine
+1. Select step size (0.1, 1, 10, or 100mm)
+2. Click directional buttons to move:
+   - **X+/X-**: Move left/right
+   - **Y+/Y-**: Move forward/backward
+   - **Z+/Z-**: Move up/down
+   - **A+/A-**: Rotate A axis (if equipped)
+   - **B+/B-**: Rotate B axis (if equipped)
+
+### 4. Load and Run G-Code
+1. Click **File → Open** or drag-and-drop a .nc/.gcode file
+2. Review code in editor tab
+3. Click **"Send to Device"** to execute
+4. Monitor progress in status bar and console
+
+### 5. Configure Settings
+1. Navigate to **Config Settings** tab
+2. View current GRBL settings
+3. Click any value to edit
+4. Press Enter to save to controller
+5. Changes are immediately applied
+
+## Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| **Ctrl+O** | Open G-code file |
+| **Ctrl+S** | Save current file |
+| **Ctrl+Q** | Quit application |
+| **F11** | Toggle fullscreen |
+| **Arrow Keys** | Jog X/Y axes (when enabled) |
+| **Page Up/Down** | Jog Z axis (when enabled) |
 
 ## Architecture
 
+### Module Structure
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         UI Layer (Slint)                         │
-│  ┌────────┬──────────┬──────────┬──────────┬──────────┬────────┐│
-│  │Connect │   DRO    │   Jog    │ G-Code  │ Console  │ Macros ││
-│  │ Panel  │  Panel   │  Panel   │ Editor  │  Panel   │ Panel  ││
-│  └────────┴──────────┴──────────┴──────────┴──────────┴────────┘│
-├─────────────────────────────────────────────────────────────────┤
-│                    3D Visualizer (wgpu)                          │
-├─────────────────────────────────────────────────────────────────┤
-│                     Core Layer (Events)                          │
-├─────────────────────────────────────────────────────────────────┤
-│  ┌──────────────┬──────────────┬──────────────┬──────────────┐  │
-│  │    GRBL      │    TinyG     │   g2core    │  Smoothie    │  │
-│  │  Controller  │  Controller  │  Controller │  Controller  │  │
-│  └──────────────┴──────────────┴──────────────┴──────────────┘  │
-├─────────────────────────────────────────────────────────────────┤
-│  ┌──────────────┬──────────────┬──────────────┐                 │
-│  │  G-Code      │  Preprocessor│  Settings    │                 │
-│  │  Parser      │  Pipeline    │  Manager     │                 │
-│  └──────────────┴──────────────┴──────────────┘                 │
-├─────────────────────────────────────────────────────────────────┤
-│  ┌──────────────┬──────────────┬──────────────┐                 │
-│  │  Serial      │  TCP         │  WebSocket   │                 │
-│  │  Communicator│  Communicator│  Communicator│                 │
-│  └──────────────┴──────────────┴──────────────┘                 │
-├─────────────────────────────────────────────────────────────────┤
-│                  CNC Machine Controller                          │
-└─────────────────────────────────────────────────────────────────┘
+src/
+├── main.rs                    # Application entry point, event handlers
+├── ui.slint                   # Main window layout and structure
+│
+├── communication/             # Device communication layer
+│   ├── mod.rs                # Serial, TCP, WebSocket traits
+│   ├── serial.rs             # Serial port implementation
+│   ├── tcp.rs                # TCP/IP networking
+│   └── buffered.rs           # Command buffering and flow control
+│
+├── firmware/                  # Controller-specific implementations
+│   ├── grbl/                 # GRBL protocol support
+│   │   ├── communicator.rs   # GRBL command sender
+│   │   ├── status_parser.rs  # Real-time status parsing
+│   │   └── settings.rs       # Settings management
+│   ├── tinyg/                # TinyG JSON protocol
+│   ├── g2core/               # g2core advanced features
+│   └── smoothieware/         # Smoothieware support
+│
+├── gcode/                     # G-code parsing and generation
+│   ├── parser.rs             # G-code tokenizer and parser
+│   ├── generator.rs          # G-code generation from toolpaths
+│   └── validator.rs          # Syntax validation
+│
+├── processing/                # Toolpath processing
+│   ├── arc_expansion.rs      # Convert arcs to line segments
+│   ├── transforms.rs         # Coordinate transformations
+│   └── mesh_leveling.rs      # Auto-leveling compensation
+│
+├── ui/                        # UI state and logic
+│   ├── console_panel.rs      # Console data structures
+│   ├── device_console_manager.rs  # Console event handling
+│   └── gcode_editor.rs       # Editor state management
+│
+├── ui_panels/                 # Tab panel components
+│   ├── machine_control.slint # Machine control interface
+│   ├── gcode_editor.slint    # G-code editor UI
+│   ├── designer.slint        # CAD/CAM designer
+│   ├── config_settings.slint # Settings editor
+│   └── device_info.slint     # Device information display
+│
+├── utils/                     # Utilities and helpers
+│   ├── config.rs             # Configuration file management
+│   └── logger.rs             # Logging setup
+│
+└── visualizer/                # 2D/3D rendering
+    ├── renderer.rs           # Graphics pipeline
+    └── toolpath.rs           # Toolpath visualization
 ```
 
-## Supported G-Code
+### Technology Stack
+- **Rust**: System programming language for memory safety and performance
+- **Slint**: Modern declarative UI framework (native cross-platform)
+- **Tokio**: Async runtime for non-blocking I/O
+- **Serialport-rs**: Cross-platform serial communication
+- **Tracing**: Structured logging and diagnostics
+- **Serde**: Serialization/deserialization
+- **Anyhow**: Error handling with context
 
-- **Motion Commands**: G0, G1, G2, G3, G4 (rapid, linear, arc, dwell)
-- **Plane Selection**: G17, G18, G19 (XY, XZ, YZ)
-- **Coordinate Systems**: G20/G21 (inch/mm), G53/G54-G59 (MCS/WCS)
-- **Special**: G10, G28, G30, G38.2-G38.5 (set position, home, probe)
-- **Machine Commands**: M0-M2 (stop), M3-M5 (spindle), M6 (tool change)
-- **Coolant**: M7-M9 (mist, flood, off)
-- **Tool Selection**: T0-T99
+## Configuration
 
-See [SPEC.md](SPEC.md) for complete G-Code matrix.
+Settings files are stored in platform-specific locations:
 
-## Building and Testing
+- **Linux**: `~/.config/gcodekit4/config.json`
+- **macOS**: `~/Library/Application Support/gcodekit4/config.json`
+- **Windows**: `%APPDATA%\gcodekit4\config.json`
 
-### Build Commands
+## Development
+
+### Building
 ```bash
-# Debug build
+# Debug build (fast compilation, includes debug info)
 cargo build
 
-# Release build (optimized)
+# Release build (optimized, no debug info)
 cargo build --release
 
-# Check without building
+# Check code without building
 cargo check
 ```
 
@@ -209,104 +272,142 @@ cargo check
 cargo test
 
 # Run specific test
-cargo test test_name
+cargo test test_grbl_status_parser
 
-# Run with output
+# Run tests with output visible
 cargo test -- --nocapture
 
-# Library tests only
+# Run only library tests (skip integration tests)
 cargo test --lib
+
+# Run tests with 10-minute timeout
+timeout 600 cargo test
 ```
 
 ### Code Quality
 ```bash
-# Format code
+# Format code (Rust standard style)
 cargo fmt
 
-# Check formatting
+# Check formatting without changing files
 cargo fmt --check
 
-# Run linter
+# Run Clippy linter
 cargo clippy
+
+# Run Clippy with warnings as errors
+cargo clippy -- -D warnings
 ```
 
-## Performance Targets
+### Logging
+```bash
+# Enable debug logging
+RUST_LOG=debug cargo run
 
-- **File Loading**: <2 seconds for 1MB files
-- **G-Code Parsing**: >10,000 lines per second
-- **Command Streaming**: >100 commands per second
-- **3D Visualization**: >30 FPS
-- **Memory Usage**: <150MB for 100K line files
+# Enable trace logging (very verbose)
+RUST_LOG=trace cargo run
 
-## Development Status
-
-**Current Version**: 0.3.0 (Planning & Setup Phase)
-
-### Implemented
-- ✓ Complete system specification (SPEC.md)
-- ✓ Implementation roadmap (PLAN.md)
-- ✓ Development guidelines (AGENTS.md)
-
-### In Progress
-- Phase 1: Core Foundation (Tasks 1-20)
-- Data models and error handling
-- Communication layer
-
-### Planned
-- Phase 2: GRBL Controller (Tasks 21-35)
-- Phase 3-5: Additional firmware, G-Code processing, UI
-- Phase 6-8: File management, advanced features, testing
-
-See [PLAN.md](PLAN.md) for complete roadmap with 150 tasks.
+# Enable logging for specific module
+RUST_LOG=gcodekit4::communication=debug cargo run
+```
 
 ## Contributing
 
-Contributions are welcome! Please:
+Contributions are welcome! Please follow these guidelines:
 
-1. Read [AGENTS.md](AGENTS.md) for development guidelines
-2. Follow the code style (4-space indents, 100-char width)
-3. Write tests for new features
-4. Update documentation as needed
-5. Create a pull request with clear description
+### Code Standards
+- Follow Rust standard naming conventions (snake_case, PascalCase)
+- Use 4 spaces for indentation
+- Maximum line width: 100 characters
+- Add DOCBLOCK comments to all public functions and modules
+- Include unit tests for new features
+- Run `cargo fmt` and `cargo clippy` before committing
+
+### Process
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes following code standards
+4. Add tests for new functionality
+5. Update documentation (README, CHANGELOG, inline docs)
+6. Commit changes (`git commit -m 'Add amazing feature'`)
+7. Push to branch (`git push origin feature/amazing-feature`)
+8. Open a Pull Request with clear description
+
+### Areas for Contribution
+- 🐛 **Bug Fixes**: Fix existing issues
+- ✨ **Features**: Implement new functionality
+- 📝 **Documentation**: Improve guides and API docs
+- 🧪 **Tests**: Increase test coverage
+- 🎨 **UI/UX**: Enhance interface and user experience
+- 🌐 **Translations**: Add multi-language support
+- 📦 **Packaging**: Create installers for platforms
+
+## Roadmap
+
+### v0.26 (Next Release)
+- [ ] TCP/IP and WebSocket communication support
+- [ ] Work coordinate system (WCS) management (G54-G59)
+- [ ] Tool length offset (TLO) support
+- [ ] User-definable macro system
+- [ ] Enhanced 3D visualization with toolpath preview
+
+### v0.27
+- [ ] Multi-language support (i18n)
+- [ ] Custom keyboard shortcuts configuration
+- [ ] Theme system (light/dark modes, custom colors)
+- [ ] Plugin architecture for extensibility
+
+### v1.0 (Stable Release)
+- [ ] 100% test coverage for core modules
+- [ ] Complete user documentation
+- [ ] Performance optimization and profiling
+- [ ] Native installers for Windows, macOS, Linux
+- [ ] Production-ready stability
+
+## Known Issues
+
+See [CHANGELOG.md](CHANGELOG.md) for detailed version history and [GitHub Issues](https://github.com/thawkins/gcodekit4/issues) for current bug tracker.
+
+## Documentation
+
+- **[SPEC.md](SPEC.md)** - Complete technical specification
+- **[PLAN.md](PLAN.md)** - Implementation roadmap
+- **[AGENTS.md](AGENTS.md)** - Development guidelines
+- **[CHANGELOG.md](CHANGELOG.md)** - Version history
+- **[STATS.md](STATS.md)** - Project statistics
+- **[docs/](docs/)** - Additional documentation and guides
 
 ## License
 
-This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+This project is dual-licensed under:
 
-## Related Projects
+- **MIT License** - See [LICENSE-MIT](LICENSE) for details
+- **Apache License 2.0** - See [LICENSE-APACHE](LICENSE-APACHE) for details
 
-- [Universal G-Code Sender (Java)](https://github.com/winder/Universal-G-Code-Sender) - Original project inspiration
-- [GRBL](https://github.com/gnea/grbl) - CNC firmware
-- [TinyG](https://github.com/synthetos/TinyG) - CNC firmware
-- [FluidNC](https://github.com/bdring/FluidNC) - Modern CNC firmware
+You may choose either license for your use of this software.
+
+## Acknowledgments
+
+- **Inspiration**: Universal G-Code Sender (UGS) project
+- **Frameworks**: Slint UI team for excellent cross-platform toolkit
+- **Firmware**: GRBL, TinyG, g2core, and other open-source CNC firmware projects
+- **Community**: Rust community for excellent tooling and support
 
 ## Support
 
-- **Documentation**: See [SPEC.md](SPEC.md) and docs/ folder
-- **Issues**: Report bugs on [GitHub Issues](https://github.com/your-username/gcodekit4/issues)
-- **Discussions**: Use [GitHub Discussions](https://github.com/your-username/gcodekit4/discussions)
+- **Bug Reports**: [GitHub Issues](https://github.com/thawkins/gcodekit4/issues)
+- **Feature Requests**: [GitHub Discussions](https://github.com/thawkins/gcodekit4/discussions)
+- **Email**: toby@hawkins.com
+- **Documentation**: See docs/ folder and SPEC.md
 
-## Changelog
+## Project Status
 
-See [CHANGELOG.md](CHANGELOG.md) for version history and changes.
+**Current Version**: 0.25.4-alpha  
+**Status**: Active Development  
+**Stability**: Alpha (breaking changes may occur)
+
+This project is in active development. New features are being added regularly, and breaking changes may occur between versions. While the core functionality is stable, use in production environments is at your own risk.
 
 ---
 
-**Made with ❤️ by CNC enthusiasts**
-
-## Recent Updates (November 2025)
-
-### Designer Enhancements
-- **SVG Canvas Rendering**: Converted from image-based to SVG paths for better performance and scalability
-- **CAD Coordinate System**: Proper coordinate system with (0,0) at bottom-left, +Y up
-- **Context Menu**: Right-click menu on selected shapes with Delete and Properties options
-- **Properties Dialog**: Edit shape properties (corner radius for round rectangles)
-- **Improved Interactions**: Fixed all shape movement, resize, and selection handle positioning
-
-### Bug Fixes
-- Fixed Y-axis coordinate flipping throughout the designer
-- Fixed circle resize sensitivity issues
-- Fixed selection handle asymmetry
-- Fixed 740mm coordinate offset issue
-- Removed debug output (eprintln statements)
-
+**Built with ❤️ using Rust and Slint**
