@@ -380,9 +380,15 @@ fn main() -> anyhow::Result<()> {
     // Initialize device console manager early to register listeners
     // Use Arc since communicator listeners need Arc for thread-safe sharing
     let console_manager = std::sync::Arc::new(DeviceConsoleManager::new());
+    
+    // Shared state for detected firmware (thread-safe)
+    let detected_firmware = std::sync::Arc::new(std::sync::Mutex::new(None::<gcodekit4::firmware::firmware_detector::FirmwareDetectionResult>));
 
-    // Create and register console listener with communicator
-    let console_listener = ConsoleListener::new(console_manager.clone());
+    // Create and register console listener with communicator and firmware state
+    let console_listener = ConsoleListener::new_with_firmware_state(
+        console_manager.clone(),
+        detected_firmware.clone(),
+    );
     communicator.lock().unwrap().add_listener(console_listener);
 
     // Shared state for settings dialog
@@ -549,6 +555,7 @@ fn main() -> anyhow::Result<()> {
                     window.set_console_output(slint::SharedString::from(console_output));
                     
                     // Initialize Device Info panel with default GRBL 1.1
+                    // Will be updated after firmware detection completes
                     use gcodekit4::firmware::firmware_version::{FirmwareType, SemanticVersion};
                     let firmware_type = FirmwareType::Grbl;
                     let version = SemanticVersion::new(1, 1, 0);
@@ -566,6 +573,7 @@ fn main() -> anyhow::Result<()> {
                 let polling_active = status_polling_active.clone();
                 let polling_stop = polling_stop_connect.clone();
                 let communicator_poll = communicator_clone.clone();
+                let detected_firmware_poll = detected_firmware.clone();
 
                 std::thread::spawn(move || {
                     polling_active.store(true, std::sync::atomic::Ordering::Relaxed);
@@ -581,7 +589,22 @@ fn main() -> anyhow::Result<()> {
                     }
                     
                     // Wait for firmware detection to complete (listener will process the response)
-                    std::thread::sleep(std::time::Duration::from_millis(1000));
+                    std::thread::sleep(std::time::Duration::from_millis(1500));
+                    
+                    // Update Device Info panel with detected firmware
+                    if let Some(detection) = detected_firmware_poll.lock().unwrap().as_ref().cloned() {
+                        tracing::info!("Updating Device Info with detected firmware: {} {}", 
+                            detection.firmware_type, detection.version);
+                        
+                        let window_weak_update = window_weak_poll.clone();
+                        slint::invoke_from_event_loop(move || {
+                            if let Some(window) = window_weak_update.upgrade() {
+                                window.set_device_version(slint::SharedString::from(
+                                    format!("{} {}", detection.firmware_type, detection.version)
+                                ));
+                            }
+                        }).ok();
+                    }
 
                     while !polling_stop.load(std::sync::atomic::Ordering::Relaxed) {
                         std::thread::sleep(std::time::Duration::from_millis(200));

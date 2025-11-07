@@ -228,6 +228,8 @@ pub struct ConsoleListener {
     console_manager: Arc<DeviceConsoleManager>,
     /// Buffer for accumulating multi-line responses (like $I)
     response_buffer: Arc<Mutex<String>>,
+    /// Shared firmware detection result (optional)
+    detected_firmware: Option<Arc<Mutex<Option<crate::firmware::firmware_detector::FirmwareDetectionResult>>>>,
 }
 
 impl ConsoleListener {
@@ -236,6 +238,19 @@ impl ConsoleListener {
         Arc::new(Self { 
             console_manager,
             response_buffer: Arc::new(Mutex::new(String::new())),
+            detected_firmware: None,
+        })
+    }
+    
+    /// Create with firmware detection state sharing
+    pub fn new_with_firmware_state(
+        console_manager: Arc<DeviceConsoleManager>,
+        detected_firmware: Arc<Mutex<Option<crate::firmware::firmware_detector::FirmwareDetectionResult>>>,
+    ) -> Arc<Self> {
+        Arc::new(Self { 
+            console_manager,
+            response_buffer: Arc::new(Mutex::new(String::new())),
+            detected_firmware: Some(detected_firmware),
         })
     }
 }
@@ -276,6 +291,12 @@ impl CommunicatorListener for ConsoleListener {
                 match FirmwareDetector::parse_grbl_startup(trimmed) {
                     Ok(detection) => {
                         tracing::info!("Successfully detected from startup: {} {}", detection.firmware_type, detection.version_string);
+                        
+                        // Store in shared state if available
+                        if let Some(ref fw_state) = self.detected_firmware {
+                            *fw_state.lock().unwrap() = Some(detection.clone());
+                        }
+                        
                         self.console_manager.add_message(
                             DeviceMessageType::Success,
                             format!("Detected firmware: {} {}", detection.firmware_type, detection.version_string),
@@ -298,6 +319,12 @@ impl CommunicatorListener for ConsoleListener {
                 match FirmwareDetector::parse_grbl_version_info(trimmed) {
                     Ok(detection) => {
                         tracing::info!("Successfully detected from $I: {} {}", detection.firmware_type, detection.version_string);
+                        
+                        // Store in shared state if available
+                        if let Some(ref fw_state) = self.detected_firmware {
+                            *fw_state.lock().unwrap() = Some(detection.clone());
+                        }
+                        
                         self.console_manager.add_message(
                             DeviceMessageType::Success,
                             format!("Detected firmware: {} {} (build: {})", 
