@@ -3,8 +3,6 @@
 pub mod advanced;
 pub mod export;
 pub mod file_io;
-pub mod geometry_generators;
-pub mod gtools;
 pub mod phase6_extended;
 pub mod phase7;
 pub mod processing;
@@ -21,9 +19,6 @@ pub use export::{
 pub use file_io::{
     FileEncoding, FileReadStats, FileValidation, GcodeFileReader, RecentFileEntry,
     RecentFilesManager,
-};
-pub use gtools::{
-    BoundingBox, GcodeGenerator, GcodeOutput, Parameter, ParameterValue, ToolRegistry,
 };
 pub use phase6_extended::{
     Alarm, AlarmManager, AlarmType, AutoConnectConfig, Bookmark, BookmarkManager, CommandHistory,

@@ -29,7 +29,6 @@ export component MainMenu {
     callback menu-view-advanced-features();
     callback menu-view-safety-diagnostics();
     callback menu-view-gcode-visualizer();
-    callback menu-view-gtools();
     callback menu-help-about();
 
     // Menu bar
@@ -448,28 +447,6 @@ export component MainMenu {
                         root.view-menu-open = false;
                         root.current-view = "gcode-visualizer";
                         root.menu-view-gcode-visualizer();
-                    }
-                }
-            }
-            
-            Rectangle {
-                height: 28px;
-                background: mi-view-gtools-area.has-hover ? #455a64 : transparent;
-                
-                Text {
-                    text: root.current-view == "gtools" ? "✓ GTools" : "  GTools";
-                    color: white;
-                    font-size: 12px;
-                    vertical-alignment: center;
-                    horizontal-alignment: center;
-                }
-                
-                mi-view-gtools-area := TouchArea {
-                    mouse-cursor: pointer;
-                    clicked => {
-                        root.view-menu-open = false;
-                        root.current-view = "gtools";
-                        root.menu-view-gtools();
                     }
                 }
             }

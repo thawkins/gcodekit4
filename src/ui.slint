@@ -12,7 +12,6 @@ import { ConfigSettingsPanel, ConfigSetting } from "ui_panels/config_settings.sl
 import { DeviceInfoPanel, CapabilityItem } from "ui_panels/device_info.slint";
 import { GcodeVisualizerPanel } from "ui_panels/gcode_visualizer.slint";
 import { DesignerPanel } from "ui_panels/designer.slint";
-import { GToolsPanel, GToolConfig } from "ui_panels/gtools.slint";
 import { MainMenu } from "ui/ui_components/mainmenu.slint";
 import { SettingsDialog, SettingItem } from "ui/ui_components/settings_dialog.slint";
 
@@ -177,7 +176,6 @@ export component MainWindow inherits Window {
     callback menu-view-device-console();
     callback menu-view-gcode-visualizer();
     callback menu-view-designer();
-    callback menu-view-gtools();
     callback menu-help-about();
     
     // Configuration settings callbacks
@@ -319,15 +317,6 @@ export component MainWindow inherits Window {
                     if (current-view != "designer") {
                         current-view = "designer";
                         root.menu-view-designer();
-                    }
-                }
-            }
-            MenuItem {
-                title: current-view == "gtools" ? @tr("✓ GTools") : @tr("GTools");
-                activated => {
-                    if (current-view != "gtools") {
-                        current-view = "gtools";
-                        root.menu-view-gtools();
                     }
                 }
             }
@@ -545,31 +534,6 @@ export component MainWindow inherits Window {
                                 clicked => {
                                     current-view = "designer";
                                     root.menu-view-designer();
-                                }
-                            }
-                        }
-
-                        // GTools Tab
-                        Rectangle {
-                            width: 100px;
-                            height: 32px;
-                            background: current-view == "gtools" ? #34495e : #3d5470;
-                            border-radius: 3px;
-                            
-                            Text {
-                                text: "🛠️ GTools";
-                                color: current-view == "gtools" ? white : #bdc3c7;
-                                font-size: 12px;
-                                font-weight: current-view == "gtools" ? 700 : 400;
-                                vertical-alignment: center;
-                                horizontal-alignment: center;
-                            }
-                            
-                            TouchArea {
-                                mouse-cursor: pointer;
-                                clicked => {
-                                    current-view = "gtools";
-                                    root.menu-view-gtools();
                                 }
                             }
                         }
@@ -927,40 +891,6 @@ export component MainWindow inherits Window {
                     
                     file_save_as => {
                         root.designer-file-save-as();
-                    }
-                }
-
-                // GTools View
-                if current-view == "gtools" : GToolsPanel {
-                    current-tool: {
-                        tool_id: 0,
-                        tool_name: "",
-                        category: "",
-                        parameters: []
-                    };
-                    
-                    select-tool(category, tool_name) => {
-                        // Will be wired in main.rs
-                    }
-                    
-                    set-parameter(name, value) => {
-                        // Will be wired in main.rs
-                    }
-                    
-                    generate => {
-                        // Will be wired in main.rs
-                    }
-                    
-                    preview => {
-                        // Will be wired in main.rs
-                    }
-                    
-                    send-to-editor => {
-                        // Will be wired in main.rs
-                    }
-                    
-                    send-to-machine => {
-                        // Will be wired in main.rs
                     }
                 }
             }

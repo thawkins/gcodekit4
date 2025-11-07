@@ -2419,15 +2419,6 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
-    // Set up menu-view-gtools callback
-    let window_weak = main_window.as_weak();
-    main_window.on_menu_view_gtools(move || {
-        if let Some(window) = window_weak.upgrade() {
-            window.set_current_view(slint::SharedString::from("gtools"));
-            window.set_connection_status(slint::SharedString::from("GTools panel activated"));
-        }
-    });
-
     // Set up menu-view-gcode-visualizer callback
     let window_weak = main_window.as_weak();
     main_window.on_menu_view_gcode_visualizer(move || {

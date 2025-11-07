@@ -89,15 +89,16 @@ pub use ui::{
 };
 pub use utils::{
     AdvancedProber, Alarm, AlarmManager, AlarmType, AutoConnectConfig, BackupEntry, BackupManager,
-    BasicProber, Bookmark, BookmarkManager, BoundingBox, CommandHistory, CustomAction, CustomMacro,
-    DataLogger, DropEvent, DropFileType, DropIndicatorState, DropTarget, DropZone, ExportOptions,
-    FeedRateStats, FileComparison, FileEncoding, FileExporter, FileFormat, FileProcessingPipeline,
-    FileReadStats, FileStatistics, FileValidation, GcodeFileReader, GcodeTemplate, HeightPoint,
-    HistoryEntry, LogEntry, NetworkConfig, PendantButton, PendantConfig, PerformanceMetrics,
-    ProbeMesh, ProbePoint, ProcessedFile, ProgramState, RecentFileEntry, RecentFilesManager,
-    SimulationPosition, Simulator, SoftLimits, SpindleStats, Stepper, TemplateLibrary,
-    TemplateVariable, ToolInfo, ToolLibrary, ToolOffset, ToolOffsetManager, ValidationIssue,
-    ValidationResult, ValidationSeverity, WorkCoordinateSystem, WorkOffset,
+    BasicProber, Bookmark, BookmarkManager, CommandHistory, CustomAction, CustomMacro,
+    DataLogger, DropEvent, DropFileType, DropIndicatorState, DropTarget, DropZone,
+    ExportOptions, FeedRateStats, FileComparison, FileEncoding, FileExporter, FileFormat,
+    FileProcessingPipeline, FileReadStats, FileStatistics, FileValidation, GcodeFileReader,
+    GcodeTemplate, HeightPoint, HistoryEntry, LogEntry, NetworkConfig, PendantButton,
+    PendantConfig, PerformanceMetrics, ProbeMesh, ProbePoint, ProcessedFile, ProgramState,
+    RecentFileEntry, RecentFilesManager, SimulationPosition, Simulator, SoftLimits, SpindleStats,
+    Stepper, TemplateLibrary, TemplateVariable, ToolInfo, ToolLibrary, ToolOffset,
+    ToolOffsetManager, ValidationIssue, ValidationResult, ValidationSeverity,
+    WorkCoordinateSystem, WorkOffset,
 };
 
 /// Library version
