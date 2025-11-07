@@ -548,7 +548,7 @@ fn main() -> anyhow::Result<()> {
                     
                     // Send $I command to query firmware version
                     console_manager_clone.add_message(
-                        DeviceMessageType::Verbose,
+                        DeviceMessageType::Output,
                         "Querying firmware information...".to_string(),
                     );
                     
@@ -572,7 +572,7 @@ fn main() -> anyhow::Result<()> {
                                 }
                                 Err(e) => {
                                     console_manager_clone.add_message(
-                                        DeviceMessageType::Verbose,
+                                        DeviceMessageType::Output,
                                         format!("Could not detect firmware: {}. Assuming GRBL 1.1", e),
                                     );
                                     None
@@ -581,7 +581,7 @@ fn main() -> anyhow::Result<()> {
                         }
                         Err(e) => {
                             console_manager_clone.add_message(
-                                DeviceMessageType::Verbose,
+                                DeviceMessageType::Output,
                                 format!("Failed to query firmware: {}. Assuming GRBL 1.1", e),
                             );
                             None
