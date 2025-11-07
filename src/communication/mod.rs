@@ -494,7 +494,11 @@ impl Communicator for SerialCommunicator {
             match port.read(&mut buf) {
                 Ok(n) => {
                     let data = buf[..n].to_vec();
-                    // Don't log byte counts - too noisy
+                    // Notify listeners of received data
+                    if !data.is_empty() {
+                        let data_str = String::from_utf8_lossy(&data);
+                        self.notify_listeners(CommunicatorEvent::DataReceived, &data_str);
+                    }
                     Ok(data)
                 }
                 Err(e) => {
