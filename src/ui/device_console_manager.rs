@@ -260,25 +260,17 @@ impl CommunicatorListener for ConsoleListener {
         if let Ok(text) = std::str::from_utf8(data) {
             let trimmed = text.trim();
             
-            // Log ALL data for debugging
-            self.console_manager.add_message(
-                DeviceMessageType::Output,
-                format!("DEBUG-RAW: '{}'", trimmed),
-            );
             tracing::debug!("ConsoleListener received: '{}'", trimmed);
             
             // Suppress status polling responses (starts with '<')
-            if trimmed.starts_with('<') {
+            // Also suppress if it only contains status and 'ok' responses
+            if trimmed.starts_with('<') || (trimmed.contains('<') && trimmed.contains('>') && !trimmed.contains('[')) {
                 // Status response - don't log to console
                 return;
             }
             
             // Check for startup message (single line, immediate detection)
             if (trimmed.contains("Grbl") || trimmed.contains("grbl")) && trimmed.contains("help") {
-                self.console_manager.add_message(
-                    DeviceMessageType::Output,
-                    format!("DEBUG: Detected startup message: '{}'", trimmed),
-                );
                 tracing::info!("Detected GRBL startup message: '{}'", trimmed);
                 use crate::FirmwareDetector;
                 match FirmwareDetector::parse_grbl_startup(trimmed) {
@@ -288,62 +280,44 @@ impl CommunicatorListener for ConsoleListener {
                             DeviceMessageType::Success,
                             format!("Detected firmware: {} {}", detection.firmware_type, detection.version_string),
                         );
+                        // Don't show the raw startup message - we already showed the detection
+                        return;
                     }
                     Err(e) => {
                         tracing::warn!("Failed to parse startup message: {}", e);
-                        self.console_manager.add_message(
-                            DeviceMessageType::Output,
-                            format!("DEBUG: Parse failed: {}", e),
-                        );
                     }
                 }
             }
             
-            // Handle multi-line $I response: [VER:...], [OPT:...], ok
-            if trimmed.starts_with("[VER:") || trimmed.starts_with("[OPT:") {
-                // Accumulate in buffer
-                let mut buffer = self.response_buffer.lock().unwrap();
-                buffer.push_str(trimmed);
-                buffer.push('\n');
-                self.console_manager.add_message(
-                    DeviceMessageType::Output,
-                    format!("DEBUG: Buffering: '{}' (buffer now {} bytes)", trimmed, buffer.len()),
-                );
-                tracing::debug!("Buffering firmware response line: '{}'", trimmed);
-            } else if trimmed == "ok" {
-                // Check if we have buffered firmware data
-                let mut buffer = self.response_buffer.lock().unwrap();
-                self.console_manager.add_message(
-                    DeviceMessageType::Output,
-                    format!("DEBUG: Got 'ok', buffer has {} bytes, contains [VER:? {}", buffer.len(), buffer.contains("[VER:")),
-                );
-                if buffer.contains("[VER:") {
-                    self.console_manager.add_message(
-                        DeviceMessageType::Output,
-                        format!("DEBUG: Parsing buffer: '{}'", buffer.trim()),
-                    );
-                    tracing::info!("Got complete $I response, attempting parse");
-                    use crate::FirmwareDetector;
-                    match FirmwareDetector::parse_grbl_version_info(&buffer) {
-                        Ok(detection) => {
-                            tracing::info!("Successfully detected from $I: {} {}", detection.firmware_type, detection.version_string);
-                            self.console_manager.add_message(
-                                DeviceMessageType::Success,
-                                format!("Detected firmware: {} {} (build: {})", 
-                                    detection.firmware_type, 
-                                    detection.version_string,
-                                    detection.build_date.as_deref().unwrap_or("unknown")),
-                            );
+            // Handle multi-line $I response which may come as one chunk
+            // Format: [VER:...]\n[OPT:...]\nok
+            if trimmed.contains("[VER:") && trimmed.contains("[OPT:") && trimmed.contains("ok") {
+                // Complete $I response in one chunk
+                tracing::info!("Got complete $I response in one chunk");
+                use crate::FirmwareDetector;
+                match FirmwareDetector::parse_grbl_version_info(trimmed) {
+                    Ok(detection) => {
+                        tracing::info!("Successfully detected from $I: {} {}", detection.firmware_type, detection.version_string);
+                        self.console_manager.add_message(
+                            DeviceMessageType::Success,
+                            format!("Detected firmware: {} {} (build: {})", 
+                                detection.firmware_type, 
+                                detection.version_string,
+                                detection.build_date.as_deref().unwrap_or("unknown")),
+                        );
+                        // Show just the firmware info lines without the status pollution
+                        if let Some(ver_line) = trimmed.lines().find(|l| l.starts_with("[VER:")) {
+                            self.console_manager.add_message(DeviceMessageType::Output, ver_line);
                         }
-                        Err(e) => {
-                            tracing::warn!("Failed to parse $I response: {}", e);
-                            self.console_manager.add_message(
-                                DeviceMessageType::Output,
-                                format!("DEBUG: Parse failed: {}", e),
-                            );
+                        if let Some(opt_line) = trimmed.lines().find(|l| l.starts_with("[OPT:")) {
+                            self.console_manager.add_message(DeviceMessageType::Output, opt_line);
                         }
+                        self.console_manager.add_message(DeviceMessageType::Output, "ok");
+                        return; // Don't show the whole chunk
                     }
-                    buffer.clear(); // Clear buffer after processing
+                    Err(e) => {
+                        tracing::warn!("Failed to parse $I response: {}", e);
+                    }
                 }
             }
             

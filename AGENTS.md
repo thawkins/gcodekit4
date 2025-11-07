@@ -74,6 +74,7 @@ All tests **MUST** be located in the `tests/` folder organized by module hierarc
 2. Don't suggest features unless asked to.
 3. When debugging problems, use Occams razor and assume that the simplest solution is more likely to be the right one. 
 4. Also when you are trying to debug a problem, change only one thing at a time, if it does not fix the problem then revert it, before trying another possible solution. 
+5. DO NOT perform tempoary solutions or fixes, alway provide a complete solution. 
 
 ## Versioning
 
