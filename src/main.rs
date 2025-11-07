@@ -1,7 +1,7 @@
 use gcodekit4::{
     init_logging, list_ports, CapabilityManager, Communicator, ConnectionDriver,
     ConnectionParams, ConsoleListener, DeviceConsoleManager, DeviceMessageType,
-    FirmwareDetector, FirmwareSettingsIntegration, GcodeEditor, SerialCommunicator,
+    FirmwareSettingsIntegration, GcodeEditor, SerialCommunicator,
     SerialParity, SettingValue, SettingsDialog, SettingsPersistence, BUILD_DATE, VERSION,
 };
 use slint::{Model, VecModel};
@@ -151,7 +151,7 @@ fn update_device_info_panel(
     version: gcodekit4::firmware::firmware_version::SemanticVersion,
     capability_manager: &CapabilityManager
 ) {
-    use slint::{Model, ModelRc, VecModel};
+    use slint::{ModelRc, VecModel};
     
     // Update capability manager with detected firmware
     capability_manager.update_firmware(firmware_type.clone(), version.clone());
@@ -596,7 +596,6 @@ fn main() -> anyhow::Result<()> {
                 let polling_active = status_polling_active.clone();
                 let polling_stop = polling_stop_connect.clone();
                 let communicator_poll = communicator_clone.clone();
-                let detected_firmware_poll = detected_firmware.clone();
 
                 std::thread::spawn(move || {
                     polling_active.store(true, std::sync::atomic::Ordering::Relaxed);
