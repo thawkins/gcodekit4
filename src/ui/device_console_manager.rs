@@ -260,7 +260,11 @@ impl CommunicatorListener for ConsoleListener {
         if let Ok(text) = std::str::from_utf8(data) {
             let trimmed = text.trim();
             
-            // Log all received data for debugging
+            // Log ALL data for debugging
+            self.console_manager.add_message(
+                DeviceMessageType::Output,
+                format!("DEBUG-RAW: '{}'", trimmed),
+            );
             tracing::debug!("ConsoleListener received: '{}'", trimmed);
             
             // Suppress status polling responses (starts with '<')
@@ -271,6 +275,10 @@ impl CommunicatorListener for ConsoleListener {
             
             // Check for startup message (single line, immediate detection)
             if (trimmed.contains("Grbl") || trimmed.contains("grbl")) && trimmed.contains("help") {
+                self.console_manager.add_message(
+                    DeviceMessageType::Output,
+                    format!("DEBUG: Detected startup message: '{}'", trimmed),
+                );
                 tracing::info!("Detected GRBL startup message: '{}'", trimmed);
                 use crate::FirmwareDetector;
                 match FirmwareDetector::parse_grbl_startup(trimmed) {
@@ -283,6 +291,10 @@ impl CommunicatorListener for ConsoleListener {
                     }
                     Err(e) => {
                         tracing::warn!("Failed to parse startup message: {}", e);
+                        self.console_manager.add_message(
+                            DeviceMessageType::Output,
+                            format!("DEBUG: Parse failed: {}", e),
+                        );
                     }
                 }
             }
@@ -293,11 +305,23 @@ impl CommunicatorListener for ConsoleListener {
                 let mut buffer = self.response_buffer.lock().unwrap();
                 buffer.push_str(trimmed);
                 buffer.push('\n');
+                self.console_manager.add_message(
+                    DeviceMessageType::Output,
+                    format!("DEBUG: Buffering: '{}' (buffer now {} bytes)", trimmed, buffer.len()),
+                );
                 tracing::debug!("Buffering firmware response line: '{}'", trimmed);
             } else if trimmed == "ok" {
                 // Check if we have buffered firmware data
                 let mut buffer = self.response_buffer.lock().unwrap();
+                self.console_manager.add_message(
+                    DeviceMessageType::Output,
+                    format!("DEBUG: Got 'ok', buffer has {} bytes, contains [VER:? {}", buffer.len(), buffer.contains("[VER:")),
+                );
                 if buffer.contains("[VER:") {
+                    self.console_manager.add_message(
+                        DeviceMessageType::Output,
+                        format!("DEBUG: Parsing buffer: '{}'", buffer.trim()),
+                    );
                     tracing::info!("Got complete $I response, attempting parse");
                     use crate::FirmwareDetector;
                     match FirmwareDetector::parse_grbl_version_info(&buffer) {
@@ -313,6 +337,10 @@ impl CommunicatorListener for ConsoleListener {
                         }
                         Err(e) => {
                             tracing::warn!("Failed to parse $I response: {}", e);
+                            self.console_manager.add_message(
+                                DeviceMessageType::Output,
+                                format!("DEBUG: Parse failed: {}", e),
+                            );
                         }
                     }
                     buffer.clear(); // Clear buffer after processing

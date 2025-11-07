@@ -191,6 +191,7 @@ export component MainWindow inherits Window {
     callback update-setting(string, string);
     callback console-clear-clicked();
     callback console-copy-clicked();
+    callback send-command(string);
     callback refresh-visualization(/* canvas_width */ float, /* canvas_height */ float);
     callback zoom-in(/* canvas_width */ float, /* canvas_height */ float);
     callback zoom-out(/* canvas_width */ float, /* canvas_height */ float);
@@ -597,11 +598,15 @@ export component MainWindow inherits Window {
                 // Device Console View - using imported component
                 if current-view == "device-console" : DeviceConsolePanel {
                     console-output: root.console-output;
+                    connected: root.connected;
                     console-clear-clicked => {
                         root.console-clear-clicked();
                     }
                     console-copy-clicked => {
                         root.console-copy-clicked();
+                    }
+                    send-command(cmd) => {
+                        root.send-command(cmd);
                     }
                 }
                 

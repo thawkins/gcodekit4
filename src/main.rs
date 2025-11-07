@@ -2460,6 +2460,50 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
+    // Set up send-command callback
+    let console_manager_clone = console_manager.clone();
+    let communicator_clone = communicator.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_send_command(move |command: slint::SharedString| {
+        let cmd = command.to_string();
+        
+        // Send command to device
+        let mut comm = communicator_clone.lock().unwrap();
+        if comm.is_connected() {
+            match comm.send_command(&cmd) {
+                Ok(_) => {
+                    console_manager_clone.add_message(
+                        DeviceMessageType::Command,
+                        format!(">>> {}", cmd),
+                    );
+                    if let Some(window) = window_weak.upgrade() {
+                        let console_output = console_manager_clone.get_output();
+                        window.set_console_output(slint::SharedString::from(console_output));
+                    }
+                }
+                Err(e) => {
+                    console_manager_clone.add_message(
+                        DeviceMessageType::Error,
+                        format!("Failed to send command: {}", e),
+                    );
+                    if let Some(window) = window_weak.upgrade() {
+                        let console_output = console_manager_clone.get_output();
+                        window.set_console_output(slint::SharedString::from(console_output));
+                    }
+                }
+            }
+        } else {
+            console_manager_clone.add_message(
+                DeviceMessageType::Error,
+                "Not connected to device",
+            );
+            if let Some(window) = window_weak.upgrade() {
+                let console_output = console_manager_clone.get_output();
+                window.set_console_output(slint::SharedString::from(console_output));
+            }
+        }
+    });
+
     // ═════════════════════════════════════════════════════════════
     // Designer Tool Callbacks (Phase 2)
     // ═════════════════════════════════════════════════════════════
