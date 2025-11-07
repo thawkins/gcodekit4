@@ -547,6 +547,12 @@ fn main() -> anyhow::Result<()> {
                     window.set_machine_state(slint::SharedString::from("IDLE"));
                     let console_output = console_manager_clone.get_output();
                     window.set_console_output(slint::SharedString::from(console_output));
+                    
+                    // Initialize Device Info panel with default GRBL 1.1
+                    use gcodekit4::firmware::firmware_version::{FirmwareType, SemanticVersion};
+                    let firmware_type = FirmwareType::Grbl;
+                    let version = SemanticVersion::new(1, 1, 0);
+                    update_device_info_panel(&window, firmware_type, version, &capability_manager_clone);
                 }
 
                 // Start status polling thread
@@ -564,6 +570,18 @@ fn main() -> anyhow::Result<()> {
                 std::thread::spawn(move || {
                     polling_active.store(true, std::sync::atomic::Ordering::Relaxed);
                     
+                    // Clear receive buffer to remove any startup junk
+                    {
+                        let mut comm = communicator_poll.lock().unwrap();
+                        // Drain the buffer by reading until empty
+                        while let Ok(data) = comm.receive() {
+                            if data.is_empty() {
+                                break;
+                            }
+                            tracing::debug!("Cleared {} bytes from startup buffer", data.len());
+                        }
+                    }
+                    
                     // Send $I once at startup to get firmware version
                     {
                         let mut comm = communicator_poll.lock().unwrap();
@@ -574,8 +592,8 @@ fn main() -> anyhow::Result<()> {
                         }
                     }
                     
-                    // Wait a moment for the response
-                    std::thread::sleep(std::time::Duration::from_millis(500));
+                    // Wait for firmware detection to complete
+                    std::thread::sleep(std::time::Duration::from_millis(1000));
 
                     while !polling_stop.load(std::sync::atomic::Ordering::Relaxed) {
                         std::thread::sleep(std::time::Duration::from_millis(200));
