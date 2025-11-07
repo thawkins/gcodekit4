@@ -554,6 +554,7 @@ fn main() -> anyhow::Result<()> {
                     DeviceMessageType::Output,
                     "Starting status polling...".to_string(),
                 );
+                
                 polling_stop_connect.store(false, std::sync::atomic::Ordering::Relaxed);
                 let window_weak_poll = window_weak.clone();
                 let polling_active = status_polling_active.clone();
@@ -562,6 +563,19 @@ fn main() -> anyhow::Result<()> {
 
                 std::thread::spawn(move || {
                     polling_active.store(true, std::sync::atomic::Ordering::Relaxed);
+                    
+                    // Send $I once at startup to get firmware version
+                    {
+                        let mut comm = communicator_poll.lock().unwrap();
+                        if let Err(e) = comm.send_command("$I") {
+                            tracing::warn!("Failed to send $I for firmware detection: {}", e);
+                        } else {
+                            tracing::info!("Sent $I to query firmware version");
+                        }
+                    }
+                    
+                    // Wait a moment for the response
+                    std::thread::sleep(std::time::Duration::from_millis(500));
 
                     while !polling_stop.load(std::sync::atomic::Ordering::Relaxed) {
                         std::thread::sleep(std::time::Duration::from_millis(200));

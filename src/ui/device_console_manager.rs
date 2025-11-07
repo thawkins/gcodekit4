@@ -226,12 +226,17 @@ pub fn get_console_manager() -> Arc<DeviceConsoleManager> {
 /// Listener that connects communicator events to the device console
 pub struct ConsoleListener {
     console_manager: Arc<DeviceConsoleManager>,
+    /// Buffer for accumulating multi-line responses (like $I)
+    response_buffer: Arc<Mutex<String>>,
 }
 
 impl ConsoleListener {
     /// Create new console listener connected to a console manager
     pub fn new(console_manager: Arc<DeviceConsoleManager>) -> Arc<Self> {
-        Arc::new(Self { console_manager })
+        Arc::new(Self { 
+            console_manager,
+            response_buffer: Arc::new(Mutex::new(String::new())),
+        })
     }
 }
 
@@ -264,23 +269,53 @@ impl CommunicatorListener for ConsoleListener {
                 return;
             }
             
-            // Try to detect firmware from this response
-            if trimmed.contains("Grbl") || trimmed.contains("grbl") || trimmed.contains("[VER:") {
-                tracing::info!("Attempting firmware detection from: '{}'", trimmed);
+            // Check for startup message (single line, immediate detection)
+            if (trimmed.contains("Grbl") || trimmed.contains("grbl")) && trimmed.contains("help") {
+                tracing::info!("Detected GRBL startup message: '{}'", trimmed);
                 use crate::FirmwareDetector;
-                match FirmwareDetector::parse_response(trimmed) {
+                match FirmwareDetector::parse_grbl_startup(trimmed) {
                     Ok(detection) => {
-                        tracing::info!("Successfully detected: {} {}", detection.firmware_type, detection.version_string);
+                        tracing::info!("Successfully detected from startup: {} {}", detection.firmware_type, detection.version_string);
                         self.console_manager.add_message(
                             DeviceMessageType::Success,
                             format!("Detected firmware: {} {}", detection.firmware_type, detection.version_string),
                         );
-                        // TODO: Update UI with detected firmware
                     }
                     Err(e) => {
-                        tracing::warn!("Failed to parse firmware: {}", e);
-                        // Failed to parse, just log the message normally
+                        tracing::warn!("Failed to parse startup message: {}", e);
                     }
+                }
+            }
+            
+            // Handle multi-line $I response: [VER:...], [OPT:...], ok
+            if trimmed.starts_with("[VER:") || trimmed.starts_with("[OPT:") {
+                // Accumulate in buffer
+                let mut buffer = self.response_buffer.lock().unwrap();
+                buffer.push_str(trimmed);
+                buffer.push('\n');
+                tracing::debug!("Buffering firmware response line: '{}'", trimmed);
+            } else if trimmed == "ok" {
+                // Check if we have buffered firmware data
+                let mut buffer = self.response_buffer.lock().unwrap();
+                if buffer.contains("[VER:") {
+                    tracing::info!("Got complete $I response, attempting parse");
+                    use crate::FirmwareDetector;
+                    match FirmwareDetector::parse_grbl_version_info(&buffer) {
+                        Ok(detection) => {
+                            tracing::info!("Successfully detected from $I: {} {}", detection.firmware_type, detection.version_string);
+                            self.console_manager.add_message(
+                                DeviceMessageType::Success,
+                                format!("Detected firmware: {} {} (build: {})", 
+                                    detection.firmware_type, 
+                                    detection.version_string,
+                                    detection.build_date.as_deref().unwrap_or("unknown")),
+                            );
+                        }
+                        Err(e) => {
+                            tracing::warn!("Failed to parse $I response: {}", e);
+                        }
+                    }
+                    buffer.clear(); // Clear buffer after processing
                 }
             }
             
