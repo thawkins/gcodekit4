@@ -544,48 +544,56 @@ fn main() -> anyhow::Result<()> {
                 drop(comm); // Release lock before sending command
                 
                 let firmware_result = {
-                    let mut comm = communicator_clone.lock().unwrap();
-                    
-                    // Send $I command to query firmware version
-                    console_manager_clone.add_message(
-                        DeviceMessageType::Output,
-                        "Querying firmware information...".to_string(),
-                    );
-                    
-                    match comm.send_command("$I") {
-                        Ok(_) => {
-                            // Wait briefly for response
-                            drop(comm);
-                            std::thread::sleep(std::time::Duration::from_millis(300));
-                            
-                            // Try to parse firmware from console history
-                            let console_text = console_manager_clone.get_output();
-                            use gcodekit4::FirmwareDetector;
-                            
-                            match FirmwareDetector::parse_response(&console_text) {
-                                Ok(detection) => {
-                                    console_manager_clone.add_message(
-                                        DeviceMessageType::Success,
-                                        format!("Detected: {} {}", detection.firmware_type, detection.version_string),
-                                    );
-                                    Some(detection)
-                                }
-                                Err(e) => {
-                                    console_manager_clone.add_message(
-                                        DeviceMessageType::Output,
-                                        format!("Could not detect firmware: {}. Assuming GRBL 1.1", e),
-                                    );
-                                    None
-                                }
+                    // Try to get firmware info by sending $I and reading response
+                    let response = {
+                        let mut comm = communicator_clone.lock().unwrap();
+                        
+                        console_manager_clone.add_message(
+                            DeviceMessageType::Output,
+                            "Querying firmware information...".to_string(),
+                        );
+                        
+                        // Send $I and get direct response
+                        match comm.send_command_and_receive("$I") {
+                            Ok(response_bytes) => {
+                                let response = String::from_utf8_lossy(&response_bytes).to_string();
+                                tracing::debug!("Firmware query response: {}", response);
+                                Some(response)
+                            }
+                            Err(e) => {
+                                tracing::warn!("Failed to query firmware with $I: {}", e);
+                                // Try getting it from console output (might have startup message)
+                                Some(console_manager_clone.get_output())
                             }
                         }
-                        Err(e) => {
-                            console_manager_clone.add_message(
-                                DeviceMessageType::Output,
-                                format!("Failed to query firmware: {}. Assuming GRBL 1.1", e),
-                            );
-                            None
+                    };
+                    
+                    if let Some(response_text) = response {
+                        use gcodekit4::FirmwareDetector;
+                        
+                        match FirmwareDetector::parse_response(&response_text) {
+                            Ok(detection) => {
+                                console_manager_clone.add_message(
+                                    DeviceMessageType::Success,
+                                    format!("Detected: {} {}", detection.firmware_type, detection.version_string),
+                                );
+                                Some(detection)
+                            }
+                            Err(e) => {
+                                tracing::warn!("Firmware detection failed: {}. Response had {} chars", e, response_text.len());
+                                console_manager_clone.add_message(
+                                    DeviceMessageType::Output,
+                                    format!("Could not detect firmware: {}. Assuming GRBL 1.1", e),
+                                );
+                                None
+                            }
                         }
+                    } else {
+                        console_manager_clone.add_message(
+                            DeviceMessageType::Output,
+                            "No response from firmware query. Assuming GRBL 1.1".to_string(),
+                        );
+                        None
                     }
                 };
                 
