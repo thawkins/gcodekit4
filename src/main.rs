@@ -570,18 +570,6 @@ fn main() -> anyhow::Result<()> {
                 std::thread::spawn(move || {
                     polling_active.store(true, std::sync::atomic::Ordering::Relaxed);
                     
-                    // Clear receive buffer to remove any startup junk
-                    {
-                        let mut comm = communicator_poll.lock().unwrap();
-                        // Drain the buffer by reading until empty
-                        while let Ok(data) = comm.receive() {
-                            if data.is_empty() {
-                                break;
-                            }
-                            tracing::debug!("Cleared {} bytes from startup buffer", data.len());
-                        }
-                    }
-                    
                     // Send $I once at startup to get firmware version
                     {
                         let mut comm = communicator_poll.lock().unwrap();
@@ -592,7 +580,7 @@ fn main() -> anyhow::Result<()> {
                         }
                     }
                     
-                    // Wait for firmware detection to complete
+                    // Wait for firmware detection to complete (listener will process the response)
                     std::thread::sleep(std::time::Duration::from_millis(1000));
 
                     while !polling_stop.load(std::sync::atomic::Ordering::Relaxed) {
