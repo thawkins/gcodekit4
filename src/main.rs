@@ -560,6 +560,26 @@ fn main() -> anyhow::Result<()> {
                     let firmware_type = FirmwareType::Grbl;
                     let version = SemanticVersion::new(1, 1, 0);
                     update_device_info_panel(&window, firmware_type, version, &capability_manager_clone);
+                    
+                    // Set up timer to check for firmware detection and update Device Info
+                    let window_weak_timer = window_weak.clone();
+                    let detected_firmware_timer = detected_firmware.clone();
+                    let capability_manager_timer = capability_manager_clone.clone();
+                    let timer = slint::Timer::default();
+                    timer.start(slint::TimerMode::Repeated, std::time::Duration::from_millis(500), move || {
+                        if let Some(detection) = detected_firmware_timer.lock().unwrap().as_ref().cloned() {
+                            if let Some(window) = window_weak_timer.upgrade() {
+                                tracing::info!("Timer: Updating Device Info with detected firmware: {} {}", 
+                                    detection.firmware_type, detection.version);
+                                update_device_info_panel(&window, detection.firmware_type.clone(), detection.version.clone(), &capability_manager_timer);
+                                window.set_device_version(slint::SharedString::from(
+                                    format!("{} {}", detection.firmware_type, detection.version)
+                                ));
+                            }
+                            // Stop timer after updating once
+                            return;
+                        }
+                    });
                 }
 
                 // Start status polling thread
@@ -589,22 +609,8 @@ fn main() -> anyhow::Result<()> {
                     }
                     
                     // Wait for firmware detection to complete (listener will process the response)
-                    std::thread::sleep(std::time::Duration::from_millis(1500));
-                    
-                    // Update Device Info panel with detected firmware
-                    if let Some(detection) = detected_firmware_poll.lock().unwrap().as_ref().cloned() {
-                        tracing::info!("Updating Device Info with detected firmware: {} {}", 
-                            detection.firmware_type, detection.version);
-                        
-                        let window_weak_update = window_weak_poll.clone();
-                        slint::invoke_from_event_loop(move || {
-                            if let Some(window) = window_weak_update.upgrade() {
-                                window.set_device_version(slint::SharedString::from(
-                                    format!("{} {}", detection.firmware_type, detection.version)
-                                ));
-                            }
-                        }).ok();
-                    }
+                    // The UI timer will update Device Info panel automatically
+                    std::thread::sleep(std::time::Duration::from_millis(1000));
 
                     while !polling_stop.load(std::sync::atomic::Ordering::Relaxed) {
                         std::thread::sleep(std::time::Duration::from_millis(200));
