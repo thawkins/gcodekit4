@@ -153,6 +153,9 @@ fn update_device_info_panel(
 ) {
     use slint::{Model, ModelRc, VecModel};
     
+    // Update capability manager with detected firmware
+    capability_manager.update_firmware(firmware_type.clone(), version.clone());
+    
     // Set firmware type and version
     window.set_device_firmware_type(slint::SharedString::from(format!("{:?}", firmware_type)));
     window.set_device_firmware_version(slint::SharedString::from(version.to_string()));
