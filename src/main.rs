@@ -540,68 +540,106 @@ fn main() -> anyhow::Result<()> {
                     format!("Successfully connected to {} at {} baud", port_str, baud),
                 );
                 
-                // Query firmware version
-                drop(comm); // Release lock before sending command
+                if let Some(window) = window_weak.upgrade() {
+                    window.set_connected(true);
+                    window.set_connection_status(slint::SharedString::from("Connected"));
+                    window.set_device_version(slint::SharedString::from("GRBL (detecting...)")); 
+                    window.set_machine_state(slint::SharedString::from("IDLE"));
+                    let console_output = console_manager_clone.get_output();
+                    window.set_console_output(slint::SharedString::from(console_output));
+                }
                 
-                let firmware_result = {
-                    // Try to get firmware info by sending $I and reading response
-                    let response = {
-                        let mut comm = communicator_clone.lock().unwrap();
-                        
-                        console_manager_clone.add_message(
-                            DeviceMessageType::Output,
-                            "Querying firmware information...".to_string(),
-                        );
-                        
-                        // Send $I and get direct response
-                        match comm.send_command_and_receive("$I") {
-                            Ok(response_bytes) => {
-                                let response = String::from_utf8_lossy(&response_bytes).to_string();
-                                tracing::debug!("Firmware query response: {}", response);
-                                Some(response)
-                            }
-                            Err(e) => {
-                                tracing::warn!("Failed to query firmware with $I: {}", e);
-                                // Try getting it from console output (might have startup message)
-                                Some(console_manager_clone.get_output())
-                            }
-                        }
-                    };
+                // Spawn background thread for firmware detection (don't block UI)
+                let communicator_fw = communicator_clone.clone();
+                let console_manager_fw = console_manager_clone.clone();
+                let window_weak_fw = window_weak.clone();
+                
+                std::thread::spawn(move || {
+                    // Query firmware version in background
+                    console_manager_fw.add_message(
+                        DeviceMessageType::Output,
+                        "Querying firmware information...".to_string(),
+                    );
                     
-                    if let Some(response_text) = response {
-                        use gcodekit4::FirmwareDetector;
+                    let firmware_result = {
+                        let mut comm = communicator_fw.lock().unwrap();
                         
-                        match FirmwareDetector::parse_response(&response_text) {
-                            Ok(detection) => {
-                                console_manager_clone.add_message(
-                                    DeviceMessageType::Success,
-                                    format!("Detected: {} {}", detection.firmware_type, detection.version_string),
-                                );
-                                Some(detection)
+                        // Send $I command
+                        if let Err(e) = comm.send_command("$I") {
+                            tracing::warn!("Failed to send $I: {}", e);
+                            console_manager_fw.add_message(
+                                DeviceMessageType::Output,
+                                format!("DEBUG: Failed to send $I: {}", e),
+                            );
+                            drop(comm);
+                            None
+                        } else {
+                            // Release lock and wait for response to accumulate
+                            drop(comm);
+                            std::thread::sleep(std::time::Duration::from_millis(500));
+                            
+                            // Now try to read multiple times to get full response
+                            let mut full_response = Vec::new();
+                            
+                            // Read up to 5 times with small delays
+                            for i in 0..5 {
+                                let mut comm = communicator_fw.lock().unwrap();
+                                match comm.receive() {
+                                    Ok(data) if !data.is_empty() => {
+                                        full_response.extend_from_slice(&data);
+                                        tracing::debug!("Read chunk {}: {} bytes", i, data.len());
+                                    }
+                                    _ => {}
+                                }
+                                drop(comm);
+                                if i < 4 {
+                                    std::thread::sleep(std::time::Duration::from_millis(50));
+                                }
                             }
-                            Err(e) => {
-                                tracing::warn!("Firmware detection failed: {}. Response had {} chars", e, response_text.len());
-                                console_manager_clone.add_message(
+                            
+                            if !full_response.is_empty() {
+                                let response_text = String::from_utf8_lossy(&full_response).to_string();
+                                console_manager_fw.add_message(
                                     DeviceMessageType::Output,
-                                    format!("Could not detect firmware: {}. Assuming GRBL 1.1", e),
+                                    format!("DEBUG: Received {} bytes total: '{}'", full_response.len(), response_text.trim()),
+                                );
+                                
+                                use gcodekit4::FirmwareDetector;
+                                
+                                console_manager_fw.add_message(
+                                    DeviceMessageType::Output,
+                                    format!("DEBUG: Parsing {} chars: '{}'", response_text.len(), 
+                                           response_text.chars().take(100).collect::<String>()),
+                                );
+                                
+                                match FirmwareDetector::parse_response(&response_text) {
+                                    Ok(detection) => {
+                                        console_manager_fw.add_message(
+                                            DeviceMessageType::Success,
+                                            format!("Detected: {} {}", detection.firmware_type, detection.version_string),
+                                        );
+                                        Some(detection)
+                                    }
+                                    Err(e) => {
+                                        tracing::warn!("Firmware detection failed: {}", e);
+                                        console_manager_fw.add_message(
+                                            DeviceMessageType::Output,
+                                            format!("Could not detect firmware: {}. Assuming GRBL 1.1", e),
+                                        );
+                                        None
+                                    }
+                                }
+                            } else {
+                                console_manager_fw.add_message(
+                                    DeviceMessageType::Output,
+                                    "DEBUG: No response received. Assuming GRBL 1.1".to_string(),
                                 );
                                 None
                             }
                         }
-                    } else {
-                        console_manager_clone.add_message(
-                            DeviceMessageType::Output,
-                            "No response from firmware query. Assuming GRBL 1.1".to_string(),
-                        );
-                        None
-                    }
-                };
-                
-                if let Some(window) = window_weak.upgrade() {
-                    window.set_connected(true);
-                    window.set_connection_status(slint::SharedString::from("Connected"));
+                    };
                     
-                    // Use detected firmware or default to GRBL 1.1
+                    // Update UI from event loop
                     let (firmware_type, version, version_str) = if let Some(detection) = firmware_result {
                         (
                             detection.firmware_type,
@@ -613,18 +651,16 @@ fn main() -> anyhow::Result<()> {
                         (FirmwareType::Grbl, SemanticVersion::new(1, 1, 0), "1.1".to_string())
                     };
                     
-                    window.set_device_version(slint::SharedString::from(format!("{} {}", firmware_type, version_str)));
-                    window.set_machine_state(slint::SharedString::from("IDLE"));
-                    let console_output = console_manager_clone.get_output();
-                    window.set_console_output(slint::SharedString::from(console_output));
+                    let version_display = format!("{} {}", firmware_type, version_str);
+                    let _ = slint::invoke_from_event_loop(move || {
+                        if let Some(window) = window_weak_fw.upgrade() {
+                            window.set_device_version(slint::SharedString::from(version_display));
+                        }
+                    });
                     
-                    // Update capabilities based on detected firmware
-                    capability_manager_clone.update_firmware(firmware_type, version);
-                    sync_capabilities_to_ui(&window, &capability_manager_clone);
-                    
-                    // Update device info panel
-                    update_device_info_panel(&window, firmware_type, version, &capability_manager_clone);
-                }
+                    // Note: We can't update capabilities from here because CapabilityManager is Rc
+                    // The capabilities will be updated when status polling detects the firmware
+                });
 
                 // Start status polling thread
                 polling_stop_connect.store(false, std::sync::atomic::Ordering::Relaxed);
