@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added laser_mode capability to GRBL 1.1, 1.2, and 1.3 profiles
 - Command input functionality in Device Console for manual commands
 
+### Changed
+- Updated contact email from toby@hawkins.com to tim.thawkins@gmail.com in documentation
+
 ### Fixed
 - Firmware detection now works reliably using $I command
 - Device Info panel now shows correct capabilities for detected firmware version

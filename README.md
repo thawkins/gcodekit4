@@ -398,7 +398,7 @@ You may choose either license for your use of this software.
 
 - **Bug Reports**: [GitHub Issues](https://github.com/thawkins/gcodekit4/issues)
 - **Feature Requests**: [GitHub Discussions](https://github.com/thawkins/gcodekit4/discussions)
-- **Email**: toby@hawkins.com
+- **Email**: tim.thawkins@gmail.com
 - **Documentation**: See docs/ folder and SPEC.md
 
 ## Project Status

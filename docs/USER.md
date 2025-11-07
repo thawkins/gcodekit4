@@ -1474,7 +1474,7 @@ M2          ; Program end
 - **Discussions**: Community support and questions
 
 #### Support
-- **Email**: toby@hawkins.com
+- **Email**: tim.thawkins@gmail.com
 - **Documentation**: This manual and project docs/
 - **Bug Reports**: GitHub Issues
 
