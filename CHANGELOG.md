@@ -1,3 +1,31 @@
+# Changelog
+
+All notable changes to GCodeKit4 will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.25.5-alpha] - 2025-11-07
+
+### Added
+- Firmware detection now properly identifies GRBL version on connection
+- Device Info panel displays actual detected firmware version and capabilities
+- Added laser_mode capability to GRBL 1.1, 1.2, and 1.3 profiles
+- Command input functionality in Device Console for manual commands
+
+### Fixed
+- Firmware detection now works reliably using $I command
+- Device Info panel now shows correct capabilities for detected firmware version
+- Console output cleaned - removed status polling spam and debug messages
+- Fixed receive buffer notification to properly trigger firmware detection
+- Fixed CapabilityManager to use detected firmware instead of static defaults
+
+### Removed
+- Removed all GTools code, UI, and references (~1,600 lines)
+- Removed geometry_generators module
+- Removed GTools panel and menu items
+- Closed gcodekit4-14 task (GTools implementation)
+
 ## [0.25.4-alpha] - 2025-11-06
 
 ### Added
