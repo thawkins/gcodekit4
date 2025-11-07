@@ -254,11 +254,36 @@ impl CommunicatorListener for ConsoleListener {
     fn on_data_received(&self, data: &[u8]) {
         if let Ok(text) = std::str::from_utf8(data) {
             let trimmed = text.trim();
+            
+            // Log all received data for debugging
+            tracing::debug!("ConsoleListener received: '{}'", trimmed);
+            
             // Suppress status polling responses (starts with '<')
             if trimmed.starts_with('<') {
                 // Status response - don't log to console
                 return;
             }
+            
+            // Try to detect firmware from this response
+            if trimmed.contains("Grbl") || trimmed.contains("grbl") || trimmed.contains("[VER:") {
+                tracing::info!("Attempting firmware detection from: '{}'", trimmed);
+                use crate::FirmwareDetector;
+                match FirmwareDetector::parse_response(trimmed) {
+                    Ok(detection) => {
+                        tracing::info!("Successfully detected: {} {}", detection.firmware_type, detection.version_string);
+                        self.console_manager.add_message(
+                            DeviceMessageType::Success,
+                            format!("Detected firmware: {} {}", detection.firmware_type, detection.version_string),
+                        );
+                        // TODO: Update UI with detected firmware
+                    }
+                    Err(e) => {
+                        tracing::warn!("Failed to parse firmware: {}", e);
+                        // Failed to parse, just log the message normally
+                    }
+                }
+            }
+            
             if !trimmed.is_empty() {
                 self.console_manager
                     .add_message(DeviceMessageType::Output, trimmed);

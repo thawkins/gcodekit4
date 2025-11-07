@@ -72,6 +72,8 @@ All tests **MUST** be located in the `tests/` folder organized by module hierarc
 
 1. When asked "whats next", present a list of the top 9 unimplemented tasks by task number, accept a task number and perform that task.
 2. Don't suggest features unless asked to.
+3. When debugging problems, use Occams razor and assume that the simplest solution is more likely to be the right one. 
+4. Also when you are trying to debug a problem, change only one thing at a time, if it does not fix the problem then revert it, before trying another possible solution. 
 
 ## Versioning
 
