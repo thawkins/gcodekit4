@@ -59,6 +59,7 @@ export component MachineControlPanel inherits VerticalBox {
     callback jog-b-positive(float);
     callback jog-b-negative(float);
     callback unlock-clicked();
+    callback send-command(string);
     
     private property <float> step-size: 1.0;
     private property <int> step-index: 1;
@@ -343,42 +344,39 @@ export component MachineControlPanel inherits VerticalBox {
                                 root.jog-z-positive(step);
                             }
                         }
-                        
-                        // Unlock button - only enabled when in ALARM state
-                        JogButton {
-                            text: "🔒";
-                            step-size: 0;
-                            connected: root.connected && (root.machine-state == "ALARM" || root.machine-state == "Alarm");
-                            clicked(step) => {
-                                root.unlock-clicked();
-                            }
-                        }
 
-                        Rectangle {
+                         Rectangle {
                             width: 5%;
                             height: 65px;
                         }
-                        Rectangle {
-                            width: 10%;
-                            height: 65px;
-                        }
-
+                        
+                       
+                       
                         // Zero X axis
                         JogButton {
                             connected: root.connected;
                             text: "X ⊙";
+                            clicked(step) => {
+                                root.send-command("G92 X0");
+                            }
                         }
 
                         // Zero Y axis
                         JogButton {
                             connected: root.connected;
                             text: "Y ⊙";
+                            clicked(step) => {
+                                root.send-command("G92 Y0");
+                            }
                         }
 
                         // Zero Z axis
                         JogButton {
                             connected: root.connected;
                             text: "Z ⊙";
+                            clicked(step) => {
+                                root.send-command("G92 Z0");
+                            }
                         }
 
                     }
@@ -415,26 +413,43 @@ export component MachineControlPanel inherits VerticalBox {
                             }
                         }
 
-                       Rectangle {
-                            width: 5%;
-                            height: 65px;
+                      
+
+                        // Unlock button - only enabled when in ALARM state
+                        JogButton {
+                            text: "🔒";
+                            step-size: 0;
+                            connected: root.connected && (root.machine-state == "ALARM" || root.machine-state == "Alarm");
+                            clicked(step) => {
+                                root.unlock-clicked();
+                            }
                         }
+
                         Rectangle {
-                            width: 10%;
+                            width: 5%;
                             height: 65px;
                         }
 
                         JogButton {
                             connected: root.connected;
                             text: "G54";
+                            clicked(step) => {
+                                root.send-command("G54");
+                            }
                         }
                         JogButton {
                             connected: root.connected;
                             text: "G55";
+                            clicked(step) => {
+                                root.send-command("G55");
+                            }
                         }
                         JogButton {
                             connected: root.connected;
                             text: "G56";
+                            clicked(step) => {
+                                root.send-command("G56");
+                            }
                         }
                     }
                     
@@ -488,14 +503,23 @@ export component MachineControlPanel inherits VerticalBox {
                         JogButton {
                             connected: root.connected;
                             text: "G57";
+                            clicked(step) => {
+                                root.send-command("G57");
+                            }
                         }
                         JogButton {
                             connected: root.connected;
                             text: "G58";
+                            clicked(step) => {
+                                root.send-command("G58");
+                            }
                         }
                         JogButton {
                             connected: root.connected;
                             text: "G59";
+                            clicked(step) => {
+                                root.send-command("G59");
+                            }
                         }
                     }
                 }

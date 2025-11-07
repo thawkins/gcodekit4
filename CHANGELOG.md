@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Device Info panel displays actual detected firmware version and capabilities
 - Added laser_mode capability to GRBL 1.1, 1.2, and 1.3 profiles
 - Command input functionality in Device Console for manual commands
+- **New Laser Tools panel** - Scrollable view with 3x3 card grid for laser-specific tools
+- **New CNC Tools panel** - Scrollable view with 3x3 card grid for CNC-specific tools
+- Zero X, Y, Z buttons now send G92 commands to set work coordinate origins
+- G54-G59 buttons now send commands to switch work coordinate systems
 
 ### Changed
 - Updated contact email from toby@hawkins.com to tim.thawkins@gmail.com in documentation
