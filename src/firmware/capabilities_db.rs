@@ -59,6 +59,7 @@ pub struct FirmwareCapabilities {
     pub variable_spindle: bool,
     pub spindle_direction: bool,
     pub spindle_css: bool,
+    pub laser_mode: bool,
 
     // Tool Management
     pub tool_change: bool,
@@ -116,6 +117,7 @@ impl FirmwareCapabilities {
             variable_spindle: false,
             spindle_direction: false,
             spindle_css: false,
+            laser_mode: false,
             tool_change: false,
             tool_length_offset: false,
             tool_diameter_offset: false,
@@ -225,6 +227,7 @@ impl CapabilitiesDatabase {
         grbl_1_1.arc_support = true;
         grbl_1_1.variable_spindle = true;
         grbl_1_1.spindle_direction = true;
+        grbl_1_1.laser_mode = true;
         grbl_1_1.tool_change = true;
         grbl_1_1.probing = true;
         grbl_1_1.probe_away = true;
@@ -249,6 +252,7 @@ impl CapabilitiesDatabase {
         grbl_1_2.arc_support = true;
         grbl_1_2.variable_spindle = true;
         grbl_1_2.spindle_direction = true;
+        grbl_1_2.laser_mode = true;
         grbl_1_2.tool_change = true;
         grbl_1_2.probing = true;
         grbl_1_2.probe_away = true;
@@ -273,6 +277,7 @@ impl CapabilitiesDatabase {
         grbl_1_3.arc_support = true;
         grbl_1_3.variable_spindle = true;
         grbl_1_3.spindle_direction = true;
+        grbl_1_3.laser_mode = true;
         grbl_1_3.tool_change = true;
         grbl_1_3.probing = true;
         grbl_1_3.probe_away = true;

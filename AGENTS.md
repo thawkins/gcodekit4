@@ -78,7 +78,7 @@ All tests **MUST** be located in the `tests/` folder organized by module hierarc
 
 ## Versioning
 
-1. During development the release number will have "-alpha" appended to the end as per semantic versioning standards.
+1. During development the release number will have "-alpha" appended to the end as per semantic versioning standards. only when it is a production release will it be removed. 
 
 ## Temporary Files
 

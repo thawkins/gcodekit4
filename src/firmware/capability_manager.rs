@@ -103,9 +103,6 @@ impl CapabilityState {
             .map(|(k, v)| (k.clone(), *v))
             .collect();
         
-        // Check for laser mode in custom capabilities
-        let supports_laser = caps.custom.get("laser_mode").copied().unwrap_or(false);
-        
         Self {
             detected: true,
             firmware_type: Some(firmware_type),
@@ -123,7 +120,7 @@ impl CapabilityState {
             supports_soft_limits: caps.soft_limits,
             supports_hard_limits: caps.hard_limits,
             supports_macros: caps.macro_support,
-            supports_laser,
+            supports_laser: caps.laser_mode,
             custom_capabilities,
         }
     }
