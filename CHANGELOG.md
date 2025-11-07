@@ -673,7 +673,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Planned for Phase 6+
 - CAM Tools Palette (gcodekit4-11)
 - Materials Database (gcodekit4-13)
-- GTools Panel (gcodekit4-14)
 - Image-to-Laser Converter (gcodekit4-15)
 
 ## [0.24.2-alpha] - 2025-10-31
