@@ -1,8 +1,8 @@
 use gcodekit4::{
     init_logging, list_ports, CapabilityManager, Communicator, ConnectionDriver,
     ConnectionParams, ConsoleListener, DeviceConsoleManager, DeviceMessageType,
-    FirmwareSettingsIntegration, GcodeEditor, SerialCommunicator, SerialParity, SettingValue,
-    SettingsDialog, SettingsPersistence, BUILD_DATE, VERSION,
+    FirmwareDetector, FirmwareSettingsIntegration, GcodeEditor, SerialCommunicator,
+    SerialParity, SettingValue, SettingsDialog, SettingsPersistence, BUILD_DATE, VERSION,
 };
 use slint::{Model, VecModel};
 use std::cell::RefCell;
@@ -539,20 +539,78 @@ fn main() -> anyhow::Result<()> {
                     DeviceMessageType::Success,
                     format!("Successfully connected to {} at {} baud", port_str, baud),
                 );
+                
+                // Query firmware version
+                drop(comm); // Release lock before sending command
+                
+                let firmware_result = {
+                    let mut comm = communicator_clone.lock().unwrap();
+                    
+                    // Send $I command to query firmware version
+                    console_manager_clone.add_message(
+                        DeviceMessageType::Verbose,
+                        "Querying firmware information...".to_string(),
+                    );
+                    
+                    match comm.send_command("$I") {
+                        Ok(_) => {
+                            // Wait briefly for response
+                            drop(comm);
+                            std::thread::sleep(std::time::Duration::from_millis(300));
+                            
+                            // Try to parse firmware from console history
+                            let console_text = console_manager_clone.get_output();
+                            use gcodekit4::FirmwareDetector;
+                            
+                            match FirmwareDetector::parse_response(&console_text) {
+                                Ok(detection) => {
+                                    console_manager_clone.add_message(
+                                        DeviceMessageType::Success,
+                                        format!("Detected: {} {}", detection.firmware_type, detection.version_string),
+                                    );
+                                    Some(detection)
+                                }
+                                Err(e) => {
+                                    console_manager_clone.add_message(
+                                        DeviceMessageType::Verbose,
+                                        format!("Could not detect firmware: {}. Assuming GRBL 1.1", e),
+                                    );
+                                    None
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            console_manager_clone.add_message(
+                                DeviceMessageType::Verbose,
+                                format!("Failed to query firmware: {}. Assuming GRBL 1.1", e),
+                            );
+                            None
+                        }
+                    }
+                };
+                
                 if let Some(window) = window_weak.upgrade() {
                     window.set_connected(true);
                     window.set_connection_status(slint::SharedString::from("Connected"));
-                    window.set_device_version(slint::SharedString::from("GRBL 1.1+"));
+                    
+                    // Use detected firmware or default to GRBL 1.1
+                    let (firmware_type, version, version_str) = if let Some(detection) = firmware_result {
+                        (
+                            detection.firmware_type,
+                            detection.version,
+                            detection.version_string,
+                        )
+                    } else {
+                        use gcodekit4::firmware::firmware_version::{FirmwareType, SemanticVersion};
+                        (FirmwareType::Grbl, SemanticVersion::new(1, 1, 0), "1.1".to_string())
+                    };
+                    
+                    window.set_device_version(slint::SharedString::from(format!("{} {}", firmware_type, version_str)));
                     window.set_machine_state(slint::SharedString::from("IDLE"));
                     let console_output = console_manager_clone.get_output();
                     window.set_console_output(slint::SharedString::from(console_output));
                     
-                    // Detect firmware and update capabilities
-                    // TODO: Replace with actual firmware detection from response
-                    // For now, assume GRBL 1.1 as default
-                    use gcodekit4::firmware::firmware_version::{FirmwareType, SemanticVersion};
-                    let firmware_type = FirmwareType::Grbl;
-                    let version = SemanticVersion::new(1, 1, 0);
+                    // Update capabilities based on detected firmware
                     capability_manager_clone.update_firmware(firmware_type, version);
                     sync_capabilities_to_ui(&window, &capability_manager_clone);
                     

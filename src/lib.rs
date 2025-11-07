@@ -74,7 +74,7 @@ pub use designer::{
 };
 pub use designer_state::DesignerState;
 pub use error::{ConnectionError, ControllerError, Error, FirmwareError, GcodeError, Result};
-pub use firmware::{CapabilityManager, CapabilityState, ControllerType};
+pub use firmware::{CapabilityManager, CapabilityState, ControllerType, FirmwareDetector};
 pub use gcode::{
     stream::{FileStreamReader, GcodeStreamReader, PausableStream, StringStreamReader},
     CommandId, CommandLengthProcessor, CommandListener, CommandListenerHandle,
