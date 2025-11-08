@@ -1,5 +1,5 @@
-//! CNC Tools Panel
-//! Provides a collection of CNC-specific tools and utilities
+//! CAM Tools Panel
+//! Provides a collection of CAM (Computer-Aided Manufacturing) tools and utilities
 
 import { Button, VerticalBox, HorizontalBox, ScrollView } from "std-widgets.slint";
 
@@ -49,7 +49,7 @@ component ToolCard inherits Rectangle {
     }
 }
 
-export component CNCToolsPanel inherits Rectangle {
+export component CAMToolsPanel inherits Rectangle {
     background: #ecf0f1;
     
     VerticalBox {
@@ -57,7 +57,7 @@ export component CNCToolsPanel inherits Rectangle {
         spacing: 10px;
         
         Text {
-            text: "CNC Tools";
+            text: "CAM Tools";
             font-size: 18px;
             font-weight: 700;
             color: #2c3e50;

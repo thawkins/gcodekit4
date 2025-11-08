@@ -5,20 +5,46 @@ All notable changes to GCodeKit4 will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.25.5-alpha] - 2025-11-07
+## [0.25.5-alpha] - 2025-11-08
 
-### Added
+### Added - Tool Management
+- **CNC Tools Manager** - Complete tool library management system
+  - Full CRUD operations (Create, Read, Update, Delete)
+  - GTC (Generic Tool Catalog) import from ZIP and JSON files
+  - Search tools by name with real-time filtering
+  - Filter by tool type (End Mill, Drill, V-Bit, etc.)
+  - Standard library with 5 common tools
+  - Persistent storage with auto-save to `custom_tools.json`
+  - Scrollable tool list supporting unlimited tools
+  - Tool properties: number, name, type, material, coating, geometry, manufacturer
+  - Visual tool cards with key specifications
+  - Double-click to edit functionality
+  - File dialog integration for catalog import
+  
+- **Materials Database Manager** - Material properties and CNC parameters
+  - Full CRUD operations for materials
+  - Material categories (Metals, Plastics, Wood, Composites, etc.)
+  - CNC parameters: feed rates, spindle speeds, plunge rates, depth of cut
+  - Surface finish settings: roughing and finishing passes
+  - Search by name and filter by category
+  - Persistent storage with auto-save to `custom_materials.json`
+  - Standard library with tested parameters for common materials
+  - Scrollable material list
+  - Visual material cards with category badges
+
+### Added - Firmware & Control
 - Firmware detection now properly identifies GRBL version on connection
 - Device Info panel displays actual detected firmware version and capabilities
 - Added laser_mode capability to GRBL 1.1, 1.2, and 1.3 profiles
 - Command input functionality in Device Console for manual commands
-- **New Laser Tools panel** - Scrollable view with 3x3 card grid for laser-specific tools
-- **New CNC Tools panel** - Scrollable view with 3x3 card grid for CNC-specific tools
 - Zero X, Y, Z buttons now send G92 commands to set work coordinate origins
 - G54-G59 buttons now send commands to switch work coordinate systems
 
 ### Changed
 - Updated contact email from toby@hawkins.com to tim.thawkins@gmail.com in documentation
+- Renamed CAMTools references to CNC Tools throughout codebase
+- Improved UI consistency across tool and material managers
+- Enhanced scrolling behavior in list panels
 
 ### Fixed
 - Firmware detection now works reliably using $I command
@@ -26,9 +52,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Console output cleaned - removed status polling spam and debug messages
 - Fixed receive buffer notification to properly trigger firmware detection
 - Fixed CapabilityManager to use detected firmware instead of static defaults
+- Tool list scrolling works properly with any number of tools
+- Material list scrolling works properly with any number of materials
+- Custom tools persist across application restarts
+- Custom materials persist across application restarts
 
 ### Removed
 - Removed all GTools code, UI, and references (~1,600 lines)
+- LaserTools UI panel and tab (firmware laser support retained)
+- Unused LaserTools references from documentation
 - Removed geometry_generators module
 - Removed GTools panel and menu items
 - Closed gcodekit4-14 task (GTools implementation)

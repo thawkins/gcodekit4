@@ -93,13 +93,28 @@ GCodeKit4 is a Rust-based CNC machine controller providing a modern alternative 
 - **Save/Restore**: Persist settings to controller EEPROM
 - **Import/Export**: Backup and restore configurations
 
-### 🔧 Tool Panels
-- **Laser Tools Panel**: Dedicated workspace for laser-specific tools and utilities
-  - Scrollable card grid layout (3x3 visible cards)
-  - Expandable for future laser engraving and cutting tools
-- **CNC Tools Panel**: Dedicated workspace for CNC-specific tools and utilities
-  - Scrollable card grid layout (3x3 visible cards)
-  - Expandable for future milling and routing tools
+### 🔧 Tool Management
+- **CNC Tools Manager**: Comprehensive tool library management
+  - **Full CRUD Operations**: Create, read, update, and delete tools
+  - **GTC Import**: Import Generic Tool Catalog packages from suppliers (.zip and .json)
+  - **Search & Filter**: Find tools by name or filter by type
+  - **Tool Properties**: 
+    - Basic info (number, name, type, material, coating)
+    - Geometry (diameter, length, flute length, shaft diameter, flutes)
+    - Manufacturer details (maker, part number, description)
+    - Custom notes
+  - **Persistent Storage**: Auto-saves custom tools to disk
+  - **Standard Library**: Includes 5 common tools (end mills, drills, v-bits)
+  - **Scrollable Interface**: Handle unlimited tools with smooth scrolling
+  
+- **Materials Database Manager**: Material properties and settings
+  - **Full CRUD Operations**: Create, read, update, and delete materials
+  - **Material Categories**: Metals, plastics, wood, composites, and more
+  - **CNC Parameters**: Feed rates, spindle speeds, plunge rates, depth of cut
+  - **Surface Finish Control**: Roughing and finishing pass configurations
+  - **Search & Filter**: Find materials by name or filter by category
+  - **Persistent Storage**: Auto-saves custom materials to disk
+  - **Standard Library**: Includes common materials with tested parameters
 
 ## Supported Controllers
 

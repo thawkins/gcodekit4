@@ -1,0 +1,67 @@
+{
+  "Version": "1.0",
+  "Manufacturer": "Example Tool Company",
+  "Tools": [
+    {
+      "ID": "EM-6-2F-001",
+      "Description": "6mm 2-Flute Carbide End Mill",
+      "Type": "End Mill",
+      "Diameter": 6.0,
+      "Length": 50.0,
+      "FluteLength": 20.0,
+      "ShankDiameter": 6.0,
+      "NumberOfFlutes": 2,
+      "Material": "Solid Carbide",
+      "Coating": "TiAlN",
+      "Manufacturer": "Example Tool Company",
+      "PartNumber": "EM-6-2F-001",
+      "CuttingParameters": {
+        "RPM": 18000,
+        "FeedRate": 1200.0,
+        "PlungeRate": 300.0,
+        "Material": "Aluminum"
+      }
+    },
+    {
+      "ID": "BN-6-2F-002",
+      "Description": "6mm Ball Nose End Mill",
+      "Type": "Ball End Mill",
+      "Diameter": 6.0,
+      "Length": 50.0,
+      "FluteLength": 15.0,
+      "ShankDiameter": 6.0,
+      "NumberOfFlutes": 2,
+      "Material": "Solid Carbide",
+      "Coating": "TiN",
+      "Manufacturer": "Example Tool Company",
+      "PartNumber": "BN-6-2F-002"
+    },
+    {
+      "ID": "DR-3-HSS-003",
+      "Description": "3mm HSS Drill Bit",
+      "Type": "Drill Bit",
+      "Diameter": 3.0,
+      "Length": 65.0,
+      "FluteLength": 35.0,
+      "ShankDiameter": 3.0,
+      "NumberOfFlutes": 2,
+      "Material": "HSS",
+      "Manufacturer": "Example Tool Company",
+      "PartNumber": "DR-3-HSS-003"
+    },
+    {
+      "ID": "VB-90-004",
+      "Description": "90° V-Bit Engraving Tool",
+      "Type": "V-Bit",
+      "Diameter": 6.35,
+      "Length": 40.0,
+      "FluteLength": 10.0,
+      "ShankDiameter": 6.35,
+      "NumberOfFlutes": 1,
+      "Material": "Solid Carbide",
+      "Coating": "TiN",
+      "Manufacturer": "Example Tool Company",
+      "PartNumber": "VB-90-004"
+    }
+  ]
+}

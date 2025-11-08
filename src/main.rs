@@ -415,6 +415,70 @@ fn main() -> anyhow::Result<()> {
         state.toolpath_generator.set_cut_depth(-5.0);
     }
 
+    // Initialize Materials Manager backend
+    let materials_backend = Rc::new(RefCell::new(gcodekit4::ui::MaterialsManagerBackend::new()));
+    
+    // Load initial materials into UI
+    {
+        let backend = materials_backend.borrow();
+        let materials = backend.get_all_materials();
+        let materials_ui: Vec<MaterialData> = materials
+            .iter()
+            .map(|m| MaterialData {
+                id: m.id.0.clone().into(),
+                name: m.name.clone().into(),
+                category: format!("{}", m.category).into(),
+                subcategory: m.subcategory.clone().into(),
+                description: m.description.clone().into(),
+                density: m.density,
+                machinability_rating: m.machinability_rating as i32,
+                tensile_strength: m.tensile_strength.unwrap_or(0.0),
+                melting_point: m.melting_point.unwrap_or(0.0),
+                chip_type: format!("{:?}", m.chip_type).into(),
+                heat_sensitivity: format!("{:?}", m.heat_sensitivity).into(),
+                abrasiveness: format!("{:?}", m.abrasiveness).into(),
+                surface_finish: format!("{:?}", m.surface_finish).into(),
+                dust_hazard: format!("{:?}", m.dust_hazard).into(),
+                fume_hazard: format!("{:?}", m.fume_hazard).into(),
+                coolant_required: m.coolant_required,
+                custom: m.custom,
+                notes: m.notes.clone().into(),
+            })
+            .collect();
+        main_window.set_materials(slint::ModelRc::new(VecModel::from(materials_ui)));
+    }
+
+    // Initialize CNC Tools Manager backend
+    let tools_backend = Rc::new(RefCell::new(gcodekit4::ui::ToolsManagerBackend::new()));
+    
+    // Load initial tools into UI
+    {
+        let backend = tools_backend.borrow();
+        let tools = backend.get_all_tools();
+        let tools_ui: Vec<ToolData> = tools
+            .iter()
+            .map(|t| ToolData {
+                id: t.id.0.clone().into(),
+                number: t.number as i32,
+                name: t.name.clone().into(),
+                tool_type: format!("{}", t.tool_type).into(),
+                material: format!("{}", t.material).into(),
+                diameter: t.diameter,
+                length: t.length,
+                flute_length: t.flute_length,
+                shaft_diameter: t.shaft_diameter.unwrap_or(t.diameter),
+                flutes: t.flutes as i32,
+                coating: t.coating.as_ref().map(|c| format!("{}", c)).unwrap_or_else(|| "None".to_string()).into(),
+                manufacturer: t.manufacturer.clone().unwrap_or_default().into(),
+                part_number: t.part_number.clone().unwrap_or_default().into(),
+                description: t.description.clone().into(),
+                custom: t.custom,
+                notes: t.notes.clone().into(),
+            })
+            .collect();
+        main_window.set_cnc_tools(slint::ModelRc::new(VecModel::from(tools_ui)));
+    }
+
     // Shift key state for snapping in designer
     let shift_pressed = Rc::new(RefCell::new(false));
 
@@ -2440,6 +2504,639 @@ fn main() -> anyhow::Result<()> {
                     window.invoke_refresh_visualization(canvas_width, canvas_height);
                 }
             });
+        }
+    });
+
+    // Set up menu-view-materials callback
+    let window_weak = main_window.as_weak();
+    main_window.on_menu_view_materials(move || {
+        if let Some(window) = window_weak.upgrade() {
+            window.set_current_view(slint::SharedString::from("materials"));
+            window.set_connection_status(slint::SharedString::from("Materials Manager activated"));
+        }
+    });
+
+    // Set up materials manager callbacks
+    let materials_backend_clone = materials_backend.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_load_materials(move || {
+        if let Some(window) = window_weak.upgrade() {
+            let backend = materials_backend_clone.borrow();
+            let materials = backend.get_all_materials();
+            let materials_ui: Vec<MaterialData> = materials
+                .iter()
+                .map(|m| MaterialData {
+                    id: m.id.0.clone().into(),
+                    name: m.name.clone().into(),
+                    category: format!("{}", m.category).into(),
+                    subcategory: m.subcategory.clone().into(),
+                    description: m.description.clone().into(),
+                    density: m.density,
+                    machinability_rating: m.machinability_rating as i32,
+                    tensile_strength: m.tensile_strength.unwrap_or(0.0),
+                    melting_point: m.melting_point.unwrap_or(0.0),
+                    chip_type: format!("{:?}", m.chip_type).into(),
+                    heat_sensitivity: format!("{:?}", m.heat_sensitivity).into(),
+                    abrasiveness: format!("{:?}", m.abrasiveness).into(),
+                    surface_finish: format!("{:?}", m.surface_finish).into(),
+                    dust_hazard: format!("{:?}", m.dust_hazard).into(),
+                    fume_hazard: format!("{:?}", m.fume_hazard).into(),
+                    coolant_required: m.coolant_required,
+                    custom: m.custom,
+                    notes: m.notes.clone().into(),
+                })
+                .collect();
+            window.set_materials(slint::ModelRc::new(VecModel::from(materials_ui)));
+        }
+    });
+
+    let materials_backend_clone = materials_backend.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_create_material(move |material_data| {
+        if let Some(window) = window_weak.upgrade() {
+            let mut backend = materials_backend_clone.borrow_mut();
+            
+            // Convert UI material to backend material
+            if let Some(category) = gcodekit4::ui::materials_manager_backend::string_to_category(&material_data.category.to_string()) {
+                let mut material = gcodekit4::data::materials::Material::new(
+                    gcodekit4::data::materials::MaterialId(material_data.id.to_string()),
+                    material_data.name.to_string(),
+                    category,
+                    material_data.subcategory.to_string(),
+                );
+                
+                material.description = material_data.description.to_string();
+                material.density = material_data.density;
+                material.machinability_rating = material_data.machinability_rating as u8;
+                material.tensile_strength = if material_data.tensile_strength > 0.0 {
+                    Some(material_data.tensile_strength)
+                } else {
+                    None
+                };
+                material.melting_point = if material_data.melting_point > 0.0 {
+                    Some(material_data.melting_point)
+                } else {
+                    None
+                };
+                material.chip_type = gcodekit4::ui::materials_manager_backend::string_to_chip_type(&material_data.chip_type.to_string());
+                material.heat_sensitivity = gcodekit4::ui::materials_manager_backend::string_to_heat_sensitivity(&material_data.heat_sensitivity.to_string());
+                material.abrasiveness = gcodekit4::ui::materials_manager_backend::string_to_abrasiveness(&material_data.abrasiveness.to_string());
+                material.surface_finish = gcodekit4::ui::materials_manager_backend::string_to_surface_finish(&material_data.surface_finish.to_string());
+                material.dust_hazard = gcodekit4::ui::materials_manager_backend::string_to_hazard_level(&material_data.dust_hazard.to_string());
+                material.fume_hazard = gcodekit4::ui::materials_manager_backend::string_to_hazard_level(&material_data.fume_hazard.to_string());
+                material.coolant_required = material_data.coolant_required;
+                material.custom = true;
+                material.notes = material_data.notes.to_string();
+                
+                backend.add_material(material);
+                
+                // Reload the materials list
+                let materials = backend.get_all_materials();
+                let materials_ui: Vec<MaterialData> = materials
+                    .iter()
+                    .map(|m| MaterialData {
+                        id: m.id.0.clone().into(),
+                        name: m.name.clone().into(),
+                        category: format!("{}", m.category).into(),
+                        subcategory: m.subcategory.clone().into(),
+                        description: m.description.clone().into(),
+                        density: m.density,
+                        machinability_rating: m.machinability_rating as i32,
+                        tensile_strength: m.tensile_strength.unwrap_or(0.0),
+                        melting_point: m.melting_point.unwrap_or(0.0),
+                        chip_type: format!("{:?}", m.chip_type).into(),
+                        heat_sensitivity: format!("{:?}", m.heat_sensitivity).into(),
+                        abrasiveness: format!("{:?}", m.abrasiveness).into(),
+                        surface_finish: format!("{:?}", m.surface_finish).into(),
+                        dust_hazard: format!("{:?}", m.dust_hazard).into(),
+                        fume_hazard: format!("{:?}", m.fume_hazard).into(),
+                        coolant_required: m.coolant_required,
+                        custom: m.custom,
+                        notes: m.notes.clone().into(),
+                    })
+                    .collect();
+                window.set_materials(slint::ModelRc::new(VecModel::from(materials_ui)));
+            }
+        }
+    });
+
+    let materials_backend_clone = materials_backend.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_update_material(move |material_data| {
+        if let Some(window) = window_weak.upgrade() {
+            // Same as create_material since add_material will replace if ID exists
+            let mut backend = materials_backend_clone.borrow_mut();
+            
+            if let Some(category) = gcodekit4::ui::materials_manager_backend::string_to_category(&material_data.category.to_string()) {
+                let mut material = gcodekit4::data::materials::Material::new(
+                    gcodekit4::data::materials::MaterialId(material_data.id.to_string()),
+                    material_data.name.to_string(),
+                    category,
+                    material_data.subcategory.to_string(),
+                );
+                
+                material.description = material_data.description.to_string();
+                material.density = material_data.density;
+                material.machinability_rating = material_data.machinability_rating as u8;
+                material.tensile_strength = if material_data.tensile_strength > 0.0 {
+                    Some(material_data.tensile_strength)
+                } else {
+                    None
+                };
+                material.melting_point = if material_data.melting_point > 0.0 {
+                    Some(material_data.melting_point)
+                } else {
+                    None
+                };
+                material.chip_type = gcodekit4::ui::materials_manager_backend::string_to_chip_type(&material_data.chip_type.to_string());
+                material.heat_sensitivity = gcodekit4::ui::materials_manager_backend::string_to_heat_sensitivity(&material_data.heat_sensitivity.to_string());
+                material.abrasiveness = gcodekit4::ui::materials_manager_backend::string_to_abrasiveness(&material_data.abrasiveness.to_string());
+                material.surface_finish = gcodekit4::ui::materials_manager_backend::string_to_surface_finish(&material_data.surface_finish.to_string());
+                material.dust_hazard = gcodekit4::ui::materials_manager_backend::string_to_hazard_level(&material_data.dust_hazard.to_string());
+                material.fume_hazard = gcodekit4::ui::materials_manager_backend::string_to_hazard_level(&material_data.fume_hazard.to_string());
+                material.coolant_required = material_data.coolant_required;
+                material.custom = material_data.custom;
+                material.notes = material_data.notes.to_string();
+                
+                backend.add_material(material);
+                
+                // Reload the materials list
+                let materials = backend.get_all_materials();
+                let materials_ui: Vec<MaterialData> = materials
+                    .iter()
+                    .map(|m| MaterialData {
+                        id: m.id.0.clone().into(),
+                        name: m.name.clone().into(),
+                        category: format!("{}", m.category).into(),
+                        subcategory: m.subcategory.clone().into(),
+                        description: m.description.clone().into(),
+                        density: m.density,
+                        machinability_rating: m.machinability_rating as i32,
+                        tensile_strength: m.tensile_strength.unwrap_or(0.0),
+                        melting_point: m.melting_point.unwrap_or(0.0),
+                        chip_type: format!("{:?}", m.chip_type).into(),
+                        heat_sensitivity: format!("{:?}", m.heat_sensitivity).into(),
+                        abrasiveness: format!("{:?}", m.abrasiveness).into(),
+                        surface_finish: format!("{:?}", m.surface_finish).into(),
+                        dust_hazard: format!("{:?}", m.dust_hazard).into(),
+                        fume_hazard: format!("{:?}", m.fume_hazard).into(),
+                        coolant_required: m.coolant_required,
+                        custom: m.custom,
+                        notes: m.notes.clone().into(),
+                    })
+                    .collect();
+                window.set_materials(slint::ModelRc::new(VecModel::from(materials_ui)));
+            }
+        }
+    });
+
+    let materials_backend_clone = materials_backend.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_delete_material(move |id| {
+        if let Some(window) = window_weak.upgrade() {
+            let mut backend = materials_backend_clone.borrow_mut();
+            backend.remove_material(&gcodekit4::data::materials::MaterialId(id.to_string()));
+            
+            // Reload the materials list
+            let materials = backend.get_all_materials();
+            let materials_ui: Vec<MaterialData> = materials
+                .iter()
+                .map(|m| MaterialData {
+                    id: m.id.0.clone().into(),
+                    name: m.name.clone().into(),
+                    category: format!("{}", m.category).into(),
+                    subcategory: m.subcategory.clone().into(),
+                    description: m.description.clone().into(),
+                    density: m.density,
+                    machinability_rating: m.machinability_rating as i32,
+                    tensile_strength: m.tensile_strength.unwrap_or(0.0),
+                    melting_point: m.melting_point.unwrap_or(0.0),
+                    chip_type: format!("{:?}", m.chip_type).into(),
+                    heat_sensitivity: format!("{:?}", m.heat_sensitivity).into(),
+                    abrasiveness: format!("{:?}", m.abrasiveness).into(),
+                    surface_finish: format!("{:?}", m.surface_finish).into(),
+                    dust_hazard: format!("{:?}", m.dust_hazard).into(),
+                    fume_hazard: format!("{:?}", m.fume_hazard).into(),
+                    coolant_required: m.coolant_required,
+                    custom: m.custom,
+                    notes: m.notes.clone().into(),
+                })
+                .collect();
+            window.set_materials(slint::ModelRc::new(VecModel::from(materials_ui)));
+        }
+    });
+
+    let materials_backend_clone = materials_backend.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_search_materials(move |query| {
+        if let Some(window) = window_weak.upgrade() {
+            let backend = materials_backend_clone.borrow();
+            let materials = backend.search_materials(&query.to_string());
+            let materials_ui: Vec<MaterialData> = materials
+                .iter()
+                .map(|m| MaterialData {
+                    id: m.id.0.clone().into(),
+                    name: m.name.clone().into(),
+                    category: format!("{}", m.category).into(),
+                    subcategory: m.subcategory.clone().into(),
+                    description: m.description.clone().into(),
+                    density: m.density,
+                    machinability_rating: m.machinability_rating as i32,
+                    tensile_strength: m.tensile_strength.unwrap_or(0.0),
+                    melting_point: m.melting_point.unwrap_or(0.0),
+                    chip_type: format!("{:?}", m.chip_type).into(),
+                    heat_sensitivity: format!("{:?}", m.heat_sensitivity).into(),
+                    abrasiveness: format!("{:?}", m.abrasiveness).into(),
+                    surface_finish: format!("{:?}", m.surface_finish).into(),
+                    dust_hazard: format!("{:?}", m.dust_hazard).into(),
+                    fume_hazard: format!("{:?}", m.fume_hazard).into(),
+                    coolant_required: m.coolant_required,
+                    custom: m.custom,
+                    notes: m.notes.clone().into(),
+                })
+                .collect();
+            window.set_materials(slint::ModelRc::new(VecModel::from(materials_ui)));
+        }
+    });
+
+    let materials_backend_clone = materials_backend.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_filter_by_category(move |category| {
+        if let Some(window) = window_weak.upgrade() {
+            let backend = materials_backend_clone.borrow();
+            if let Some(mat_category) = gcodekit4::ui::materials_manager_backend::string_to_category(&category.to_string()) {
+                let materials = backend.filter_by_category(mat_category);
+                let materials_ui: Vec<MaterialData> = materials
+                    .iter()
+                    .map(|m| MaterialData {
+                        id: m.id.0.clone().into(),
+                        name: m.name.clone().into(),
+                        category: format!("{}", m.category).into(),
+                        subcategory: m.subcategory.clone().into(),
+                        description: m.description.clone().into(),
+                        density: m.density,
+                        machinability_rating: m.machinability_rating as i32,
+                        tensile_strength: m.tensile_strength.unwrap_or(0.0),
+                        melting_point: m.melting_point.unwrap_or(0.0),
+                        chip_type: format!("{:?}", m.chip_type).into(),
+                        heat_sensitivity: format!("{:?}", m.heat_sensitivity).into(),
+                        abrasiveness: format!("{:?}", m.abrasiveness).into(),
+                        surface_finish: format!("{:?}", m.surface_finish).into(),
+                        dust_hazard: format!("{:?}", m.dust_hazard).into(),
+                        fume_hazard: format!("{:?}", m.fume_hazard).into(),
+                        coolant_required: m.coolant_required,
+                        custom: m.custom,
+                        notes: m.notes.clone().into(),
+                    })
+                    .collect();
+                window.set_materials(slint::ModelRc::new(VecModel::from(materials_ui)));
+            }
+        }
+    });
+
+    let window_weak = main_window.as_weak();
+    main_window.on_select_material(move |_id| {
+        if let Some(_window) = window_weak.upgrade() {
+            // Material selection is handled in the UI
+        }
+    });
+
+    // Set up CNC Tools Manager callbacks
+    let tools_backend_clone = tools_backend.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_load_tools(move || {
+        if let Some(window) = window_weak.upgrade() {
+            let backend = tools_backend_clone.borrow();
+            let tools = backend.get_all_tools();
+            let tools_ui: Vec<ToolData> = tools
+                .iter()
+                .map(|t| ToolData {
+                    id: t.id.0.clone().into(),
+                    number: t.number as i32,
+                    name: t.name.clone().into(),
+                    tool_type: format!("{}", t.tool_type).into(),
+                    material: format!("{}", t.material).into(),
+                    diameter: t.diameter,
+                    length: t.length,
+                    flute_length: t.flute_length,
+                    shaft_diameter: t.shaft_diameter.unwrap_or(t.diameter),
+                    flutes: t.flutes as i32,
+                    coating: t.coating.as_ref().map(|c| format!("{}", c)).unwrap_or_else(|| "None".to_string()).into(),
+                    manufacturer: t.manufacturer.clone().unwrap_or_default().into(),
+                    part_number: t.part_number.clone().unwrap_or_default().into(),
+                    description: t.description.clone().into(),
+                    custom: t.custom,
+                    notes: t.notes.clone().into(),
+                })
+                .collect();
+            window.set_cnc_tools(slint::ModelRc::new(VecModel::from(tools_ui)));
+        }
+    });
+
+    let tools_backend_clone = tools_backend.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_create_tool(move |tool_data| {
+        if let Some(window) = window_weak.upgrade() {
+            let mut backend = tools_backend_clone.borrow_mut();
+            
+            if let Some(tool_type) = gcodekit4::ui::tools_manager_backend::string_to_tool_type(&tool_data.tool_type.to_string()) {
+                let tool_id = gcodekit4::data::tools::ToolId(format!("custom_{}", tool_data.number));
+                
+                let mut tool = gcodekit4::data::tools::Tool::new(
+                    tool_id,
+                    tool_data.number as u32,
+                    tool_data.name.to_string(),
+                    tool_type,
+                    tool_data.diameter,
+                    tool_data.length,
+                );
+                
+                tool.flute_length = tool_data.flute_length;
+                tool.shaft_diameter = Some(tool_data.shaft_diameter);
+                tool.flutes = tool_data.flutes as u32;
+                
+                if let Some(material) = gcodekit4::ui::tools_manager_backend::string_to_tool_material(&tool_data.material.to_string()) {
+                    tool.material = material;
+                }
+                
+                tool.manufacturer = Some(tool_data.manufacturer.to_string());
+                tool.part_number = Some(tool_data.part_number.to_string());
+                tool.description = tool_data.description.to_string();
+                tool.notes = tool_data.notes.to_string();
+                tool.custom = true;
+                
+                backend.add_tool(tool);
+                
+                // Reload tools list
+                let tools = backend.get_all_tools();
+                let tools_ui: Vec<ToolData> = tools
+                    .iter()
+                    .map(|t| ToolData {
+                        id: t.id.0.clone().into(),
+                        number: t.number as i32,
+                        name: t.name.clone().into(),
+                        tool_type: format!("{}", t.tool_type).into(),
+                        material: format!("{}", t.material).into(),
+                        diameter: t.diameter,
+                        length: t.length,
+                        flute_length: t.flute_length,
+                        shaft_diameter: t.shaft_diameter.unwrap_or(t.diameter),
+                        flutes: t.flutes as i32,
+                        coating: t.coating.as_ref().map(|c| format!("{}", c)).unwrap_or_else(|| "None".to_string()).into(),
+                        manufacturer: t.manufacturer.clone().unwrap_or_default().into(),
+                        part_number: t.part_number.clone().unwrap_or_default().into(),
+                        description: t.description.clone().into(),
+                        custom: t.custom,
+                        notes: t.notes.clone().into(),
+                    })
+                    .collect();
+                window.set_cnc_tools(slint::ModelRc::new(VecModel::from(tools_ui)));
+            }
+        }
+    });
+
+    let tools_backend_clone = tools_backend.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_update_tool(move |tool_data| {
+        if let Some(window) = window_weak.upgrade() {
+            let mut backend = tools_backend_clone.borrow_mut();
+            
+            if let Some(tool_type) = gcodekit4::ui::tools_manager_backend::string_to_tool_type(&tool_data.tool_type.to_string()) {
+                let tool_id = gcodekit4::data::tools::ToolId(tool_data.id.to_string());
+                
+                let mut tool = gcodekit4::data::tools::Tool::new(
+                    tool_id,
+                    tool_data.number as u32,
+                    tool_data.name.to_string(),
+                    tool_type,
+                    tool_data.diameter,
+                    tool_data.length,
+                );
+                
+                tool.flute_length = tool_data.flute_length;
+                tool.shaft_diameter = Some(tool_data.shaft_diameter);
+                tool.flutes = tool_data.flutes as u32;
+                
+                if let Some(material) = gcodekit4::ui::tools_manager_backend::string_to_tool_material(&tool_data.material.to_string()) {
+                    tool.material = material;
+                }
+                
+                tool.manufacturer = Some(tool_data.manufacturer.to_string());
+                tool.part_number = Some(tool_data.part_number.to_string());
+                tool.description = tool_data.description.to_string();
+                tool.notes = tool_data.notes.to_string();
+                tool.custom = tool_data.custom;
+                
+                backend.add_tool(tool);
+                
+                // Reload tools list
+                let tools = backend.get_all_tools();
+                let tools_ui: Vec<ToolData> = tools
+                    .iter()
+                    .map(|t| ToolData {
+                        id: t.id.0.clone().into(),
+                        number: t.number as i32,
+                        name: t.name.clone().into(),
+                        tool_type: format!("{}", t.tool_type).into(),
+                        material: format!("{}", t.material).into(),
+                        diameter: t.diameter,
+                        length: t.length,
+                        flute_length: t.flute_length,
+                        shaft_diameter: t.shaft_diameter.unwrap_or(t.diameter),
+                        flutes: t.flutes as i32,
+                        coating: t.coating.as_ref().map(|c| format!("{}", c)).unwrap_or_else(|| "None".to_string()).into(),
+                        manufacturer: t.manufacturer.clone().unwrap_or_default().into(),
+                        part_number: t.part_number.clone().unwrap_or_default().into(),
+                        description: t.description.clone().into(),
+                        custom: t.custom,
+                        notes: t.notes.clone().into(),
+                    })
+                    .collect();
+                window.set_cnc_tools(slint::ModelRc::new(VecModel::from(tools_ui)));
+            }
+        }
+    });
+
+    let tools_backend_clone = tools_backend.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_delete_tool(move |id| {
+        if let Some(window) = window_weak.upgrade() {
+            let mut backend = tools_backend_clone.borrow_mut();
+            backend.remove_tool(&gcodekit4::data::tools::ToolId(id.to_string()));
+            
+            // Reload tools list
+            let tools = backend.get_all_tools();
+            let tools_ui: Vec<ToolData> = tools
+                .iter()
+                .map(|t| ToolData {
+                    id: t.id.0.clone().into(),
+                    number: t.number as i32,
+                    name: t.name.clone().into(),
+                    tool_type: format!("{}", t.tool_type).into(),
+                    material: format!("{}", t.material).into(),
+                    diameter: t.diameter,
+                    length: t.length,
+                    flute_length: t.flute_length,
+                    shaft_diameter: t.shaft_diameter.unwrap_or(t.diameter),
+                    flutes: t.flutes as i32,
+                    coating: t.coating.as_ref().map(|c| format!("{}", c)).unwrap_or_else(|| "None".to_string()).into(),
+                    manufacturer: t.manufacturer.clone().unwrap_or_default().into(),
+                    part_number: t.part_number.clone().unwrap_or_default().into(),
+                    description: t.description.clone().into(),
+                    custom: t.custom,
+                    notes: t.notes.clone().into(),
+                })
+                .collect();
+            window.set_cnc_tools(slint::ModelRc::new(VecModel::from(tools_ui)));
+        }
+    });
+
+    let tools_backend_clone = tools_backend.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_search_tools(move |query| {
+        if let Some(window) = window_weak.upgrade() {
+            let backend = tools_backend_clone.borrow();
+            let tools = backend.search_tools(&query.to_string());
+            let tools_ui: Vec<ToolData> = tools
+                .iter()
+                .map(|t| ToolData {
+                    id: t.id.0.clone().into(),
+                    number: t.number as i32,
+                    name: t.name.clone().into(),
+                    tool_type: format!("{}", t.tool_type).into(),
+                    material: format!("{}", t.material).into(),
+                    diameter: t.diameter,
+                    length: t.length,
+                    flute_length: t.flute_length,
+                    shaft_diameter: t.shaft_diameter.unwrap_or(t.diameter),
+                    flutes: t.flutes as i32,
+                    coating: t.coating.as_ref().map(|c| format!("{}", c)).unwrap_or_else(|| "None".to_string()).into(),
+                    manufacturer: t.manufacturer.clone().unwrap_or_default().into(),
+                    part_number: t.part_number.clone().unwrap_or_default().into(),
+                    description: t.description.clone().into(),
+                    custom: t.custom,
+                    notes: t.notes.clone().into(),
+                })
+                .collect();
+            window.set_cnc_tools(slint::ModelRc::new(VecModel::from(tools_ui)));
+        }
+    });
+
+    let tools_backend_clone = tools_backend.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_filter_by_tool_type(move |tool_type| {
+        if let Some(window) = window_weak.upgrade() {
+            let backend = tools_backend_clone.borrow();
+            if let Some(tt) = gcodekit4::ui::tools_manager_backend::string_to_tool_type(&tool_type.to_string()) {
+                let tools = backend.filter_by_type(tt);
+                let tools_ui: Vec<ToolData> = tools
+                    .iter()
+                    .map(|t| ToolData {
+                        id: t.id.0.clone().into(),
+                        number: t.number as i32,
+                        name: t.name.clone().into(),
+                        tool_type: format!("{}", t.tool_type).into(),
+                        material: format!("{}", t.material).into(),
+                        diameter: t.diameter,
+                        length: t.length,
+                        flute_length: t.flute_length,
+                        shaft_diameter: t.shaft_diameter.unwrap_or(t.diameter),
+                        flutes: t.flutes as i32,
+                        coating: t.coating.as_ref().map(|c| format!("{}", c)).unwrap_or_else(|| "None".to_string()).into(),
+                        manufacturer: t.manufacturer.clone().unwrap_or_default().into(),
+                        part_number: t.part_number.clone().unwrap_or_default().into(),
+                        description: t.description.clone().into(),
+                        custom: t.custom,
+                        notes: t.notes.clone().into(),
+                    })
+                    .collect();
+                window.set_cnc_tools(slint::ModelRc::new(VecModel::from(tools_ui)));
+            }
+        }
+    });
+
+    let window_weak = main_window.as_weak();
+    main_window.on_select_tool(move |_id| {
+        if let Some(_window) = window_weak.upgrade() {
+            // Tool selection is handled in the UI
+        }
+    });
+
+    let tools_backend_clone = tools_backend.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_import_gtc_package(move |_file_path| {
+        if let Some(window) = window_weak.upgrade() {
+            // Open file dialog for GTC package or JSON
+            let file_result = rfd::FileDialog::new()
+                .add_filter("GTC Package", &["zip"])
+                .add_filter("GTC JSON", &["json"])
+                .add_filter("All Files", &["*"])
+                .set_title("Import GTC Tool Catalog")
+                .pick_file();
+            
+            if let Some(file_path) = file_result {
+                let mut backend = tools_backend_clone.borrow_mut();
+                
+                // Determine file type and import
+                let extension = file_path.extension().and_then(|s| s.to_str());
+                let result = match extension {
+                    Some("zip") => backend.import_gtc_package(&file_path),
+                    Some("json") => backend.import_gtc_json(&file_path),
+                    _ => {
+                        tracing::warn!("Unsupported file type for GTC import: {:?}", extension);
+                        return;
+                    }
+                };
+                
+                match result {
+                    Ok(import_result) => {
+                        tracing::info!(
+                            "GTC Import: {} of {} tools imported, {} skipped",
+                            import_result.imported_tools.len(),
+                            import_result.total_tools,
+                            import_result.skipped_tools
+                        );
+                        
+                        if !import_result.errors.is_empty() {
+                            tracing::warn!("Import errors:");
+                            for error in &import_result.errors {
+                                tracing::warn!("  {}", error);
+                            }
+                        }
+                        
+                        // Reload tools list
+                        let tools = backend.get_all_tools();
+                        let tools_ui: Vec<ToolData> = tools
+                            .iter()
+                            .map(|t| ToolData {
+                                id: t.id.0.clone().into(),
+                                number: t.number as i32,
+                                name: t.name.clone().into(),
+                                tool_type: format!("{}", t.tool_type).into(),
+                                material: format!("{}", t.material).into(),
+                                diameter: t.diameter,
+                                length: t.length,
+                                flute_length: t.flute_length,
+                                shaft_diameter: t.shaft_diameter.unwrap_or(t.diameter),
+                                flutes: t.flutes as i32,
+                                coating: t.coating.as_ref().map(|c| format!("{}", c)).unwrap_or_else(|| "None".to_string()).into(),
+                                manufacturer: t.manufacturer.clone().unwrap_or_default().into(),
+                                part_number: t.part_number.clone().unwrap_or_default().into(),
+                                description: t.description.clone().into(),
+                                custom: t.custom,
+                                notes: t.notes.clone().into(),
+                            })
+                            .collect();
+                        window.set_cnc_tools(slint::ModelRc::new(VecModel::from(tools_ui)));
+                        
+                        // Show success message
+                        tracing::info!("Successfully imported {} tools from GTC catalog", import_result.imported_tools.len());
+                    }
+                    Err(e) => {
+                        tracing::error!("Failed to import GTC catalog: {}", e);
+                    }
+                }
+            }
         }
     });
 

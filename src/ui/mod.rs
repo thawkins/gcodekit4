@@ -35,7 +35,9 @@ pub mod keyboard_shortcuts;
 pub mod layout_manager;
 pub mod macros_panel;
 pub mod main_window;
+pub mod materials_manager_backend;
 pub mod notifications;
+pub mod tools_manager_backend;
 pub mod overrides_panel;
 pub mod progress_indicators;
 pub mod safety_diagnostics_panel;
@@ -71,7 +73,9 @@ pub use keyboard_shortcuts::{KeyBinding, KeyModifiers, KeyboardAction, KeyboardM
 pub use layout_manager::{Layout, LayoutManager, LayoutPreset, PanelId, PanelLocation, PanelState};
 pub use macros_panel::{GcodeMacro, MacroVariable, MacrosPanel};
 pub use main_window::MainWindow;
+pub use materials_manager_backend::MaterialsManagerBackend;
 pub use notifications::{Notification, NotificationLevel, NotificationManager as NotificationMgr};
+pub use tools_manager_backend::ToolsManagerBackend;
 pub use overrides_panel::OverridesPanel;
 pub use progress_indicators::{ProgressDisplay, StreamProgress};
 pub use safety_diagnostics_panel::{

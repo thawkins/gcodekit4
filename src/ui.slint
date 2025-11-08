@@ -12,8 +12,9 @@ import { ConfigSettingsPanel, ConfigSetting } from "ui_panels/config_settings.sl
 import { DeviceInfoPanel, CapabilityItem } from "ui_panels/device_info.slint";
 import { GcodeVisualizerPanel } from "ui_panels/gcode_visualizer.slint";
 import { DesignerPanel } from "ui_panels/designer.slint";
-import { LaserToolsPanel } from "ui_panels/laser_tools.slint";
-import { CNCToolsPanel } from "ui_panels/cnc_tools.slint";
+import { CAMToolsPanel } from "ui_panels/cam_tools.slint";
+import { MaterialsManager, MaterialData } from "ui_panels/materials_manager.slint";
+import { ToolsManager, ToolData } from "ui_panels/tools_manager.slint";
 import { MainMenu } from "ui/ui_components/mainmenu.slint";
 import { SettingsDialog, SettingItem } from "ui/ui_components/settings_dialog.slint";
 
@@ -148,6 +149,12 @@ export component MainWindow inherits Window {
     in property <int> designer-selected-shape-type: 0;
     in property <float> designer-selected-shape-radius: 5.0;
     
+    // Materials Manager properties
+    in-out property <[MaterialData]> materials: [];
+    
+    // CNC Tools Manager properties
+    in-out property <[ToolData]> cnc_tools: [];
+    
     callback refresh-ports();
     callback connect(string, int);
     callback disconnect();
@@ -178,7 +185,28 @@ export component MainWindow inherits Window {
     callback menu-view-device-console();
     callback menu-view-gcode-visualizer();
     callback menu-view-designer();
+    callback menu-view-materials();
+    callback menu-view-cnc-tools();
     callback menu-help-about();
+    
+    // Materials Manager callbacks
+    callback load_materials();
+    callback create_material(MaterialData);
+    callback update_material(MaterialData);
+    callback delete_material(string);
+    callback select_material(string);
+    callback search_materials(string);
+    callback filter_by_category(string);
+    
+    // CNC Tools Manager callbacks
+    callback load_tools();
+    callback create_tool(ToolData);
+    callback update_tool(ToolData);
+    callback delete_tool(string);
+    callback select_tool(string);
+    callback search_tools(string);
+    callback filter_by_tool_type(string);
+    callback import_gtc_package(string);
     
     // Configuration settings callbacks
     callback config-retrieve-settings();
@@ -319,6 +347,15 @@ export component MainWindow inherits Window {
                     if (current-view != "designer") {
                         current-view = "designer";
                         root.menu-view-designer();
+                    }
+                }
+            }
+            MenuItem {
+                title: current-view == "materials" ? @tr("✓ Materials") : @tr("Materials");
+                activated => {
+                    if (current-view != "materials") {
+                        current-view = "materials";
+                        root.menu-view-materials();
                     }
                 }
             }
@@ -540,18 +577,18 @@ export component MainWindow inherits Window {
                             }
                         }
                         
-                        // Laser Tools Tab
+                        // CAM Tools Tab
                         Rectangle {
                             width: 120px;
                             height: 32px;
-                            background: current-view == "laser-tools" ? #34495e : #3d5470;
+                            background: current-view == "cam-tools" ? #34495e : #3d5470;
                             border-radius: 3px;
                             
                             Text {
-                                text: "🔥 Laser Tools";
-                                color: current-view == "laser-tools" ? white : #bdc3c7;
+                                text: "🔧 CAM Tools";
+                                color: current-view == "cam-tools" ? white : #bdc3c7;
                                 font-size: 12px;
-                                font-weight: current-view == "laser-tools" ? 700 : 400;
+                                font-weight: current-view == "cam-tools" ? 700 : 400;
                                 vertical-alignment: center;
                                 horizontal-alignment: center;
                             }
@@ -559,7 +596,31 @@ export component MainWindow inherits Window {
                             TouchArea {
                                 mouse-cursor: pointer;
                                 clicked => {
-                                    current-view = "laser-tools";
+                                    current-view = "cam-tools";
+                                }
+                            }
+                        }
+                        
+                        // Materials Tab
+                        Rectangle {
+                            width: 120px;
+                            height: 32px;
+                            background: current-view == "materials" ? #34495e : #3d5470;
+                            border-radius: 3px;
+                            
+                            Text {
+                                text: "📦 Materials";
+                                color: current-view == "materials" ? white : #bdc3c7;
+                                font-size: 12px;
+                                font-weight: current-view == "materials" ? 700 : 400;
+                                vertical-alignment: center;
+                                horizontal-alignment: center;
+                            }
+                            
+                            TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => {
+                                    current-view = "materials";
                                 }
                             }
                         }
@@ -572,7 +633,7 @@ export component MainWindow inherits Window {
                             border-radius: 3px;
                             
                             Text {
-                                text: "🔧 CNC Tools";
+                                text: "🔩 CNC Tools";
                                 color: current-view == "cnc-tools" ? white : #bdc3c7;
                                 font-size: 12px;
                                 font-weight: current-view == "cnc-tools" ? 700 : 400;
@@ -584,6 +645,7 @@ export component MainWindow inherits Window {
                                 mouse-cursor: pointer;
                                 clicked => {
                                     current-view = "cnc-tools";
+                                    root.load_tools();
                                 }
                             }
                         }
@@ -947,12 +1009,63 @@ export component MainWindow inherits Window {
                     }
                 }
                 
-                // Laser Tools View
-                if current-view == "laser-tools" : LaserToolsPanel {
+                // CAM Tools View
+                if current-view == "cam-tools" : CAMToolsPanel {
+                }
+                
+                // Materials View
+                if current-view == "materials" : MaterialsManager {
+                    materials <=> root.materials;
+                    load_materials => {
+                        root.load_materials();
+                    }
+                    create_material(data) => {
+                        root.create_material(data);
+                    }
+                    update_material(data) => {
+                        root.update_material(data);
+                    }
+                    delete_material(id) => {
+                        root.delete_material(id);
+                    }
+                    select_material(id) => {
+                        root.select_material(id);
+                    }
+                    search_materials(query) => {
+                        root.search_materials(query);
+                    }
+                    filter_by_category(category) => {
+                        root.filter_by_category(category);
+                    }
                 }
                 
                 // CNC Tools View
-                if current-view == "cnc-tools" : CNCToolsPanel {
+                if current-view == "cnc-tools" : ToolsManager {
+                    tools <=> root.cnc_tools;
+                    load_tools => {
+                        root.load_tools();
+                    }
+                    create_tool(data) => {
+                        root.create_tool(data);
+                    }
+                    update_tool(data) => {
+                        root.update_tool(data);
+                    }
+                    delete_tool(id) => {
+                        root.delete_tool(id);
+                    }
+                    select_tool(id) => {
+                        root.select_tool(id);
+                    }
+                    search_tools(query) => {
+                        root.search_tools(query);
+                    }
+                    filter_by_type(tool_type) => {
+                        root.filter_by_tool_type(tool_type);
+                    }
+                    import_gtc_package(file_path) => {
+                        root.import_gtc_package(file_path);
+                    }
                 }
             }
         }

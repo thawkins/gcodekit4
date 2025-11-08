@@ -10,6 +10,7 @@
 //! - Materials database with cutting parameters
 //! - Tools palette for CAM operations
 
+pub mod gtc_import;
 pub mod materials;
 pub mod tools;
 
