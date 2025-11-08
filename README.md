@@ -48,11 +48,18 @@ GCodeKit4 is a Rust-based CNC machine controller providing a modern alternative 
   - Coolant control
   - Tool change support
 
-### 📝 G-Code Editor
+### 📝 G-Code Editor & Streaming
 - **Syntax Highlighting**: Color-coded commands, coordinates, and comments
 - **Line Numbers**: Easy navigation and reference
 - **File Operations**: Open, edit, and save G-code files
-- **Send to Device**: Stream G-code directly to connected controller
+- **Professional G-Code Streaming**:
+  - GRBL Character-Counting Protocol for reliable transmission
+  - Automatic buffer management (127-byte GRBL RX buffer)
+  - Sends up to 5 lines per cycle with "ok" acknowledgment tracking
+  - Real-time progress updates (lines sent/total)
+  - Error detection and reporting
+  - Comments and empty lines filtered automatically
+  - Concurrent status polling via real-time `?` command
 - **Real-time Validation**: Syntax checking while editing
 
 ### 🎨 2D CAD/CAM Designer

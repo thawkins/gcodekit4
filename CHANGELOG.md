@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.25.5-alpha] - 2025-11-08
 
+### Fixed - G-Code Streaming
+- **Fixed Send Button**: Completely rewrote G-code streaming to use proper GRBL Character-Counting Protocol
+  - Integrated G-code sending directly into status polling thread
+  - Single thread now handles: reading responses, sending G-code, and status queries
+  - Proper buffer management: tracks 127-byte GRBL RX buffer with "ok" acknowledgments
+  - Sends up to 5 lines per 50ms cycle (100 lines/sec) respecting buffer limits
+  - Comments and empty lines are filtered before sending
+  - Real-time status query (`?`) sent as single byte every 200ms (doesn't use buffer)
+  - Fixed critical mutex contention: lock held only during actual serial I/O (~1-2ms)
+  - Jog commands (Home, X+/-, Y+/-, etc.) now respond immediately (previously 10-15 sec delay)
+  - Added comprehensive debug logging for buffer management
+  - Added GRBL error detection and console reporting
+
 ### Added - Tool Management
 - **CNC Tools Manager** - Complete tool library management system
   - Full CRUD operations (Create, Read, Update, Delete)

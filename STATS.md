@@ -12,6 +12,14 @@
 - **Test Files:** 91 test modules
 
 ## Recent Changes (v0.25.5)
+- **G-Code Streaming Fixed**: Complete rewrite of send functionality
+  - GRBL Character-Counting Protocol implementation
+  - Single-threaded design: polling thread handles all serial I/O
+  - Proper buffer management with "ok" acknowledgment tracking
+  - Real-time `?` command sent as single byte (doesn't use buffer)
+  - Minimal mutex locking (~1-2ms per cycle vs 40-45ms before)
+  - Jog commands now respond immediately (was 10-15 second delay)
+  - Sends up to 100 lines/second with full buffer respect
 - **CNC Tools Manager**: Full CRUD interface with GTC import capability
   - Import tool catalogs from suppliers (ZIP and JSON formats)
   - Search, filter, create, edit, and delete tools

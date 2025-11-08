@@ -1,16 +1,21 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.25.4-alpha  
-**Last Updated**: 2025-11-06  
+**Version**: 0.25.5-alpha  
+**Last Updated**: 2025-11-08  
 **Status**: COMPLETE (All 7 Phases Complete - 150/150 Tasks, Phase 8 In Progress)
 
-### Latest Release (v0.25.4-alpha)
-- ✅ **Comprehensive User Manual** - Complete 1500+ line user guide in docs/USER.md
-- ✅ **Real-Time Status Tracking** - Machine state, positions (3-6 axes), feed rate, spindle speed
-- ✅ **Fixed Serial Port Conflict** - Status polling uses shared connection (no more "device busy")
-- ✅ **Enhanced Status Parser** - Comprehensive GRBL status parsing with machine state extraction
-- ✅ **UI Polish** - Reduced menu/tab spacing, improved layout
-- ✅ **Previous**: Device Info Panel, Visualizer Fixes, UI Optimization (v0.25.3)
+### Latest Release (v0.25.5-alpha)
+- ✅ **G-Code Streaming Fixed** - Complete rewrite implementing proper GRBL Character-Counting Protocol
+  - Single-threaded design: polling thread handles all serial I/O operations
+  - Proper buffer management: tracks 127-byte GRBL RX buffer with "ok" acknowledgments
+  - Real-time status query: `?` sent as single byte every 200ms (real-time command, doesn't use buffer)
+  - Minimal mutex contention: lock held only during actual serial I/O (~1-2ms per cycle)
+  - Fast streaming: up to 100 lines/second while respecting buffer limits
+  - Immediate jog response: fixed 10-15 second delay for Home/Jog commands
+- ✅ **CNC Tools Manager** - Full CRUD interface with GTC catalog import
+- ✅ **Materials Database Manager** - Complete material properties and CNC parameters management
+- ✅ **Firmware Detection** - Reliable GRBL version detection using $I command
+- ✅ **Console Improvements** - Command input, GRBL error reporting, cleaned output
 
 ## 1. Executive Summary
 
@@ -75,7 +80,12 @@ GCodeKit4 enables makers, engineers, and manufacturers to:
 
 **Components**:
 - **Communicator Trait**: Abstract interface for all communication types
-- **Serial Communicator**: serialport-rs based serial communication
+- **Serial Communicator**: serialport-rs based serial communication with GRBL Character-Counting Protocol
+  - Integrated G-code streaming with buffer management
+  - Single polling thread handles: receive, send, and status queries
+  - Mutex held only during actual I/O operations (~1-2ms per cycle)
+  - Real-time command support: `?` status query as single byte
+  - Buffer tracking: 127-byte limit with "ok" acknowledgment counting
 - **TCP Communicator**: Tokio-based TCP networking
 - **WebSocket Communicator**: Tokio-Tungstenite WebSocket support
 - **Buffered Communicator**: Character counting and command buffering

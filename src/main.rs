@@ -380,6 +380,24 @@ fn main() -> anyhow::Result<()> {
     let status_polling_active = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
     let status_polling_stop = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
 
+    // Shared G-code send state (for polling thread to process)
+    use std::collections::VecDeque;
+    #[derive(Debug)]
+    struct GcodeSendState {
+        lines: VecDeque<String>,
+        pending_bytes: usize,
+        line_lengths: VecDeque<usize>,
+        total_sent: usize,
+        total_lines: usize,
+    }
+    let gcode_send_state = Arc::new(Mutex::new(GcodeSendState {
+        lines: VecDeque::new(),
+        pending_bytes: 0,
+        line_lengths: VecDeque::new(),
+        total_sent: 0,
+        total_lines: 0,
+    }));
+
     // Initialize device console manager early to register listeners
     // Use Arc since communicator listeners need Arc for thread-safe sharing
     let console_manager = std::sync::Arc::new(DeviceConsoleManager::new());
@@ -571,6 +589,7 @@ fn main() -> anyhow::Result<()> {
     let console_manager_clone = console_manager.clone();
     let polling_stop_connect = status_polling_stop.clone();
     let capability_manager_clone = capability_manager.clone();
+    let gcode_send_state_connect = gcode_send_state.clone();
     main_window.on_connect(move |port: slint::SharedString, baud: i32| {
         let port_str = port.to_string();
 
@@ -660,6 +679,8 @@ fn main() -> anyhow::Result<()> {
                 let polling_active = status_polling_active.clone();
                 let polling_stop = polling_stop_connect.clone();
                 let communicator_poll = communicator_clone.clone();
+                let console_manager_poll = console_manager_clone.clone();
+                let gcode_state_poll = gcode_send_state_connect.clone();
 
                 std::thread::spawn(move || {
                     polling_active.store(true, std::sync::atomic::Ordering::Relaxed);
@@ -678,18 +699,59 @@ fn main() -> anyhow::Result<()> {
                     // The UI timer will update Device Info panel automatically
                     std::thread::sleep(std::time::Duration::from_millis(1000));
 
+                    // GRBL buffer is 128 bytes, but we use 127 for safety
+                    const GRBL_RX_BUFFER_SIZE: usize = 127;
+                    
+                    // Main polling loop runs at 50ms intervals (20Hz)
+                    // - Reads responses continuously (ok, error, status reports)
+                    // - Sends G-code lines using character-counting protocol
+                    // - Sends ? status query every 200ms (real-time command)
                     while !polling_stop.load(std::sync::atomic::Ordering::Relaxed) {
-                        std::thread::sleep(std::time::Duration::from_millis(200));
+                        std::thread::sleep(std::time::Duration::from_millis(50));
 
                         // Use the shared communicator instead of creating a new connection
-                        let mut comm = communicator_poll.lock().unwrap();
-                        if comm.is_connected() {
-                            // Send status query '?'
-                            if comm.send(b"?\n").is_ok() {
-                                std::thread::sleep(std::time::Duration::from_millis(50));
-                                if let Ok(response) = comm.receive() {
-                                    if !response.is_empty() {
-                                        let response_str = String::from_utf8_lossy(&response);
+                        // CRITICAL: Hold the lock for minimal time to allow jog commands through
+                        let (response_data, is_connected) = {
+                            let mut comm = communicator_poll.lock().unwrap();
+                            let connected = comm.is_connected();
+                            let response = if connected { comm.receive().ok() } else { None };
+                            (response, connected)
+                        }; // Lock released immediately after reading
+                        
+                        if is_connected {
+                            // Step 1: Process responses (without holding lock)
+                            if let Some(response) = response_data {
+                                if !response.is_empty() {
+                                    let response_str = String::from_utf8_lossy(&response);
+                                    debug!("Poll received: {}", response_str);
+                                    
+                                    // Count "ok" responses for buffer management
+                                    let ok_count = response_str.matches("ok").count() + response_str.matches("OK").count();
+                                    if ok_count > 0 {
+                                        let mut gstate = gcode_state_poll.lock().unwrap();
+                                        for _ in 0..ok_count {
+                                            if let Some(len) = gstate.line_lengths.pop_front() {
+                                                gstate.pending_bytes = gstate.pending_bytes.saturating_sub(len);
+                                                debug!("Got ok, freed {} bytes, pending now: {} bytes, {} acks waiting",
+                                                    len, gstate.pending_bytes, gstate.line_lengths.len());
+                                            }
+                                        }
+                                        drop(gstate);
+                                    }
+                                    
+                                    // Check for errors and handle them
+                                    if response_str.contains("error:") {
+                                        warn!("GRBL error in response: {}", response_str);
+                                        // Still free the buffer space since the command was processed
+                                        // The ok count above already handles this, but log it explicitly
+                                        console_manager_poll.add_message(
+                                            DeviceMessageType::Error,
+                                            format!("GRBL error: {}", response_str.trim())
+                                        );
+                                    }
+                                    
+                                    // Process status responses
+                                    if response_str.contains("<") && response_str.contains(">") {
                                         debug!("Status response: {}", response_str);
 
                                         // Parse full status from response
@@ -736,13 +798,107 @@ fn main() -> anyhow::Result<()> {
                                             }
                                         })
                                         .ok();
-                                    } else {
-                                        debug!("Status polling: empty response");
                                     }
                                 }
                             }
+                            
+                            // Step 2: Send G-code lines if queued
+                            // Send up to 5 lines per cycle, respecting buffer limits
+                            {
+                                let mut gstate = gcode_state_poll.lock().unwrap();
+                                let mut lines_sent_this_cycle = 0;
+                                
+                                while !gstate.lines.is_empty() && lines_sent_this_cycle < 5 {
+                                    let line = gstate.lines.front().cloned().unwrap_or_default();
+                                    let trimmed = line.trim();
+                                    
+                                    // Skip empty lines and comments quickly
+                                    if trimmed.is_empty() || trimmed.starts_with(';') {
+                                        gstate.lines.pop_front();
+                                        continue; // Don't count skipped lines
+                                    }
+                                    
+                                    // Check buffer space before sending
+                                    let line_len = trimmed.len() + 1;
+                                    if gstate.pending_bytes + line_len <= GRBL_RX_BUFFER_SIZE {
+                                        // Acquire lock only for the actual send operation
+                                        let send_result = {
+                                            let mut comm = communicator_poll.lock().unwrap();
+                                            comm.send(format!("{}\n", trimmed).as_bytes())
+                                        }; // Lock released immediately
+                                        
+                                        match send_result {
+                                            Ok(_) => {
+                                                gstate.lines.pop_front();
+                                                gstate.pending_bytes += line_len;
+                                                gstate.line_lengths.push_back(line_len);
+                                                gstate.total_sent += 1;
+                                                lines_sent_this_cycle += 1;
+                                                
+                                                debug!("Sent line {}/{}: {} [buffer: {}/{} bytes, {} pending acks]",
+                                                    gstate.total_sent, gstate.total_lines, trimmed,
+                                                    gstate.pending_bytes, GRBL_RX_BUFFER_SIZE, gstate.line_lengths.len());
+                                                
+                                                if gstate.total_sent % 10 == 0 || gstate.lines.is_empty() {
+                                                    let sent = gstate.total_sent;
+                                                    let total = gstate.total_lines;
+                                                    let wh = window_weak_poll.clone();
+                                                    slint::invoke_from_event_loop(move || {
+                                                        if let Some(w) = wh.upgrade() {
+                                                            w.set_connection_status(slint::SharedString::from(
+                                                                format!("Sending: {}/{}", sent, total)
+                                                            ));
+                                                        }
+                                                    }).ok();
+                                                }
+                                            }
+                                            Err(e) => {
+                                                console_manager_poll.add_message(
+                                                    DeviceMessageType::Error,
+                                                    format!("✗ Send failed at line {}: {}", gstate.total_sent + 1, e)
+                                                );
+                                                gstate.lines.clear();
+                                                break;
+                                            }
+                                        }
+                                    } else {
+                                        debug!("Buffer full, waiting for acks. Pending: {} bytes", gstate.pending_bytes);
+                                        break; // Buffer full, stop sending this cycle
+                                    }
+                                }
+                                
+                                // Check if done sending
+                                if gstate.total_lines > 0 && gstate.lines.is_empty() && gstate.line_lengths.is_empty() {
+                                    let total = gstate.total_sent;
+                                    console_manager_poll.add_message(
+                                        DeviceMessageType::Success,
+                                        format!("✓ Successfully sent {} lines", total)
+                                    );
+                                    let wh = window_weak_poll.clone();
+                                    let cm = console_manager_poll.clone();
+                                    slint::invoke_from_event_loop(move || {
+                                        if let Some(w) = wh.upgrade() {
+                                            w.set_connection_status(slint::SharedString::from(format!("Sent: {} lines", total)));
+                                            w.set_console_output(slint::SharedString::from(cm.get_output()));
+                                        }
+                                    }).ok();
+                                    gstate.total_lines = 0;
+                                    gstate.total_sent = 0;
+                                }
+                            } // Release gstate lock
+                            
+                            // Step 3: Send status query periodically (real-time command - doesn't use buffer)
+                            // Send every 200ms (4 cycles of 50ms)
+                            static mut CYCLE: u32 = 0;
+                            unsafe {
+                                CYCLE += 1;
+                                if CYCLE % 4 == 0 {
+                                    // Real-time command - acquire lock briefly for send only
+                                    let mut comm = communicator_poll.lock().unwrap();
+                                    comm.send(b"?").ok();
+                                } // Lock released immediately
+                            }
                         }
-                        drop(comm); // Release lock before sleeping
                     }
                     polling_active.store(false, std::sync::atomic::Ordering::Relaxed);
                 });
@@ -1108,6 +1264,7 @@ fn main() -> anyhow::Result<()> {
     let communicator_clone = communicator.clone();
     let console_manager_clone = console_manager.clone();
     let gcode_editor_clone = gcode_editor.clone();
+    let gcode_send_state_clone = gcode_send_state.clone();
     main_window.on_menu_send_to_device(move || {
         if let Some(window) = window_weak.upgrade() {
             // Get the current content from the UI TextEdit
@@ -1144,8 +1301,7 @@ fn main() -> anyhow::Result<()> {
                 return;
             }
 
-            // Send G-Code content to device using GRBL Character-Counting Protocol
-            // This protocol ensures the 127-character serial RX buffer is used efficiently
+            // Queue G-Code for the polling thread to send using GRBL Character-Counting Protocol
             console_manager_clone.add_message(
                 DeviceMessageType::Output,
                 format!(
@@ -1154,14 +1310,25 @@ fn main() -> anyhow::Result<()> {
                 ),
             );
 
-            // Update UI to show sending is in progress
-            window.set_connection_status(slint::SharedString::from("Sending G-Code..."));
+            // Queue the lines for the polling thread
+            let lines: Vec<String> = current_content.lines().map(|s| s.to_string()).collect();
+            let line_count = lines.len();
+            
+            {
+                let mut gstate = gcode_send_state_clone.lock().unwrap();
+                gstate.lines = lines.into();
+                gstate.total_lines = line_count;
+                gstate.total_sent = 0;
+                gstate.pending_bytes = 0;
+                gstate.line_lengths.clear();
+            }
+
+            // Update UI
+            window.set_connection_status(slint::SharedString::from(
+                format!("Queued {} lines for sending...", line_count)
+            ));
             let console_output = console_manager_clone.get_output();
             window.set_console_output(slint::SharedString::from(console_output));
-
-            // Use slint timer to run sending in small chunks to avoid blocking UI
-            // Store state in shared Rc<RefCell<>> for the timer callback
-            use std::cell::RefCell;
             use std::rc::Rc;
 
             struct SendState {
@@ -1175,211 +1342,6 @@ fn main() -> anyhow::Result<()> {
                 waiting_for_acks: bool,
                 timeout_count: u32,
             }
-
-            let lines: Vec<String> = current_content.lines().map(|s| s.to_string()).collect();
-            let send_state = Rc::new(RefCell::new(SendState {
-                lines,
-                line_index: 0,
-                send_count: 0,
-                pending_bytes: 0,
-                line_lengths: Vec::new(),
-                error_occurred: false,
-                error_msg: String::new(),
-                waiting_for_acks: false,
-                timeout_count: 0,
-            }));
-
-            let window_weak_timer = window_weak.clone();
-            let communicator_timer = communicator_clone.clone();
-            let console_manager_timer = console_manager_clone.clone();
-            let send_state_timer = send_state.clone();
-
-            const GRBL_RX_BUFFER_SIZE: usize = 127;
-            const MAX_TIMEOUT_ITERATIONS: u32 = 300000;
-
-            // Use a timer that fires every 50ms to process sending without blocking UI
-            // This reduces contention on the communicator lock
-            let timer = Rc::new(slint::Timer::default());
-            let timer_clone = timer.clone();
-
-            timer.start(
-                slint::TimerMode::Repeated,
-                std::time::Duration::from_millis(50),
-                move || {
-                    // Step 1: Handle incoming responses (minimize lock duration)
-                    {
-                        let mut comm = communicator_timer.lock().unwrap();
-                        match comm.receive() {
-                            Ok(response) => {
-                                if !response.is_empty() {
-                                    let resp_str = String::from_utf8_lossy(&response);
-                                    let ok_count = resp_str.matches("ok").count()
-                                        + resp_str.matches("OK").count();
-
-                                    let mut state = send_state_timer.borrow_mut();
-                                    for _ in 0..ok_count {
-                                        if !state.line_lengths.is_empty() {
-                                            let processed_length = state.line_lengths.remove(0);
-                                            state.pending_bytes = state
-                                                .pending_bytes
-                                                .saturating_sub(processed_length);
-                                        }
-                                    }
-                                    state.timeout_count = 0;
-                                }
-                            }
-                            Err(_) => {
-                                let mut state = send_state_timer.borrow_mut();
-                                if state.waiting_for_acks {
-                                    state.timeout_count += 1;
-                                }
-                            }
-                        }
-                    } // Release communicator lock here
-
-                    let mut state = send_state_timer.borrow_mut();
-
-                    // Check if we're waiting for final acknowledgments
-                    if state.waiting_for_acks {
-                        if state.line_lengths.is_empty()
-                            || state.timeout_count >= MAX_TIMEOUT_ITERATIONS
-                        {
-                            // Done - update UI
-                            drop(state);
-
-                            let final_state = send_state_timer.borrow();
-                            if let Some(window) = window_weak_timer.upgrade() {
-                                if final_state.timeout_count >= MAX_TIMEOUT_ITERATIONS
-                                    && !final_state.line_lengths.is_empty()
-                                {
-                                    warn!(
-                                        "Timeout waiting for {} line acknowledgments",
-                                        final_state.line_lengths.len()
-                                    );
-                                    console_manager_timer.add_message(
-                                        DeviceMessageType::Error,
-                                        format!(
-                                            "⚠ Timeout: {} lines may not have been received",
-                                            final_state.line_lengths.len()
-                                        ),
-                                    );
-                                }
-
-                                if !final_state.error_occurred {
-                                    console_manager_timer.add_message(
-                                        DeviceMessageType::Success,
-                                        format!(
-                                            "✓ Successfully sent {} lines to device",
-                                            final_state.send_count
-                                        ),
-                                    );
-                                    window.set_connection_status(slint::SharedString::from(
-                                        format!("Sent: {} lines", final_state.send_count),
-                                    ));
-                                } else {
-                                    window.set_connection_status(slint::SharedString::from(
-                                        format!(
-                                            "Send stopped at line {} ({})",
-                                            final_state.send_count + 1,
-                                            final_state.error_msg
-                                        ),
-                                    ));
-                                }
-
-                                let console_output = console_manager_timer.get_output();
-                                window
-                                    .set_console_output(slint::SharedString::from(console_output));
-                            }
-
-                            timer_clone.stop();
-                        }
-                        return;
-                    }
-
-                    // Step 2: Send multiple lines in batches (up to 5 lines per timer tick)
-                    for _ in 0..5 {
-                        if state.line_index >= state.lines.len() {
-                            state.waiting_for_acks = true;
-                            break;
-                        }
-
-                        let trimmed = state.lines[state.line_index].trim().to_string();
-
-                        if trimmed.is_empty() {
-                            state.line_index += 1;
-                            continue;
-                        }
-
-                        let line_length = trimmed.len() + 1;
-
-                        // Check if there's room in the buffer
-                        if state.pending_bytes + line_length <= GRBL_RX_BUFFER_SIZE {
-                            // Scope the communicator borrow to minimal duration
-                            let send_result = {
-                                let mut comm = communicator_timer.lock().unwrap();
-                                let command_bytes = format!("{}\n", trimmed);
-                                comm.send(command_bytes.as_bytes())
-                            };
-
-                            match send_result {
-                                Ok(_bytes_sent) => {
-                                    state.send_count += 1;
-                                    state.pending_bytes += line_length;
-                                    state.line_lengths.push(line_length);
-                                    state.line_index += 1;
-
-                                    debug!(
-                                        "Sent line {} ({} bytes): {} [pending: {}/{}]",
-                                        state.send_count,
-                                        line_length,
-                                        trimmed,
-                                        state.pending_bytes,
-                                        GRBL_RX_BUFFER_SIZE
-                                    );
-                                }
-                                Err(e) => {
-                                    let error_msg = format!("{}", e);
-                                    let line_count = state.send_count + 1;
-                                    warn!("Failed to send line {}: {}", line_count, error_msg);
-
-                                    state.error_msg = error_msg.clone();
-                                    state.error_occurred = true;
-
-                                    drop(state);
-
-                                    console_manager_timer.add_message(
-                                        DeviceMessageType::Error,
-                                        format!(
-                                            "✗ Failed to send line {}: {}",
-                                            line_count, error_msg
-                                        ),
-                                    );
-
-                                    if let Some(window) = window_weak_timer.upgrade() {
-                                        window.set_connection_status(slint::SharedString::from(
-                                            format!(
-                                                "Send stopped at line {} ({})",
-                                                line_count, error_msg
-                                            ),
-                                        ));
-                                        let console_output = console_manager_timer.get_output();
-                                        window.set_console_output(slint::SharedString::from(
-                                            console_output,
-                                        ));
-                                    }
-
-                                    timer_clone.stop();
-                                    return;
-                                }
-                            }
-                        } else {
-                            // Buffer full, wait for acknowledgments
-                            state.waiting_for_acks = true;
-                            break;
-                        }
-                    }
-                },
-            );
         }
     });
 

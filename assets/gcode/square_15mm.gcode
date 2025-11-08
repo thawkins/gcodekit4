@@ -5,11 +5,11 @@
 
 G21 ; Units in millimeters
 G90 ; Absolute coordinates
-G0 X12.5 Y12.5 ; Move to start point (bottom left corner)
+G0 X12.5 Y12.5 F2000 ; Move to start point (bottom left corner)
 M3 S255 ; Laser on at full intensity
 
 ; Square 1
-G1 X27.5 Y12.5
+G1 X27.5 Y12.5 F1000
 G1 X27.5 Y27.5
 G1 X12.5 Y27.5
 G1 X12.5 Y12.5
