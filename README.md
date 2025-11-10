@@ -123,6 +123,28 @@ GCodeKit4 is a Rust-based CNC machine controller providing a modern alternative 
   - **Persistent Storage**: Auto-saves custom materials to disk
   - **Standard Library**: Includes common materials with tested parameters
 
+### 🔨 CAM Tools
+- **Tabbed Box Maker**: Generate laser/CNC cut boxes with finger joints
+  - Inside/outside dimension modes
+  - Configurable tab width and kerf compensation
+  - Multiple box types (full, no top, no front, etc.)
+  - Layout styles: diagrammatic, three-piece, inline-compact
+  - Dividers support for internal compartments
+  - Laser settings: multi-pass, power control, feed rate
+  - Based on [TabbedBoxMaker algorithm](https://github.com/paulh-rnd/TabbedBoxMaker)
+
+- **Jigsaw Puzzle Maker**: Generate laser cut jigsaw puzzles
+  - **Draradech Algorithm**: Advanced cubic Bézier curves for organic pieces
+  - **Configurable Dimensions**: Width × Height in millimeters
+  - **Variable Piece Count**: 2-20 pieces in each direction (min 15mm per piece)
+  - **Seed-Based Generation**: Reproducible random patterns
+  - **Tab Size Control**: 10-30% adjustment for difficulty
+  - **Jitter Control**: 0-13% randomness for organic positioning
+  - **Rounded Corners**: 0-10mm corner radius for professional finish
+  - **Laser Parameters**: Multi-pass support, power control, feed rate
+  - **Enhanced Features**: Based on [Draradech's jigsaw generator](https://github.com/Draradech/jigsaw)
+  - **Smart Initialization**: Automatic homing and work coordinate setup
+
 ## Supported Controllers
 
 | Controller | Versions | Protocol | Features |

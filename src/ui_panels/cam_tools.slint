@@ -2,6 +2,8 @@
 //! Provides a collection of CAM (Computer-Aided Manufacturing) tools and utilities
 
 import { Button, VerticalBox, HorizontalBox, ScrollView } from "std-widgets.slint";
+import { TabbedBoxDialog } from "tabbed_box_dialog.slint";
+import { JigsawPuzzleDialog } from "jigsaw_puzzle_dialog.slint";
 
 component ToolCard inherits Rectangle {
     in property <string> tool-title: "Tool";
@@ -9,8 +11,12 @@ component ToolCard inherits Rectangle {
     
     callback clicked();
     
-    width: 200px;
-    height: 200px;
+    preferred-width: 200px;
+    preferred-height: 200px;
+    min-width: 200px;
+    max-width: 200px;
+    min-height: 200px;
+    max-height: 200px;
     background: white;
     border-width: 1px;
     border-color: #ccc;
@@ -25,18 +31,20 @@ component ToolCard inherits Rectangle {
             font-size: 14px;
             font-weight: 600;
             horizontal-alignment: center;
+            wrap: word-wrap;
+            width: 100%;
         }
         
         Rectangle {
             vertical-stretch: 1;
+            width: 100%;
             
             Text {
                 text: tool-description;
                 font-size: 12px;
                 color: #666;
-                horizontal-alignment: center;
-                vertical-alignment: center;
                 wrap: word-wrap;
+                width: parent.width;
             }
         }
     }
@@ -52,6 +60,9 @@ component ToolCard inherits Rectangle {
 export component CAMToolsPanel inherits Rectangle {
     background: #ecf0f1;
     
+    callback open-tabbed-box-maker();
+    callback open-jigsaw-puzzle-maker();
+    
     VerticalBox {
         padding: 10px;
         spacing: 10px;
@@ -65,125 +76,130 @@ export component CAMToolsPanel inherits Rectangle {
         
         ScrollView {
             vertical-stretch: 1;
+            viewport-width: 650px;
             
-            VerticalBox {
+            GridLayout {
                 spacing: 10px;
                 padding: 5px;
                 
-                // Row 1
-                HorizontalBox {
-                    spacing: 10px;
-                    
-                    ToolCard {
-                        tool-title: "Tool 1";
-                        tool-description: "Tool to go here";
-                        clicked => {
-                            // Placeholder for future tool action
-                        }
+                ToolCard {
+                    tool-title: "Tabbed Box Maker";
+                    tool-description: "Generate G-code for laser/CNC cut boxes with finger joints";
+                    clicked => {
+                        root.open-tabbed-box-maker();
                     }
-                    
-                    ToolCard {
-                        tool-title: "Tool 2";
-                        tool-description: "Tool to go here";
-                        clicked => {
-                            // Placeholder for future tool action
-                        }
-                    }
-                    
-                    ToolCard {
-                        tool-title: "Tool 3";
-                        tool-description: "Tool to go here";
-                        clicked => {
-                            // Placeholder for future tool action
-                        }
-                    }
+                    col: 0;
+                    row: 0;
                 }
                 
-                // Row 2
-                HorizontalBox {
-                    spacing: 10px;
-                    
-                    ToolCard {
-                        tool-title: "Tool 4";
-                        tool-description: "Tool to go here";
-                        clicked => {
-                            // Placeholder for future tool action
-                        }
+                ToolCard {
+                    tool-title: "Jigsaw Puzzle Maker";
+                    tool-description: "Generate G-code for laser cut jigsaw puzzles with interlocking pieces";
+                    clicked => {
+                        root.open-jigsaw-puzzle-maker();
                     }
-                    
-                    ToolCard {
-                        tool-title: "Tool 5";
-                        tool-description: "Tool to go here";
-                        clicked => {
-                            // Placeholder for future tool action
-                        }
-                    }
-                    
-                    ToolCard {
-                        tool-title: "Tool 6";
-                        tool-description: "Tool to go here";
-                        clicked => {
-                            // Placeholder for future tool action
-                        }
-                    }
+                    col: 1;
+                    row: 0;
                 }
                 
-                // Row 3
-                HorizontalBox {
-                    spacing: 10px;
-                    
-                    ToolCard {
-                        tool-title: "Tool 7";
-                        tool-description: "Tool to go here";
-                        clicked => {
-                            // Placeholder for future tool action
-                        }
+                ToolCard {
+                    tool-title: "Tool 3";
+                    tool-description: "Tool to go here";
+                    clicked => {
+                        // Placeholder for future tool action
                     }
-                    
-                    ToolCard {
-                        tool-title: "Tool 8";
-                        tool-description: "Tool to go here";
-                        clicked => {
-                            // Placeholder for future tool action
-                        }
-                    }
-                    
-                    ToolCard {
-                        tool-title: "Tool 9";
-                        tool-description: "Tool to go here";
-                        clicked => {
-                            // Placeholder for future tool action
-                        }
-                    }
+                    col: 2;
+                    row: 0;
                 }
                 
-                // Additional rows for testing scroll
-                HorizontalBox {
-                    spacing: 10px;
-                    
-                    ToolCard {
-                        tool-title: "Tool 10";
-                        tool-description: "Tool to go here";
-                        clicked => {
-                            // Placeholder for future tool action
-                        }
+                ToolCard {
+                    tool-title: "Tool 4";
+                    tool-description: "Tool to go here";
+                    clicked => {
+                        // Placeholder for future tool action
                     }
-                    
-                    ToolCard {
-                        tool-title: "Tool 11";
-                        tool-description: "Tool to go here";
-                        clicked => {
-                            // Placeholder for future tool action
-                        }
+                    col: 0;
+                    row: 1;
+                }
+                
+                ToolCard {
+                    tool-title: "Tool 5";
+                    tool-description: "Tool to go here";
+                    clicked => {
+                        // Placeholder for future tool action
                     }
-                    
-                    ToolCard {
-                        tool-title: "Tool 12";
-                        tool-description: "Tool to go here";
-                        clicked => {
-                            // Placeholder for future tool action
-                        }
+                    col: 1;
+                    row: 1;
+                }
+                
+                ToolCard {
+                    tool-title: "Tool 6";
+                    tool-description: "Tool to go here";
+                    clicked => {
+                        // Placeholder for future tool action
                     }
+                    col: 2;
+                    row: 1;
+                }
+                
+                ToolCard {
+                    tool-title: "Tool 7";
+                    tool-description: "Tool to go here";
+                    clicked => {
+                        // Placeholder for future tool action
+                    }
+                    col: 0;
+                    row: 2;
+                }
+                
+                ToolCard {
+                    tool-title: "Tool 8";
+                    tool-description: "Tool to go here";
+                    clicked => {
+                        // Placeholder for future tool action
+                    }
+                    col: 1;
+                    row: 2;
+                }
+                
+                ToolCard {
+                    tool-title: "Tool 9";
+                    tool-description: "Tool to go here";
+                    clicked => {
+                        // Placeholder for future tool action
+                    }
+                    col: 2;
+                    row: 2;
+                }
+                
+                ToolCard {
+                    tool-title: "Tool 10";
+                    tool-description: "Tool to go here";
+                    clicked => {
+                        // Placeholder for future tool action
+                    }
+                    col: 0;
+                    row: 3;
+                }
+                
+                ToolCard {
+                    tool-title: "Tool 11";
+                    tool-description: "Tool to go here";
+                    clicked => {
+                        // Placeholder for future tool action
+                    }
+                    col: 1;
+                    row: 3;
+                }
+                
+                ToolCard {
+                    tool-title: "Tool 12";
+                    tool-description: "Tool to go here";
+                    clicked => {
+                        // Placeholder for future tool action
+                    }
+                    col: 2;
+                    row: 3;
                 }
             }
         }

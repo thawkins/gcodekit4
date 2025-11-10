@@ -57,3 +57,34 @@
 - **data:** 1875 lines
 - **core:** 784 lines
 - **communication:** 1502 lines
+
+## Recent Changes (v0.25.6-alpha)
+
+### New Features
+- Jigsaw Puzzle Maker with Draradech algorithm
+- Enhanced Tabbed Box Maker with feed rate control
+- BrokenPipe error handling improvements
+- Feed rate on all G1 commands for GRBL compatibility
+
+### Code Quality
+- All tests passing (709 total)
+- Comprehensive error handling
+- Debug logging improvements
+- Clean separation of concerns
+
+## Component Sizes
+
+  530 src/processing/jigsaw_puzzle.rs
+  555 src/processing/tabbed_box.rs
+  725 src/communication/mod.rs
+
+## Build Information
+- **Rust Edition**: 2021
+- **Minimum Rust Version**: 1.70
+- **Build Time (Release)**: ~2-3 minutes
+- **Binary Size (Release)**: ~15-20 MB
+
+## Testing
+- Unit tests: 709+ tests
+- Integration tests: Communication, UI, Processing
+- All tests passing

@@ -3,6 +3,8 @@ use gcodekit4::{
     ConnectionParams, ConsoleListener, DeviceConsoleManager, DeviceMessageType,
     FirmwareSettingsIntegration, GcodeEditor, SerialCommunicator,
     SerialParity, SettingValue, SettingsDialog, SettingsPersistence, BUILD_DATE, VERSION,
+    BoxParameters, BoxType, LayoutStyle, TabType, TabbedBoxMaker,
+    JigsawPuzzleMaker, PuzzleParameters,
 };
 use slint::{Model, VecModel};
 use std::cell::RefCell;
@@ -10,6 +12,12 @@ use std::rc::Rc;
 use tracing::{debug, warn};
 
 slint::include_modules!();
+
+slint::slint! {
+    export { TabbedBoxDialog } from "src/ui_panels/tabbed_box_dialog.slint";
+    export { JigsawPuzzleDialog } from "src/ui_panels/jigsaw_puzzle_dialog.slint";
+    export { ErrorDialog } from "src/ui_panels/error_dialog.slint";
+}
 
 /// Copy text to clipboard using arboard crate
 fn copy_to_clipboard(text: &str) -> bool {
@@ -981,6 +989,18 @@ fn main() -> anyhow::Result<()> {
         let mut comm = communicator_clone.lock().unwrap();
         if let Err(_) = comm.disconnect() {}
         std::process::exit(0);
+    });
+
+    // Set up menu-file-new callback
+    let window_weak = main_window.as_weak();
+    main_window.on_menu_file_new(move || {
+        if let Some(window) = window_weak.upgrade() {
+            // Clear the editor content and reset filename
+            window.set_gcode_filename(slint::SharedString::from("unknown.gcode"));
+            window.set_gcode_content(slint::SharedString::from(""));
+            
+            debug!("Editor cleared, new file created");
+        }
     });
 
     // Set up menu-file-open callback
@@ -3876,6 +3896,302 @@ fn main() -> anyhow::Result<()> {
     main_window.on_designer_update_cut_depth(move |depth: f32| {
         let mut state = designer_mgr_clone.borrow_mut();
         state.toolpath_generator.set_cut_depth(depth as f64);
+    });
+
+    // Tabbed Box Maker: Open dialog window
+    let window_weak = main_window.as_weak();
+    let dialog_holder: Rc<RefCell<Option<TabbedBoxDialog>>> = Rc::new(RefCell::new(None));
+    main_window.on_generate_tabbed_box(move || {
+        if let Some(main_win) = window_weak.upgrade() {
+            let dialog = TabbedBoxDialog::new().unwrap();
+            
+            // Store dialog in holder to keep it alive
+            *dialog_holder.borrow_mut() = Some(dialog.clone_strong());
+            
+            // Initialize dialog with current values from main window
+            dialog.set_box_length(main_win.get_tbox_length());
+            dialog.set_box_width(main_win.get_tbox_width());
+            dialog.set_box_height(main_win.get_tbox_height());
+            dialog.set_material_thickness(main_win.get_tbox_thickness());
+            dialog.set_tab_width(main_win.get_tbox_tab_width());
+            dialog.set_kerf(main_win.get_tbox_kerf());
+            dialog.set_spacing(main_win.get_tbox_spacing());
+            dialog.set_box_type(main_win.get_tbox_box_type());
+            dialog.set_tab_type(main_win.get_tbox_tab_type());
+            dialog.set_layout_style(main_win.get_tbox_layout_style());
+            dialog.set_inside_dimensions(main_win.get_tbox_inside_dims());
+            dialog.set_laser_passes(main_win.get_tbox_laser_passes());
+            dialog.set_laser_power(main_win.get_tbox_laser_power());
+            dialog.set_feed_rate(main_win.get_tbox_feed_rate());
+            
+            // Cancel button callback
+            let dialog_weak_cancel = dialog.as_weak();
+            dialog.on_cancel_dialog(move || {
+                if let Some(dlg) = dialog_weak_cancel.upgrade() {
+                    dlg.hide().ok();
+                }
+            });
+            
+            // Generate button callback
+            let main_win_clone = main_win.as_weak();
+            let dialog_weak = dialog.as_weak();
+            dialog.on_generate_box(move || {
+                if let Some(window) = main_win_clone.upgrade() {
+                    if let Some(dlg) = dialog_weak.upgrade() {
+                        // Read values from dialog
+                        let length = dlg.get_box_length().parse::<f32>().unwrap_or(100.0);
+                        let width = dlg.get_box_width().parse::<f32>().unwrap_or(100.0);
+                        let height = dlg.get_box_height().parse::<f32>().unwrap_or(100.0);
+                        let thickness = dlg.get_material_thickness().parse::<f32>().unwrap_or(3.0);
+                        let tab_width = dlg.get_tab_width().parse::<f32>().unwrap_or(25.0);
+                        let kerf = dlg.get_kerf().parse::<f32>().unwrap_or(0.5);
+                        let spacing = dlg.get_spacing().parse::<f32>().unwrap_or(5.0);
+                        let box_type = BoxType::from(dlg.get_box_type() + 1);
+                        let tab_type = TabType::from(dlg.get_tab_type());
+                        let layout_style = LayoutStyle::from(dlg.get_layout_style() + 1);
+                        let inside_dimensions = dlg.get_inside_dimensions();
+                        let laser_passes = dlg.get_laser_passes().parse::<i32>().unwrap_or(3).max(1);
+                        let laser_power = dlg.get_laser_power().parse::<i32>().unwrap_or(1000).max(0);
+                        let feed_rate = dlg.get_feed_rate().parse::<f32>().unwrap_or(500.0).max(1.0);
+                        
+                        // Save values back to main window for next time
+                        window.set_tbox_length(dlg.get_box_length());
+                        window.set_tbox_width(dlg.get_box_width());
+                        window.set_tbox_height(dlg.get_box_height());
+                        window.set_tbox_thickness(dlg.get_material_thickness());
+                        window.set_tbox_tab_width(dlg.get_tab_width());
+                        window.set_tbox_kerf(dlg.get_kerf());
+                        window.set_tbox_spacing(dlg.get_spacing());
+                        window.set_tbox_box_type(dlg.get_box_type());
+                        window.set_tbox_tab_type(dlg.get_tab_type());
+                        window.set_tbox_layout_style(dlg.get_layout_style());
+                        window.set_tbox_inside_dims(dlg.get_inside_dimensions());
+                        window.set_tbox_laser_passes(dlg.get_laser_passes());
+                        window.set_tbox_laser_power(dlg.get_laser_power());
+                        window.set_tbox_feed_rate(dlg.get_feed_rate());
+
+                        let params = BoxParameters {
+                            length,
+                            width,
+                            height,
+                            thickness,
+                            tab_width,
+                            kerf,
+                            spacing,
+                            box_type,
+                            tab_type,
+                            layout_style,
+                            inside_dimensions,
+                            dividers_length: 0,
+                            dividers_width: 0,
+                            laser_passes,
+                            laser_power,
+                            feed_rate,
+                        };
+
+                        match TabbedBoxMaker::new(params.clone()) {
+                            Ok(mut maker) => {
+                                match maker.generate() {
+                                    Ok(_) => {
+                                        let gcode = maker.to_gcode(1000.0, 300.0, thickness);
+                                        window.set_gcode_content(slint::SharedString::from(&gcode));
+                                        window.set_gcode_filename(slint::SharedString::from(format!(
+                                            "box_{}x{}x{}.gcode",
+                                            length as i32, width as i32, height as i32
+                                        )));
+                                        window.set_current_view(slint::SharedString::from("gcode-editor"));
+                                        window.set_connection_status(slint::SharedString::from(
+                                            "Tabbed box G-code generated successfully"
+                                        ));
+                                    }
+                                    Err(e) => {
+                                        
+                                        let error_msg = format!("Failed to generate box: {}", e);
+                                        window.set_connection_status(slint::SharedString::from(&error_msg));
+                                        
+                                        // Show error dialog
+                                        let error_dialog = ErrorDialog::new().unwrap();
+                                        error_dialog.set_error_message(slint::SharedString::from(&error_msg));
+                                        
+                                        let error_dialog_weak = error_dialog.as_weak();
+                                        error_dialog.on_close_dialog(move || {
+                                            if let Some(dlg) = error_dialog_weak.upgrade() {
+                                                dlg.hide().ok();
+                                            }
+                                        });
+                                        
+                                        error_dialog.show().ok();
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                // Show error in status bar
+                                let error_msg = format!("Invalid parameters: {}", e);
+                                window.set_connection_status(slint::SharedString::from(&error_msg));
+                                
+                                // Show error dialog
+                                let error_dialog = ErrorDialog::new().unwrap();
+                                error_dialog.set_error_message(slint::SharedString::from(&error_msg));
+                                
+                                let error_dialog_weak = error_dialog.as_weak();
+                                error_dialog.on_close_dialog(move || {
+                                    if let Some(dlg) = error_dialog_weak.upgrade() {
+                                        dlg.hide().ok();
+                                    }
+                                });
+                                
+                                error_dialog.show().ok();
+                            }
+                        }
+                    }
+                }
+            });
+            
+            dialog.show().unwrap();
+        }
+    });
+
+    // Jigsaw Puzzle Maker
+    let window_weak = main_window.as_weak();
+    let dialog_holder: Rc<RefCell<Option<JigsawPuzzleDialog>>> = Rc::new(RefCell::new(None));
+    main_window.on_generate_jigsaw_puzzle(move || {
+        if let Some(main_win) = window_weak.upgrade() {
+            let dialog = JigsawPuzzleDialog::new().unwrap();
+            
+            // Store dialog in holder to keep it alive
+            *dialog_holder.borrow_mut() = Some(dialog.clone_strong());
+            
+            // Initialize dialog with current values from main window
+            dialog.set_puzzle_width(main_win.get_puzzle_width());
+            dialog.set_puzzle_height(main_win.get_puzzle_height());
+            dialog.set_pieces_across(main_win.get_puzzle_pieces_across());
+            dialog.set_pieces_down(main_win.get_puzzle_pieces_down());
+            dialog.set_kerf(main_win.get_puzzle_kerf());
+            dialog.set_laser_passes(main_win.get_puzzle_laser_passes());
+            dialog.set_laser_power(main_win.get_puzzle_laser_power());
+            dialog.set_feed_rate(main_win.get_puzzle_feed_rate());
+            dialog.set_seed(main_win.get_puzzle_seed());
+            dialog.set_tab_size(main_win.get_puzzle_tab_size());
+            dialog.set_jitter(main_win.get_puzzle_jitter());
+            dialog.set_corner_radius(main_win.get_puzzle_corner_radius());
+            
+            // Cancel button callback
+            let dialog_weak_cancel = dialog.as_weak();
+            dialog.on_cancel_dialog(move || {
+                if let Some(dlg) = dialog_weak_cancel.upgrade() {
+                    dlg.hide().ok();
+                }
+            });
+            
+            // Generate button callback
+            let main_win_clone = main_win.as_weak();
+            let dialog_weak = dialog.as_weak();
+            dialog.on_generate_puzzle(move || {
+                if let Some(window) = main_win_clone.upgrade() {
+                    if let Some(dlg) = dialog_weak.upgrade() {
+                        // Read values from dialog
+                        let width = dlg.get_puzzle_width().parse::<f32>().unwrap_or(200.0);
+                        let height = dlg.get_puzzle_height().parse::<f32>().unwrap_or(150.0);
+                        let pieces_across = dlg.get_pieces_across().parse::<i32>().unwrap_or(4);
+                        let pieces_down = dlg.get_pieces_down().parse::<i32>().unwrap_or(3);
+                        let kerf = dlg.get_kerf().parse::<f32>().unwrap_or(0.5);
+                        let laser_passes = dlg.get_laser_passes().parse::<i32>().unwrap_or(3).max(1);
+                        let laser_power = dlg.get_laser_power().parse::<i32>().unwrap_or(1000).max(0);
+                        let feed_rate = dlg.get_feed_rate().parse::<f32>().unwrap_or(500.0).max(1.0);
+                        let seed = dlg.get_seed().parse::<u32>().unwrap_or(42);
+                        let tab_size_percent = dlg.get_tab_size().parse::<f32>().unwrap_or(20.0).clamp(10.0, 30.0);
+                        let jitter_percent = dlg.get_jitter().parse::<f32>().unwrap_or(4.0).clamp(0.0, 13.0);
+                        let corner_radius = dlg.get_corner_radius().parse::<f32>().unwrap_or(2.0).clamp(0.0, 10.0);
+                        
+                        // Save values back to main window for next time
+                        window.set_puzzle_width(dlg.get_puzzle_width());
+                        window.set_puzzle_height(dlg.get_puzzle_height());
+                        window.set_puzzle_pieces_across(dlg.get_pieces_across());
+                        window.set_puzzle_pieces_down(dlg.get_pieces_down());
+                        window.set_puzzle_kerf(dlg.get_kerf());
+                        window.set_puzzle_laser_passes(dlg.get_laser_passes());
+                        window.set_puzzle_laser_power(dlg.get_laser_power());
+                        window.set_puzzle_feed_rate(dlg.get_feed_rate());
+                        window.set_puzzle_seed(dlg.get_seed());
+                        window.set_puzzle_tab_size(dlg.get_tab_size());
+                        window.set_puzzle_jitter(dlg.get_jitter());
+                        window.set_puzzle_corner_radius(dlg.get_corner_radius());
+
+                        let params = PuzzleParameters {
+                            width,
+                            height,
+                            pieces_across,
+                            pieces_down,
+                            kerf,
+                            laser_passes,
+                            laser_power,
+                            feed_rate,
+                            seed,
+                            tab_size_percent,
+                            jitter_percent,
+                            corner_radius,
+                        };
+
+                        match JigsawPuzzleMaker::new(params.clone()) {
+                            Ok(mut maker) => {
+                                match maker.generate() {
+                                    Ok(_) => {
+                                        let gcode = maker.to_gcode(300.0, 3.0);
+                                        window.set_gcode_content(slint::SharedString::from(&gcode));
+                                        window.set_gcode_filename(slint::SharedString::from(format!(
+                                            "puzzle_{}x{}_{}x{}.gcode",
+                                            width as i32, height as i32, pieces_across, pieces_down
+                                        )));
+                                        window.set_current_view(slint::SharedString::from("gcode-editor"));
+                                        window.set_connection_status(slint::SharedString::from(
+                                            "Jigsaw puzzle G-code generated successfully"
+                                        ));
+                                        
+                                        dlg.hide().ok();
+                                    }
+                                    Err(e) => {
+                                        let error_msg = format!("Failed to generate puzzle: {}", e);
+                                        window.set_connection_status(slint::SharedString::from(&error_msg));
+                                        
+                                        // Show error dialog
+                                        let error_dialog = ErrorDialog::new().unwrap();
+                                        error_dialog.set_error_message(slint::SharedString::from(&error_msg));
+                                        
+                                        let error_dialog_weak = error_dialog.as_weak();
+                                        error_dialog.on_close_dialog(move || {
+                                            if let Some(dlg) = error_dialog_weak.upgrade() {
+                                                dlg.hide().ok();
+                                            }
+                                        });
+                                        
+                                        error_dialog.show().ok();
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                let error_msg = format!("Invalid puzzle parameters: {}", e);
+                                window.set_connection_status(slint::SharedString::from(&error_msg));
+                                
+                                // Show error dialog
+                                let error_dialog = ErrorDialog::new().unwrap();
+                                error_dialog.set_error_message(slint::SharedString::from(&error_msg));
+                                
+                                let error_dialog_weak = error_dialog.as_weak();
+                                error_dialog.on_close_dialog(move || {
+                                    if let Some(dlg) = error_dialog_weak.upgrade() {
+                                        dlg.hide().ok();
+                                    }
+                                });
+                                
+                                error_dialog.show().ok();
+                            }
+                        }
+                    }
+                }
+            });
+            
+            dialog.show().unwrap();
+        }
     });
 
     // Zoom state tracking (Arc for shared state across closures)

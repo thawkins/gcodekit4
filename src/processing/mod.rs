@@ -9,8 +9,10 @@ pub mod advanced_features;
 pub mod arc_expander;
 pub mod comment_processor;
 pub mod core_infrastructure;
+pub mod jigsaw_puzzle;
 pub mod optimizer;
 pub mod stats;
+pub mod tabbed_box;
 pub mod toolpath;
 pub mod validator;
 
@@ -20,7 +22,9 @@ pub use advanced_features::{
 pub use arc_expander::ArcExpander;
 pub use comment_processor::CommentProcessor;
 pub use core_infrastructure::{AppConfig, ApplicationState, Logger, TelemetryData};
+pub use jigsaw_puzzle::{JigsawPuzzleMaker, PuzzleParameters};
 pub use optimizer::GCodeOptimizer;
 pub use stats::StatsCalculator;
+pub use tabbed_box::{BoxParameters, BoxType, LayoutStyle, TabType, TabbedBoxMaker};
 pub use toolpath::{Segment, SegmentType, Toolpath};
 pub use validator::GCodeValidator;

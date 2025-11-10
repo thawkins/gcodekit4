@@ -5,6 +5,46 @@ All notable changes to GCodeKit4 will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.6-alpha] - 2025-11-10
+
+### Added - CAM Tools
+- **Jigsaw Puzzle Maker** - Advanced jigsaw puzzle generator using Draradech algorithm
+  - Cubic Bézier curves with 10 control points for organic piece shapes
+  - Configurable dimensions (width × height in mm)
+  - Variable piece count: 2-20 pieces per direction
+  - Minimum piece size: 15mm (down from 20mm for more intricate puzzles)
+  - Seed-based reproducible random generation
+  - Tab size control: 10-30% adjustment for puzzle difficulty
+  - Jitter control: 0-13% randomness for organic positioning
+  - Corner radius: 0-10mm for rounded borders
+  - Laser parameters: multi-pass, power control, feed rate
+  - Smart initialization: automatic homing and work coordinate setup
+  - Based on [Draradech's jigsaw generator](https://github.com/Draradech/jigsaw)
+  - Scrollable parameter dialog for all settings
+  - Error dialogs for invalid parameters
+
+- **Tabbed Box Maker Enhancements**
+  - Added feed rate parameter to laser settings
+  - Feed rate now included on every G1 move command
+  - Box layout comment header in generated G-code
+  - Improved initialization sequence with work coordinate setup
+
+### Fixed - Communication
+- **BrokenPipe Error Handling** - Improved graceful handling of pipe errors
+  - BrokenPipe errors now logged at DEBUG level instead of ERROR
+  - Treated as expected cleanup/disconnect scenarios
+  - No more scary error messages during successful file sends
+  - Fixed for both Serial and TCP communicators
+  - Send and receive operations handle BrokenPipe gracefully
+  - File streaming completes successfully without error logging noise
+
+### Fixed - G-Code Generation
+- **Feed Rate on All Commands** - GRBL compatibility fix
+  - Every G1 move command now includes F parameter
+  - No standalone F commands (rejected by GRBL)
+  - Both Tabbed Box and Jigsaw Puzzle generators updated
+  - Ensures reliable execution on all GRBL-based controllers
+
 ## [0.25.5-alpha] - 2025-11-08
 
 ### Fixed - G-Code Streaming

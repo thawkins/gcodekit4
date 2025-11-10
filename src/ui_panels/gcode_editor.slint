@@ -11,6 +11,7 @@ export component GcodeEditorPanel inherits VerticalBox {
     in-out property <string> gcode-content: "";
     in-out property <string> gcode-filename: "untitled.gcode";
     
+    callback menu-file-new();
     callback menu-file-open();
     callback menu-file-save();
     callback menu-file-save-as();
@@ -28,6 +29,12 @@ export component GcodeEditorPanel inherits VerticalBox {
             HorizontalBox {
                 spacing: 15px;
                 
+                Button {
+                    text: "New";
+                    clicked => {
+                        root.menu-file-new();
+                    }
+                }
                 Button {
                     text: "Open File";
                     clicked => {

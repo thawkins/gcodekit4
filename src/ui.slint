@@ -17,6 +17,7 @@ import { MaterialsManager, MaterialData } from "ui_panels/materials_manager.slin
 import { ToolsManager, ToolData } from "ui_panels/tools_manager.slint";
 import { MainMenu } from "ui/ui_components/mainmenu.slint";
 import { SettingsDialog, SettingItem } from "ui/ui_components/settings_dialog.slint";
+import { TabbedBoxDialog } from "ui_panels/tabbed_box_dialog.slint";
 
 export struct PortInfo {
     port: string,
@@ -155,9 +156,42 @@ export component MainWindow inherits Window {
     // CNC Tools Manager properties
     in-out property <[ToolData]> cnc_tools: [];
     
+    // Tabbed Box Maker properties
+    in-out property <string> tbox-length: "100.0";
+    in-out property <string> tbox-width: "100.0";
+    in-out property <string> tbox-height: "100.0";
+    in-out property <string> tbox-thickness: "3.0";
+    in-out property <string> tbox-tab-width: "25.0";
+    in-out property <string> tbox-kerf: "0.5";
+    in-out property <string> tbox-spacing: "5.0";
+    in-out property <int> tbox-box-type: 0;
+    in-out property <int> tbox-tab-type: 0;
+    in-out property <int> tbox-layout-style: 0;
+    in-out property <bool> tbox-inside-dims: false;
+    in-out property <int> tbox-div-length: 0;
+    in-out property <int> tbox-div-width: 0;
+    in-out property <string> tbox-laser-passes: "3";
+    in-out property <string> tbox-laser-power: "1000";
+    in-out property <string> tbox-feed-rate: "500";
+    
+    // Jigsaw Puzzle properties
+    in-out property <string> puzzle-width: "200.0";
+    in-out property <string> puzzle-height: "150.0";
+    in-out property <string> puzzle-pieces-across: "4";
+    in-out property <string> puzzle-pieces-down: "3";
+    in-out property <string> puzzle-kerf: "0.5";
+    in-out property <string> puzzle-laser-passes: "3";
+    in-out property <string> puzzle-laser-power: "1000";
+    in-out property <string> puzzle-feed-rate: "500";
+    in-out property <string> puzzle-seed: "42";
+    in-out property <string> puzzle-tab-size: "20.0";
+    in-out property <string> puzzle-jitter: "4.0";
+    in-out property <string> puzzle-corner-radius: "2.0";
+    
     callback refresh-ports();
     callback connect(string, int);
     callback disconnect();
+    callback menu-file-new();
     callback menu-file-open();
     callback menu-file-save();
     callback menu-file-save-as();
@@ -258,6 +292,10 @@ export component MainWindow inherits Window {
     callback designer-file-open();
     callback designer-file-save();
     callback designer-file-save-as();
+    
+    // CAM Tool callbacks
+    callback generate-tabbed-box();
+    callback generate-jigsaw-puzzle();
     
     // Internal state for UI selections
     private property <int> port-index: 0;
@@ -656,6 +694,9 @@ export component MainWindow inherits Window {
                 if current-view == "gcode-editor" : GcodeEditorPanel {
                     gcode-content <=> root.gcode-content;
                     gcode-filename <=> root.gcode-filename;
+                    menu-file-new => {
+                        root.menu-file-new();
+                    }
                     menu-file-open => {
                         root.menu-file-open();
                     }
@@ -1011,6 +1052,12 @@ export component MainWindow inherits Window {
                 
                 // CAM Tools View
                 if current-view == "cam-tools" : CAMToolsPanel {
+                    open-tabbed-box-maker => {
+                        root.generate-tabbed-box();
+                    }
+                    open-jigsaw-puzzle-maker => {
+                        root.generate-jigsaw-puzzle();
+                    }
                 }
                 
                 // Materials View

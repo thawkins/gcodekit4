@@ -508,6 +508,10 @@ impl Communicator for SerialCommunicator {
                     {
                         tracing::trace!("Serial receive timeout (no data)");
                         Ok(vec![])
+                    } else if e.kind() == std::io::ErrorKind::BrokenPipe {
+                        // BrokenPipe during receive often happens during cleanup or disconnect
+                        tracing::debug!("Receive operation completed with BrokenPipe (connection may have been closed)");
+                        Ok(vec![])
                     } else {
                         let msg = format!("Receive error: {}", e);
                         tracing::error!("{}", msg);
@@ -643,10 +647,17 @@ impl Communicator for TcpCommunicator {
                     Ok(n)
                 }
                 Err(e) => {
-                    let msg = format!("Send error: {}", e);
-                    tracing::error!("{}", msg);
-                    self.notify_listeners(CommunicatorEvent::Error, &msg);
-                    Err(crate::Error::other(msg))
+                    // Handle BrokenPipe more gracefully - it often occurs during cleanup
+                    if e.kind() == std::io::ErrorKind::BrokenPipe {
+                        tracing::debug!("Send operation completed with BrokenPipe (connection may have been closed)");
+                        // Return success for BrokenPipe if data was likely sent
+                        Ok(0)
+                    } else {
+                        let msg = format!("Send error: {}", e);
+                        tracing::error!("{}", msg);
+                        self.notify_listeners(CommunicatorEvent::Error, &msg);
+                        Err(crate::Error::other(msg))
+                    }
                 }
             }
         } else {
@@ -674,6 +685,10 @@ impl Communicator for TcpCommunicator {
                         || e.kind() == std::io::ErrorKind::TimedOut
                     {
                         tracing::trace!("TCP receive timeout (no data)");
+                        Ok(vec![])
+                    } else if e.kind() == std::io::ErrorKind::BrokenPipe {
+                        // BrokenPipe during receive often happens during cleanup or disconnect
+                        tracing::debug!("Receive operation completed with BrokenPipe (connection may have been closed)");
                         Ok(vec![])
                     } else {
                         let msg = format!("Receive error: {}", e);

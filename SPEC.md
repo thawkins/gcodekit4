@@ -14,8 +14,12 @@
   - Immediate jog response: fixed 10-15 second delay for Home/Jog commands
 - ✅ **CNC Tools Manager** - Full CRUD interface with GTC catalog import
 - ✅ **Materials Database Manager** - Complete material properties and CNC parameters management
+- ✅ **CAM Tools** - Integrated toolpath generators
+  - ✅ **Tabbed Box Maker** - Laser/CNC cut boxes with finger joints
+  - ✅ **Jigsaw Puzzle Maker** - Advanced puzzle generator using Draradech algorithm with Bézier curves
 - ✅ **Firmware Detection** - Reliable GRBL version detection using $I command
 - ✅ **Console Improvements** - Command input, GRBL error reporting, cleaned output
+- ✅ **BrokenPipe Handling** - Graceful handling of connection cleanup errors
 
 ## 1. Executive Summary
 
