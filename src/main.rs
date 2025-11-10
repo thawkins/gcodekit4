@@ -4203,60 +4203,90 @@ fn main() -> anyhow::Result<()> {
                             feed_rate,
                         };
 
-                        match TabbedBoxMaker::new(params.clone()) {
-                            Ok(mut maker) => {
-                                match maker.generate() {
-                                    Ok(_) => {
-                                        let gcode = maker.to_gcode(1000.0, 300.0, thickness);
-                                        window.set_gcode_content(slint::SharedString::from(&gcode));
-                                        window.set_gcode_filename(slint::SharedString::from(format!(
-                                            "box_{}x{}x{}.gcode",
-                                            length as i32, width as i32, height as i32
-                                        )));
-                                        window.set_current_view(slint::SharedString::from("gcode-editor"));
-                                        window.set_connection_status(slint::SharedString::from(
-                                            "Tabbed box G-code generated successfully"
-                                        ));
-                                    }
-                                    Err(e) => {
-                                        
-                                        let error_msg = format!("Failed to generate box: {}", e);
-                                        window.set_connection_status(slint::SharedString::from(&error_msg));
-                                        
-                                        // Show error dialog
-                                        let error_dialog = ErrorDialog::new().unwrap();
-                                        error_dialog.set_error_message(slint::SharedString::from(&error_msg));
-                                        
-                                        let error_dialog_weak = error_dialog.as_weak();
-                                        error_dialog.on_close_dialog(move || {
-                                            if let Some(dlg) = error_dialog_weak.upgrade() {
-                                                dlg.hide().ok();
+                        // Show progress and spawn background thread
+                        window.set_connection_status("Generating tabbed box G-code...".into());
+                        window.set_progress_value(0.1); // 10% - Starting
+                        
+                        // Close dialog immediately
+                        dlg.hide().ok();
+                        
+                        // Spawn background thread for generation
+                        let window_weak_thread = window.as_weak();
+                        std::thread::spawn(move || {
+                            let result = TabbedBoxMaker::new(params.clone())
+                                .and_then(|mut maker| {
+                                    // Update progress: 30% - Parameters validated
+                                    let _ = slint::invoke_from_event_loop({
+                                        let ww = window_weak_thread.clone();
+                                        move || {
+                                            if let Some(w) = ww.upgrade() {
+                                                w.set_progress_value(0.3);
                                             }
-                                        });
-                                        
-                                        error_dialog.show().ok();
+                                        }
+                                    });
+                                    
+                                    maker.generate().map(|_| maker)
+                                })
+                                .map(|mut maker| {
+                                    // Update progress: 70% - Generation complete
+                                    let _ = slint::invoke_from_event_loop({
+                                        let ww = window_weak_thread.clone();
+                                        move || {
+                                            if let Some(w) = ww.upgrade() {
+                                                w.set_progress_value(0.7);
+                                            }
+                                        }
+                                    });
+                                    
+                                    maker.to_gcode(1000.0, 300.0, thickness)
+                                });
+                            
+                            // Update UI from main thread
+                            let _ = slint::invoke_from_event_loop(move || {
+                                if let Some(win) = window_weak_thread.upgrade() {
+                                    match result {
+                                        Ok(gcode) => {
+                                            win.set_gcode_content(slint::SharedString::from(&gcode));
+                                            win.set_gcode_filename(slint::SharedString::from(format!(
+                                                "box_{}x{}x{}.gcode",
+                                                length as i32, width as i32, height as i32
+                                            )));
+                                            win.set_current_view(slint::SharedString::from("gcode-editor"));
+                                            win.set_connection_status(slint::SharedString::from(
+                                                "Tabbed box G-code generated successfully"
+                                            ));
+                                            win.set_progress_value(1.0); // 100%
+                                            
+                                            // Hide progress after 1 second
+                                            let win_weak = win.as_weak();
+                                            slint::Timer::single_shot(std::time::Duration::from_secs(1), move || {
+                                                if let Some(w) = win_weak.upgrade() {
+                                                    w.set_progress_value(0.0);
+                                                }
+                                            });
+                                        }
+                                        Err(e) => {
+                                            let error_msg = format!("Failed to generate box: {}", e);
+                                            win.set_connection_status(slint::SharedString::from(&error_msg));
+                                            win.set_progress_value(0.0); // Hide progress
+                                            
+                                            // Show error dialog
+                                            let error_dialog = ErrorDialog::new().unwrap();
+                                            error_dialog.set_error_message(slint::SharedString::from(&error_msg));
+                                            
+                                            let error_dialog_weak = error_dialog.as_weak();
+                                            error_dialog.on_close_dialog(move || {
+                                                if let Some(dlg) = error_dialog_weak.upgrade() {
+                                                    dlg.hide().ok();
+                                                }
+                                            });
+                                            
+                                            error_dialog.show().ok();
+                                        }
                                     }
                                 }
-                            }
-                            Err(e) => {
-                                // Show error in status bar
-                                let error_msg = format!("Invalid parameters: {}", e);
-                                window.set_connection_status(slint::SharedString::from(&error_msg));
-                                
-                                // Show error dialog
-                                let error_dialog = ErrorDialog::new().unwrap();
-                                error_dialog.set_error_message(slint::SharedString::from(&error_msg));
-                                
-                                let error_dialog_weak = error_dialog.as_weak();
-                                error_dialog.on_close_dialog(move || {
-                                    if let Some(dlg) = error_dialog_weak.upgrade() {
-                                        dlg.hide().ok();
-                                    }
-                                });
-                                
-                                error_dialog.show().ok();
-                            }
-                        }
+                            });
+                        });
                     }
                 }
             });
@@ -4346,60 +4376,90 @@ fn main() -> anyhow::Result<()> {
                             corner_radius,
                         };
 
-                        match JigsawPuzzleMaker::new(params.clone()) {
-                            Ok(mut maker) => {
-                                match maker.generate() {
-                                    Ok(_) => {
-                                        let gcode = maker.to_gcode(300.0, 3.0);
-                                        window.set_gcode_content(slint::SharedString::from(&gcode));
-                                        window.set_gcode_filename(slint::SharedString::from(format!(
-                                            "puzzle_{}x{}_{}x{}.gcode",
-                                            width as i32, height as i32, pieces_across, pieces_down
-                                        )));
-                                        window.set_current_view(slint::SharedString::from("gcode-editor"));
-                                        window.set_connection_status(slint::SharedString::from(
-                                            "Jigsaw puzzle G-code generated successfully"
-                                        ));
-                                        
-                                        dlg.hide().ok();
-                                    }
-                                    Err(e) => {
-                                        let error_msg = format!("Failed to generate puzzle: {}", e);
-                                        window.set_connection_status(slint::SharedString::from(&error_msg));
-                                        
-                                        // Show error dialog
-                                        let error_dialog = ErrorDialog::new().unwrap();
-                                        error_dialog.set_error_message(slint::SharedString::from(&error_msg));
-                                        
-                                        let error_dialog_weak = error_dialog.as_weak();
-                                        error_dialog.on_close_dialog(move || {
-                                            if let Some(dlg) = error_dialog_weak.upgrade() {
-                                                dlg.hide().ok();
+                        // Show progress and spawn background thread
+                        window.set_connection_status("Generating jigsaw puzzle G-code...".into());
+                        window.set_progress_value(0.1); // 10% - Starting
+                        
+                        // Close dialog immediately
+                        dlg.hide().ok();
+                        
+                        // Spawn background thread for generation
+                        let window_weak_thread = window.as_weak();
+                        std::thread::spawn(move || {
+                            let result = JigsawPuzzleMaker::new(params.clone())
+                                .and_then(|mut maker| {
+                                    // Update progress: 30% - Parameters validated
+                                    let _ = slint::invoke_from_event_loop({
+                                        let ww = window_weak_thread.clone();
+                                        move || {
+                                            if let Some(w) = ww.upgrade() {
+                                                w.set_progress_value(0.3);
                                             }
-                                        });
-                                        
-                                        error_dialog.show().ok();
+                                        }
+                                    });
+                                    
+                                    maker.generate().map(|_| maker)
+                                })
+                                .map(|mut maker| {
+                                    // Update progress: 70% - Generation complete
+                                    let _ = slint::invoke_from_event_loop({
+                                        let ww = window_weak_thread.clone();
+                                        move || {
+                                            if let Some(w) = ww.upgrade() {
+                                                w.set_progress_value(0.7);
+                                            }
+                                        }
+                                    });
+                                    
+                                    maker.to_gcode(300.0, 3.0)
+                                });
+                            
+                            // Update UI from main thread
+                            let _ = slint::invoke_from_event_loop(move || {
+                                if let Some(win) = window_weak_thread.upgrade() {
+                                    match result {
+                                        Ok(gcode) => {
+                                            win.set_gcode_content(slint::SharedString::from(&gcode));
+                                            win.set_gcode_filename(slint::SharedString::from(format!(
+                                                "puzzle_{}x{}_{}x{}.gcode",
+                                                width as i32, height as i32, pieces_across, pieces_down
+                                            )));
+                                            win.set_current_view(slint::SharedString::from("gcode-editor"));
+                                            win.set_connection_status(slint::SharedString::from(
+                                                "Jigsaw puzzle G-code generated successfully"
+                                            ));
+                                            win.set_progress_value(1.0); // 100%
+                                            
+                                            // Hide progress after 1 second
+                                            let win_weak = win.as_weak();
+                                            slint::Timer::single_shot(std::time::Duration::from_secs(1), move || {
+                                                if let Some(w) = win_weak.upgrade() {
+                                                    w.set_progress_value(0.0);
+                                                }
+                                            });
+                                        }
+                                        Err(e) => {
+                                            let error_msg = format!("Failed to generate puzzle: {}", e);
+                                            win.set_connection_status(slint::SharedString::from(&error_msg));
+                                            win.set_progress_value(0.0); // Hide progress
+                                            
+                                            // Show error dialog
+                                            let error_dialog = ErrorDialog::new().unwrap();
+                                            error_dialog.set_error_message(slint::SharedString::from(&error_msg));
+                                            
+                                            let error_dialog_weak = error_dialog.as_weak();
+                                            error_dialog.on_close_dialog(move || {
+                                                if let Some(dlg) = error_dialog_weak.upgrade() {
+                                                    dlg.hide().ok();
+                                                }
+                                            });
+                                            
+                                            error_dialog.show().ok();
+                                        }
                                     }
                                 }
-                            }
-                            Err(e) => {
-                                let error_msg = format!("Invalid puzzle parameters: {}", e);
-                                window.set_connection_status(slint::SharedString::from(&error_msg));
-                                
-                                // Show error dialog
-                                let error_dialog = ErrorDialog::new().unwrap();
-                                error_dialog.set_error_message(slint::SharedString::from(&error_msg));
-                                
-                                let error_dialog_weak = error_dialog.as_weak();
-                                error_dialog.on_close_dialog(move || {
-                                    if let Some(dlg) = error_dialog_weak.upgrade() {
-                                        dlg.hide().ok();
-                                    }
-                                });
-                                
-                                error_dialog.show().ok();
-                            }
-                        }
+                            });
+                        });
                     }
                 }
             });
@@ -4543,14 +4603,28 @@ fn main() -> anyhow::Result<()> {
                         let line_spacing = dlg.get_line_spacing();
                         let power_scale = dlg.get_power_scale();
                         
-                        // Show status message immediately
+                        // Show status message and initial progress
                         window.set_connection_status("Generating laser engraving G-code...".into());
+                        window.set_progress_value(0.1); // 10% - Starting
+                        
+                        // Close dialog immediately
+                        dlg.hide().ok();
                         
                         // Spawn thread FIRST, before any UI operations
                         let window_weak_thread = window.as_weak();
                         let image_path_clone = image_path.clone();
                         std::thread::spawn(move || {
                             tracing::info!("Background thread: Starting G-code generation");
+                            
+                            // Update progress: 20% - Loading image
+                            let _ = slint::invoke_from_event_loop({
+                                let ww = window_weak_thread.clone();
+                                move || {
+                                    if let Some(w) = ww.upgrade() {
+                                        w.set_progress_value(0.2);
+                                    }
+                                }
+                            });
                             
                             let params = EngravingParameters {
                                 width_mm,
@@ -4572,7 +4646,33 @@ fn main() -> anyhow::Result<()> {
                             };
                             
                             let result = LaserEngraver::from_file(&image_path_clone, params)
-                                .and_then(|engraver| engraver.generate_gcode());
+                                .map(|engraver| {
+                                    // Update progress: 50% - Image loaded and processed
+                                    let _ = slint::invoke_from_event_loop({
+                                        let ww = window_weak_thread.clone();
+                                        move || {
+                                            if let Some(w) = ww.upgrade() {
+                                                w.set_progress_value(0.5);
+                                            }
+                                        }
+                                    });
+                                    engraver
+                                })
+                                .and_then(|engraver| {
+                                    let gcode = engraver.generate_gcode()?;
+                                    
+                                    // Update progress: 80% - G-code generated
+                                    let _ = slint::invoke_from_event_loop({
+                                        let ww = window_weak_thread.clone();
+                                        move || {
+                                            if let Some(w) = ww.upgrade() {
+                                                w.set_progress_value(0.8);
+                                            }
+                                        }
+                                    });
+                                    
+                                    Ok(gcode)
+                                });
                             
                             tracing::info!("Background thread: G-code generation complete, updating UI");
                             
@@ -4586,10 +4686,20 @@ fn main() -> anyhow::Result<()> {
                                             win.set_gcode_content(gcode.into());
                                             win.set_current_view("gcode-editor".into());
                                             win.set_connection_status("Laser engraving G-code generated successfully".into());
+                                            win.set_progress_value(1.0); // 100%
+                                            
+                                            // Hide progress after 1 second
+                                            let win_weak = win.as_weak();
+                                            slint::Timer::single_shot(std::time::Duration::from_secs(1), move || {
+                                                if let Some(w) = win_weak.upgrade() {
+                                                    w.set_progress_value(0.0);
+                                                }
+                                            });
                                         }
                                         Err(e) => {
                                             let error_msg = format!("Failed to generate laser engraving: {}", e);
                                             win.set_connection_status(error_msg.clone().into());
+                                            win.set_progress_value(0.0); // Hide progress
                                             tracing::error!("G-code generation error: {}", e);
                                             
                                             let error_dialog = ErrorDialog::new().unwrap();
@@ -4608,9 +4718,6 @@ fn main() -> anyhow::Result<()> {
                                 }
                             });
                         });
-                        
-                        // Close dialog AFTER spawning thread
-                        dlg.hide().ok();
                     }
                 }
             });
