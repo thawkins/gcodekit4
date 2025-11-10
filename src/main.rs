@@ -753,10 +753,33 @@ fn main() -> anyhow::Result<()> {
                                         warn!("GRBL error in response: {}", response_str);
                                         // Still free the buffer space since the command was processed
                                         // The ok count above already handles this, but log it explicitly
+                                        let error_msg = format!("GRBL error: {}", response_str.trim());
                                         console_manager_poll.add_message(
                                             DeviceMessageType::Error,
-                                            format!("GRBL error: {}", response_str.trim())
+                                            error_msg.clone()
                                         );
+                                        
+                                        // Show error dialog
+                                        let wh = window_weak_poll.clone();
+                                        let em = error_msg.clone();
+                                        slint::invoke_from_event_loop(move || {
+                                            if let Some(_w) = wh.upgrade() {
+                                                let error_dialog = ErrorDialog::new().unwrap();
+                                                error_dialog.set_error_message(slint::SharedString::from(format!(
+                                                    "GRBL Error\n\nThe device reported an error.\n\n{}",
+                                                    em
+                                                )));
+                                                
+                                                let error_dialog_weak = error_dialog.as_weak();
+                                                error_dialog.on_close_dialog(move || {
+                                                    if let Some(dlg) = error_dialog_weak.upgrade() {
+                                                        dlg.hide().ok();
+                                                    }
+                                                });
+                                                
+                                                error_dialog.show().ok();
+                                            }
+                                        }).ok();
                                     }
                                     
                                     // Process status responses
@@ -864,11 +887,35 @@ fn main() -> anyhow::Result<()> {
                                                 }
                                             }
                                             Err(e) => {
+                                                let error_msg = format!("✗ Send failed at line {}: {}", gstate.total_sent + 1, e);
                                                 console_manager_poll.add_message(
                                                     DeviceMessageType::Error,
-                                                    format!("✗ Send failed at line {}: {}", gstate.total_sent + 1, e)
+                                                    error_msg.clone()
                                                 );
                                                 gstate.lines.clear();
+                                                
+                                                // Show error dialog
+                                                let wh = window_weak_poll.clone();
+                                                let em = error_msg.clone();
+                                                slint::invoke_from_event_loop(move || {
+                                                    if let Some(_w) = wh.upgrade() {
+                                                        let error_dialog = ErrorDialog::new().unwrap();
+                                                        error_dialog.set_error_message(slint::SharedString::from(format!(
+                                                            "Send Error\n\nFailed to send G-code to device.\n\n{}",
+                                                            em
+                                                        )));
+                                                        
+                                                        let error_dialog_weak = error_dialog.as_weak();
+                                                        error_dialog.on_close_dialog(move || {
+                                                            if let Some(dlg) = error_dialog_weak.upgrade() {
+                                                                dlg.hide().ok();
+                                                            }
+                                                        });
+                                                        
+                                                        error_dialog.show().ok();
+                                                    }
+                                                }).ok();
+                                                
                                                 break;
                                             }
                                         }
@@ -928,6 +975,22 @@ fn main() -> anyhow::Result<()> {
                     window.set_machine_state(slint::SharedString::from("DISCONNECTED"));
                     let console_output = console_manager_clone.get_output();
                     window.set_console_output(slint::SharedString::from(console_output));
+                    
+                    // Show error dialog
+                    let error_dialog = ErrorDialog::new().unwrap();
+                    error_dialog.set_error_message(slint::SharedString::from(format!(
+                        "Connection Failed\n\nUnable to connect to {} at {} baud.\n\nError: {}",
+                        port_str, baud, error_msg
+                    )));
+                    
+                    let error_dialog_weak = error_dialog.as_weak();
+                    error_dialog.on_close_dialog(move || {
+                        if let Some(dlg) = error_dialog_weak.upgrade() {
+                            dlg.hide().ok();
+                        }
+                    });
+                    
+                    error_dialog.show().ok();
                 }
             }
         }
@@ -981,6 +1044,22 @@ fn main() -> anyhow::Result<()> {
                     window.set_connection_status(slint::SharedString::from("Disconnect error"));
                     let console_output = console_manager_clone.get_output();
                     window.set_console_output(slint::SharedString::from(console_output));
+                    
+                    // Show error dialog
+                    let error_dialog = ErrorDialog::new().unwrap();
+                    error_dialog.set_error_message(slint::SharedString::from(format!(
+                        "Disconnect Error\n\nAn error occurred while disconnecting from the device.\n\nError: {}",
+                        e
+                    )));
+                    
+                    let error_dialog_weak = error_dialog.as_weak();
+                    error_dialog.on_close_dialog(move || {
+                        if let Some(dlg) = error_dialog_weak.upgrade() {
+                            dlg.hide().ok();
+                        }
+                    });
+                    
+                    error_dialog.show().ok();
                 }
             }
         }
@@ -1313,6 +1392,21 @@ fn main() -> anyhow::Result<()> {
                 window.set_connection_status(slint::SharedString::from(
                     "Error: Device not connected",
                 ));
+                
+                // Show error dialog
+                let error_dialog = ErrorDialog::new().unwrap();
+                error_dialog.set_error_message(slint::SharedString::from(
+                    "Device Not Connected\n\nPlease connect to a device before sending G-Code."
+                ));
+                
+                let error_dialog_weak = error_dialog.as_weak();
+                error_dialog.on_close_dialog(move || {
+                    if let Some(dlg) = error_dialog_weak.upgrade() {
+                        dlg.hide().ok();
+                    }
+                });
+                
+                error_dialog.show().ok();
                 return;
             }
             drop(comm);
@@ -1322,6 +1416,21 @@ fn main() -> anyhow::Result<()> {
                 console_manager_clone
                     .add_message(DeviceMessageType::Error, "✗ No G-Code content to send.");
                 window.set_connection_status(slint::SharedString::from("Error: No G-Code content"));
+                
+                // Show error dialog
+                let error_dialog = ErrorDialog::new().unwrap();
+                error_dialog.set_error_message(slint::SharedString::from(
+                    "No G-Code Content\n\nThere is no G-Code loaded to send. Please load or create G-Code first."
+                ));
+                
+                let error_dialog_weak = error_dialog.as_weak();
+                error_dialog.on_close_dialog(move || {
+                    if let Some(dlg) = error_dialog_weak.upgrade() {
+                        dlg.hide().ok();
+                    }
+                });
+                
+                error_dialog.show().ok();
                 return;
             }
 

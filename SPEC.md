@@ -1,10 +1,14 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.25.5-alpha  
-**Last Updated**: 2025-11-08  
+**Version**: 0.25.6-alpha  
+**Last Updated**: 2025-11-10  
 **Status**: COMPLETE (All 7 Phases Complete - 150/150 Tasks, Phase 8 In Progress)
 
-### Latest Release (v0.25.5-alpha)
+### Latest Release (v0.25.6-alpha)
+- ✅ **Enhanced Error Reporting** - User-friendly error dialogs for all critical operations
+  - Connection failures, disconnect errors, GRBL errors, send failures
+  - Device not connected and no G-code content errors
+  - Modal dialogs with clear descriptions and actionable messages
 - ✅ **G-Code Streaming Fixed** - Complete rewrite implementing proper GRBL Character-Counting Protocol
   - Single-threaded design: polling thread handles all serial I/O operations
   - Proper buffer management: tracks 127-byte GRBL RX buffer with "ok" acknowledgments

@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.25.6-alpha] - 2025-11-10
 
+### Added - Error Dialog Improvements
+- **Enhanced Error Reporting** - User-friendly error dialogs for critical operations
+  - Connection failures now show modal error dialog with port/baud details
+  - Disconnect errors display error dialog with error description
+  - GRBL errors during G-code sending show formatted error dialogs
+  - Send failures display error dialog with line number and error details
+  - "Device not connected" errors show modal dialog before send attempts
+  - "No G-Code content" errors display clear instructions to load G-code first
+  - All error dialogs use consistent format: Title, Description, Error details
+  - Modal dialogs require user acknowledgment before continuing
+  - Error dialogs supplement console logging for critical errors
+
 ### Added - UI Improvements
 - **Progress Bar** - Real-time progress indicator in status bar
   - 100px wide progress bar on right side of status bar

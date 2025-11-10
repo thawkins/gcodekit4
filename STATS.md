@@ -13,6 +13,14 @@
 - **Architecture:** Workspace with 4 crates + main binary
 
 ## Recent Changes (v0.25.6)
+- **Enhanced Error Reporting**: User-friendly error dialogs
+  - Connection failures with port/baud details
+  - Disconnect errors with error descriptions
+  - GRBL errors during G-code sending
+  - Send failures with line numbers
+  - "Device not connected" and "No G-code content" warnings
+  - Modal dialogs require user acknowledgment
+  - Supplements console logging for critical errors
 - **Workspace Architecture**: Divided into 4 modular crates
   - `gcodekit4-core`: Core types and state management
   - `gcodekit4-parser`: G-code parsing and CAM tools
