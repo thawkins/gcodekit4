@@ -1140,8 +1140,8 @@ export component MainWindow inherits Window {
             background: #2c3e50;
             
             HorizontalBox {
-                padding-top: 4px;
-                padding-bottom: 4px;
+                padding-top: 5px;
+                padding-bottom: 5px;
                 padding-left: 10px;
                 padding-right: 10px;
                 spacing: 0px;
@@ -1218,45 +1218,42 @@ export component MainWindow inherits Window {
                 }
                 
                 // Progress indicator on the right
-                HorizontalBox {
-                    spacing: 0px;
-                    alignment: end;
+                VerticalLayout {
+                    alignment: center;
                     
-                    Text {
-                        text: "Progress:";
-                        color: white;
-                        font-size: 13.2px;
-                        visible: root.progress-value > 0.0;
-                    }
-                    
-                    Text {
-                        text: "\u{2003}";
-                        color: white;
-                        font-size: 13.2px;
-                        visible: root.progress-value > 0.0;
-                    }
-                    
-                    Rectangle {
-                        width: 100px;
-                        height: 20px;
-                        border-width: 1px;
-                        border-color: white;
-                        border-radius: 3px;
-                        visible: root.progress-value > 0.0;
-                        
-                        Rectangle {
-                            width: parent.width * root.progress-value / 100.0;
-                            height: parent.height;
-                            background: #3498db;
-                            border-radius: 3px;
-                        }
+                    HorizontalBox {
+                        spacing: 5px;
+                        alignment: end;
                         
                         Text {
-                            text: round(root.progress-value) + "%";
+                            text: "Progress:";
                             color: white;
-                            font-size: 11px;
-                            horizontal-alignment: center;
-                            vertical-alignment: center;
+                            font-size: 13.2px;
+                            visible: root.progress-value > 0.0;
+                        }
+                        
+                        Rectangle {
+                            width: 100px;
+                            height: 18px;
+                            border-width: 1px;
+                            border-color: white;
+                            border-radius: 3px;
+                            visible: root.progress-value > 0.0;
+                            
+                            Rectangle {
+                                width: parent.width * root.progress-value / 100.0;
+                                height: parent.height;
+                                background: #3498db;
+                                border-radius: 3px;
+                            }
+                            
+                            Text {
+                                text: round(root.progress-value) + "%";
+                                color: white;
+                                font-size: 11px;
+                                horizontal-alignment: center;
+                                vertical-alignment: center;
+                            }
                         }
                     }
                 }
