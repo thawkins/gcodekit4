@@ -1,17 +1,39 @@
 # Project Statistics
 
 ## Overview
-- **Version:** 0.25.5-alpha
-- **Last Updated:** 2025-11-08
+- **Version:** 0.25.6-alpha
+- **Last Updated:** 2025-11-10
 
 ## Code Metrics
-- **Rust Code:** ~58,000 lines
-- **Slint UI:** ~6,400 lines
-- **Total:** ~64,400 lines
-- **Test Coverage:** 694 comprehensive tests
-- **Test Files:** 91 test modules
+- **Rust Code:** ~73,800 lines (194 files)
+- **Slint UI:** ~14,200 lines (36 files)
+- **Test Code:** ~17,200 lines (91 files)
+- **Total:** ~105,200 lines
+- **Test Coverage:** 712+ comprehensive tests
+- **Architecture:** Workspace with 4 crates + main binary
 
-## Recent Changes (v0.25.5)
+## Recent Changes (v0.25.6)
+- **Workspace Architecture**: Divided into 4 modular crates
+  - `gcodekit4-core`: Core types and state management
+  - `gcodekit4-parser`: G-code parsing and CAM tools
+  - `gcodekit4-communication`: Serial/TCP protocols
+  - `gcodekit4-ui`: Slint UI components
+  - Faster incremental builds and better code organization
+- **Laser Image Engraver**: Bitmap to G-code conversion
+  - Supports PNG, JPG, BMP, GIF, TIFF formats
+  - Grayscale power modulation for quality engraving
+  - Background processing for large images
+  - Real-time preview and time estimation
+- **Progress Bar**: Visual indicator in status bar
+  - Shows G-code transmission progress
+  - 100px bar with percentage display
+  - Auto-hides when idle
+- **G-Code Editor Controls**: Stop, Pause, Resume buttons
+  - Emergency stop during transmission
+  - GRBL feed hold/cycle start support
+- **Project Cleanup**: Removed 95% of duplicate files
+
+## Previous Changes (v0.25.5)
 - **G-Code Streaming Fixed**: Complete rewrite of send functionality
   - GRBL Character-Counting Protocol implementation
   - Single-threaded design: polling thread handles all serial I/O

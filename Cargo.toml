@@ -1,11 +1,27 @@
-[package]
-name = "gcodekit4"
+[workspace]
+members = [
+    "crates/gcodekit4-core",
+    "crates/gcodekit4-parser",
+    "crates/gcodekit4-communication",
+    "crates/gcodekit4-ui",
+]
+resolver = "2"
+
+[workspace.package]
 version = "0.25.5-alpha"
 edition = "2021"
-description = "A Rust-based Universal G-Code Sender for CNC machines with support for GRBL, TinyG, g2core, Smoothieware, and FluidNC controllers"
 license = "MIT OR Apache-2.0"
 authors = ["GCodeKit Contributors"]
 repository = "https://github.com/thawkins/gcodekit4"
+
+[package]
+name = "gcodekit4"
+version.workspace = true
+edition.workspace = true
+description = "A Rust-based Universal G-Code Sender for CNC machines with support for GRBL, TinyG, g2core, Smoothieware, and FluidNC controllers"
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
 readme = "README.md"
 
 [profile.release]
@@ -16,55 +32,26 @@ codegen-units = 1
 [profile.dev]
 opt-level = 1
 
-# Core dependencies
 [dependencies]
+gcodekit4-core = { path = "crates/gcodekit4-core" }
+gcodekit4-parser = { path = "crates/gcodekit4-parser" }
+gcodekit4-communication = { path = "crates/gcodekit4-communication" }
+gcodekit4-ui = { path = "crates/gcodekit4-ui" }
+
+slint = { version = "1.14.1", features = ["backend-winit", "image-default-formats"] }
 tokio = { version = "1.35", features = ["full"] }
-async-trait = "0.1"
-anyhow = "1.0"
-thiserror = "2.0.17"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json"] }
-
-# Serial communication
-serialport = "4.3"
-tokio-serial = "5.1"
-
-# TCP/Network communication
-tokio-tungstenite = "0.28.0"
-hyper = { version = "1.7.0", features = ["full"] }
-http = "1.3.1"
-
-# Utilities
-uuid = { version = "1.6", features = ["v4", "serde"] }
-chrono = { version = "0.4", features = ["serde"] }
-regex = "1.10"
-lazy_static = "1.4"
+anyhow = "1.0"
 parking_lot = "0.12"
 futures = "0.3"
+uuid = { version = "1.6", features = ["v4", "serde"] }
 crossbeam-channel = "0.5"
-num = "0.4"
-arboard = "3.4"
-dirs = "5.0"
-zip = "2.2"
-
-# SVG parsing
-roxmltree = "0.20"
-svgtypes = "0.15"
-
-# Configuration
-config = "0.15.18"
-toml = "0.9.8"
-
-# UI Framework
-slint = { version = "1.14.1", features = ["backend-winit", "image-default-formats"] }
-
-# Image rendering
-image = "0.25"
-
-# File dialogs
 rfd = "0.15.4"
+arboard = "3.4"
+serde_json = "1.0"
+image = "0.25"
+chrono = { version = "0.4", features = ["serde"] }
 
 # Build dependencies
 [build-dependencies]

@@ -7,7 +7,93 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.25.6-alpha] - 2025-11-10
 
+### Added - UI Improvements
+- **Progress Bar** - Real-time progress indicator in status bar
+  - 100px wide progress bar on right side of status bar
+  - "Progress:" label with EM space separator
+  - Shows G-code transmission progress (updates every 10 lines)
+  - Blue fill with white border and percentage text
+  - Auto-hides when idle (progress = 0%)
+  - Ready for CAM tool generation progress tracking
+  - Thread-safe updates via slint::invoke_from_event_loop
+
+- **G-Code Editor Controls** - Enhanced transmission control
+  - **Stop Button** - Terminates transmission by clearing send queue
+  - **Pause Button** - Sends GRBL feed hold command (!)
+  - **Resume Button** - Sends GRBL cycle start command (~)
+  - All buttons show console feedback and status updates
+  - Enables emergency stop and pause/resume during long jobs
+
+### Fixed - Laser Image Engraver
+- **UI Thread Blocking** - Moved G-code generation to background thread
+  - Eliminates timeout errors during large image processing
+  - UI remains responsive during generation
+  - Status updates show "Generating laser engraving G-code..."
+  - Dialog closes immediately while processing continues
+  - Safe UI updates using slint::invoke_from_event_loop
+  
+- **Initialization Sequence** - Standardized with other CAM tools
+  - Now matches TabbedBox and Jigsaw initialization
+  - Includes proper homing sequence ($H)
+  - Sets up work coordinate system (G54)
+  - Moves to safe position (10mm from corner, Z=5mm)
+  - Consistent G21/G90/G17 setup across all tools
+
+- **CAM Tools Layout** - Fixed card display issues
+  - Cards now properly sized (180px × 180px fixed)
+  - All 3 cards visible per row without stretching
+  - Wrapped each row in fixed-width Rectangle (570px)
+  - Prevents cards from expanding to full screen width
+  - Laser Image Engraver card clickable and functional
+
+### Changed - Project Cleanup
+- **Source Directory Optimization** - Minimized file duplication
+  - Removed all duplicate Rust library code from src/
+  - Main UI (ui.slint) compiled from crates/gcodekit4-ui/
+  - Only 4 dialog files remain in src/ui_panels/ (inline slint! macro requirement)
+  - Reduced duplication by ~95%
+  - Cleaner project structure with clear separation
+  - src/ now contains only main binary code
+
+## [0.25.5-alpha] - 2025-11-09
+
+### Changed - Architecture
+- **Workspace Refactoring** - Major architectural improvement for modular compilation
+  - Divided monolithic application into separate crates:
+    - `gcodekit4-core` - Core types, traits, state management, events, and data models
+    - `gcodekit4-parser` - G-code parsing, preprocessing, designer tools, and utilities
+    - `gcodekit4-communication` - Serial, TCP, WebSocket protocols and firmware implementations  
+    - `gcodekit4-ui` - Slint-based UI components, visualizer, settings, and editor
+    - `gcodekit4` - Main binary that integrates all crates
+  - Benefits:
+    - Faster incremental builds (only rebuild changed crates)
+    - Better separation of concerns and clearer API boundaries
+    - Easier testing of individual components
+    - Improved code organization and maintainability
+  - All existing tests pass with new structure
+  - No functionality changes - pure refactoring for improved development experience
+
 ### Added - CAM Tools
+- **Laser Image Engraver** - Bitmap to G-code converter for laser engraving
+  - Load bitmap images (PNG, JPG, BMP, GIF, TIFF) for laser engraving
+  - Grayscale power modulation using M3 S commands
+  - Bidirectional and unidirectional scanning modes
+  - Horizontal and vertical scan direction options
+  - Configurable parameters:
+    - Output size (width in mm, height auto-calculated maintaining aspect ratio)
+    - Resolution (pixels per mm)
+    - Feed rate and travel rate (mm/min)
+    - Laser power range (min/max %, 0-100)
+    - Power scale (0-1000 for GRBL compatibility)
+    - Line spacing adjustment for speed/quality trade-off
+    - Image inversion (create negatives)
+  - Real-time image preview with processed grayscale
+  - Estimated engraving time calculation
+  - Automatic image resizing with Lanczos3 filtering for quality
+  - Optimized G-code generation with laser on/off control
+  - Export G-code compatible with GRBL, Marlin, and other laser controllers
+  - UI integrated into CAM Tools panel
+
 - **Jigsaw Puzzle Maker** - Advanced jigsaw puzzle generator using Draradech algorithm
   - Cubic Bézier curves with 10 control points for organic piece shapes
   - Configurable dimensions (width × height in mm)

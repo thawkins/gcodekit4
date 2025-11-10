@@ -10,6 +10,22 @@ A modern, cross-platform G-Code sender and CNC machine controller written in Rus
 
 GCodeKit4 is a Rust-based CNC machine controller providing a modern alternative to Universal G-Code Sender. It supports multiple controller firmware types including GRBL, grblHAL, TinyG, g2core, Smoothieware, and FluidNC through a unified, intuitive interface built with the Slint UI framework.
 
+## Architecture
+
+GCodeKit4 is organized as a Cargo workspace with multiple crates for modular compilation and better code organization:
+
+- **gcodekit4-core** - Core types, traits, state management, events, and data models
+- **gcodekit4-parser** - G-code parsing, preprocessing, designer tools, and utilities
+- **gcodekit4-communication** - Serial, TCP, WebSocket protocols and firmware implementations
+- **gcodekit4-ui** - Slint-based UI components, visualizer, settings, and editor
+- **gcodekit4** - Main binary that integrates all crates
+
+This modular structure enables:
+- Faster incremental builds (only recompile changed crates)
+- Better separation of concerns
+- Easier testing of individual components
+- Potential for code reuse across different applications
+
 ## Features
 
 ### 🎯 Multi-Axis CNC Control
@@ -57,6 +73,10 @@ GCodeKit4 is a Rust-based CNC machine controller providing a modern alternative 
   - Automatic buffer management (127-byte GRBL RX buffer)
   - Sends up to 5 lines per cycle with "ok" acknowledgment tracking
   - Real-time progress updates (lines sent/total)
+  - **Progress Bar**: Visual progress indicator in status bar
+  - **Stop Button**: Terminate transmission immediately
+  - **Pause Button**: Feed hold (GRBL ! command)
+  - **Resume Button**: Cycle start (GRBL ~ command)
   - Error detection and reporting
   - Comments and empty lines filtered automatically
   - Concurrent status polling via real-time `?` command
@@ -144,6 +164,24 @@ GCodeKit4 is a Rust-based CNC machine controller providing a modern alternative 
   - **Laser Parameters**: Multi-pass support, power control, feed rate
   - **Enhanced Features**: Based on [Draradech's jigsaw generator](https://github.com/Draradech/jigsaw)
   - **Smart Initialization**: Automatic homing and work coordinate setup
+
+- **Laser Image Engraver**: Convert bitmap images to G-code for laser engraving
+  - **Image Formats**: PNG, JPG, JPEG, BMP, GIF, TIFF
+  - **Grayscale Power Control**: Variable laser power based on image brightness
+  - **Bidirectional Scanning**: Optimize engraving time with bidirectional passes
+  - **Scan Direction**: Horizontal or vertical raster patterns
+  - **Image Preview**: Real-time preview of processed grayscale image
+  - **Configurable Parameters**:
+    - Output size (width in mm, height auto-calculated)
+    - Resolution (pixels per mm)
+    - Feed rate and travel rate
+    - Laser power range (0-100%)
+    - Power scale (GRBL compatibility 0-1000)
+    - Line spacing for speed/quality balance
+    - Image inversion for negative images
+  - **Time Estimation**: Calculate engraving time before generating
+  - **Background Processing**: Non-blocking G-code generation
+  - **Smart Initialization**: Proper homing and coordinate system setup
 
 ## Supported Controllers
 

@@ -1,0 +1,267 @@
+//! Tabbed Box Maker Dialog
+//! Dialog for capturing parameters to generate a tabbed box with CNC/laser cutting
+
+import { Button, LineEdit, ComboBox, CheckBox, VerticalBox, HorizontalBox, GridBox, ScrollView, GroupBox } from "std-widgets.slint";
+
+export component TabbedBoxDialog inherits Window {
+    title: "Tabbed Box Maker";
+    width: 600px;
+    height: 700px;
+    
+    in-out property <string> box-length: "100.0";
+    in-out property <string> box-width: "100.0";
+    in-out property <string> box-height: "100.0";
+    in-out property <string> material-thickness: "3.0";
+    in-out property <string> tab-width: "25.0";
+    in-out property <string> kerf: "0.5";
+    in-out property <string> spacing: "5.0";
+    in-out property <int> box-type: 0;
+    in-out property <int> tab-type: 0;
+    in-out property <int> layout-style: 0;
+    in-out property <bool> inside-dimensions: false;
+    in-out property <int> dividers-length: 0;
+    in-out property <int> dividers-width: 0;
+    in-out property <string> laser-passes: "3";
+    in-out property <string> laser-power: "1000";
+    in-out property <string> feed-rate: "500";
+    
+    callback generate-box();
+    callback cancel-dialog();
+    
+    VerticalBox {
+        padding: 20px;
+        spacing: 15px;
+        
+        ScrollView {
+            vertical-stretch: 1;
+            
+            VerticalBox {
+                spacing: 15px;
+                
+                // Box Dimensions
+                GroupBox {
+                    title: "Box Dimensions (mm)";
+                    
+                    GridBox {
+                        spacing: 10px;
+                        
+                        Row {
+                            Text { text: "Length:"; }
+                            LineEdit { 
+                                text <=> box-length;
+                                placeholder-text: "100.0";
+                                input-type: decimal;
+                            }
+                        }
+                        
+                        Row {
+                            Text { text: "Width:"; }
+                            LineEdit { 
+                                text <=> box-width;
+                                placeholder-text: "100.0";
+                                input-type: decimal;
+                            }
+                        }
+                        
+                        Row {
+                            Text { text: "Height:"; }
+                            LineEdit { 
+                                text <=> box-height;
+                                placeholder-text: "100.0";
+                                input-type: decimal;
+                            }
+                        }
+                        
+                        Row {
+                            Text { text: "Inside Dims:"; }
+                            CheckBox { 
+                                checked <=> inside-dimensions;
+                            }
+                        }
+                    }
+                }
+                
+                // Material Settings
+                GroupBox {
+                    title: "Material Settings";
+                    
+                    GridBox {
+                        spacing: 10px;
+                        
+                        Row {
+                            Text { text: "Thickness:"; }
+                            LineEdit { 
+                                text <=> material-thickness;
+                                placeholder-text: "3.0";
+                            }
+                        }
+                        
+                        Row {
+                            Text { text: "Kerf:"; }
+                            LineEdit { 
+                                text <=> kerf;
+                                placeholder-text: "0.5";
+                            }
+                        }
+                    }
+                }
+                
+                // Tab Settings
+                GroupBox {
+                    title: "Tab Settings";
+                    
+                    GridBox {
+                        spacing: 10px;
+                        
+                        Row {
+                            Text { text: "Tab Width:"; }
+                            LineEdit { 
+                                text <=> tab-width;
+                                placeholder-text: "25.0";
+                            }
+                        }
+                        
+                        Row {
+                            Text { text: "Tab Type:"; }
+                            ComboBox {
+                                model: ["Laser (Fingerjoints)", "CNC (Dogbone)"];
+                                current-index <=> tab-type;
+                            }
+                        }
+                    }
+                }
+                
+                // Box Configuration
+                GroupBox {
+                    title: "Box Configuration";
+                    
+                    GridBox {
+                        spacing: 10px;
+                        
+                        Row {
+                            Text { text: "Box Type:"; }
+                            ComboBox {
+                                model: ["Full Box", "No Top", "No Top/Front", "No Top/Front/Right", "No Top/Bottom", "No Top/Front/Back/Right"];
+                                current-index <=> box-type;
+                            }
+                        }
+                        
+                        Row {
+                            Text { text: "Layout Style:"; }
+                            ComboBox {
+                                model: ["Diagrammatic", "3-Piece", "Inline/Compact"];
+                                current-index <=> layout-style;
+                            }
+                        }
+                        
+                        Row {
+                            Text { text: "Spacing:"; }
+                            LineEdit { 
+                                text <=> spacing;
+                                placeholder-text: "5.0";
+                            }
+                        }
+                    }
+                }
+                
+                // Dividers
+                GroupBox {
+                    title: "Dividers (Optional)";
+                    
+                    GridBox {
+                        spacing: 10px;
+                        
+                        Row {
+                            Text { text: "Length Axis:"; }
+                            LineEdit { 
+                                text: dividers-length;
+                                placeholder-text: "0";
+                            }
+                        }
+                        
+                        Row {
+                            Text { text: "Width Axis:"; }
+                            LineEdit { 
+                                text: dividers-width;
+                                placeholder-text: "0";
+                            }
+                        }
+                    }
+                }
+                
+                // Laser Settings
+                GroupBox {
+                    title: "Laser Settings";
+                    
+                    GridBox {
+                        spacing: 10px;
+                        
+                        Row {
+                            Text { text: "Passes:"; }
+                            LineEdit { 
+                                text <=> laser-passes;
+                                placeholder-text: "3";
+                            }
+                        }
+                        
+                        Row {
+                            Text { text: "Power (S):"; }
+                            LineEdit { 
+                                text <=> laser-power;
+                                placeholder-text: "1000";
+                            }
+                        }
+                        
+                        Row {
+                            Text { text: "Feed Rate:"; }
+                            LineEdit { 
+                                text <=> feed-rate;
+                                placeholder-text: "500";
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Action Buttons
+        FocusScope {
+            key-pressed(event) => {
+                if (event.text == Key.Return) {
+                    root.generate-box();
+                    return accept;
+                }
+                return reject;
+            }
+            
+            HorizontalBox {
+                spacing: 10px;
+                horizontal-stretch: 0;
+                alignment: end;
+                
+                Button {
+                    text: "Cancel";
+                    clicked => {
+                        root.cancel-dialog();
+                    }
+                }
+                
+                Rectangle {
+                    Button {
+                        text: "Generate";
+                        primary: true;
+                        clicked => {
+                            root.generate-box();
+                        }
+                    }
+                    
+                    TouchArea {
+                        clicked => {
+                            root.generate-box();
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

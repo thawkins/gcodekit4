@@ -16,6 +16,7 @@ slint::include_modules!();
 slint::slint! {
     export { TabbedBoxDialog } from "src/ui_panels/tabbed_box_dialog.slint";
     export { JigsawPuzzleDialog } from "src/ui_panels/jigsaw_puzzle_dialog.slint";
+    export { LaserEngraverDialog } from "src/ui_panels/laser_engraver_dialog.slint";
     export { ErrorDialog } from "src/ui_panels/error_dialog.slint";
 }
 
@@ -850,12 +851,14 @@ fn main() -> anyhow::Result<()> {
                                                 if gstate.total_sent % 10 == 0 || gstate.lines.is_empty() {
                                                     let sent = gstate.total_sent;
                                                     let total = gstate.total_lines;
+                                                    let progress = if total > 0 { (sent as f32 / total as f32) * 100.0 } else { 0.0 };
                                                     let wh = window_weak_poll.clone();
                                                     slint::invoke_from_event_loop(move || {
                                                         if let Some(w) = wh.upgrade() {
                                                             w.set_connection_status(slint::SharedString::from(
                                                                 format!("Sending: {}/{}", sent, total)
                                                             ));
+                                                            w.set_progress_value(progress);
                                                         }
                                                     }).ok();
                                                 }
@@ -887,6 +890,7 @@ fn main() -> anyhow::Result<()> {
                                     slint::invoke_from_event_loop(move || {
                                         if let Some(w) = wh.upgrade() {
                                             w.set_connection_status(slint::SharedString::from(format!("Sent: {} lines", total)));
+                                            w.set_progress_value(0.0);
                                             w.set_console_output(slint::SharedString::from(cm.get_output()));
                                         }
                                     }).ok();
@@ -1347,6 +1351,7 @@ fn main() -> anyhow::Result<()> {
             window.set_connection_status(slint::SharedString::from(
                 format!("Queued {} lines for sending...", line_count)
             ));
+            window.set_progress_value(0.0);
             let console_output = console_manager_clone.get_output();
             window.set_console_output(slint::SharedString::from(console_output));
             use std::rc::Rc;
@@ -1362,6 +1367,106 @@ fn main() -> anyhow::Result<()> {
                 waiting_for_acks: bool,
                 timeout_count: u32,
             }
+        }
+    });
+
+    // Stop transmission callback
+    let window_weak = main_window.as_weak();
+    let gcode_send_state_stop = gcode_send_state.clone();
+    let console_manager_stop = console_manager.clone();
+    main_window.on_menu_stop_transmission(move || {
+        if let Some(window) = window_weak.upgrade() {
+            // Clear the send queue to stop transmission
+            {
+                let mut gstate = gcode_send_state_stop.lock().unwrap();
+                gstate.lines.clear();
+                gstate.total_lines = 0;
+                gstate.total_sent = 0;
+                gstate.pending_bytes = 0;
+                gstate.line_lengths.clear();
+            }
+            
+            console_manager_stop.add_message(
+                DeviceMessageType::Output,
+                "⏹ G-Code transmission stopped"
+            );
+            window.set_connection_status("G-Code transmission stopped".into());
+            window.set_progress_value(0.0);
+            
+            let console_output = console_manager_stop.get_output();
+            window.set_console_output(console_output.into());
+        }
+    });
+
+    // Pause transmission callback
+    let window_weak = main_window.as_weak();
+    let communicator_pause = communicator.clone();
+    let console_manager_pause = console_manager.clone();
+    main_window.on_menu_pause_transmission(move || {
+        if let Some(window) = window_weak.upgrade() {
+            // Send pause command to device (! for feed hold in GRBL)
+            let comm = communicator_pause.lock().unwrap();
+            if comm.is_connected() {
+                drop(comm);
+                
+                // Send pause command
+                if let Err(e) = communicator_pause.lock().unwrap().send_command("!") {
+                    console_manager_pause.add_message(
+                        DeviceMessageType::Error,
+                        format!("✗ Failed to send pause command: {}", e)
+                    );
+                } else {
+                    console_manager_pause.add_message(
+                        DeviceMessageType::Output,
+                        "⏸ G-Code transmission paused (feed hold)"
+                    );
+                    window.set_connection_status("G-Code transmission paused".into());
+                }
+            } else {
+                console_manager_pause.add_message(
+                    DeviceMessageType::Error,
+                    "✗ Device not connected"
+                );
+            }
+            
+            let console_output = console_manager_pause.get_output();
+            window.set_console_output(console_output.into());
+        }
+    });
+
+    // Resume transmission callback
+    let window_weak = main_window.as_weak();
+    let communicator_resume = communicator.clone();
+    let console_manager_resume = console_manager.clone();
+    main_window.on_menu_resume_transmission(move || {
+        if let Some(window) = window_weak.upgrade() {
+            // Send resume command to device (~ for cycle start in GRBL)
+            let comm = communicator_resume.lock().unwrap();
+            if comm.is_connected() {
+                drop(comm);
+                
+                // Send resume command
+                if let Err(e) = communicator_resume.lock().unwrap().send_command("~") {
+                    console_manager_resume.add_message(
+                        DeviceMessageType::Error,
+                        format!("✗ Failed to send resume command: {}", e)
+                    );
+                } else {
+                    console_manager_resume.add_message(
+                        DeviceMessageType::Output,
+                        "▶ G-Code transmission resumed (cycle start)"
+                    );
+                    window.set_connection_status("G-Code transmission resumed".into());
+                }
+            } else {
+                console_manager_resume.add_message(
+                    DeviceMessageType::Error,
+                    "✗ Device not connected"
+                );
+            }
+            
+            let console_output = console_manager_resume.get_output();
+            window.set_console_output(console_output.into());
         }
     });
 
@@ -4187,6 +4292,225 @@ fn main() -> anyhow::Result<()> {
                             }
                         }
                     }
+                }
+            });
+            
+            dialog.show().unwrap();
+        }
+    });
+
+    // Laser Image Engraver
+    let window_weak = main_window.as_weak();
+    let dialog_holder: Rc<RefCell<Option<LaserEngraverDialog>>> = Rc::new(RefCell::new(None));
+    main_window.on_generate_laser_engraving(move || {
+        if let Some(main_win) = window_weak.upgrade() {
+            let dialog = LaserEngraverDialog::new().unwrap();
+            
+            // Store dialog in holder to keep it alive
+            *dialog_holder.borrow_mut() = Some(dialog.clone_strong());
+            
+            // Initialize dialog with default values
+            dialog.set_width_mm(100.0);
+            dialog.set_feed_rate(1000.0);
+            dialog.set_travel_rate(3000.0);
+            dialog.set_min_power(0.0);
+            dialog.set_max_power(100.0);
+            dialog.set_pixels_per_mm(10.0);
+            dialog.set_scan_direction("Horizontal".into());
+            dialog.set_bidirectional(true);
+            dialog.set_invert(false);
+            dialog.set_line_spacing(1.0);
+            dialog.set_power_scale(1000.0);
+            
+            // Load image callback
+            let dialog_weak_load = dialog.as_weak();
+            dialog.on_load_image(move || {
+                if let Some(dlg) = dialog_weak_load.upgrade() {
+                    // Open file dialog to select image
+                    use rfd::FileDialog;
+                    if let Some(path) = FileDialog::new()
+                        .add_filter("Image Files", &["png", "jpg", "jpeg", "bmp", "gif", "tiff"])
+                        .pick_file()
+                    {
+                        dlg.set_image_path(path.display().to_string().into());
+                        
+                        // Load and convert image to Slint format for preview
+                        if let Ok(img) = image::open(&path) {
+                            // Convert to RGB8 for display
+                            let rgb_img = img.to_rgb8();
+                            let width = rgb_img.width();
+                            let height = rgb_img.height();
+                            
+                            // Create Slint image buffer
+                            let buffer = slint::SharedPixelBuffer::<slint::Rgb8Pixel>::clone_from_slice(
+                                rgb_img.as_raw(),
+                                width,
+                                height
+                            );
+                            dlg.set_preview_image(slint::Image::from_rgb8(buffer));
+                            
+                            // Calculate and display output size
+                            let pixels_per_mm = dlg.get_pixels_per_mm();
+                            let width_mm = dlg.get_width_mm();
+                            let aspect_ratio = height as f32 / width as f32;
+                            let height_mm = width_mm * aspect_ratio;
+                            dlg.set_output_size(format!("{:.1} x {:.1} mm", width_mm, height_mm).into());
+                        }
+                    }
+                }
+            });
+            
+            // Update preview callback (when parameters change)
+            let dialog_weak_update = dialog.as_weak();
+            dialog.on_update_preview(move || {
+                if let Some(dlg) = dialog_weak_update.upgrade() {
+                    let image_path = dlg.get_image_path().to_string();
+                    if !image_path.is_empty() {
+                        if let Ok(img) = image::open(&image_path) {
+                            let width_mm = dlg.get_width_mm();
+                            let pixels_per_mm = dlg.get_pixels_per_mm();
+                            let feed_rate = dlg.get_feed_rate();
+                            let travel_rate = dlg.get_travel_rate();
+                            let bidirectional = dlg.get_bidirectional();
+                            let line_spacing = dlg.get_line_spacing();
+                            
+                            // Calculate output dimensions
+                            let aspect_ratio = img.height() as f32 / img.width() as f32;
+                            let height_mm = width_mm * aspect_ratio;
+                            dlg.set_output_size(format!("{:.1} x {:.1} mm", width_mm, height_mm).into());
+                            
+                            // Estimate engraving time
+                            let num_lines = (height_mm * pixels_per_mm / line_spacing) as u32;
+                            let engrave_time = (width_mm * num_lines as f32) / feed_rate * 60.0;
+                            let travel_time = if bidirectional {
+                                (height_mm / travel_rate) * 60.0
+                            } else {
+                                (width_mm * num_lines as f32) / travel_rate * 60.0
+                            };
+                            let total_seconds = engrave_time + travel_time;
+                            let minutes = (total_seconds / 60.0) as i32;
+                            let seconds = (total_seconds % 60.0) as i32;
+                            dlg.set_estimated_time(format!("{}:{:02}", minutes, seconds).into());
+                        }
+                    }
+                }
+            });
+            
+            // Generate G-code callback
+            let main_win_clone = main_win.as_weak();
+            let dialog_weak_generate = dialog.as_weak();
+            dialog.on_generate_gcode(move || {
+                if let Some(window) = main_win_clone.upgrade() {
+                    if let Some(dlg) = dialog_weak_generate.upgrade() {
+                        let image_path = dlg.get_image_path().to_string();
+                        
+                        if image_path.is_empty() {
+                            let error_dialog = ErrorDialog::new().unwrap();
+                            error_dialog.set_error_message("No Image Selected\n\nPlease select an image file first.".into());
+                            
+                            let error_dialog_weak = error_dialog.as_weak();
+                            error_dialog.on_close_dialog(move || {
+                                if let Some(dlg) = error_dialog_weak.upgrade() {
+                                    dlg.hide().ok();
+                                }
+                            });
+                            
+                            error_dialog.show().ok();
+                            return;
+                        }
+                        
+                        // Create engraving parameters - collect all data before spawning thread
+                        use gcodekit4_parser::processing::{LaserEngraver, EngravingParameters, ScanDirection};
+                        
+                        let width_mm = dlg.get_width_mm();
+                        let feed_rate = dlg.get_feed_rate();
+                        let travel_rate = dlg.get_travel_rate();
+                        let min_power = dlg.get_min_power();
+                        let max_power = dlg.get_max_power();
+                        let pixels_per_mm = dlg.get_pixels_per_mm();
+                        let scan_dir = dlg.get_scan_direction().to_string();
+                        let bidirectional = dlg.get_bidirectional();
+                        let invert = dlg.get_invert();
+                        let line_spacing = dlg.get_line_spacing();
+                        let power_scale = dlg.get_power_scale();
+                        
+                        // Show status message immediately
+                        window.set_connection_status("Generating laser engraving G-code...".into());
+                        
+                        // Spawn thread FIRST, before any UI operations
+                        let window_weak_thread = window.as_weak();
+                        let image_path_clone = image_path.clone();
+                        std::thread::spawn(move || {
+                            tracing::info!("Background thread: Starting G-code generation");
+                            
+                            let params = EngravingParameters {
+                                width_mm,
+                                height_mm: None,
+                                feed_rate,
+                                travel_rate,
+                                min_power,
+                                max_power,
+                                pixels_per_mm,
+                                scan_direction: if scan_dir == "Horizontal" {
+                                    ScanDirection::Horizontal
+                                } else {
+                                    ScanDirection::Vertical
+                                },
+                                bidirectional,
+                                invert,
+                                line_spacing,
+                                power_scale,
+                            };
+                            
+                            let result = LaserEngraver::from_file(&image_path_clone, params)
+                                .and_then(|engraver| engraver.generate_gcode());
+                            
+                            tracing::info!("Background thread: G-code generation complete, updating UI");
+                            
+                            // Update UI from the main thread using slint::invoke_from_event_loop
+                            let _ = slint::invoke_from_event_loop(move || {
+                                if let Some(win) = window_weak_thread.upgrade() {
+                                    match result {
+                                        Ok(gcode) => {
+                                            tracing::info!("Setting G-code content ({} bytes)", gcode.len());
+                                            // Set the G-code in the editor
+                                            win.set_gcode_content(gcode.into());
+                                            win.set_current_view("gcode-editor".into());
+                                            win.set_connection_status("Laser engraving G-code generated successfully".into());
+                                        }
+                                        Err(e) => {
+                                            let error_msg = format!("Failed to generate laser engraving: {}", e);
+                                            win.set_connection_status(error_msg.clone().into());
+                                            tracing::error!("G-code generation error: {}", e);
+                                            
+                                            let error_dialog = ErrorDialog::new().unwrap();
+                                            error_dialog.set_error_message(format!("G-code Generation Failed\n\n{}", e).into());
+                                            
+                                            let error_dialog_weak = error_dialog.as_weak();
+                                            error_dialog.on_close_dialog(move || {
+                                                if let Some(dlg) = error_dialog_weak.upgrade() {
+                                                    dlg.hide().ok();
+                                                }
+                                            });
+                                            
+                                            error_dialog.show().ok();
+                                        }
+                                    }
+                                }
+                            });
+                        });
+                        
+                        // Close dialog AFTER spawning thread
+                        dlg.hide().ok();
+                    }
+                }
+            });
+            
+            // Close dialog callback
+            let dialog_weak_close = dialog.as_weak();
+            dialog.on_close_dialog(move || {
+                if let Some(dlg) = dialog_weak_close.upgrade() {
+                    dlg.hide().ok();
                 }
             });
             

@@ -8,18 +8,13 @@
 //!
 //! ## Architecture
 //!
-//! GCodeKit4 is organized into 8 major modules:
+//! GCodeKit4 is organized as a workspace with multiple crates:
 //!
-//! 1. **core** - Controller management, state machine, event system
-//! 2. **communication** - Serial, TCP, WebSocket protocols
-//! 3. **gcode** - Parser, state machine, preprocessors
-//! 4. **firmware** - Protocol implementations for various controllers
-//! 5. **data** - Data models (Position, Status, Commands, etc.)
-//! 6. **ui** - Slint-based user interface (11 panels)
-//! 7. **visualizer** - wgpu 3D rendering with interactive controls
-//! 8. **utils** - Helper functions and common utilities
-
-#![allow(dead_code)] // Allow dead code for infrastructure/future features
+//! 1. **gcodekit4-core** - Core types, traits, state management, events
+//! 2. **gcodekit4-parser** - G-code parsing, preprocessing, utilities
+//! 3. **gcodekit4-communication** - Serial, TCP, WebSocket, firmware protocols
+//! 4. **gcodekit4-ui** - Slint UI, visualizer, settings, editor
+//! 5. **gcodekit4** - Main binary that integrates all crates
 //!
 //! ## Features
 //!
@@ -31,67 +26,33 @@
 //! - **Professional UI**: Syntax-highlighted editor, 3D visualization, console
 //! - **Cross-Platform**: Linux, Windows, macOS support
 
-pub mod communication;
-pub mod config;
-pub mod core;
-pub mod data;
-pub mod designer;
-pub mod designer_editor_integration;
-pub mod designer_state;
-pub mod designer_visualizer_integration;
-pub mod error;
-pub mod firmware;
-pub mod gcode;
-pub mod processing;
-pub mod testing;
-pub mod ui;
-pub mod utils;
-pub mod visualizer;
+#![allow(dead_code)]
 
-pub use communication::{
-    serial::{list_ports, SerialPortInfo},
-    tcp::TcpConnectionInfo,
-    Communicator, CommunicatorEvent, CommunicatorListener, CommunicatorListenerHandle,
-    ConnectionDriver, ConnectionParams, NoOpCommunicator, SerialCommunicator, SerialParity,
-    TcpCommunicator,
-};
-pub use config::{
-    Config, ConnectionSettings, ConnectionType, FileProcessingSettings, FirmwareSettings,
-    MachineSettings, SettingsManager, UiSettings,
-};
-pub use core::{
-    event::{ControllerEvent, EventDispatcher},
-    message::{Message, MessageDispatcher, MessageLevel},
-    ControllerListener, ControllerListenerHandle, ControllerTrait, OverrideState, SimpleController,
-};
-pub use data::{
+// Re-export modules for main.rs
+pub use gcodekit4_parser::designer;
+pub use gcodekit4_communication::firmware;
+pub use gcodekit4_ui::{visualizer, ui, config};
+pub use gcodekit4_core::data;
+
+pub use gcodekit4_core::{
+    ControllerEvent, ControllerListener, ControllerListenerHandle, ControllerTrait,
+    EventDispatcher, Message, MessageDispatcher, MessageLevel, OverrideState, SimpleController,
     CNCPoint, CommunicatorState, ControllerState, ControllerStatus, MachineStatus,
     MachineStatusSnapshot, PartialPosition, Position, Units,
+    ConnectionError, ControllerError, Error, FirmwareError, GcodeError, Result,
 };
-pub use designer::{
-    Canvas, CanvasPoint, Circle, DrawingMode, Line, Point, Rectangle, Shape, ShapeType, Toolpath,
-    ToolpathGenerator, ToolpathSegment, ToolpathSegmentType, ToolpathToGcode,
-};
-pub use designer_state::DesignerState;
-pub use error::{ConnectionError, ControllerError, Error, FirmwareError, GcodeError, Result};
-pub use firmware::{CapabilityManager, CapabilityState, ControllerType, FirmwareDetector};
-pub use processing::{
-    BoxParameters, BoxType, LayoutStyle, TabType, TabbedBoxMaker,
-    JigsawPuzzleMaker, PuzzleParameters,
-};
-pub use gcode::{
-    stream::{FileStreamReader, GcodeStreamReader, PausableStream, StringStreamReader},
+
+pub use gcodekit4_parser::{
+    FileStreamReader, GcodeStreamReader, PausableStream, StringStreamReader,
     CommandId, CommandLengthProcessor, CommandListener, CommandListenerHandle,
     CommandNumberGenerator, CommandProcessor, CommandResponse, CommandState, CommentProcessor,
     DecimalProcessor, EmptyLineRemoverProcessor, GcodeCommand, GcodeParser, GcodeState, ModalState,
     ProcessorConfig, ProcessorHandle, ProcessorPipeline, ProcessorRegistry, WhitespaceProcessor,
-};
-pub use ui::{
-    ConsoleListener, DeviceConsoleManager, DeviceMessageType, FirmwareSettingsIntegration,
-    GcodeEditor, GcodeLine, KeyboardShortcut, Setting, SettingValue, SettingsCategory,
-    SettingsDialog, SettingsPersistence, Token, TokenType,
-};
-pub use utils::{
+    BoxParameters, BoxType, LayoutStyle, TabType, TabbedBoxMaker,
+    JigsawPuzzleMaker, PuzzleParameters,
+    Canvas, CanvasPoint, Circle, DrawingMode, Line, Point, Rectangle, Shape, ShapeType, Toolpath,
+    ToolpathGenerator, ToolpathSegment, ToolpathSegmentType, ToolpathToGcode,
+    DesignerState,
     AdvancedProber, Alarm, AlarmManager, AlarmType, AutoConnectConfig, BackupEntry, BackupManager,
     BasicProber, Bookmark, BookmarkManager, CommandHistory, CustomAction, CustomMacro,
     DataLogger, DropEvent, DropFileType, DropIndicatorState, DropTarget, DropZone,
@@ -105,10 +66,26 @@ pub use utils::{
     WorkCoordinateSystem, WorkOffset,
 };
 
+pub use gcodekit4_communication::{
+    list_ports, SerialPortInfo, TcpConnectionInfo,
+    Communicator, CommunicatorEvent, CommunicatorListener, CommunicatorListenerHandle,
+    ConnectionDriver, ConnectionParams, NoOpCommunicator, SerialCommunicator, SerialParity,
+    TcpCommunicator,
+    CapabilityManager, CapabilityState, ControllerType, FirmwareDetector,
+};
+
+pub use gcodekit4_ui::{
+    ConsoleListener, DeviceConsoleManager, DeviceMessageType, FirmwareSettingsIntegration,
+    GcodeEditor, GcodeLine, KeyboardShortcut, Setting, SettingValue, SettingsCategory,
+    SettingsDialog, SettingsPersistence, Token, TokenType,
+    Config, ConnectionSettings, ConnectionType, FileProcessingSettings, FirmwareSettings,
+    MachineSettings, SettingsManager, UiSettings,
+};
+
 /// Library version
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-/// Build date
+/// Build date (set at compile time)
 pub const BUILD_DATE: &str = env!("BUILD_DATE");
 
 /// Initialize logging with the default configuration
