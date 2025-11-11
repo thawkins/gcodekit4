@@ -1217,13 +1217,14 @@ export component MainWindow inherits Window {
                     horizontal-stretch: 1;
                 }
                 
-                // Progress indicator on the right
-                VerticalLayout {
-                    alignment: center;
+                // Progress indicator on the right (with explicit vertical positioning)
+                Rectangle {
+                    width: 120px;
                     
                     HorizontalBox {
                         spacing: 5px;
                         alignment: end;
+                        y: (parent.height - self.height) / 2;
                         
                         Text {
                             text: "Progress:";
