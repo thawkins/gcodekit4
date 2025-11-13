@@ -60,6 +60,11 @@ export component CustomTextEdit inherits Rectangle {
                 padding: 5px;
                 alignment: start;
                 
+                // Spacer to match text scroll position
+                Rectangle {
+                    height: root.visible-start-line * root.line-height;
+                }
+                
                 for line in root.visible-lines: Text {
                     text: line.line-number;
                     color: root.line-number-color;
@@ -71,13 +76,19 @@ export component CustomTextEdit inherits Rectangle {
             }
         }
         
-        // Main text area with virtual scrolling
-        ScrollView {
+        // Main text area with virtual scrolling  
+        Flickable {
             viewport-height: root.total-lines * root.line-height;
+            interactive: true;
             
             VerticalBox {
                 alignment: start;
                 padding: 5px;
+                
+                // Spacer to position visible lines at correct scroll offset
+                Rectangle {
+                    height: root.visible-start-line * root.line-height;
+                }
                 
                 // Render only visible lines
                 for line in root.visible-lines: Rectangle {
@@ -92,12 +103,13 @@ export component CustomTextEdit inherits Rectangle {
                         font-size: root.font-size;
                         font-family: root.font-family;
                         vertical-alignment: center;
+                        horizontal-alignment: left;
                         overflow: elide;
                     }
                 }
             }
+
             
-            // Handle scroll events
             changed viewport-y => {
                 // Calculate which lines are visible based on scroll position
                 root.visible-start-line = Math.floor(self.viewport-y / root.line-height);

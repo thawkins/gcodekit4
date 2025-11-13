@@ -188,6 +188,8 @@ export component GcodeEditorPanel inherits VerticalBox {
     
     // Custom G-Code Editor with virtual scrolling
     CustomTextEdit {
+        vertical-stretch: 1;
+        horizontal-stretch: 1;
         text: root.gcode-content;
         can-undo: root.can-undo;
         can-redo: root.can-redo;
