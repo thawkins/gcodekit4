@@ -138,6 +138,15 @@ impl LaserEngraver {
 
     /// Generate G-code for laser engraving
     pub fn generate_gcode(&self) -> Result<String> {
+        self.generate_gcode_with_progress(|_| {})
+    }
+
+    /// Generate G-code for laser engraving with progress callback
+    /// The callback receives progress from 0.0 to 1.0
+    pub fn generate_gcode_with_progress<F>(&self, mut progress_callback: F) -> Result<String>
+    where
+        F: FnMut(f32),
+    {
         let mut gcode = String::new();
 
         // Header comments
@@ -169,6 +178,8 @@ impl LaserEngraver {
         gcode.push_str("M5 ; Laser off\n");
         gcode.push_str("\n");
 
+        progress_callback(0.0);
+
         // Resize image to output dimensions
         let resized = image::imageops::resize(
             &self.image,
@@ -177,39 +188,54 @@ impl LaserEngraver {
             image::imageops::FilterType::Lanczos3,
         );
 
+        progress_callback(0.1);
+
         let line_spacing = 1.0 / self.params.pixels_per_mm * self.params.line_spacing;
         let pixel_width = 1.0 / self.params.pixels_per_mm;
 
         match self.params.scan_direction {
             ScanDirection::Horizontal => {
-                self.generate_horizontal_scan(&mut gcode, &resized, pixel_width, line_spacing)?;
+                self.generate_horizontal_scan_with_progress(&mut gcode, &resized, pixel_width, line_spacing, &mut progress_callback)?;
             }
             ScanDirection::Vertical => {
-                self.generate_vertical_scan(&mut gcode, &resized, pixel_width, line_spacing)?;
+                self.generate_vertical_scan_with_progress(&mut gcode, &resized, pixel_width, line_spacing, &mut progress_callback)?;
             }
         }
+
+        progress_callback(0.9);
 
         // Footer
         gcode.push_str("\n; End of engraving\n");
         gcode.push_str("M5 ; Laser off\n");
         gcode.push_str("G0 X0 Y0 ; Return to origin\n");
 
+        progress_callback(1.0);
+
         Ok(gcode)
     }
 
-    /// Generate horizontal scanning G-code
-    fn generate_horizontal_scan(
+    /// Generate horizontal scanning G-code with progress callback
+    fn generate_horizontal_scan_with_progress<F>(
         &self,
         gcode: &mut String,
         image: &GrayImage,
         pixel_width: f32,
         line_spacing: f32,
-    ) -> Result<()> {
+        progress_callback: &mut F,
+    ) -> Result<()>
+    where
+        F: FnMut(f32),
+    {
         let height = image.height();
         let width = image.width();
         let mut left_to_right = true;
 
         for y in 0..height {
+            // Report progress every 10 lines to avoid overwhelming the UI thread
+            if y % 10 == 0 || y == height - 1 {
+                let progress = 0.1 + (y as f32 / height as f32) * 0.8;
+                progress_callback(progress);
+            }
             let y_pos = y as f32 * line_spacing;
 
             // Skip to start of line
@@ -276,19 +302,28 @@ impl LaserEngraver {
         Ok(())
     }
 
-    /// Generate vertical scanning G-code
-    fn generate_vertical_scan(
+    /// Generate vertical scanning G-code with progress callback
+    fn generate_vertical_scan_with_progress<F>(
         &self,
         gcode: &mut String,
         image: &GrayImage,
         pixel_width: f32,
         line_spacing: f32,
-    ) -> Result<()> {
+        progress_callback: &mut F,
+    ) -> Result<()>
+    where
+        F: FnMut(f32),
+    {
         let height = image.height();
         let width = image.width();
         let mut top_to_bottom = true;
 
         for x in 0..width {
+            // Report progress every 10 columns to avoid overwhelming the UI thread
+            if x % 10 == 0 || x == width - 1 {
+                let progress = 0.1 + (x as f32 / width as f32) * 0.8;
+                progress_callback(progress);
+            }
             let x_pos = x as f32 * line_spacing;
 
             // Skip to start of column

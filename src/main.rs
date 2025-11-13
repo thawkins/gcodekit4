@@ -4612,7 +4612,7 @@ fn main() -> anyhow::Result<()> {
                         
                         // Show status message and initial progress
                         window.set_connection_status("Generating laser engraving G-code...".into());
-                        window.set_progress_value(0.1); // 10% - Starting
+                        window.set_progress_value(0.0); // Starting
                         
                         // Close dialog immediately
                         dlg.hide().ok();
@@ -4622,16 +4622,6 @@ fn main() -> anyhow::Result<()> {
                         let image_path_clone = image_path.clone();
                         std::thread::spawn(move || {
                             tracing::info!("Background thread: Starting G-code generation");
-                            
-                            // Update progress: 20% - Loading image
-                            let _ = slint::invoke_from_event_loop({
-                                let ww = window_weak_thread.clone();
-                                move || {
-                                    if let Some(w) = ww.upgrade() {
-                                        w.set_progress_value(0.2);
-                                    }
-                                }
-                            });
                             
                             let params = EngravingParameters {
                                 width_mm,
@@ -4653,30 +4643,20 @@ fn main() -> anyhow::Result<()> {
                             };
                             
                             let result = LaserEngraver::from_file(&image_path_clone, params)
-                                .map(|engraver| {
-                                    // Update progress: 50% - Image loaded and processed
-                                    let _ = slint::invoke_from_event_loop({
-                                        let ww = window_weak_thread.clone();
-                                        move || {
-                                            if let Some(w) = ww.upgrade() {
-                                                w.set_progress_value(0.5);
-                                            }
-                                        }
-                                    });
-                                    engraver
-                                })
                                 .and_then(|engraver| {
-                                    let gcode = engraver.generate_gcode()?;
-                                    
-                                    // Update progress: 80% - G-code generated
-                                    let _ = slint::invoke_from_event_loop({
-                                        let ww = window_weak_thread.clone();
-                                        move || {
-                                            if let Some(w) = ww.upgrade() {
-                                                w.set_progress_value(0.8);
+                                    // Generate G-code with progress updates (0-100%)
+                                    let gcode = engraver.generate_gcode_with_progress(|progress| {
+                                        // Map internal progress (0.0-1.0) to 0-100% range
+                                        let overall_progress = progress * 100.0;
+                                        let _ = slint::invoke_from_event_loop({
+                                            let ww = window_weak_thread.clone();
+                                            move || {
+                                                if let Some(w) = ww.upgrade() {
+                                                    w.set_progress_value(overall_progress);
+                                                }
                                             }
-                                        }
-                                    });
+                                        });
+                                    })?;
                                     
                                     Ok(gcode)
                                 });
@@ -4689,11 +4669,14 @@ fn main() -> anyhow::Result<()> {
                                     match result {
                                         Ok(gcode) => {
                                             tracing::info!("Setting G-code content ({} bytes)", gcode.len());
-                                            // Set the G-code in the editor
+                                            win.set_progress_value(95.0); // Show progress before UI update
+                                            win.set_connection_status("Loading G-code into editor...".into());
+                                            
+                                            // Set the G-code in the editor (this can be slow for large files)
                                             win.set_gcode_content(gcode.into());
                                             win.set_current_view("gcode-editor".into());
                                             win.set_connection_status("Laser engraving G-code generated successfully".into());
-                                            win.set_progress_value(1.0); // 100%
+                                            win.set_progress_value(100.0); // 100%
                                             
                                             // Hide progress after 1 second
                                             let win_weak = win.as_weak();
