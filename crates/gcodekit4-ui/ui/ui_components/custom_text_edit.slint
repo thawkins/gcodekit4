@@ -38,6 +38,8 @@ export component CustomTextEdit inherits Rectangle {
     
     // Callbacks
     callback text-changed(string);
+    callback text-inserted(int, int, string);  // line, column, text
+    callback text-deleted(int, int, int, int);  // start-line, start-col, end-line, end-col
     callback cursor-moved(int, int);
     callback undo-requested();
     callback redo-requested();
@@ -150,7 +152,30 @@ export component CustomTextEdit inherits Rectangle {
         }
     }
     
-    // Keyboard input handler
+    // Keyboard and mouse interaction  
+    // Invisible TextInput overlay to capture keyboard input
+    text-input := TextInput {
+        x: 0px;
+        y: 0px;
+        width: 0px;
+        height: 0px;
+        opacity: 0;
+        single-line: false;
+        
+        accepted => {
+            // Enter key pressed - insert newline
+            root.text-inserted(root.cursor-line, root.cursor-column, "\n");
+        }
+        
+        edited => {
+            // Text changed - insert the new text
+            if (self.text != "") {
+                root.text-inserted(root.cursor-line, root.cursor-column, self.text);
+                self.text = "";
+            }
+        }
+    }
+    
     FocusScope {
         key-pressed(event) => {
             // Handle undo/redo shortcuts
@@ -170,21 +195,36 @@ export component CustomTextEdit inherits Rectangle {
                 }
             }
             
-            // Pass other keys to callback for handling
+            // Handle backspace
+            if (event.text == Key.Backspace) {
+                root.text-deleted(root.cursor-line, root.cursor-column - 1, root.cursor-line, root.cursor-column);
+                return EventResult.accept;
+            }
+            
+            // Handle delete
+            if (event.text == Key.Delete) {
+                root.text-deleted(root.cursor-line, root.cursor-column, root.cursor-line, root.cursor-column + 1);
+                return EventResult.accept;
+            }
+            
+            // Pass other keys to callback for handling (typing, navigation, etc.)
             return root.key-pressed(event);
         }
         
-        width: 100%;
-        height: 100%;
-    }
-    
-    // Mouse interaction for cursor positioning
-    TouchArea {
-        clicked => {
-            // Calculate line from y position
-            root.cursor-line = Math.floor(self.mouse-y / root.line-height) + root.visible-start-line;
-            // Column would need more complex calculation based on character widths
-            root.cursor-moved(root.cursor-line, 0);
+        // Mouse interaction for cursor positioning
+        TouchArea {
+            clicked => {
+                // Calculate line from y position
+                root.cursor-line = Math.floor(self.mouse-y / root.line-height) + root.visible-start-line;
+                // Column would need more complex calculation based on character widths
+                root.cursor-moved(root.cursor-line, 0);
+                
+                // Focus the text input so it receives keyboard events
+                text-input.focus();
+            }
+            
+            width: 100%;
+            height: 100%;
         }
         
         width: 100%;
