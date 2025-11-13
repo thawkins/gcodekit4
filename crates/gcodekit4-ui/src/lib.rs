@@ -7,6 +7,7 @@ pub mod ui;
 pub mod visualizer;
 pub mod config;
 pub mod testing;
+pub mod editor;
 
 pub use ui::{
     ConsoleListener, DeviceConsoleManager, DeviceMessageType, FirmwareSettingsIntegration,
@@ -18,3 +19,5 @@ pub use config::{
     Config, ConnectionSettings, ConnectionType, FileProcessingSettings, FirmwareSettings,
     MachineSettings, SettingsManager, UiSettings,
 };
+
+pub use editor::{EditorState, TextBuffer, TextChange, UndoManager, Viewport};

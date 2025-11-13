@@ -26,6 +26,7 @@ uuid = { version = "1.6", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 parking_lot = "0.12"
 dirs = "5.0"
+ropey = "1.6"
 
 [build-dependencies]
 slint-build = "1.14.1"
