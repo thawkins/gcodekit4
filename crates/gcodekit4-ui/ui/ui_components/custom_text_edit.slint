@@ -1,0 +1,362 @@
+// Custom TextEdit widget with undo/redo support and virtual scrolling
+// Optimized for large G-code files
+
+import { ScrollView, VerticalBox, HorizontalBox } from "std-widgets.slint";
+
+// Model for a single line of text
+export struct TextLine {
+    line_number: int,
+    content: string,
+    is_dirty: bool,
+}
+
+// Custom text editor with virtual scrolling and undo/redo
+export component CustomTextEdit inherits Rectangle {
+    // Properties
+    in-out property <string> text: "";
+    in-out property <bool> read-only: false;
+    in-out property <int> cursor-line: 0;
+    in-out property <int> cursor-column: 0;
+    in-out property <bool> show-line-numbers: true;
+    in-out property <int> total-lines: 0;
+    in-out property <int> visible-start-line: 0;
+    in-out property <int> visible-end-line: 0;
+    in-out property <[TextLine]> visible-lines: [];
+    
+    // Undo/Redo state
+    in-out property <bool> can-undo: false;
+    in-out property <bool> can-redo: false;
+    
+    // Styling
+    in-out property <brush> background-color: #1e1e1e;
+    in-out property <brush> text-color: #d4d4d4;
+    in-out property <brush> line-number-color: #858585;
+    in-out property <brush> current-line-color: #2a2a2a;
+    in-out property <brush> selection-color: #264f78;
+    in-out property <length> font-size: 14px;
+    in-out property <string> font-family: "monospace";
+    
+    // Callbacks
+    callback text-changed(string);
+    callback cursor-moved(int, int);
+    callback undo-requested();
+    callback redo-requested();
+    callback scroll-changed(int);
+    callback key-pressed(KeyEvent) -> EventResult;
+    
+    // Internal state
+    property <length> line-height: 20px;
+    property <length> line-number-width: 60px;
+    
+    background: root.background-color;
+    
+    HorizontalBox {
+        // Line numbers column (optional)
+        if root.show-line-numbers: Rectangle {
+            width: root.line-number-width;
+            background: #252526;
+            
+            VerticalBox {
+                padding: 5px;
+                alignment: start;
+                
+                for line in root.visible-lines: Text {
+                    text: line.line-number;
+                    color: root.line-number-color;
+                    font-size: root.font-size;
+                    font-family: root.font-family;
+                    horizontal-alignment: right;
+                    height: root.line-height;
+                }
+            }
+        }
+        
+        // Main text area with virtual scrolling
+        ScrollView {
+            viewport-width: root.width - (root.show-line-numbers ? root.line-number-width : 0px);
+            viewport-height: root.total-lines * root.line-height;
+            
+            VerticalBox {
+                alignment: start;
+                padding: 5px;
+                
+                // Render only visible lines
+                for line in root.visible-lines: Rectangle {
+                    height: root.line-height;
+                    width: parent.width;
+                    
+                    // Highlight current line
+                    background: line.line-number == root.cursor-line ? root.current-line-color : transparent;
+                    
+                    Text {
+                        text: line.content;
+                        color: root.text-color;
+                        font-size: root.font-size;
+                        font-family: root.font-family;
+                        vertical-alignment: center;
+                        overflow: elide;
+                    }
+                }
+            }
+            
+            // Handle scroll events
+            changed viewport-y => {
+                // Calculate which lines are visible based on scroll position
+                root.visible-start-line = Math.floor(self.viewport-y / root.line-height);
+                root.visible-end-line = root.visible-start-line + Math.ceil(root.height / root.line-height);
+                root.scroll-changed(root.visible-start-line);
+            }
+        }
+    }
+    
+    // Keyboard input handler
+    FocusScope {
+        key-pressed(event) => {
+            // Handle undo/redo shortcuts
+            if (event.modifiers.control || event.modifiers.meta) {
+                if (event.text == "z" || event.text == "Z") {
+                    if (event.modifiers.shift) {
+                        root.redo-requested();
+                    } else {
+                        root.undo-requested();
+                    }
+                    return EventResult.accept;
+                }
+                
+                if (event.text == "y" || event.text == "Y") {
+                    root.redo-requested();
+                    return EventResult.accept;
+                }
+            }
+            
+            // Pass other keys to callback for handling
+            return root.key-pressed(event);
+        }
+        
+        width: 100%;
+        height: 100%;
+    }
+    
+    // Mouse interaction for cursor positioning
+    TouchArea {
+        clicked => {
+            // Calculate line from y position
+            root.cursor-line = Math.floor(self.mouse-y / root.line-height) + root.visible-start-line;
+            // Column would need more complex calculation based on character widths
+            root.cursor-moved(root.cursor-line, 0);
+        }
+        
+        width: 100%;
+        height: 100%;
+    }
+}
+
+// Toolbar with undo/redo buttons
+export component EditorToolbar inherits Rectangle {
+    in-out property <bool> can-undo: false;
+    in-out property <bool> can-redo: false;
+    
+    callback undo-clicked();
+    callback redo-clicked();
+    callback save-clicked();
+    callback open-clicked();
+    
+    height: 40px;
+    background: #2d2d30;
+    
+    HorizontalBox {
+        padding: 5px;
+        spacing: 5px;
+        
+        // Undo button
+        Rectangle {
+            width: 80px;
+            height: 30px;
+            border-radius: 3px;
+            background: undo-area.has-hover ? #3e3e42 : #333337;
+            border-width: 1px;
+            border-color: #555555;
+            
+            TouchArea {
+                undo-area := self;
+                enabled: root.can-undo;
+                clicked => {
+                    root.undo-clicked();
+                }
+            }
+            
+            HorizontalBox {
+                alignment: center;
+                Text {
+                    text: "⎌ Undo";
+                    color: root.can-undo ? #ffffff : #666666;
+                    font-size: 12px;
+                }
+            }
+        }
+        
+        // Redo button
+        Rectangle {
+            width: 80px;
+            height: 30px;
+            border-radius: 3px;
+            background: redo-area.has-hover ? #3e3e42 : #333337;
+            border-width: 1px;
+            border-color: #555555;
+            
+            TouchArea {
+                redo-area := self;
+                enabled: root.can-redo;
+                clicked => {
+                    root.redo-clicked();
+                }
+            }
+            
+            HorizontalBox {
+                alignment: center;
+                Text {
+                    text: "⎌ Redo";
+                    color: root.can-redo ? #ffffff : #666666;
+                    font-size: 12px;
+                }
+            }
+        }
+        
+        Rectangle {
+            width: 10px;
+        }
+        
+        // Save button
+        Rectangle {
+            width: 80px;
+            height: 30px;
+            border-radius: 3px;
+            background: save-area.has-hover ? #3e3e42 : #333337;
+            border-width: 1px;
+            border-color: #555555;
+            
+            TouchArea {
+                save-area := self;
+                clicked => {
+                    root.save-clicked();
+                }
+            }
+            
+            HorizontalBox {
+                alignment: center;
+                Text {
+                    text: "💾 Save";
+                    color: #ffffff;
+                    font-size: 12px;
+                }
+            }
+        }
+        
+        // Open button
+        Rectangle {
+            width: 80px;
+            height: 30px;
+            border-radius: 3px;
+            background: open-area.has-hover ? #3e3e42 : #333337;
+            border-width: 1px;
+            border-color: #555555;
+            
+            TouchArea {
+                open-area := self;
+                clicked => {
+                    root.open-clicked();
+                }
+            }
+            
+            HorizontalBox {
+                alignment: center;
+                Text {
+                    text: "📁 Open";
+                    color: #ffffff;
+                    font-size: 12px;
+                }
+            }
+        }
+        
+        // Status text on the right
+        Rectangle {
+            horizontal-stretch: 1;
+        }
+        
+        Text {
+            text: "Ready";
+            color: #cccccc;
+            font-size: 12px;
+            vertical-alignment: center;
+        }
+    }
+}
+
+// Complete editor component with toolbar
+export component CodeEditor inherits VerticalBox {
+    in-out property <string> content: "";
+    in-out property <bool> can-undo: false;
+    in-out property <bool> can-redo: false;
+    in-out property <int> cursor-line: 0;
+    in-out property <int> cursor-column: 0;
+    in-out property <[TextLine]> visible-lines: [];
+    in-out property <int> total-lines: 0;
+    
+    callback text-changed(string);
+    callback undo-requested();
+    callback redo-requested();
+    callback save-requested();
+    callback open-requested();
+    callback scroll-changed(int);
+    
+    spacing: 0px;
+    
+    // Toolbar
+    EditorToolbar {
+        can-undo: root.can-undo;
+        can-redo: root.can-redo;
+        
+        undo-clicked => {
+            root.undo-requested();
+        }
+        
+        redo-clicked => {
+            root.redo-requested();
+        }
+        
+        save-clicked => {
+            root.save-requested();
+        }
+        
+        open-clicked => {
+            root.open-requested();
+        }
+    }
+    
+    // Editor
+    CustomTextEdit {
+        text: root.content;
+        can-undo: root.can-undo;
+        can-redo: root.can-redo;
+        cursor-line: root.cursor-line;
+        cursor-column: root.cursor-column;
+        visible-lines: root.visible-lines;
+        total-lines: root.total-lines;
+        
+        text-changed(text) => {
+            root.text-changed(text);
+        }
+        
+        undo-requested => {
+            root.undo-requested();
+        }
+        
+        redo-requested => {
+            root.redo-requested();
+        }
+        
+        scroll-changed(line) => {
+            root.scroll-changed(line);
+        }
+    }
+}

@@ -1,0 +1,64 @@
+import { CodeEditor } from "../crates/gcodekit4-ui/ui/ui_components/custom_text_edit.slint";
+
+export struct TextLine {
+    line_number: int,
+    content: string,
+    is_dirty: bool,
+}
+
+export component AppWindow inherits Window {
+    title: "Custom G-Code Editor Demo";
+    width: 800px;
+    height: 600px;
+    
+    // Properties
+    in-out property <bool> can-undo: false;
+    in-out property <bool> can-redo: false;
+    in-out property <int> cursor-line: 0;
+    in-out property <int> cursor-column: 0;
+    in-out property <[TextLine]> visible-lines: [];
+    in-out property <int> total-lines: 0;
+    in-out property <string> content: "";
+    
+    // Callbacks
+    callback undo-requested();
+    callback redo-requested();
+    callback save-requested();
+    callback open-requested();
+    callback text-changed(string);
+    callback scroll-changed(int);
+    
+    CodeEditor {
+        can-undo: root.can-undo;
+        can-redo: root.can-redo;
+        cursor-line: root.cursor-line;
+        cursor-column: root.cursor-column;
+        visible-lines: root.visible-lines;
+        total-lines: root.total-lines;
+        content: root.content;
+        
+        undo-requested => {
+            root.undo-requested();
+        }
+        
+        redo-requested => {
+            root.redo-requested();
+        }
+        
+        save-requested => {
+            root.save-requested();
+        }
+        
+        open-requested => {
+            root.open-requested();
+        }
+        
+        text-changed(text) => {
+            root.text-changed(text);
+        }
+        
+        scroll-changed(line) => {
+            root.scroll-changed(line);
+        }
+    }
+}

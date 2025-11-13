@@ -6,10 +6,20 @@
 mod text_buffer;
 mod undo_manager;
 mod viewport;
+mod slint_bridge;
 
 pub use text_buffer::TextBuffer;
 pub use undo_manager::{TextChange, UndoManager};
 pub use viewport::Viewport;
+pub use slint_bridge::{EditorBridge, SlintTextLine};
+
+// Re-export for Slint UI
+#[derive(Clone, Debug)]
+pub struct TextLine {
+    pub line_number: i32,
+    pub content: String,
+    pub is_dirty: bool,
+}
 
 /// Complete editor state managing buffer, undo/redo, and viewport
 pub struct EditorState {

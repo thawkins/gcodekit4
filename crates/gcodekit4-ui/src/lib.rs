@@ -20,4 +20,4 @@ pub use config::{
     MachineSettings, SettingsManager, UiSettings,
 };
 
-pub use editor::{EditorState, TextBuffer, TextChange, UndoManager, Viewport};
+pub use editor::{EditorState, TextBuffer, TextChange, UndoManager, Viewport, EditorBridge, SlintTextLine, TextLine};
