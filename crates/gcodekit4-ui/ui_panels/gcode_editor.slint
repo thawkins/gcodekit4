@@ -1,7 +1,14 @@
 /// G-Code Editor Panel Component
-/// Displays the G-code text editor with file operations toolbar
+/// Displays the G-code text editor with file operations toolbar and undo/redo
 
-import { Button, LineEdit, TextEdit, VerticalBox, HorizontalBox, ScrollView } from "std-widgets.slint";
+import { Button, LineEdit, VerticalBox, HorizontalBox } from "std-widgets.slint";
+import { CustomTextEdit } from "../ui/ui_components/custom_text_edit.slint";
+
+export struct TextLine {
+    line_number: int,
+    content: string,
+    is_dirty: bool,
+}
 
 export component GcodeEditorPanel inherits VerticalBox {
     spacing: 0px;
@@ -10,6 +17,14 @@ export component GcodeEditorPanel inherits VerticalBox {
     
     in-out property <string> gcode-content: "";
     in-out property <string> gcode-filename: "untitled.gcode";
+    
+    // Custom editor properties
+    in-out property <bool> can-undo: false;
+    in-out property <bool> can-redo: false;
+    in-out property <int> cursor-line: 0;
+    in-out property <int> cursor-column: 0;
+    in-out property <[TextLine]> visible-lines: [];
+    in-out property <int> total-lines: 0;
     
     callback menu-file-new();
     callback menu-file-open();
@@ -20,109 +35,183 @@ export component GcodeEditorPanel inherits VerticalBox {
     callback menu-pause-transmission();
     callback menu-resume-transmission();
     
-    // File Operations Toolbar
+    // Custom editor callbacks
+    callback undo-requested();
+    callback redo-requested();
+    callback text-changed(string);
+    callback scroll-changed(int);
+    
+    // Toolbar with undo/redo and file operations
     Rectangle {
-        background: #ecf0f1;
-        height: 120px;
+        height: 40px;
+        background: #2d2d30;
         
-        VerticalBox {
-            padding: 10px;
-            spacing: 8px;
+        HorizontalBox {
+            padding: 5px;
+            spacing: 5px;
             
-            HorizontalBox {
-                spacing: 15px;
+            // Undo button
+            Rectangle {
+                width: 80px;
+                height: 30px;
+                border-radius: 3px;
+                border-width: 1px;
+                border-color: #555555;
                 
-                Button {
-                    text: "New";
+                undo-area := TouchArea {
+                    enabled: root.can-undo;
                     clicked => {
-                        root.menu-file-new();
+                        root.undo-requested();
                     }
                 }
-                Button {
-                    text: "Open File";
-                    clicked => {
-                        root.menu-file-open();
-                    }
-                }
-                Button {
-                    text: "Save";
-                    enabled: root.gcode-content != "" && root.gcode-filename != "untitled.gcode";
-                    clicked => {
-                        root.menu-file-save();
-                    }
-                }
-                Button {
-                    text: "Save As";
-                    enabled: root.gcode-content != "";
-                    clicked => {
-                        root.menu-file-save-as();
-                    }
-                }
-                Button {
-                    text: "Send";
-                    enabled: root.gcode-content != "";
-                    clicked => {
-                        root.menu-send-to-device();
-                    }
-                }
-                Button {
-                    text: "Stop";
-                    enabled: root.gcode-content != "";
-                    clicked => {
-                        root.menu-stop-transmission();
-                    }
-                }
-                Button {
-                    text: "Pause";
-                    enabled: root.gcode-content != "";
-                    clicked => {
-                        root.menu-pause-transmission();
-                    }
-                }
-                Button {
-                    text: "Resume";
-                    enabled: root.gcode-content != "";
-                    clicked => {
-                        root.menu-resume-transmission();
+                
+                background: undo-area.has-hover ? #3e3e42 : #333337;
+                
+                HorizontalBox {
+                    alignment: center;
+                    Text {
+                        text: "⎌ Undo";
+                        color: root.can-undo ? #ffffff : #666666;
+                        font-size: 12px;
                     }
                 }
             }
             
-            HorizontalBox {
-                spacing: 15px;
+            // Redo button
+            Rectangle {
+                width: 80px;
+                height: 30px;
+                border-radius: 3px;
+                border-width: 1px;
+                border-color: #555555;
                 
-                Text {
-                    text: "Filename:";
-                    vertical-alignment: center;
+                redo-area := TouchArea {
+                    enabled: root.can-redo;
+                    clicked => {
+                        root.redo-requested();
+                    }
                 }
-                LineEdit {
-                    text <=> root.gcode-filename;
-                    horizontal-stretch: 1.0;
+                
+                background: redo-area.has-hover ? #3e3e42 : #333337;
+                
+                HorizontalBox {
+                    alignment: center;
+                    Text {
+                        text: "⎌ Redo";
+                        color: root.can-redo ? #ffffff : #666666;
+                        font-size: 12px;
+                    }
                 }
-                Text {
-                    text: "Ready";
-                    color: green;
-                    vertical-alignment: center;
+            }
+            
+            Rectangle { width: 10px; }
+            
+            // File operation buttons
+            Button {
+                text: "New";
+                clicked => {
+                    root.menu-file-new();
                 }
+            }
+            Button {
+                text: "Open";
+                clicked => {
+                    root.menu-file-open();
+                }
+            }
+            Button {
+                text: "Save";
+                enabled: root.gcode-content != "";
+                clicked => {
+                    root.menu-file-save();
+                }
+            }
+            Button {
+                text: "Save As";
+                enabled: root.gcode-content != "";
+                clicked => {
+                    root.menu-file-save-as();
+                }
+            }
+            
+            Rectangle { width: 10px; }
+            
+            // Transmission buttons
+            Button {
+                text: "Send";
+                enabled: root.gcode-content != "";
+                clicked => {
+                    root.menu-send-to-device();
+                }
+            }
+            Button {
+                text: "Stop";
+                clicked => {
+                    root.menu-stop-transmission();
+                }
+            }
+            Button {
+                text: "Pause";
+                clicked => {
+                    root.menu-pause-transmission();
+                }
+            }
+            Button {
+                text: "Resume";
+                clicked => {
+                    root.menu-resume-transmission();
+                }
+            }
+            
+            // Status on right
+            Rectangle {
+                horizontal-stretch: 1;
+            }
+            
+            Text {
+                text: root.gcode-filename;
+                color: #cccccc;
+                font-size: 12px;
+                vertical-alignment: center;
+            }
+            
+            Rectangle { width: 10px; }
+            
+            Text {
+                text: "Line " + root.cursor-line + ":" + root.cursor-column;
+                color: #cccccc;
+                font-size: 12px;
+                vertical-alignment: center;
             }
         }
     }
     
-    // G-Code Content Display
-    Rectangle {
-        background: #f5f5f5;
-        horizontal-stretch: 1.0;
-        vertical-stretch: 1.0;
+    // Custom G-Code Editor with virtual scrolling
+    CustomTextEdit {
+        text: root.gcode-content;
+        can-undo: root.can-undo;
+        can-redo: root.can-redo;
+        cursor-line: root.cursor-line;
+        cursor-column: root.cursor-column;
+        visible-lines: root.visible-lines;
+        total-lines: root.total-lines;
+        show-line-numbers: true;
         
-        ScrollView {
-            VerticalBox {
-                TextEdit {
-                    enabled: true;
-                    text <=> root.gcode-content;
-                    read-only: false;
-                    wrap: word-wrap;
-                }
-            }
+        text-changed(text) => {
+            root.gcode-content = text;
+            root.text-changed(text);
+        }
+        
+        undo-requested => {
+            root.undo-requested();
+        }
+        
+        redo-requested => {
+            root.redo-requested();
+        }
+        
+        scroll-changed(line) => {
+            root.scroll-changed(line);
         }
     }
 }

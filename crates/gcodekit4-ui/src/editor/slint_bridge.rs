@@ -149,6 +149,14 @@ impl EditorBridge {
     pub fn get_visible_lines_model(&self) -> ModelRc<SlintTextLine> {
         ModelRc::from(self.visible_lines.clone())
     }
+    
+    /// Get visible lines as raw data for constructing Slint types
+    pub fn get_visible_lines_data(&self) -> Vec<(i32, String, bool)> {
+        self.visible_lines
+            .iter()
+            .map(|line| (line.line_number, line.content.clone(), line.is_dirty))
+            .collect()
+    }
 
     /// Update visible lines from editor state
     fn update_visible_lines(&self) {

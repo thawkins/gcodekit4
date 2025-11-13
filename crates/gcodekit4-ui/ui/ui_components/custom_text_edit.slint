@@ -73,7 +73,6 @@ export component CustomTextEdit inherits Rectangle {
         
         // Main text area with virtual scrolling
         ScrollView {
-            viewport-width: root.width - (root.show-line-numbers ? root.line-number-width : 0px);
             viewport-height: root.total-lines * root.line-height;
             
             VerticalBox {
@@ -83,7 +82,6 @@ export component CustomTextEdit inherits Rectangle {
                 // Render only visible lines
                 for line in root.visible-lines: Rectangle {
                     height: root.line-height;
-                    width: parent.width;
                     
                     // Highlight current line
                     background: line.line-number == root.cursor-line ? root.current-line-color : transparent;
@@ -173,17 +171,17 @@ export component EditorToolbar inherits Rectangle {
             width: 80px;
             height: 30px;
             border-radius: 3px;
-            background: undo-area.has-hover ? #3e3e42 : #333337;
             border-width: 1px;
             border-color: #555555;
             
-            TouchArea {
-                undo-area := self;
+            undo-area := TouchArea {
                 enabled: root.can-undo;
                 clicked => {
                     root.undo-clicked();
                 }
             }
+            
+            background: undo-area.has-hover ? #3e3e42 : #333337;
             
             HorizontalBox {
                 alignment: center;
@@ -200,17 +198,17 @@ export component EditorToolbar inherits Rectangle {
             width: 80px;
             height: 30px;
             border-radius: 3px;
-            background: redo-area.has-hover ? #3e3e42 : #333337;
             border-width: 1px;
             border-color: #555555;
             
-            TouchArea {
-                redo-area := self;
+            redo-area := TouchArea {
                 enabled: root.can-redo;
                 clicked => {
                     root.redo-clicked();
                 }
             }
+            
+            background: redo-area.has-hover ? #3e3e42 : #333337;
             
             HorizontalBox {
                 alignment: center;
@@ -231,16 +229,16 @@ export component EditorToolbar inherits Rectangle {
             width: 80px;
             height: 30px;
             border-radius: 3px;
-            background: save-area.has-hover ? #3e3e42 : #333337;
             border-width: 1px;
             border-color: #555555;
             
-            TouchArea {
-                save-area := self;
+            save-area := TouchArea {
                 clicked => {
                     root.save-clicked();
                 }
             }
+            
+            background: save-area.has-hover ? #3e3e42 : #333337;
             
             HorizontalBox {
                 alignment: center;
@@ -257,16 +255,16 @@ export component EditorToolbar inherits Rectangle {
             width: 80px;
             height: 30px;
             border-radius: 3px;
-            background: open-area.has-hover ? #3e3e42 : #333337;
             border-width: 1px;
             border-color: #555555;
             
-            TouchArea {
-                open-area := self;
+            open-area := TouchArea {
                 clicked => {
                     root.open-clicked();
                 }
             }
+            
+            background: open-area.has-hover ? #3e3e42 : #333337;
             
             HorizontalBox {
                 alignment: center;

@@ -6,6 +6,7 @@ use gcodekit4::{
     BoxParameters, BoxType, FingerJointSettings, FingerStyle, TabbedBoxMaker,
     JigsawPuzzleMaker, PuzzleParameters,
 };
+use gcodekit4_ui::EditorBridge;
 use slint::{Model, VecModel};
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -337,6 +338,20 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
 /// Parse GRBL status response and extract position
 /// Format: <Idle|MPos:10.000,20.000,0.000|WPos:10.000,20.000,0.000|...>
 
+/// Helper function to convert editor lines to Slint TextLine and update window
+fn update_visible_lines(window: &MainWindow, bridge: &EditorBridge) {
+    let lines_data = bridge.get_visible_lines_data();
+    let lines: Vec<TextLine> = lines_data
+        .into_iter()
+        .map(|(line_number, content, is_dirty)| TextLine {
+            line_number,
+            content: content.into(),
+            is_dirty,
+        })
+        .collect();
+    window.set_visible_lines(slint::ModelRc::new(VecModel::from(lines)));
+}
+
 fn main() -> anyhow::Result<()> {
     // Initialize logging
     init_logging()?;
@@ -475,6 +490,22 @@ fn main() -> anyhow::Result<()> {
         main_window.set_materials(slint::ModelRc::new(VecModel::from(materials_ui)));
     }
 
+    // Initialize Custom G-code Editor with undo/redo
+    let editor_bridge = Rc::new(EditorBridge::new(600.0, 20.0));
+    
+    // Initialize editor with empty content
+    editor_bridge.load_text("");
+    
+    // Set initial editor state in UI
+    main_window.set_can_undo(false);
+    main_window.set_can_redo(false);
+    main_window.set_cursor_line(0);
+    main_window.set_cursor_column(0);
+    main_window.set_total_lines(0);
+    
+    // Update visible lines
+    update_visible_lines(&main_window, &editor_bridge);
+    
     // Initialize CNC Tools Manager backend
     let tools_backend = Rc::new(RefCell::new(gcodekit4::ui::ToolsManagerBackend::new()));
     
@@ -1090,6 +1121,7 @@ fn main() -> anyhow::Result<()> {
     let window_weak = main_window.as_weak();
     let gcode_editor_clone = gcode_editor.clone();
     let console_manager_clone = console_manager.clone();
+    let editor_bridge_open = editor_bridge.clone();
     main_window.on_menu_file_open(move || {
         if let Some(window) = window_weak.upgrade() {
             window.set_is_busy(true);
@@ -1152,7 +1184,16 @@ fn main() -> anyhow::Result<()> {
                         format!("DEBUG: Setting TextEdit content ({} chars)", content.len()),
                     );
 
+                    // Load into custom editor
+                    editor_bridge_open.load_text(&content);
+                    
                     window.set_gcode_content(slint::SharedString::from(content.clone()));
+
+                    // Update custom editor state
+                    window.set_can_undo(editor_bridge_open.can_undo());
+                    window.set_can_redo(editor_bridge_open.can_redo());
+                    window.set_total_lines(editor_bridge_open.line_count() as i32);
+                    update_visible_lines(&window, &editor_bridge_open);
 
                     // VERIFY: Log what was set
                     let verify_content = window.get_gcode_content();
@@ -1576,6 +1617,72 @@ fn main() -> anyhow::Result<()> {
             
             let console_output = console_manager_resume.get_output();
             window.set_console_output(console_output.into());
+        }
+    });
+
+    // Set up undo callback for custom editor
+    let window_weak = main_window.as_weak();
+    let editor_bridge_undo = editor_bridge.clone();
+    main_window.on_undo_requested(move || {
+        if editor_bridge_undo.undo() {
+            if let Some(window) = window_weak.upgrade() {
+                // Update UI state
+                window.set_can_undo(editor_bridge_undo.can_undo());
+                window.set_can_redo(editor_bridge_undo.can_redo());
+                update_visible_lines(&window, &editor_bridge_undo);
+                
+                // Update g-code content
+                let content = editor_bridge_undo.get_text();
+                window.set_gcode_content(slint::SharedString::from(content));
+                
+                // Update cursor position
+                let (line, col) = editor_bridge_undo.cursor_position();
+                window.set_cursor_line(line as i32);
+                window.set_cursor_column(col as i32);
+            }
+        }
+    });
+
+    // Set up redo callback for custom editor
+    let window_weak = main_window.as_weak();
+    let editor_bridge_redo = editor_bridge.clone();
+    main_window.on_redo_requested(move || {
+        if editor_bridge_redo.redo() {
+            if let Some(window) = window_weak.upgrade() {
+                // Update UI state
+                window.set_can_undo(editor_bridge_redo.can_redo());
+                window.set_can_redo(editor_bridge_redo.can_redo());
+                update_visible_lines(&window, &editor_bridge_redo);
+                
+                // Update g-code content
+                let content = editor_bridge_redo.get_text();
+                window.set_gcode_content(slint::SharedString::from(content));
+                
+                // Update cursor position
+                let (line, col) = editor_bridge_redo.cursor_position();
+                window.set_cursor_line(line as i32);
+                window.set_cursor_column(col as i32);
+            }
+        }
+    });
+
+    // Set up scroll callback for custom editor
+    let window_weak = main_window.as_weak();
+    let editor_bridge_scroll = editor_bridge.clone();
+    main_window.on_scroll_changed(move |line| {
+        editor_bridge_scroll.scroll_to_line(line as usize);
+        if let Some(window) = window_weak.upgrade() {
+            update_visible_lines(&window, &editor_bridge_scroll);
+        }
+    });
+
+    // Set up text-changed callback for custom editor
+    let window_weak = main_window.as_weak();
+    let editor_bridge_text = editor_bridge.clone();
+    main_window.on_text_changed(move |_text| {
+        if let Some(window) = window_weak.upgrade() {
+            window.set_can_undo(editor_bridge_text.can_undo());
+            window.set_can_redo(editor_bridge_text.can_redo());
         }
     });
 

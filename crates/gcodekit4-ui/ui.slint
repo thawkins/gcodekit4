@@ -5,7 +5,7 @@
 import { Button, ComboBox, LineEdit, TextEdit, VerticalBox, HorizontalBox, ScrollView, SpinBox, CheckBox } from "std-widgets.slint";
 
 // Import all panel components
-import { GcodeEditorPanel } from "ui_panels/gcode_editor.slint";
+import { GcodeEditorPanel, TextLine } from "ui_panels/gcode_editor.slint";
 import { DeviceConsolePanel } from "ui_panels/device_console.slint";
 import { MachineControlPanel } from "ui_panels/machine_control.slint";
 import { ConfigSettingsPanel, ConfigSetting } from "ui_panels/config_settings.slint";
@@ -86,6 +86,14 @@ export component MainWindow inherits Window {
     in-out property <string> current-view: "gcode-editor";
     in-out property <string> gcode-filename: "untitled.gcode";
     in property <int> console-scroll-trigger: 0;
+    
+    // Custom G-code Editor properties
+    in-out property <bool> can-undo: false;
+    in-out property <bool> can-redo: false;
+    in-out property <int> cursor-line: 0;
+    in-out property <int> cursor-column: 0;
+    in-out property <[TextLine]> visible-lines: [];
+    in-out property <int> total-lines: 0;
     
     // Configuration settings properties
     in property <[ConfigSetting]> config-settings: [];
@@ -200,6 +208,10 @@ export component MainWindow inherits Window {
     callback menu-pause-transmission();
     callback menu-resume-transmission();
     callback menu-file-exit();
+    callback undo-requested();
+    callback redo-requested();
+    callback text-changed(string);
+    callback scroll-changed(int);
     callback machine-jog-home();
     callback machine-jog-x-positive(float);
     callback machine-jog-x-negative(float);
@@ -698,6 +710,12 @@ export component MainWindow inherits Window {
                 if current-view == "gcode-editor" : GcodeEditorPanel {
                     gcode-content <=> root.gcode-content;
                     gcode-filename <=> root.gcode-filename;
+                    can-undo <=> root.can-undo;
+                    can-redo <=> root.can-redo;
+                    cursor-line <=> root.cursor-line;
+                    cursor-column <=> root.cursor-column;
+                    visible-lines <=> root.visible-lines;
+                    total-lines <=> root.total-lines;
                     menu-file-new => {
                         root.menu-file-new();
                     }
@@ -721,6 +739,18 @@ export component MainWindow inherits Window {
                     }
                     menu-resume-transmission => {
                         root.menu-resume-transmission();
+                    }
+                    undo-requested => {
+                        root.undo-requested();
+                    }
+                    redo-requested => {
+                        root.redo-requested();
+                    }
+                    text-changed(text) => {
+                        root.text-changed(text);
+                    }
+                    scroll-changed(line) => {
+                        root.scroll-changed(line);
                     }
                 }
                 
