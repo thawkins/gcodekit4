@@ -347,7 +347,7 @@ impl TabbedBoxMaker {
         let x = self.x;
         let y = self.y;
         let h = self.h;
-        let t = self.t;
+        let _t = self.t;
         
         let mut x_offset = 0.0;
         let mut y_offset = 0.0;

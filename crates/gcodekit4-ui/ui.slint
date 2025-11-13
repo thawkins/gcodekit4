@@ -313,6 +313,10 @@ export component MainWindow inherits Window {
     callback generate-jigsaw-puzzle();
     callback generate-laser-engraving();
     
+    // Custom editor callbacks
+    callback clear_editor();
+    callback append_gcode_line(string);
+    
     // Internal state for UI selections
     private property <int> port-index: 0;
     private property <int> console-scroll-ref: 0;

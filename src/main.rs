@@ -1528,7 +1528,6 @@ fn main() -> anyhow::Result<()> {
             window.set_progress_value(0.0);
             let console_output = console_manager_clone.get_output();
             window.set_console_output(slint::SharedString::from(console_output));
-            use std::rc::Rc;
 
             struct SendState {
                 lines: Vec<String>,
@@ -1709,6 +1708,31 @@ fn main() -> anyhow::Result<()> {
         if let Some(window) = window_weak.upgrade() {
             window.set_can_undo(editor_bridge_text.can_undo());
             window.set_can_redo(editor_bridge_text.can_redo());
+        }
+    });
+
+    // Custom editor callbacks
+    let window_weak = main_window.as_weak();
+    let editor_bridge_clear = editor_bridge.clone();
+    main_window.on_clear_editor(move || {
+        editor_bridge_clear.load_text("");
+        if let Some(window) = window_weak.upgrade() {
+            update_visible_lines(&window, &editor_bridge_clear);
+        }
+    });
+
+    let window_weak = main_window.as_weak();
+    let editor_bridge_append = editor_bridge.clone();
+    main_window.on_append_gcode_line(move |line| {
+        let current_text = editor_bridge_append.get_text();
+        let new_text = if current_text.is_empty() {
+            line.to_string()
+        } else {
+            format!("{}\n{}", current_text, line)
+        };
+        editor_bridge_append.load_text(&new_text);
+        if let Some(window) = window_weak.upgrade() {
+            update_visible_lines(&window, &editor_bridge_append);
         }
     });
 
@@ -4386,7 +4410,12 @@ fn main() -> anyhow::Result<()> {
                                 if let Some(win) = window_weak_thread.upgrade() {
                                     match result {
                                         Ok(gcode) => {
-                                            win.set_gcode_content(slint::SharedString::from(&gcode));
+                                            // Clear editor and append line by line
+                                            win.invoke_clear_editor();
+                                            for line in gcode.lines() {
+                                                win.invoke_append_gcode_line(slint::SharedString::from(line));
+                                            }
+                                            
                                             win.set_gcode_filename(slint::SharedString::from(format!(
                                                 "box_{}x{}x{}.gcode",
                                                 x as i32, y as i32, h as i32
@@ -4559,7 +4588,12 @@ fn main() -> anyhow::Result<()> {
                                 if let Some(win) = window_weak_thread.upgrade() {
                                     match result {
                                         Ok(gcode) => {
-                                            win.set_gcode_content(slint::SharedString::from(&gcode));
+                                            // Clear editor and append line by line
+                                            win.invoke_clear_editor();
+                                            for line in gcode.lines() {
+                                                win.invoke_append_gcode_line(slint::SharedString::from(line));
+                                            }
+                                            
                                             win.set_gcode_filename(slint::SharedString::from(format!(
                                                 "puzzle_{}x{}_{}x{}.gcode",
                                                 width as i32, height as i32, pieces_across, pieces_down
@@ -4708,6 +4742,7 @@ fn main() -> anyhow::Result<()> {
             // Generate G-code callback
             let main_win_clone = main_win.as_weak();
             let dialog_weak_generate = dialog.as_weak();
+            let editor_bridge_engraver = editor_bridge.clone();
             dialog.on_generate_gcode(move || {
                 if let Some(window) = main_win_clone.upgrade() {
                     if let Some(dlg) = dialog_weak_generate.upgrade() {
@@ -4805,8 +4840,13 @@ fn main() -> anyhow::Result<()> {
                                             win.set_progress_value(95.0); // Show progress before UI update
                                             win.set_connection_status("Loading G-code into editor...".into());
                                             
-                                            // Set the G-code in the editor (this can be slow for large files)
-                                            win.set_gcode_content(gcode.into());
+                                            // Load into custom editor using callbacks
+                                            win.invoke_clear_editor();
+                                            for line in gcode.lines() {
+                                                win.invoke_append_gcode_line(slint::SharedString::from(line));
+                                            }
+                                            
+                                            // Switch to editor view
                                             win.set_current_view("gcode-editor".into());
                                             win.set_connection_status("Laser engraving G-code generated successfully".into());
                                             win.set_progress_value(100.0); // 100%

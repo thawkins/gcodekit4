@@ -4,7 +4,7 @@
 //! Supports grayscale power modulation, bidirectional scanning, and various image formats.
 
 use anyhow::{Context, Result};
-use image::{DynamicImage, GenericImageView, GrayImage, Luma};
+use image::{DynamicImage, GrayImage};
 use std::path::Path;
 
 /// Scan direction for laser engraving
