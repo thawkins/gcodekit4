@@ -191,7 +191,7 @@ impl EditorBridge {
         // Clear and rebuild visible lines
         let mut new_lines = Vec::new();
         for (idx, content) in lines.iter().enumerate() {
-            let line_number = start_line + idx;
+            let line_number = start_line + idx + 1; // Line numbers start at 1, not 0
             new_lines.push(SlintTextLine::new(
                 line_number,
                 content.clone(),

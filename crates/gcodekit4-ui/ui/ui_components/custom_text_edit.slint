@@ -65,11 +65,14 @@ export component CustomTextEdit inherits Rectangle {
                 
                 VerticalLayout {
                     alignment: start;
-                    padding: 5px;
+                    padding-top: 5px;
+                    padding-bottom: 5px;
+                    padding-left: 5px;
+                    padding-right: 0px;
                     
-                    // Spacer to match text positioning
+                    // Spacer to match text positioning (line numbers start at 1)
                     if root.visible-lines.length > 0: Rectangle {
-                        height: root.visible-lines[0].line-number * root.line-height;
+                        height: (root.visible-lines[0].line-number - 1) * root.line-height;
                     }
                     
                     for line in root.visible-lines: Rectangle {
@@ -96,12 +99,15 @@ export component CustomTextEdit inherits Rectangle {
             
             VerticalLayout {
                 alignment: start;
-                padding: 5px;
+                padding-top: 12px;
+                padding-bottom: 5px;
+                padding-left: 5px;
+                padding-right: 5px;
                 
                 // Spacer: positions visible lines at correct offset
-                // Uses first line's actual line number from backend
+                // Uses first line's actual line number from backend (line numbers start at 1)
                 if root.visible-lines.length > 0: Rectangle {
-                    height: root.visible-lines[0].line-number * root.line-height;
+                    height: (root.visible-lines[0].line-number - 1) * root.line-height;
                 }
                 
                 // Render only visible lines
