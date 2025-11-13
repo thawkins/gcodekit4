@@ -351,12 +351,32 @@ fn update_visible_lines(window: &MainWindow, bridge: &EditorBridge) {
         })
         .collect();
     
+    if !lines.is_empty() {
+        eprintln!(
+            "UPDATE: {} lines, first={}, last={}",
+            lines.len(),
+            lines.first().map(|l| l.line_number).unwrap_or(-1),
+            lines.last().map(|l| l.line_number).unwrap_or(-1)
+        );
+        tracing::debug!(
+            "update_visible_lines: {} lines, first={}, last={}",
+            lines.len(),
+            lines.first().map(|l| l.line_number).unwrap_or(-1),
+            lines.last().map(|l| l.line_number).unwrap_or(-1)
+        );
+    } else {
+        eprintln!("UPDATE: NO LINES!");
+    }
+    
     window.set_visible_lines(slint::ModelRc::new(VecModel::from(lines)));
 }
 
 fn main() -> anyhow::Result<()> {
     // Initialize logging
     init_logging()?;
+    
+    eprintln!("=== GCodeKit4 Starting - Logging Enabled ===");
+    tracing::info!("Application starting");
 
     let main_window = MainWindow::new().map_err(|e| anyhow::anyhow!("UI Error: {}", e))?;
 
@@ -1674,6 +1694,8 @@ fn main() -> anyhow::Result<()> {
     let window_weak = main_window.as_weak();
     let editor_bridge_scroll = editor_bridge.clone();
     main_window.on_scroll_changed(move |line| {
+        eprintln!("SCROLL: line={}", line);
+        tracing::debug!("scroll_changed callback: line={}", line);
         editor_bridge_scroll.scroll_to_line(line as usize);
         if let Some(window) = window_weak.upgrade() {
             update_visible_lines(&window, &editor_bridge_scroll);

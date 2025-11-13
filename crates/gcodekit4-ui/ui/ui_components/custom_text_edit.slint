@@ -134,8 +134,8 @@ export component CustomTextEdit inherits Rectangle {
                 root.sync-scroll-y = self.viewport-y;
                 
                 // Calculate which lines should be visible at current scroll position
-                // With absolute positioning, lines render at their actual Y positions
-                root.visible-start-line = Math.floor(self.viewport-y / root.line-height);
+                // viewport-y is negative when scrolled down, so negate it to get scroll offset
+                root.visible-start-line = Math.max(0, Math.floor(-self.viewport-y / root.line-height));
                 root.visible-end-line = root.visible-start-line + Math.ceil(self.height / root.line-height);
                 
                 // Request lines from backend (will clamp to valid range)
