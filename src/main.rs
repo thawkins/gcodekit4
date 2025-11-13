@@ -341,6 +341,7 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
 /// Helper function to convert editor lines to Slint TextLine and update window
 fn update_visible_lines(window: &MainWindow, bridge: &EditorBridge) {
     let lines_data = bridge.get_visible_lines_data();
+    
     let lines: Vec<TextLine> = lines_data
         .into_iter()
         .map(|(line_number, content, is_dirty)| TextLine {
@@ -349,6 +350,7 @@ fn update_visible_lines(window: &MainWindow, bridge: &EditorBridge) {
             is_dirty,
         })
         .collect();
+    
     window.set_visible_lines(slint::ModelRc::new(VecModel::from(lines)));
 }
 

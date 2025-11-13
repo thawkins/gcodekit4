@@ -71,9 +71,9 @@ export component CustomTextEdit inherits Rectangle {
                     padding-bottom: 5px;
                     alignment: start;
                     
-                    // Spacer to match text positioning
+                    // Spacer to match text positioning (use actual line number from backend)
                     Rectangle {
-                        height: root.visible-start-line * root.line-height;
+                        height: (root.visible-lines.length > 0 ? root.visible-lines[0].line-number : 0) * root.line-height;
                     }
                     
                     for line in root.visible-lines: Rectangle {
@@ -105,8 +105,9 @@ export component CustomTextEdit inherits Rectangle {
                 padding-bottom: 5px;
                 
                 // Spacer to position visible lines at correct offset in virtual document
+                // Use actual line number from first visible line (after backend clamping)
                 Rectangle {
-                    height: root.visible-start-line * root.line-height;
+                    height: (root.visible-lines.length > 0 ? root.visible-lines[0].line-number : 0) * root.line-height;
                 }
                 
                 // Render only visible lines
@@ -138,15 +139,8 @@ export component CustomTextEdit inherits Rectangle {
                 root.sync-scroll-y = self.viewport-y;
                 
                 // Calculate which lines are visible based on scroll position
+                // Let backend handle clamping - we need spacer to match viewport-y
                 root.visible-start-line = Math.floor(self.viewport-y / root.line-height);
-                
-                // Clamp to prevent scrolling past end of document
-                root.visible-start-line = Math.min(
-                    root.visible-start-line,
-                    root.total-lines - Math.ceil(self.height / root.line-height)
-                );
-                root.visible-start-line = Math.max(0, root.visible-start-line);
-                
                 root.visible-end-line = root.visible-start-line + Math.ceil(self.height / root.line-height);
                 root.scroll-changed(root.visible-start-line);
             }
