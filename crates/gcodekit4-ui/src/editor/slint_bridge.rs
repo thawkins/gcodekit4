@@ -114,9 +114,19 @@ impl EditorBridge {
 
     /// Scroll viewport to specific line
     pub fn scroll_to_line(&self, line: usize) {
+        tracing::debug!("scroll_to_line: requesting line {}", line);
         let mut editor = self.editor.borrow_mut();
+        let total_lines = editor.line_count();
         // Use scroll_to_line for absolute positioning (not scroll_by which is relative)
         editor.scroll_to_line(line);
+        let viewport = editor.viewport();
+        tracing::debug!(
+            "scroll_to_line: set to line {} (total {} lines), viewport now {}-{}",
+            line,
+            total_lines,
+            viewport.start_line,
+            viewport.end_line
+        );
         drop(editor);
         self.update_visible_lines();
     }

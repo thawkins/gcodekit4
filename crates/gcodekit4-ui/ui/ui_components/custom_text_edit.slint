@@ -139,7 +139,15 @@ export component CustomTextEdit inherits Rectangle {
                 
                 // Calculate which lines are visible based on scroll position
                 root.visible-start-line = Math.floor(self.viewport-y / root.line-height);
-                root.visible-end-line = root.visible-start-line + Math.ceil(root.height / root.line-height);
+                
+                // Clamp to prevent scrolling past end of document
+                root.visible-start-line = Math.min(
+                    root.visible-start-line,
+                    root.total-lines - Math.ceil(self.height / root.line-height)
+                );
+                root.visible-start-line = Math.max(0, root.visible-start-line);
+                
+                root.visible-end-line = root.visible-start-line + Math.ceil(self.height / root.line-height);
                 root.scroll-changed(root.visible-start-line);
             }
         }
