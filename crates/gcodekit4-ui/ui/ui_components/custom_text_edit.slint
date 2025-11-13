@@ -60,26 +60,31 @@ export component CustomTextEdit inherits Rectangle {
             background: #252526;
             
             Flickable {
-                viewport-height: root.total-lines * root.line-height;
                 viewport-y: root.sync-scroll-y;
                 interactive: false;
                 
-                // Use absolute positioning to match text lines exactly
-                for line in root.visible-lines: Rectangle {
-                    height: root.line-height;
+                // Container for absolute positioning
+                Rectangle {
                     width: parent.width;
-                    // Absolute Y position matches text lines
-                    y: line.line-number * root.line-height;
+                    height: root.total-lines * root.line-height;
                     
-                    Text {
-                        text: line.line-number;
-                        color: root.line-number-color;
-                        font-size: root.font-size;
-                        font-family: root.font-family;
-                        horizontal-alignment: right;
-                        vertical-alignment: center;
-                        x: 5px;
-                        width: parent.width - 10px;
+                    // Use absolute positioning to match text lines exactly
+                    for line in root.visible-lines: Rectangle {
+                        height: root.line-height;
+                        width: parent.width;
+                        // Absolute Y position matches text lines
+                        y: line.line-number * root.line-height;
+                        
+                        Text {
+                            text: line.line-number;
+                            color: root.line-number-color;
+                            font-size: root.font-size;
+                            font-family: root.font-family;
+                            horizontal-alignment: right;
+                            vertical-alignment: center;
+                            x: 5px;
+                            width: parent.width - 10px;
+                        }
                     }
                 }
             }
@@ -87,29 +92,33 @@ export component CustomTextEdit inherits Rectangle {
         
         // Main text area with virtual scrolling using absolute positioning
         text-flickable := Flickable {
-            viewport-height: root.total-lines * root.line-height;
             interactive: true;
             
-            // Use absolute positioning - each line at: line-number * line-height
-            // This avoids spacer sync issues with Flickable viewport-y
-            for line in root.visible-lines: Rectangle {
-                height: root.line-height;
+            // Container for absolute positioning - must be single child of Flickable
+            viewport := Rectangle {
                 width: parent.width;
-                // Absolute Y position based on actual line number from backend
-                y: line.line-number * root.line-height;
+                height: root.total-lines * root.line-height;
                 
-                // Highlight current line
-                background: line.line-number == root.cursor-line ? root.current-line-color : transparent;
-                
-                Text {
-                    text: line.content;
-                    color: root.text-color;
-                    font-size: root.font-size;
-                    font-family: root.font-family;
-                    vertical-alignment: center;
-                    horizontal-alignment: left;
-                    overflow: elide;
-                    x: 5px;
+                // Render visible lines with absolute Y positioning
+                for line in root.visible-lines: Rectangle {
+                    height: root.line-height;
+                    width: parent.width;
+                    // Absolute Y position based on actual line number from backend
+                    y: line.line-number * root.line-height;
+                    
+                    // Highlight current line
+                    background: line.line-number == root.cursor-line ? root.current-line-color : transparent;
+                    
+                    Text {
+                        text: line.content;
+                        color: root.text-color;
+                        font-size: root.font-size;
+                        font-family: root.font-family;
+                        vertical-alignment: center;
+                        horizontal-alignment: left;
+                        overflow: elide;
+                        x: 5px;
+                    }
                 }
             }
 
