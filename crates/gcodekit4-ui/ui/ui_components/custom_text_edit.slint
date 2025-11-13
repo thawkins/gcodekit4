@@ -62,18 +62,18 @@ export component CustomTextEdit inherits Rectangle {
             Flickable {
                 viewport-y: root.sync-scroll-y;
                 interactive: false;
+                viewport-height: root.total-lines * root.line-height;
                 
-                // Container for absolute positioning
-                Rectangle {
-                    width: parent.width;
-                    height: root.total-lines * root.line-height;
+                VerticalLayout {
+                    padding: 5px;
                     
-                    // Use absolute positioning to match text lines exactly
+                    // Spacer to match text positioning
+                    if root.visible-lines.length > 0: Rectangle {
+                        height: root.visible-lines[0].line-number * root.line-height;
+                    }
+                    
                     for line in root.visible-lines: Rectangle {
                         height: root.line-height;
-                        width: parent.width;
-                        // Absolute Y position matches text lines
-                        y: line.line-number * root.line-height;
                         
                         Text {
                             text: line.line-number;
@@ -82,29 +82,29 @@ export component CustomTextEdit inherits Rectangle {
                             font-family: root.font-family;
                             horizontal-alignment: right;
                             vertical-alignment: center;
-                            x: 5px;
-                            width: parent.width - 10px;
                         }
                     }
                 }
             }
         }
         
-        // Main text area with virtual scrolling using absolute positioning
+        // Main text area with virtual scrolling
         text-flickable := Flickable {
             interactive: true;
+            viewport-height: root.total-lines * root.line-height;
             
-            // Container for absolute positioning - must be single child of Flickable
-            viewport := Rectangle {
-                width: parent.width;
-                height: root.total-lines * root.line-height;
+            VerticalLayout {
+                padding: 5px;
                 
-                // Render visible lines with absolute Y positioning
+                // Spacer: positions visible lines at correct offset
+                // Uses first line's actual line number from backend
+                if root.visible-lines.length > 0: Rectangle {
+                    height: root.visible-lines[0].line-number * root.line-height;
+                }
+                
+                // Render only visible lines
                 for line in root.visible-lines: Rectangle {
                     height: root.line-height;
-                    width: parent.width;
-                    // Absolute Y position based on actual line number from backend
-                    y: line.line-number * root.line-height;
                     
                     // Highlight current line
                     background: line.line-number == root.cursor-line ? root.current-line-color : transparent;
@@ -117,7 +117,6 @@ export component CustomTextEdit inherits Rectangle {
                         vertical-alignment: center;
                         horizontal-alignment: left;
                         overflow: elide;
-                        x: 5px;
                     }
                 }
             }
