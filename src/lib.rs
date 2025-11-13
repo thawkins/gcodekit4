@@ -48,7 +48,7 @@ pub use gcodekit4_parser::{
     CommandNumberGenerator, CommandProcessor, CommandResponse, CommandState, CommentProcessor,
     DecimalProcessor, EmptyLineRemoverProcessor, GcodeCommand, GcodeParser, GcodeState, ModalState,
     ProcessorConfig, ProcessorHandle, ProcessorPipeline, ProcessorRegistry, WhitespaceProcessor,
-    BoxParameters, BoxType, LayoutStyle, TabType, TabbedBoxMaker,
+    BoxParameters, BoxType, FingerJointSettings, FingerStyle, TabbedBoxMaker,
     JigsawPuzzleMaker, PuzzleParameters,
     Canvas, CanvasPoint, Circle, DrawingMode, Line, Point, Rectangle, Shape, ShapeType, Toolpath,
     ToolpathGenerator, ToolpathSegment, ToolpathSegmentType, ToolpathToGcode,

@@ -3,7 +3,7 @@ use gcodekit4::{
     ConnectionParams, ConsoleListener, DeviceConsoleManager, DeviceMessageType,
     FirmwareSettingsIntegration, GcodeEditor, SerialCommunicator,
     SerialParity, SettingValue, SettingsDialog, SettingsPersistence, BUILD_DATE, VERSION,
-    BoxParameters, BoxType, LayoutStyle, TabType, TabbedBoxMaker,
+    BoxParameters, BoxType, FingerJointSettings, FingerStyle, TabbedBoxMaker,
     JigsawPuzzleMaker, PuzzleParameters,
 };
 use slint::{Model, VecModel};
@@ -4123,17 +4123,18 @@ fn main() -> anyhow::Result<()> {
             *dialog_holder.borrow_mut() = Some(dialog.clone_strong());
             
             // Initialize dialog with current values from main window
-            dialog.set_box_length(main_win.get_tbox_length());
-            dialog.set_box_width(main_win.get_tbox_width());
-            dialog.set_box_height(main_win.get_tbox_height());
+            dialog.set_box_x(main_win.get_tbox_x());
+            dialog.set_box_y(main_win.get_tbox_y());
+            dialog.set_box_h(main_win.get_tbox_h());
             dialog.set_material_thickness(main_win.get_tbox_thickness());
-            dialog.set_tab_width(main_win.get_tbox_tab_width());
-            dialog.set_kerf(main_win.get_tbox_kerf());
-            dialog.set_spacing(main_win.get_tbox_spacing());
+            dialog.set_burn(main_win.get_tbox_burn());
+            dialog.set_finger_width(main_win.get_tbox_finger_width());
+            dialog.set_space_width(main_win.get_tbox_space_width());
+            dialog.set_surrounding_spaces(main_win.get_tbox_surrounding_spaces());
+            dialog.set_play(main_win.get_tbox_play());
+            dialog.set_finger_style(main_win.get_tbox_finger_style());
             dialog.set_box_type(main_win.get_tbox_box_type());
-            dialog.set_tab_type(main_win.get_tbox_tab_type());
-            dialog.set_layout_style(main_win.get_tbox_layout_style());
-            dialog.set_inside_dimensions(main_win.get_tbox_inside_dims());
+            dialog.set_outside_dimensions(main_win.get_tbox_outside_dims());
             dialog.set_laser_passes(main_win.get_tbox_laser_passes());
             dialog.set_laser_power(main_win.get_tbox_laser_power());
             dialog.set_feed_rate(main_win.get_tbox_feed_rate());
@@ -4153,51 +4154,57 @@ fn main() -> anyhow::Result<()> {
                 if let Some(window) = main_win_clone.upgrade() {
                     if let Some(dlg) = dialog_weak.upgrade() {
                         // Read values from dialog
-                        let length = dlg.get_box_length().parse::<f32>().unwrap_or(100.0);
-                        let width = dlg.get_box_width().parse::<f32>().unwrap_or(100.0);
-                        let height = dlg.get_box_height().parse::<f32>().unwrap_or(100.0);
+                        let x = dlg.get_box_x().parse::<f32>().unwrap_or(100.0);
+                        let y = dlg.get_box_y().parse::<f32>().unwrap_or(100.0);
+                        let h = dlg.get_box_h().parse::<f32>().unwrap_or(100.0);
                         let thickness = dlg.get_material_thickness().parse::<f32>().unwrap_or(3.0);
-                        let tab_width = dlg.get_tab_width().parse::<f32>().unwrap_or(25.0);
-                        let kerf = dlg.get_kerf().parse::<f32>().unwrap_or(0.5);
-                        let spacing = dlg.get_spacing().parse::<f32>().unwrap_or(5.0);
-                        let box_type = BoxType::from(dlg.get_box_type() + 1);
-                        let tab_type = TabType::from(dlg.get_tab_type());
-                        let layout_style = LayoutStyle::from(dlg.get_layout_style() + 1);
-                        let inside_dimensions = dlg.get_inside_dimensions();
+                        let burn = dlg.get_burn().parse::<f32>().unwrap_or(0.1);
+                        let finger_width = dlg.get_finger_width().parse::<f32>().unwrap_or(2.0);
+                        let space_width = dlg.get_space_width().parse::<f32>().unwrap_or(2.0);
+                        let surrounding_spaces = dlg.get_surrounding_spaces().parse::<f32>().unwrap_or(2.0);
+                        let play = dlg.get_play().parse::<f32>().unwrap_or(0.0);
+                        let finger_style = FingerStyle::from(dlg.get_finger_style());
+                        let box_type = BoxType::from(dlg.get_box_type());
+                        let outside = dlg.get_outside_dimensions();
                         let laser_passes = dlg.get_laser_passes().parse::<i32>().unwrap_or(3).max(1);
                         let laser_power = dlg.get_laser_power().parse::<i32>().unwrap_or(1000).max(0);
                         let feed_rate = dlg.get_feed_rate().parse::<f32>().unwrap_or(500.0).max(1.0);
                         
                         // Save values back to main window for next time
-                        window.set_tbox_length(dlg.get_box_length());
-                        window.set_tbox_width(dlg.get_box_width());
-                        window.set_tbox_height(dlg.get_box_height());
+                        window.set_tbox_x(dlg.get_box_x());
+                        window.set_tbox_y(dlg.get_box_y());
+                        window.set_tbox_h(dlg.get_box_h());
                         window.set_tbox_thickness(dlg.get_material_thickness());
-                        window.set_tbox_tab_width(dlg.get_tab_width());
-                        window.set_tbox_kerf(dlg.get_kerf());
-                        window.set_tbox_spacing(dlg.get_spacing());
+                        window.set_tbox_burn(dlg.get_burn());
+                        window.set_tbox_finger_width(dlg.get_finger_width());
+                        window.set_tbox_space_width(dlg.get_space_width());
+                        window.set_tbox_surrounding_spaces(dlg.get_surrounding_spaces());
+                        window.set_tbox_play(dlg.get_play());
+                        window.set_tbox_finger_style(dlg.get_finger_style());
                         window.set_tbox_box_type(dlg.get_box_type());
-                        window.set_tbox_tab_type(dlg.get_tab_type());
-                        window.set_tbox_layout_style(dlg.get_layout_style());
-                        window.set_tbox_inside_dims(dlg.get_inside_dimensions());
+                        window.set_tbox_outside_dims(dlg.get_outside_dimensions());
                         window.set_tbox_laser_passes(dlg.get_laser_passes());
                         window.set_tbox_laser_power(dlg.get_laser_power());
                         window.set_tbox_feed_rate(dlg.get_feed_rate());
 
+                        let finger_joint = FingerJointSettings {
+                            finger: finger_width,
+                            space: space_width,
+                            surrounding_spaces,
+                            play,
+                            extra_length: 0.0,
+                            style: finger_style,
+                        };
+
                         let params = BoxParameters {
-                            length,
-                            width,
-                            height,
+                            x,
+                            y,
+                            h,
                             thickness,
-                            tab_width,
-                            kerf,
-                            spacing,
+                            outside,
                             box_type,
-                            tab_type,
-                            layout_style,
-                            inside_dimensions,
-                            dividers_length: 0,
-                            dividers_width: 0,
+                            finger_joint,
+                            burn,
                             laser_passes,
                             laser_power,
                             feed_rate,
@@ -4227,7 +4234,7 @@ fn main() -> anyhow::Result<()> {
                                     
                                     maker.generate().map(|_| maker)
                                 })
-                                .map(|mut maker| {
+                                .map(|maker| {
                                     // Update progress: 70% - Generation complete
                                     let _ = slint::invoke_from_event_loop({
                                         let ww = window_weak_thread.clone();
@@ -4238,7 +4245,7 @@ fn main() -> anyhow::Result<()> {
                                         }
                                     });
                                     
-                                    maker.to_gcode(1000.0, 300.0, thickness)
+                                    maker.to_gcode()
                                 });
                             
                             // Update UI from main thread
@@ -4249,7 +4256,7 @@ fn main() -> anyhow::Result<()> {
                                             win.set_gcode_content(slint::SharedString::from(&gcode));
                                             win.set_gcode_filename(slint::SharedString::from(format!(
                                                 "box_{}x{}x{}.gcode",
-                                                length as i32, width as i32, height as i32
+                                                x as i32, y as i32, h as i32
                                             )));
                                             win.set_current_view(slint::SharedString::from("gcode-editor"));
                                             win.set_connection_status(slint::SharedString::from(
@@ -4400,7 +4407,7 @@ fn main() -> anyhow::Result<()> {
                                     
                                     maker.generate().map(|_| maker)
                                 })
-                                .map(|mut maker| {
+                                .map(|maker| {
                                     // Update progress: 70% - Generation complete
                                     let _ = slint::invoke_from_event_loop({
                                         let ww = window_weak_thread.clone();

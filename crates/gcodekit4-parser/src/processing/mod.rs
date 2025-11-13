@@ -27,6 +27,6 @@ pub use jigsaw_puzzle::{JigsawPuzzleMaker, PuzzleParameters};
 pub use laser_engraver::{EngravingParameters, LaserEngraver, ScanDirection};
 pub use optimizer::GCodeOptimizer;
 pub use stats::StatsCalculator;
-pub use tabbed_box::{BoxParameters, BoxType, LayoutStyle, TabType, TabbedBoxMaker};
+pub use tabbed_box::{BoxParameters, BoxType, FingerJointSettings, FingerStyle, TabbedBoxMaker};
 pub use toolpath::{Segment, SegmentType, Toolpath};
 pub use validator::GCodeValidator;

@@ -157,20 +157,19 @@ export component MainWindow inherits Window {
     // CNC Tools Manager properties
     in-out property <[ToolData]> cnc_tools: [];
     
-    // Tabbed Box Maker properties
-    in-out property <string> tbox-length: "100.0";
-    in-out property <string> tbox-width: "100.0";
-    in-out property <string> tbox-height: "100.0";
+    // Tabbed Box Maker properties (boxes.py algorithm)
+    in-out property <string> tbox-x: "100.0";
+    in-out property <string> tbox-y: "100.0";
+    in-out property <string> tbox-h: "100.0";
     in-out property <string> tbox-thickness: "3.0";
-    in-out property <string> tbox-tab-width: "25.0";
-    in-out property <string> tbox-kerf: "0.5";
-    in-out property <string> tbox-spacing: "5.0";
+    in-out property <string> tbox-burn: "0.1";
+    in-out property <string> tbox-finger-width: "2.0";
+    in-out property <string> tbox-space-width: "2.0";
+    in-out property <string> tbox-surrounding-spaces: "2.0";
+    in-out property <string> tbox-play: "0.0";
+    in-out property <int> tbox-finger-style: 0;
     in-out property <int> tbox-box-type: 0;
-    in-out property <int> tbox-tab-type: 0;
-    in-out property <int> tbox-layout-style: 0;
-    in-out property <bool> tbox-inside-dims: false;
-    in-out property <int> tbox-div-length: 0;
-    in-out property <int> tbox-div-width: 0;
+    in-out property <bool> tbox-outside-dims: false;
     in-out property <string> tbox-laser-passes: "3";
     in-out property <string> tbox-laser-power: "1000";
     in-out property <string> tbox-feed-rate: "500";
@@ -1217,44 +1216,40 @@ export component MainWindow inherits Window {
                     horizontal-stretch: 1;
                 }
                 
-                // Progress indicator on the right (with explicit vertical positioning)
-                Rectangle {
-                    width: 120px;
+                // Progress indicator on the right with 10px offset
+                HorizontalBox {
+                    spacing: 5px;
+                    padding-right: 10px;
+                    alignment: end;
                     
-                    HorizontalBox {
-                        spacing: 5px;
-                        alignment: end;
-                        y: (parent.height - self.height) / 2;
-                        
-                        Text {
-                            text: "Progress:";
-                            color: white;
-                            font-size: 13.2px;
-                            visible: root.progress-value > 0.0;
-                        }
+                    Text {
+                        text: "Progress:";
+                        color: white;
+                        font-size: 13.2px;
+                        visible: root.progress-value > 0.0;
+                    }
+                    
+                    Rectangle {
+                        width: 100px;
+                        height: 18px;
+                        border-width: 1px;
+                        border-color: white;
+                        border-radius: 3px;
+                        visible: root.progress-value > 0.0;
                         
                         Rectangle {
-                            width: 100px;
-                            height: 18px;
-                            border-width: 1px;
-                            border-color: white;
+                            width: parent.width * root.progress-value / 100.0;
+                            height: parent.height;
+                            background: #3498db;
                             border-radius: 3px;
-                            visible: root.progress-value > 0.0;
-                            
-                            Rectangle {
-                                width: parent.width * root.progress-value / 100.0;
-                                height: parent.height;
-                                background: #3498db;
-                                border-radius: 3px;
-                            }
-                            
-                            Text {
-                                text: round(root.progress-value) + "%";
-                                color: white;
-                                font-size: 11px;
-                                horizontal-alignment: center;
-                                vertical-alignment: center;
-                            }
+                        }
+                        
+                        Text {
+                            text: round(root.progress-value) + "%";
+                            color: white;
+                            font-size: 11px;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
                         }
                     }
                 }

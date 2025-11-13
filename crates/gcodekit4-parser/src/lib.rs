@@ -20,7 +20,7 @@ pub use gcode::{
 };
 
 pub use processing::{
-    BoxParameters, BoxType, LayoutStyle, TabType, TabbedBoxMaker,
+    BoxParameters, BoxType, FingerJointSettings, FingerStyle, TabbedBoxMaker,
     JigsawPuzzleMaker, PuzzleParameters,
 };
 
