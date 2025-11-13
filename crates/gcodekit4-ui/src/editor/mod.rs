@@ -203,9 +203,14 @@ impl EditorState {
         self.buffer.lines_in_range(self.viewport.visible_range())
     }
 
-    /// Scroll viewport
+    /// Scroll viewport by delta lines
     pub fn scroll_by(&mut self, delta: i32) {
         self.viewport.scroll_by(delta);
+    }
+
+    /// Scroll viewport to absolute line number (sets scroll offset to show that line at top)
+    pub fn scroll_to_line(&mut self, line: usize) {
+        self.viewport.set_scroll_offset(line);
     }
 
     /// Get viewport info
