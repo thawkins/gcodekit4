@@ -29,8 +29,8 @@ export component CustomTextEdit inherits Rectangle {
     
     // Styling
     in-out property <brush> background-color: #1e1e1e;
-    in-out property <brush> text-color: #d4d4d4;
-    in-out property <brush> line-number-color: #858585;
+    in-out property <brush> text-color: #00ff00;  // Bright green
+    in-out property <brush> line-number-color: #cccccc;  // Light gray
     in-out property <brush> current-line-color: #2a2a2a;
     in-out property <brush> selection-color: #264f78;
     in-out property <length> font-size: 14px;
@@ -47,6 +47,7 @@ export component CustomTextEdit inherits Rectangle {
     // Internal state
     property <length> line-height: 20px;
     property <length> line-number-width: 60px;
+    property <length> current-scroll-y: 0px;
     
     background: root.background-color;
     min-height: 0px;
@@ -60,11 +61,14 @@ export component CustomTextEdit inherits Rectangle {
             clip: true;
             
             Rectangle {
-                y: 5px - (root.visible-start-line * root.line-height);
+                y: -root.current-scroll-y;
                 width: root.line-number-width;
                 
                 VerticalBox {
-                    padding: 0px;
+                    padding-left: 5px;
+                    padding-right: 5px;
+                    padding-top: 5px;
+                    padding-bottom: 5px;
                     alignment: start;
                     
                     for line in root.visible-lines: Rectangle {
@@ -95,11 +99,6 @@ export component CustomTextEdit inherits Rectangle {
                 padding-top: 5px;
                 padding-bottom: 5px;
                 
-                // Spacer to position visible lines at correct scroll offset
-                Rectangle {
-                    height: root.visible-start-line * root.line-height;
-                }
-                
                 // Render only visible lines
                 for line in root.visible-lines: Rectangle {
                     height: root.line-height;
@@ -125,6 +124,9 @@ export component CustomTextEdit inherits Rectangle {
 
             
             changed viewport-y => {
+                // Track scroll position for line numbers
+                root.current-scroll-y = self.viewport-y;
+                
                 // Calculate which lines are visible based on scroll position
                 root.visible-start-line = Math.floor(self.viewport-y / root.line-height);
                 root.visible-end-line = root.visible-start-line + Math.ceil(root.height / root.line-height);
