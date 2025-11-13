@@ -1192,9 +1192,11 @@ fn main() -> anyhow::Result<()> {
                     window.set_gcode_content(slint::SharedString::from(content.clone()));
 
                     // Update custom editor state
+                    let line_count = editor_bridge_open.line_count();
+                    tracing::info!("File loaded: {} lines", line_count);
                     window.set_can_undo(editor_bridge_open.can_undo());
                     window.set_can_redo(editor_bridge_open.can_redo());
-                    window.set_total_lines(editor_bridge_open.line_count() as i32);
+                    window.set_total_lines(line_count as i32);
                     update_visible_lines(&window, &editor_bridge_open);
 
                     // VERIFY: Log what was set
