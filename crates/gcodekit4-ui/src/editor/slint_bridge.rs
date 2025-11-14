@@ -140,9 +140,12 @@ impl EditorBridge {
     }
 
     /// Set cursor position
-    pub fn set_cursor(&self, _line: usize, _column: usize) {
+    pub fn set_cursor(&self, line: usize, column: usize) {
+        let editor = self.editor.borrow();
+        let char_pos = editor.buffer.line_col_to_char(line, column);
+        drop(editor);
+        
         let mut editor = self.editor.borrow_mut();
-        let char_pos = editor.line_count(); // Simplified - would need proper line/col to char conversion
         editor.set_cursor(char_pos);
     }
 

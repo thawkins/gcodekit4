@@ -1860,9 +1860,96 @@ fn main() -> anyhow::Result<()> {
             window.set_can_undo(editor_bridge_loader.can_undo());
             window.set_can_redo(editor_bridge_loader.can_redo());
             window.set_total_lines(editor_bridge_loader.line_count() as i32);
-            window.set_cursor_line(0);
-            window.set_cursor_column(0);
+            // Start cursor at position (1, 1) - line 1, column 1
+            window.set_cursor_line(1);
+            window.set_cursor_column(1);
             update_visible_lines(&window, &editor_bridge_loader);
+        }
+    });
+
+    // Text editing callbacks
+    let window_weak = main_window.as_weak();
+    let editor_bridge_insert = editor_bridge.clone();
+    main_window.on_text_inserted(move |_line, _col, text| {
+        let text_str = text.to_string();
+        editor_bridge_insert.insert_text(&text_str);
+        if let Some(window) = window_weak.upgrade() {
+            window.set_can_undo(editor_bridge_insert.can_undo());
+            window.set_can_redo(editor_bridge_insert.can_redo());
+            window.set_total_lines(editor_bridge_insert.line_count() as i32);
+            update_visible_lines(&window, &editor_bridge_insert);
+            let (line, col) = editor_bridge_insert.cursor_position();
+            window.set_cursor_line(line as i32);
+            window.set_cursor_column(col as i32);
+            let content = editor_bridge_insert.get_text();
+            window.set_gcode_content(slint::SharedString::from(content));
+        }
+    });
+
+    let window_weak = main_window.as_weak();
+    let editor_bridge_delete = editor_bridge.clone();
+    main_window.on_text_deleted(move |_start_line, start_col, _end_line, end_col| {
+        let count = (end_col - start_col).max(0) as usize;
+        if count > 0 {
+            editor_bridge_delete.delete_backward(count);
+            if let Some(window) = window_weak.upgrade() {
+                window.set_can_undo(editor_bridge_delete.can_undo());
+                window.set_can_redo(editor_bridge_delete.can_redo());
+                window.set_total_lines(editor_bridge_delete.line_count() as i32);
+                update_visible_lines(&window, &editor_bridge_delete);
+                let (line, col) = editor_bridge_delete.cursor_position();
+                window.set_cursor_line(line as i32);
+                window.set_cursor_column(col as i32);
+                let content = editor_bridge_delete.get_text();
+                window.set_gcode_content(slint::SharedString::from(content));
+            }
+        }
+    });
+
+    // Cursor navigation callback
+    let window_weak = main_window.as_weak();
+    let editor_bridge_cursor = editor_bridge.clone();
+    main_window.on_cursor_moved(move |line, col| {
+        tracing::debug!("on_cursor_moved: line={}, col={}", line, col);
+        
+        // Update cursor in editor bridge - convert to 0-based indexing
+        let line_0based = (line - 1).max(0) as usize;
+        let col_0based = (col - 1).max(0) as usize;
+        editor_bridge_cursor.set_cursor(line_0based, col_0based);
+        
+        if let Some(window) = window_weak.upgrade() {
+            // Get actual cursor position from editor (0-based)
+            let (actual_line, actual_col) = editor_bridge_cursor.cursor_position();
+            // Convert back to 1-based for display
+            window.set_cursor_line((actual_line + 1) as i32);
+            window.set_cursor_column((actual_col + 1) as i32);
+            tracing::debug!("cursor updated to: line={}, col={}", actual_line + 1, actual_col + 1);
+            // Update visible lines to show cursor
+            update_visible_lines(&window, &editor_bridge_cursor);
+        }
+    });
+
+    // Mouse click callback - convert pixels to line/column
+    main_window.on_mouse_clicked(move |_x, _y| {
+        // TODO: Implement mouse-based cursor positioning
+        // Currently clicking just focuses the editor for keyboard input
+    });
+
+    // Find callback
+    let window_weak = main_window.as_weak();
+    main_window.on_find_requested(move |search| {
+        if let Some(_window) = window_weak.upgrade() {
+            tracing::debug!("Find requested: {}", search);
+            // TODO: Implement find functionality in EditorBridge
+        }
+    });
+
+    // Find and replace callback
+    let window_weak = main_window.as_weak();
+    main_window.on_replace_requested(move |search, replace| {
+        if let Some(_window) = window_weak.upgrade() {
+            tracing::debug!("Replace requested: {} -> {}", search, replace);
+            // TODO: Implement find/replace functionality in EditorBridge
         }
     });
 

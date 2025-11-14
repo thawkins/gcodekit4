@@ -111,6 +111,20 @@ export component CustomTextEdit inherits Rectangle {
             // Add extra padding to viewport height to ensure last line is fully visible
             viewport-height: root.total-lines * root.line-height + 20px;
             
+            // Mouse interaction for cursor positioning
+            TouchArea {
+                clicked => {
+                    // Give focus to FocusScope so keyboard works
+                    focus-scope.focus();
+                    
+                    // Calculate line and column from mouse position
+                    // self.mouse-x and self.mouse-y are available in clicked handler
+                    let line = Math.floor(self.mouse-y / root.line-height) + root.visible-start-line + 1;
+                    let col = Math.floor(self.mouse-x / 8px) + 1;
+                    root.cursor-moved(line, Math.max(1, col));
+                }
+            }
+            
             VerticalLayout {
                 spacing: 0px;
                 alignment: start;
@@ -149,6 +163,15 @@ export component CustomTextEdit inherits Rectangle {
                                 overflow: elide;
                             }
                         }
+                    }
+                    
+                    // Render cursor if this is the cursor line
+                    if (line.line-number == root.cursor-line) : Rectangle {
+                        x: root.cursor-column * 8px;  // ~8px per character
+                        y: 0px;
+                        width: 2px;
+                        height: root.line-height;
+                        background: #00ff00;
                     }
                 }
             }
@@ -194,7 +217,33 @@ export component CustomTextEdit inherits Rectangle {
     }
     
     FocusScope {
+        focus-scope := FocusScope {}
+        
         key-pressed(event) => {
+            // Handle arrow keys for cursor navigation
+            if (event.text == "ArrowLeft") {
+                root.cursor-moved(root.cursor-line, Math.max(1, root.cursor-column - 1));
+                return EventResult.accept;
+            }
+            if (event.text == "ArrowRight") {
+                root.cursor-moved(root.cursor-line, root.cursor-column + 1);
+                return EventResult.accept;
+            }
+            if (event.text == "ArrowUp") {
+                root.cursor-moved(Math.max(1, root.cursor-line - 1), root.cursor-column);
+                return EventResult.accept;
+            }
+            if (event.text == "ArrowDown") {
+                root.cursor-moved(Math.min(root.total-lines, root.cursor-line + 1), root.cursor-column);
+                return EventResult.accept;
+            }
+            
+            // Handle Home key
+            if (event.text == "Home") {
+                root.cursor-moved(root.cursor-line, 1);
+                return EventResult.accept;
+            }
+            
             // Handle undo/redo shortcuts
             if (event.modifiers.control || event.modifiers.meta) {
                 if (event.text == "z" || event.text == "Z") {
@@ -227,25 +276,6 @@ export component CustomTextEdit inherits Rectangle {
             // Pass other keys to callback for handling (typing, navigation, etc.)
             return root.key-pressed(event);
         }
-        
-        // Mouse interaction for cursor positioning
-        TouchArea {
-            clicked => {
-                // Calculate line from y position
-                root.cursor-line = Math.floor(self.mouse-y / root.line-height) + root.visible-start-line;
-                // Column would need more complex calculation based on character widths
-                root.cursor-moved(root.cursor-line, 0);
-                
-                // Focus the text input so it receives keyboard events
-                text-input.focus();
-            }
-            
-            width: 100%;
-            height: 100%;
-        }
-        
-        width: 100%;
-        height: 100%;
     }
 }
 

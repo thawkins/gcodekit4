@@ -40,6 +40,7 @@ export component GcodeEditorPanel inherits VerticalBox {
     callback undo-requested();
     callback redo-requested();
     callback text-changed(string);
+    callback cursor-moved(int, int);
     callback scroll-changed(int);
     
     // Toolbar with undo/redo and file operations
@@ -225,6 +226,10 @@ export component GcodeEditorPanel inherits VerticalBox {
             // update panel visible start line for status indicator
             root.visible-start-line = line;
             root.scroll-changed(line);
+        }
+        
+        cursor-moved(line, col) => {
+            root.cursor-moved(line, col);
         }
     }
 }
