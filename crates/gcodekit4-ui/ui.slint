@@ -237,6 +237,7 @@ export component MainWindow inherits Window {
     callback menu-view-materials();
     callback menu-view-cnc-tools();
     callback menu-help-about();
+    callback key-pressed-event(string);  // Debug callback for keyboard events
     
     // Materials Manager callbacks
     callback load_materials();
@@ -444,6 +445,25 @@ export component MainWindow inherits Window {
         height: 100%;
         mouse-cursor: MouseCursor.wait;
     }
+    
+    // Wrap main content in FocusScope to capture keyboard events
+    // Wrap main content in FocusScope to capture keyboard events
+    FocusScope {
+        key-pressed(event) => {
+            debug("🔴 MainWindow.FocusScope.key-pressed: text=[" + event.text + "]");
+            // Forward to editor for handling
+            root.key_pressed_event("FOCUSSCOPE: " + event.text);
+            
+            // Handle printable characters
+            if (event.text != "" && event.text != Key.Escape &&
+                !(event.modifiers.control || event.modifiers.meta)) {
+                debug("🔴 MainWindow.FocusScope: Calling text_inserted");
+                root.text_inserted(1, 1, event.text);
+                return accept;
+            }
+            
+            return reject;
+        }
     
     VerticalBox {
         spacing: 0px;
@@ -752,16 +772,31 @@ export component MainWindow inherits Window {
                         root.menu-resume-transmission();
                     }
                     undo-requested => {
-                        root.undo-requested();
+                        root.undo_requested();
                     }
                     redo-requested => {
-                        root.redo-requested();
+                        root.redo_requested();
                     }
                     text-changed(text) => {
                         root.text-changed(text);
                     }
                     scroll-changed(line) => {
-                        root.scroll-changed(line);
+                        root.scroll_changed(line);
+                    }
+                    request-focus => {
+                        // Called when editor tab becomes active - text-input will request focus here
+                    }
+                    
+                    text-inserted(line, col, text) => {
+                        root.text_inserted(line, col, text);
+                    }
+                    
+                    text-deleted(start-line, start-col, end-line, end-col) => {
+                        root.text_deleted(start-line, start-col, end-line, end-col);
+                    }
+                    
+                    key-pressed-event(msg) => {
+                        root.key_pressed_event(msg);
                     }
                 }
                 
@@ -1297,6 +1332,7 @@ export component MainWindow inherits Window {
             }
         }
     }
+    }  // Close FocusScope
     
 
     

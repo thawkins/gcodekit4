@@ -37,11 +37,15 @@ export component GcodeEditorPanel inherits VerticalBox {
     callback menu-resume-transmission();
     
     // Custom editor callbacks
-    callback undo-requested();
-    callback redo-requested();
-    callback text-changed(string);
-    callback cursor-moved(int, int);
-    callback scroll-changed(int);
+    callback undo_requested();
+    callback redo_requested();
+    callback text_changed(string);
+    callback text_inserted(int, int, string);  // line, col, text
+    callback text_deleted(int, int, int, int);  // start-line, start-col, end-line, end-col
+    callback cursor_moved(int, int);
+    callback scroll_changed(int);
+    callback request_focus();  // Called when panel becomes visible/active
+    callback key_pressed_event(string);  // Forward key events
     
     // Toolbar with undo/redo and file operations
     Rectangle {
@@ -230,6 +234,21 @@ export component GcodeEditorPanel inherits VerticalBox {
         
         cursor-moved(line, col) => {
             root.cursor-moved(line, col);
+        }
+        
+        text_inserted(line, col, text) => {
+            debug("🟢 GcodeEditorPanel.text_inserted: line=" + line + " col=" + col + " text=" + text);
+            root.text_inserted(line, col, text);
+        }
+        
+        text_deleted(start_line, start_col, end_line, end_col) => {
+            debug("🟢 GcodeEditorPanel.text_deleted");
+            root.text_deleted(start_line, start_col, end_line, end_col);
+        }
+        
+        key_pressed(event) => {
+            root.key_pressed-event("key=" + event.text);
+            return accept;
         }
     }
 }

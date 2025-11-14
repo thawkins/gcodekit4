@@ -1,29 +1,33 @@
 # GCodeKit4 - Specification Document
 
 **Version**: 0.25.6-alpha  
-**Last Updated**: 2025-11-10  
-**Status**: COMPLETE (All 7 Phases Complete - 150/150 Tasks, Phase 8 In Progress)
+**Last Updated**: 2025-11-14  
+**Status**: Phase 1 Editor Complete - Ready for Phase 2 (Selection & Advanced Editing)
 
-### Latest Release (v0.25.6-alpha)
-- ✅ **Enhanced Error Reporting** - User-friendly error dialogs for all critical operations
-  - Connection failures, disconnect errors, GRBL errors, send failures
-  - Device not connected and no G-code content errors
-  - Modal dialogs with clear descriptions and actionable messages
-- ✅ **G-Code Streaming Fixed** - Complete rewrite implementing proper GRBL Character-Counting Protocol
-  - Single-threaded design: polling thread handles all serial I/O operations
-  - Proper buffer management: tracks 127-byte GRBL RX buffer with "ok" acknowledgments
-  - Real-time status query: `?` sent as single byte every 200ms (real-time command, doesn't use buffer)
-  - Minimal mutex contention: lock held only during actual serial I/O (~1-2ms per cycle)
-  - Fast streaming: up to 100 lines/second while respecting buffer limits
-  - Immediate jog response: fixed 10-15 second delay for Home/Jog commands
-- ✅ **CNC Tools Manager** - Full CRUD interface with GTC catalog import
-- ✅ **Materials Database Manager** - Complete material properties and CNC parameters management
-- ✅ **CAM Tools** - Integrated toolpath generators
-  - ✅ **Tabbed Box Maker** - Laser/CNC cut boxes with finger joints
-  - ✅ **Jigsaw Puzzle Maker** - Advanced puzzle generator using Draradech algorithm with Bézier curves
-- ✅ **Firmware Detection** - Reliable GRBL version detection using $I command
-- ✅ **Console Improvements** - Command input, GRBL error reporting, cleaned output
-- ✅ **BrokenPipe Handling** - Graceful handling of connection cleanup errors
+### Latest Release (v0.25.6-alpha) - Editor Phase 1
+- ✅ **Custom G-Code Text Editor - Phase 1 (COMPLETE)**
+  - Full keyboard input support with proper event handling
+  - Text insertion with automatic cursor advancement
+  - Text deletion (backspace/delete) with cursor adjustment
+  - Arrow key navigation (left, right, up, down with boundary checking)
+  - Home/End keys for line start/end navigation
+  - PageUp/PageDown for viewport scrolling
+  - Undo/Redo support (Ctrl+Z/Ctrl+Y, Cmd on Mac)
+  - Tab key inserts 4 spaces for proper indentation
+  - Enter/Return for newline insertion
+  - Virtual scrolling with line numbers (100+ line performance)
+  - Real-time cursor position updates
+  - Text saved to buffer on every keystroke
+  - Complete callback chain: CustomTextEdit → GcodeEditorPanel → MainWindow → Rust backend
+- ✅ **Previously Completed Features** (v0.25.5 and earlier)
+  - Enhanced Error Reporting
+  - G-Code Streaming (GRBL Character-Counting Protocol)
+  - CNC Tools Manager with GTC import
+  - Materials Database Manager
+  - CAM Tools (Tabbed Box Maker, Jigsaw Puzzle Maker)
+  - Firmware Detection
+  - Console Improvements
+  - BrokenPipe Handling
 
 ## 1. Executive Summary
 

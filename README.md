@@ -65,6 +65,16 @@ This modular structure enables:
   - Tool change support
 
 ### 📝 G-Code Editor & Streaming
+- **Text Editor (Phase 1 - LIVE)**:
+  - ✅ Full keyboard input support (characters, arrows, backspace, delete)
+  - ✅ Text insertion and deletion with proper cursor tracking
+  - ✅ Undo/Redo via Ctrl+Z/Ctrl+Y (Cmd on Mac)
+  - ✅ Tab key for indentation (4 spaces)
+  - ✅ Virtual scrolling with line numbers
+  - ✅ Arrow key navigation (up, down, left, right)
+  - ✅ Home/End key for line boundaries
+  - ✅ PageUp/PageDown for viewport navigation
+  - ✅ Real-time text updates as you type
 - **Syntax Highlighting**: Color-coded commands, coordinates, and comments
 - **Line Numbers**: Easy navigation and reference
 - **File Operations**: Open, edit, and save G-code files

@@ -1801,6 +1801,7 @@ fn main() -> anyhow::Result<()> {
     let window_weak = main_window.as_weak();
     let editor_bridge_scroll = editor_bridge.clone();
     main_window.on_scroll_changed(move |line| {
+        eprintln!("=== on_scroll_changed: line={}", line);
         tracing::debug!("scroll_changed callback: line={}", line);
         editor_bridge_scroll.scroll_to_line(line as usize);
         if let Some(window) = window_weak.upgrade() {
@@ -1871,6 +1872,7 @@ fn main() -> anyhow::Result<()> {
     let window_weak = main_window.as_weak();
     let editor_bridge_insert = editor_bridge.clone();
     main_window.on_text_inserted(move |_line, _col, text| {
+        eprintln!("=== on_text_inserted called: text={:?}", text);
         let text_str = text.to_string();
         editor_bridge_insert.insert_text(&text_str);
         if let Some(window) = window_weak.upgrade() {
@@ -1889,6 +1891,7 @@ fn main() -> anyhow::Result<()> {
     let window_weak = main_window.as_weak();
     let editor_bridge_delete = editor_bridge.clone();
     main_window.on_text_deleted(move |_start_line, start_col, _end_line, end_col| {
+        eprintln!("=== on_text_deleted called: start_col={}, end_col={}", start_col, end_col);
         let count = (end_col - start_col).max(0) as usize;
         if count > 0 {
             editor_bridge_delete.delete_backward(count);
@@ -1910,6 +1913,7 @@ fn main() -> anyhow::Result<()> {
     let window_weak = main_window.as_weak();
     let editor_bridge_cursor = editor_bridge.clone();
     main_window.on_cursor_moved(move |line, col| {
+        eprintln!("=== on_cursor_moved: line={}, col={}", line, col);
         tracing::debug!("on_cursor_moved: line={}, col={}", line, col);
         
         // Update cursor in editor bridge - convert to 0-based indexing
@@ -1931,6 +1935,7 @@ fn main() -> anyhow::Result<()> {
 
     // Mouse click callback - convert pixels to line/column
     main_window.on_mouse_clicked(move |_x, _y| {
+        eprintln!("=== on_mouse_clicked called");
         // TODO: Implement mouse-based cursor positioning
         // Currently clicking just focuses the editor for keyboard input
     });
@@ -2179,6 +2184,11 @@ fn main() -> anyhow::Result<()> {
         if let Some(window) = window_weak.upgrade() {
             window.set_connection_status(slint::SharedString::from("G-Code Editor activated"));
         }
+    });
+    
+    // Debug callback for key-pressed events from editor
+    main_window.on_key_pressed_event(move |msg| {
+        eprintln!("=== KEY_PRESSED_EVENT: {}", msg);
     });
 
     // Set up menu-view-machine callback

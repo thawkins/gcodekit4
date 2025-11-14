@@ -8,25 +8,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.25.6-alpha] - 2025-11-14
 
 ### Added
-- **New `load_editor_text()` callback**: Optimized method for bulk loading generated G-code into editor
-  - Single operation replaces line-by-line appending for better performance
-  - Automatically scrolls viewport to top (line 0) on load
-- **Success dialogs for generators**: All G-code generators (TabbedBox, JigsawPuzzle, LaserEngraving) now show completion messages
+- **Custom G-Code Text Editor - Phase 1 (COMPLETE)**
+  - Full keyboard input system with proper event handling through Slint callback chain
+  - Text insertion with automatic cursor advancement for each character typed
+  - Text deletion via Backspace and Delete keys with cursor repositioning
+  - Complete arrow key navigation (left, right, up, down) with proper boundary checking
+  - Home and End keys for jumping to line boundaries
+  - PageUp and PageDown for viewport scrolling (10 lines per page)
+  - Undo/Redo support triggered by Ctrl+Z (undo) and Ctrl+Y (redo)
+  - Tab key inserts 4 spaces for automatic indentation
+  - Enter/Return key for newline insertion at cursor position
+  - Virtual scrolling system supporting 100+ line files efficiently
+  - Line number display with synchronized scrolling
+  - Real-time cursor position tracking displayed in status bar
+  - Text buffer updates on every keystroke, automatically saved to file operations
+  - Complete integration: keyboard events → CustomTextEdit → GcodeEditorPanel → MainWindow → Rust EditorBridge
 
-### Changed
-- **CustomTextEdit alignment fixes**: 
-  - Added `spacing: 0px` to both VerticalLayout components for consistent line spacing
-  - Wrapped Text elements in VerticalLayout with `alignment: center` for proper vertical centering
-  - Line numbers and content now properly aligned vertically
-- **G-code generation performance**: Tabbed box, jigsaw puzzle, and laser engraving generators now use `load_editor_text()` instead of line-by-line insertion
-  - Eliminates UI thread blocking during large G-code insertions
-  - Progress bar continues updating smoothly throughout generation
+### Technical Implementation
+- Slint callback architecture with proper hyphenated naming conventions
+- MainWindow FocusScope handles keyboard events and routes to text_inserted() Rust callback
+- CustomTextEdit.key-pressed handler recognizes special keys using Key namespace constants
+- Proper event forwarding through callback chain: CustomTextEdit → GcodeEditorPanel → MainWindow → Rust
+- Line-based cursor tracking (0-based internally, 1-based for user display)
+- EditorBridge integration for persistent text buffer management
 
 ### Fixed
-- **"New" button on G-code editor**: Now properly clears editor content by calling `clear_editor()` callback
-- **Text line vertical alignment**: Half-line displacement between line numbers and text content resolved
-- **Content not showing until scroll**: New loaded content now displays immediately at top of viewport
-- **UI stall during G-code insertion**: ImageEngraving and other generators no longer block UI thread
+- Keyboard event handling in custom components through proper FocusScope implementation
+- Callback naming consistency across Slint (.slint with hyphens) and Rust (with underscores)
+- Event propagation from child components to parent through explicit root.callback() calls
+- Text cursor initialization and boundary checking during navigation
+
+### Known Limitations (Phase 1)
+- No text selection yet (Phase 2 feature)
+- No copy/paste support (Phase 2 feature)
+- No find/replace functionality (Phase 2 feature)
+- No syntax highlighting (Phase 2+ feature)
+- No multi-level undo/redo (Phase 2 feature)
 
 ## [0.25.5-alpha] - 2025-11-13
 
