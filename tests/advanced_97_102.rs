@@ -7,7 +7,7 @@
 //! Task 101: Probing - Basic
 //! Task 102: Probing - Advanced
 
-use gcodekit4::utils::{
+use gcodekit4_parser::utils::{
     AdvancedProber, BackupManager, BasicProber, FileComparison, GcodeTemplate, ProbePoint,
     TemplateLibrary, TemplateVariable, ValidationIssue, ValidationResult, ValidationSeverity,
 };

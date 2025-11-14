@@ -4,7 +4,7 @@
 use super::visualizer_2d::{GCodeCommand, Point2D, Visualizer2D};
 
 const CANVAS_PADDING: f32 = 20.0;
-const CANVAS_PADDING_2X: f32 = 40.0;
+const _CANVAS_PADDING_2X: f32 = 40.0;
 const GRID_MAJOR_STEP_MM: f32 = 10.0;
 const GRID_MAJOR_VISIBILITY_SCALE: f32 = 0.3;
 
@@ -19,14 +19,7 @@ struct CoordTransform {
 }
 
 impl CoordTransform {
-    fn new(
-        min_x: f32,
-        min_y: f32,
-        scale: f32,
-        height: f32,
-        x_offset: f32,
-        y_offset: f32,
-    ) -> Self {
+    fn new(min_x: f32, min_y: f32, scale: f32, height: f32, x_offset: f32, y_offset: f32) -> Self {
         Self {
             min_x,
             min_y,
@@ -40,14 +33,16 @@ impl CoordTransform {
     fn world_to_screen(&self, x: f32, y: f32) -> (f32, f32) {
         let screen_x = (x - self.min_x) * self.scale + CANVAS_PADDING + self.x_offset;
         // Flip Y axis: higher Y values should move up the screen (smaller screen_y)
-        let screen_y = self.height - ((y - self.min_y) * self.scale + CANVAS_PADDING - self.y_offset);
+        let screen_y =
+            self.height - ((y - self.min_y) * self.scale + CANVAS_PADDING - self.y_offset);
         (screen_x, screen_y)
     }
 
     fn screen_to_world(&self, screen_x: f32, screen_y: f32) -> (f32, f32) {
         let world_x = ((screen_x - CANVAS_PADDING - self.x_offset) / self.scale) + self.min_x;
         // Reverse the Y flip transformation
-        let world_y = ((self.height - screen_y - CANVAS_PADDING + self.y_offset) / self.scale) + self.min_y;
+        let world_y =
+            ((self.height - screen_y - CANVAS_PADDING + self.y_offset) / self.scale) + self.min_y;
         (world_x, world_y)
     }
 
@@ -63,7 +58,10 @@ pub fn render_toolpath_to_path(visualizer: &Visualizer2D, width: u32, height: u3
         return String::new();
     }
 
-    tracing::debug!("Rendering toolpath: {} total commands", visualizer.commands.len());
+    tracing::debug!(
+        "Rendering toolpath: {} total commands",
+        visualizer.commands.len()
+    );
 
     let scale = calculate_scale(visualizer, width, height);
     let transform = CoordTransform::new(
@@ -75,9 +73,16 @@ pub fn render_toolpath_to_path(visualizer: &Visualizer2D, width: u32, height: u3
         visualizer.y_offset,
     );
 
-    tracing::debug!("Scale: {}, bounds: ({},{}) to ({},{}), offsets: ({},{})",
-        scale, visualizer.min_x, visualizer.min_y, visualizer.max_x, visualizer.max_y,
-        visualizer.x_offset, visualizer.y_offset);
+    tracing::debug!(
+        "Scale: {}, bounds: ({},{}) to ({},{}), offsets: ({},{})",
+        scale,
+        visualizer.min_x,
+        visualizer.min_y,
+        visualizer.max_x,
+        visualizer.max_y,
+        visualizer.x_offset,
+        visualizer.y_offset
+    );
 
     let mut path = String::new();
     let mut last_draw_pos: Option<(f32, f32)> = None;
@@ -96,19 +101,29 @@ pub fn render_toolpath_to_path(visualizer: &Visualizer2D, width: u32, height: u3
                     last_draw_pos = None;
                     continue;
                 }
-                
+
                 cutting_count += 1;
-                
+
                 if idx < 5 {
-                    tracing::debug!("Cutting move #{}: ({},{}) -> ({},{}) screen: ({},{}) -> ({},{})",
-                        cutting_count, from.x, from.y, to.x, to.y, x1, y1, x2, y2);
+                    tracing::debug!(
+                        "Cutting move #{}: ({},{}) -> ({},{}) screen: ({},{}) -> ({},{})",
+                        cutting_count,
+                        from.x,
+                        from.y,
+                        to.x,
+                        to.y,
+                        x1,
+                        y1,
+                        x2,
+                        y2
+                    );
                 }
-                
+
                 // For cutting moves, ensure we start with a move command if needed
                 if last_draw_pos.is_none() {
                     path.push_str(&format!("M {} {} ", x1, y1));
                 }
-                
+
                 // Add the line to the destination
                 path.push_str(&format!("L {} {} ", x2, y2));
                 last_draw_pos = Some((x2, y2));
@@ -137,24 +152,24 @@ pub fn render_toolpath_to_path(visualizer: &Visualizer2D, width: u32, height: u3
 
                 // Check if this is a full circle (from == to)
                 let is_full_circle = (from.x - to.x).abs() < 0.001 && (from.y - to.y).abs() < 0.001;
-                
+
                 if is_full_circle {
                     // SVG can't render a full circle arc in one command
                     // Split into two semicircles
-                    
+
                     // Calculate midpoint on opposite side of circle
                     let mid_x_world = center.x + (center.x - from.x);
                     let mid_y_world = center.y + (center.y - from.y);
                     let (mid_x, mid_y) = transform.world_to_screen(mid_x_world, mid_y_world);
-                    
+
                     let sweep = if *clockwise { 1 } else { 0 };
-                    
+
                     // First semicircle: from start to midpoint
                     path.push_str(&format!(
                         "A {} {} 0 0 {} {} {} ",
                         screen_radius, screen_radius, sweep, mid_x, mid_y
                     ));
-                    
+
                     // Second semicircle: from midpoint back to start
                     path.push_str(&format!(
                         "A {} {} 0 0 {} {} {} ",
@@ -164,26 +179,26 @@ pub fn render_toolpath_to_path(visualizer: &Visualizer2D, width: u32, height: u3
                     // Regular arc - determine if it's a large arc (>180 degrees)
                     let start_angle = ((from.y - center.y).atan2(from.x - center.x)).to_degrees();
                     let end_angle = ((to.y - center.y).atan2(to.x - center.x)).to_degrees();
-                    
+
                     let mut arc_angle = if *clockwise {
                         start_angle - end_angle
                     } else {
                         end_angle - start_angle
                     };
-                    
+
                     if arc_angle < 0.0 {
                         arc_angle += 360.0;
                     }
-                    
+
                     let large_arc = if arc_angle > 180.0 { 1 } else { 0 };
                     let sweep = if *clockwise { 1 } else { 0 };
-                    
+
                     path.push_str(&format!(
                         "A {} {} 0 {} {} {} {} ",
                         screen_radius, screen_radius, large_arc, sweep, x2, y2
                     ));
                 }
-                
+
                 last_draw_pos = Some((x2, y2));
                 cutting_count += 1;
             }
@@ -259,12 +274,13 @@ pub fn render_grid_to_path(visualizer: &Visualizer2D, width: u32, height: u32) -
     // Add extra margin to ensure full coverage
     let margin_mm = 100.0;
     let (world_left, world_top) = transform.screen_to_world(-margin_mm, -margin_mm);
-    let (world_right, world_bottom) = transform.screen_to_world(width as f32 + margin_mm, height as f32 + margin_mm);
-    
+    let (world_right, world_bottom) =
+        transform.screen_to_world(width as f32 + margin_mm, height as f32 + margin_mm);
+
     // Round to nearest grid line, ensuring we cover the full range
     let start_x = (world_left / GRID_MAJOR_STEP_MM).floor() * GRID_MAJOR_STEP_MM;
     let end_x = (world_right / GRID_MAJOR_STEP_MM).ceil() * GRID_MAJOR_STEP_MM;
-    
+
     // Y is flipped, so world_top > world_bottom. Use min/max to get correct range
     let min_y = world_bottom.min(world_top);
     let max_y = world_bottom.max(world_top);
@@ -299,7 +315,7 @@ pub fn render_grid_to_path(visualizer: &Visualizer2D, width: u32, height: u32) -
 /// Render origin marker at (0,0) as yellow cross
 pub fn render_origin_to_path(visualizer: &Visualizer2D, width: u32, height: u32) -> String {
     let scale = calculate_scale(visualizer, width, height);
-    
+
     let transform = CoordTransform::new(
         visualizer.min_x,
         visualizer.min_y,
@@ -310,10 +326,10 @@ pub fn render_origin_to_path(visualizer: &Visualizer2D, width: u32, height: u32)
     );
 
     let (origin_x, origin_y) = transform.world_to_screen(0.0, 0.0);
-    
+
     let mut path = String::new();
     let cross_size = 15.0;
-    
+
     // Thicker lines for visibility - draw cross with 2px width by drawing twice
     for offset in [0.0, 1.0, 2.0] {
         // Vertical line of cross

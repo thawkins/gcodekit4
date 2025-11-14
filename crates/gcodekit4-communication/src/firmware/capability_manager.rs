@@ -12,55 +12,55 @@ use std::sync::{Arc, Mutex};
 pub struct CapabilityState {
     /// Whether capabilities have been detected
     pub detected: bool,
-    
+
     /// Current firmware type
     pub firmware_type: Option<FirmwareType>,
-    
+
     /// Current firmware version
     pub version: Option<SemanticVersion>,
-    
+
     /// Maximum number of axes
     pub max_axes: u8,
-    
+
     /// Arc motion (G2/G3) support
     pub supports_arcs: bool,
-    
+
     /// Probing (G38.x) support
     pub supports_probing: bool,
-    
+
     /// Tool change (M6) support
     pub supports_tool_change: bool,
-    
+
     /// Variable spindle speed support
     pub supports_variable_spindle: bool,
-    
+
     /// Coolant control support
     pub supports_coolant: bool,
-    
+
     /// Homing cycle support
     pub supports_homing: bool,
-    
+
     /// Number of work coordinate systems (G54-G59)
     pub coordinate_systems: u8,
-    
+
     /// Status reports support
     pub supports_status_reports: bool,
-    
+
     /// Real-time override commands support
     pub supports_overrides: bool,
-    
+
     /// Soft limits support
     pub supports_soft_limits: bool,
-    
+
     /// Hard limits support
     pub supports_hard_limits: bool,
-    
+
     /// Macro support
     pub supports_macros: bool,
-    
+
     /// Laser mode support (M3/M4 with dynamic power)
     pub supports_laser: bool,
-    
+
     /// Custom capabilities
     pub custom_capabilities: Vec<(String, bool)>,
 }
@@ -97,12 +97,9 @@ impl CapabilityState {
         version: SemanticVersion,
         caps: &FirmwareCapabilities,
     ) -> Self {
-        let custom_capabilities: Vec<(String, bool)> = caps
-            .custom
-            .iter()
-            .map(|(k, v)| (k.clone(), *v))
-            .collect();
-        
+        let custom_capabilities: Vec<(String, bool)> =
+            caps.custom.iter().map(|(k, v)| (k.clone(), *v)).collect();
+
         Self {
             detected: true,
             firmware_type: Some(firmware_type),
@@ -124,37 +121,59 @@ impl CapabilityState {
             custom_capabilities,
         }
     }
-    
+
     /// Get a human-readable description of current capabilities
     pub fn get_summary(&self) -> String {
         if !self.detected {
             return "No firmware detected".to_string();
         }
-        
-        let firmware_name = self.firmware_type
+
+        let firmware_name = self
+            .firmware_type
             .map(|f| format!("{}", f))
             .unwrap_or_else(|| "Unknown".to_string());
-        
-        let version_str = self.version
+
+        let version_str = self
+            .version
             .as_ref()
             .map(|v| format!("v{}.{}.{}", v.major, v.minor, v.patch))
             .unwrap_or_else(|| "Unknown".to_string());
-        
+
         let features = vec![
             if self.supports_arcs { "Arcs" } else { "" },
             if self.supports_probing { "Probing" } else { "" },
-            if self.supports_tool_change { "Tool Change" } else { "" },
-            if self.supports_variable_spindle { "Variable Spindle" } else { "" },
-            if self.supports_overrides { "Overrides" } else { "" },
+            if self.supports_tool_change {
+                "Tool Change"
+            } else {
+                ""
+            },
+            if self.supports_variable_spindle {
+                "Variable Spindle"
+            } else {
+                ""
+            },
+            if self.supports_overrides {
+                "Overrides"
+            } else {
+                ""
+            },
         ]
         .into_iter()
         .filter(|s| !s.is_empty())
         .collect::<Vec<_>>()
         .join(", ");
-        
-        format!("{} {} - {} axes | Features: {}", 
-                firmware_name, version_str, self.max_axes, 
-                if features.is_empty() { "Basic" } else { &features })
+
+        format!(
+            "{} {} - {} axes | Features: {}",
+            firmware_name,
+            version_str,
+            self.max_axes,
+            if features.is_empty() {
+                "Basic"
+            } else {
+                &features
+            }
+        )
     }
 }
 
@@ -162,7 +181,7 @@ impl CapabilityState {
 pub struct CapabilityManager {
     /// Capabilities database
     database: CapabilitiesDatabase,
-    
+
     /// Current capability state
     state: Arc<Mutex<CapabilityState>>,
 }
@@ -175,25 +194,23 @@ impl CapabilityManager {
             state: Arc::new(Mutex::new(CapabilityState::default())),
         }
     }
-    
+
     /// Update capabilities based on detected firmware
     pub fn update_firmware(&self, firmware_type: FirmwareType, version: SemanticVersion) {
         if let Some(caps) = self.database.get_capabilities(firmware_type, &version) {
             let new_state = CapabilityState::from_capabilities(firmware_type, version, &caps);
-            
+
             if let Ok(mut state) = self.state.lock() {
                 *state = new_state;
             }
         }
     }
-    
+
     /// Get current capability state
     pub fn get_state(&self) -> CapabilityState {
-        self.state.lock()
-            .map(|s| s.clone())
-            .unwrap_or_default()
+        self.state.lock().map(|s| s.clone()).unwrap_or_default()
     }
-    
+
     /// Check if a specific capability is supported
     pub fn supports(&self, capability: &str) -> bool {
         if let Ok(state) = self.state.lock() {
@@ -209,35 +226,33 @@ impl CapabilityManager {
                 "soft_limits" => state.supports_soft_limits,
                 "hard_limits" => state.supports_hard_limits,
                 "macros" => state.supports_macros,
-                _ => state.custom_capabilities.iter()
+                _ => state
+                    .custom_capabilities
+                    .iter()
                     .any(|(k, v)| k == capability && *v),
             }
         } else {
             false
         }
     }
-    
+
     /// Get maximum number of axes
     pub fn get_max_axes(&self) -> u8 {
-        self.state.lock()
-            .map(|s| s.max_axes)
-            .unwrap_or(3)
+        self.state.lock().map(|s| s.max_axes).unwrap_or(3)
     }
-    
+
     /// Get number of coordinate systems
     pub fn get_coordinate_systems(&self) -> u8 {
-        self.state.lock()
-            .map(|s| s.coordinate_systems)
-            .unwrap_or(1)
+        self.state.lock().map(|s| s.coordinate_systems).unwrap_or(1)
     }
-    
+
     /// Reset to default (disconnected) state
     pub fn reset(&self) {
         if let Ok(mut state) = self.state.lock() {
             *state = CapabilityState::default();
         }
     }
-    
+
     /// Get shared state reference for thread-safe access
     pub fn get_state_ref(&self) -> Arc<Mutex<CapabilityState>> {
         Arc::clone(&self.state)
@@ -253,26 +268,23 @@ impl Default for CapabilityManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_capability_manager_default() {
         let manager = CapabilityManager::new();
         let state = manager.get_state();
-        
+
         assert!(!state.detected);
         assert_eq!(state.max_axes, 3);
         assert!(!state.supports_arcs);
     }
-    
+
     #[test]
     fn test_update_firmware_grbl() {
         let manager = CapabilityManager::new();
-        
-        manager.update_firmware(
-            FirmwareType::Grbl,
-            SemanticVersion::new(1, 1, 0),
-        );
-        
+
+        manager.update_firmware(FirmwareType::Grbl, SemanticVersion::new(1, 1, 0));
+
         let state = manager.get_state();
         assert!(state.detected);
         assert_eq!(state.max_axes, 3);
@@ -281,47 +293,38 @@ mod tests {
         assert!(state.supports_status_reports);
         assert_eq!(state.coordinate_systems, 6);
     }
-    
+
     #[test]
     fn test_supports_capability() {
         let manager = CapabilityManager::new();
-        
-        manager.update_firmware(
-            FirmwareType::Grbl,
-            SemanticVersion::new(1, 1, 0),
-        );
-        
+
+        manager.update_firmware(FirmwareType::Grbl, SemanticVersion::new(1, 1, 0));
+
         assert!(manager.supports("arcs"));
         assert!(manager.supports("probing"));
         assert!(!manager.supports("macros"));
     }
-    
+
     #[test]
     fn test_reset() {
         let manager = CapabilityManager::new();
-        
-        manager.update_firmware(
-            FirmwareType::Grbl,
-            SemanticVersion::new(1, 1, 0),
-        );
-        
+
+        manager.update_firmware(FirmwareType::Grbl, SemanticVersion::new(1, 1, 0));
+
         assert!(manager.get_state().detected);
-        
+
         manager.reset();
-        
+
         let state = manager.get_state();
         assert!(!state.detected);
     }
-    
+
     #[test]
     fn test_get_summary() {
         let manager = CapabilityManager::new();
-        
-        manager.update_firmware(
-            FirmwareType::Grbl,
-            SemanticVersion::new(1, 1, 0),
-        );
-        
+
+        manager.update_firmware(FirmwareType::Grbl, SemanticVersion::new(1, 1, 0));
+
         let summary = manager.get_state().get_summary();
         assert!(summary.contains("GRBL"));
         assert!(summary.contains("v1.1.0"));

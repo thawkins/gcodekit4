@@ -1,10 +1,9 @@
 use gcodekit4::{
-    init_logging, list_ports, CapabilityManager, Communicator, ConnectionDriver,
-    ConnectionParams, ConsoleListener, DeviceConsoleManager, DeviceMessageType,
-    FirmwareSettingsIntegration, GcodeEditor, SerialCommunicator,
-    SerialParity, SettingValue, SettingsDialog, SettingsPersistence, BUILD_DATE, VERSION,
-    BoxParameters, BoxType, FingerJointSettings, FingerStyle, TabbedBoxMaker,
-    JigsawPuzzleMaker, PuzzleParameters,
+    init_logging, list_ports, BoxParameters, BoxType, CapabilityManager, Communicator,
+    ConnectionDriver, ConnectionParams, ConsoleListener, DeviceConsoleManager, DeviceMessageType,
+    FingerJointSettings, FingerStyle, FirmwareSettingsIntegration, GcodeEditor, JigsawPuzzleMaker,
+    PuzzleParameters, SerialCommunicator, SerialParity, SettingValue, SettingsDialog,
+    SettingsPersistence, TabbedBoxMaker, BUILD_DATE, VERSION,
 };
 use gcodekit4_ui::EditorBridge;
 use slint::{Model, VecModel};
@@ -73,20 +72,20 @@ fn parse_grbl_setting_line(line: &str) -> Option<ConfigSetting> {
     if !line.starts_with('$') {
         return None;
     }
-    
+
     // Remove the $ and split on =
     let line = &line[1..];
     let parts: Vec<&str> = line.split('=').collect();
     if parts.len() != 2 {
         return None;
     }
-    
+
     let number = parts[0].parse::<i32>().ok()?;
     let value = parts[1].to_string();
-    
+
     // Get metadata for the setting
     let (name, desc, unit, category) = get_grbl_setting_info(number);
-    
+
     Some(ConfigSetting {
         number,
         name: slint::SharedString::from(name),
@@ -101,48 +100,138 @@ fn parse_grbl_setting_line(line: &str) -> Option<ConfigSetting> {
 /// Get metadata for a GRBL setting number
 fn get_grbl_setting_info(number: i32) -> (&'static str, &'static str, &'static str, &'static str) {
     match number {
-        0 => ("Step pulse time", "Step pulse duration in microseconds", "μs", "System"),
-        1 => ("Step idle delay", "Step idle delay in milliseconds", "ms", "System"),
+        0 => (
+            "Step pulse time",
+            "Step pulse duration in microseconds",
+            "μs",
+            "System",
+        ),
+        1 => (
+            "Step idle delay",
+            "Step idle delay in milliseconds",
+            "ms",
+            "System",
+        ),
         2 => ("Step pulse invert", "Step pulse invert mask", "", "System"),
-        3 => ("Step direction invert", "Step direction invert mask", "", "System"),
+        3 => (
+            "Step direction invert",
+            "Step direction invert mask",
+            "",
+            "System",
+        ),
         4 => ("Invert step enable", "Invert step enable pin", "", "System"),
         5 => ("Invert limit pins", "Invert limit pins", "", "Limits"),
         6 => ("Invert probe pin", "Invert probe pin", "", "System"),
         10 => ("Status report", "Status report mask", "", "System"),
-        11 => ("Junction deviation", "Junction deviation in mm", "mm", "System"),
+        11 => (
+            "Junction deviation",
+            "Junction deviation in mm",
+            "mm",
+            "System",
+        ),
         12 => ("Arc tolerance", "Arc tolerance in mm", "mm", "System"),
         13 => ("Report in inches", "Report in inches", "", "System"),
         20 => ("Soft limits", "Enable soft limits", "", "Limits"),
         21 => ("Hard limits", "Enable hard limits", "", "Limits"),
         22 => ("Homing cycle", "Enable homing cycle", "", "Homing"),
-        23 => ("Homing direction", "Homing direction invert mask", "", "Homing"),
-        24 => ("Homing locate feed", "Homing locate feed rate", "mm/min", "Homing"),
-        25 => ("Homing search seek", "Homing search seek rate", "mm/min", "Homing"),
-        26 => ("Homing debounce", "Homing switch debounce delay", "ms", "Homing"),
-        27 => ("Homing pull-off", "Homing switch pull-off distance", "mm", "Homing"),
-        30 => ("Max spindle speed", "Maximum spindle speed", "RPM", "Spindle"),
-        31 => ("Min spindle speed", "Minimum spindle speed", "RPM", "Spindle"),
+        23 => (
+            "Homing direction",
+            "Homing direction invert mask",
+            "",
+            "Homing",
+        ),
+        24 => (
+            "Homing locate feed",
+            "Homing locate feed rate",
+            "mm/min",
+            "Homing",
+        ),
+        25 => (
+            "Homing search seek",
+            "Homing search seek rate",
+            "mm/min",
+            "Homing",
+        ),
+        26 => (
+            "Homing debounce",
+            "Homing switch debounce delay",
+            "ms",
+            "Homing",
+        ),
+        27 => (
+            "Homing pull-off",
+            "Homing switch pull-off distance",
+            "mm",
+            "Homing",
+        ),
+        30 => (
+            "Max spindle speed",
+            "Maximum spindle speed",
+            "RPM",
+            "Spindle",
+        ),
+        31 => (
+            "Min spindle speed",
+            "Minimum spindle speed",
+            "RPM",
+            "Spindle",
+        ),
         32 => ("Laser mode", "Enable laser mode", "", "Spindle"),
-        100 => ("X steps/mm", "X-axis steps per millimeter", "steps/mm", "Steps Per Unit"),
-        101 => ("Y steps/mm", "Y-axis steps per millimeter", "steps/mm", "Steps Per Unit"),
-        102 => ("Z steps/mm", "Z-axis steps per millimeter", "steps/mm", "Steps Per Unit"),
+        100 => (
+            "X steps/mm",
+            "X-axis steps per millimeter",
+            "steps/mm",
+            "Steps Per Unit",
+        ),
+        101 => (
+            "Y steps/mm",
+            "Y-axis steps per millimeter",
+            "steps/mm",
+            "Steps Per Unit",
+        ),
+        102 => (
+            "Z steps/mm",
+            "Z-axis steps per millimeter",
+            "steps/mm",
+            "Steps Per Unit",
+        ),
         110 => ("X max rate", "X-axis maximum rate", "mm/min", "Max Rate"),
         111 => ("Y max rate", "Y-axis maximum rate", "mm/min", "Max Rate"),
         112 => ("Z max rate", "Z-axis maximum rate", "mm/min", "Max Rate"),
-        120 => ("X acceleration", "X-axis acceleration", "mm/sec²", "Acceleration"),
-        121 => ("Y acceleration", "Y-axis acceleration", "mm/sec²", "Acceleration"),
-        122 => ("Z acceleration", "Z-axis acceleration", "mm/sec²", "Acceleration"),
+        120 => (
+            "X acceleration",
+            "X-axis acceleration",
+            "mm/sec²",
+            "Acceleration",
+        ),
+        121 => (
+            "Y acceleration",
+            "Y-axis acceleration",
+            "mm/sec²",
+            "Acceleration",
+        ),
+        122 => (
+            "Z acceleration",
+            "Z-axis acceleration",
+            "mm/sec²",
+            "Acceleration",
+        ),
         130 => ("X max travel", "X-axis maximum travel", "mm", "Max Travel"),
         131 => ("Y max travel", "Y-axis maximum travel", "mm", "Max Travel"),
         132 => ("Z max travel", "Z-axis maximum travel", "mm", "Max Travel"),
-        _ => (format!("${}", number).leak(), "Unknown setting", "", "Other"),
+        _ => (
+            format!("${}", number).leak(),
+            "Unknown setting",
+            "",
+            "Other",
+        ),
     }
 }
 
 /// Sync firmware capabilities to UI properties
 fn sync_capabilities_to_ui(window: &MainWindow, capability_manager: &CapabilityManager) {
     let state = capability_manager.get_state();
-    
+
     window.set_firmware_capabilities(slint::SharedString::from(state.get_summary()));
     window.set_cap_supports_arcs(state.supports_arcs);
     window.set_cap_supports_probing(state.supports_probing);
@@ -156,81 +245,84 @@ fn sync_capabilities_to_ui(window: &MainWindow, capability_manager: &CapabilityM
 
 /// Update device info panel with firmware and capabilities
 fn update_device_info_panel(
-    window: &MainWindow, 
+    window: &MainWindow,
     firmware_type: gcodekit4::firmware::firmware_version::FirmwareType,
     version: gcodekit4::firmware::firmware_version::SemanticVersion,
-    capability_manager: &CapabilityManager
+    capability_manager: &CapabilityManager,
 ) {
     use slint::{ModelRc, VecModel};
-    
+
     // Update capability manager with detected firmware
     capability_manager.update_firmware(firmware_type.clone(), version.clone());
-    
+
     // Set firmware type and version
     window.set_device_firmware_type(slint::SharedString::from(format!("{:?}", firmware_type)));
     window.set_device_firmware_version(slint::SharedString::from(version.to_string()));
-    window.set_device_name(slint::SharedString::from(format!("{:?} Device", firmware_type)));
-    
+    window.set_device_name(slint::SharedString::from(format!(
+        "{:?} Device",
+        firmware_type
+    )));
+
     // Get capabilities state
     let state = capability_manager.get_state();
-    
+
     // Build capabilities list
     let mut capabilities = Vec::new();
-    
+
     capabilities.push(CapabilityItem {
         name: "Arc Support (G2/G3)".into(),
         enabled: state.supports_arcs,
         notes: "Circular interpolation commands".into(),
     });
-    
+
     capabilities.push(CapabilityItem {
         name: "Variable Spindle (M3/M4 S)".into(),
         enabled: state.supports_variable_spindle,
         notes: "PWM spindle speed control".into(),
     });
-    
+
     capabilities.push(CapabilityItem {
         name: "Probing (G38.x)".into(),
         enabled: state.supports_probing,
         notes: "Touch probe operations".into(),
     });
-    
+
     capabilities.push(CapabilityItem {
         name: "Tool Change (M6 T)".into(),
         enabled: state.supports_tool_change,
         notes: "Automatic tool changing".into(),
     });
-    
+
     capabilities.push(CapabilityItem {
         name: "Homing Cycle ($H)".into(),
         enabled: state.supports_homing,
         notes: "Machine homing to limit switches".into(),
     });
-    
+
     capabilities.push(CapabilityItem {
         name: "Feed/Spindle Overrides".into(),
         enabled: state.supports_overrides,
         notes: "Real-time adjustment of feed and spindle".into(),
     });
-    
+
     capabilities.push(CapabilityItem {
         name: "Laser Mode (M3/M4)".into(),
         enabled: state.supports_laser,
         notes: "Dynamic laser power control for engraving/cutting".into(),
     });
-    
+
     capabilities.push(CapabilityItem {
         name: format!("{} Axes Support", state.max_axes).into(),
         enabled: state.max_axes > 0,
         notes: format!("Maximum {} axes (X,Y,Z,A,B,C)", state.max_axes).into(),
     });
-    
+
     capabilities.push(CapabilityItem {
         name: format!("{} Coordinate Systems", state.coordinate_systems).into(),
         enabled: state.coordinate_systems > 0,
         notes: "Work coordinate systems (G54-G59)".into(),
     });
-    
+
     let capabilities_model = Rc::new(VecModel::from(capabilities));
     window.set_device_capabilities(ModelRc::from(capabilities_model));
 }
@@ -238,12 +330,15 @@ fn update_device_info_panel(
 /// Update designer UI with current shapes from state
 fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState) {
     // Get canvas dimensions from window (or use defaults)
-    let canvas_width = 800u32;  // Will be overridden by actual canvas size
+    let canvas_width = 800u32; // Will be overridden by actual canvas size
     let canvas_height = 600u32;
-    
+
     // Update viewport canvas size to match actual rendering size
-    state.canvas.viewport_mut().set_canvas_size(canvas_width as f64, canvas_height as f64);
-    
+    state
+        .canvas
+        .viewport_mut()
+        .set_canvas_size(canvas_width as f64, canvas_height as f64);
+
     // Render canvas using SVG paths
     let crosshair_data = gcodekit4::designer::svg_renderer::render_crosshair(
         &state.canvas,
@@ -265,11 +360,12 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
         canvas_width,
         canvas_height,
     );
-    
+
     // Update UI with SVG path data
     window.set_designer_canvas_crosshair_data(slint::SharedString::from(crosshair_data));
     window.set_designer_canvas_shapes_data(slint::SharedString::from(shapes_data));
-    window.set_designer_canvas_selected_shapes_data(slint::SharedString::from(selected_shapes_data));
+    window
+        .set_designer_canvas_selected_shapes_data(slint::SharedString::from(selected_shapes_data));
     window.set_designer_canvas_handles_data(slint::SharedString::from(handles_data));
 
     // Still update shapes array for metadata (could be used for debugging/info)
@@ -341,7 +437,7 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
 /// Helper function to convert editor lines to Slint TextLine and update window
 fn update_visible_lines(window: &MainWindow, bridge: &EditorBridge) {
     let lines_data = bridge.get_visible_lines_data();
-    
+
     let lines: Vec<TextLine> = lines_data
         .into_iter()
         .map(|(line_number, content, is_dirty)| TextLine {
@@ -350,33 +446,24 @@ fn update_visible_lines(window: &MainWindow, bridge: &EditorBridge) {
             is_dirty,
         })
         .collect();
-    
+
     if !lines.is_empty() {
-        eprintln!(
-            "UPDATE: {} lines, first={}, last={}",
-            lines.len(),
-            lines.first().map(|l| l.line_number).unwrap_or(-1),
-            lines.last().map(|l| l.line_number).unwrap_or(-1)
-        );
         tracing::debug!(
             "update_visible_lines: {} lines, first={}, last={}",
             lines.len(),
             lines.first().map(|l| l.line_number).unwrap_or(-1),
             lines.last().map(|l| l.line_number).unwrap_or(-1)
         );
-    } else {
-        eprintln!("UPDATE: NO LINES!");
     }
-    
+
     window.set_visible_lines(slint::ModelRc::new(VecModel::from(lines)));
 }
 
 fn main() -> anyhow::Result<()> {
     // Initialize logging
     init_logging()?;
-    
-    eprintln!("=== GCodeKit4 Starting - Logging Enabled ===");
-    tracing::info!("Application starting");
+
+    tracing::info!("=== GCodeKit4 Starting - Logging Enabled ===");
 
     let main_window = MainWindow::new().map_err(|e| anyhow::anyhow!("UI Error: {}", e))?;
 
@@ -407,7 +494,7 @@ fn main() -> anyhow::Result<()> {
     main_window.set_position_x(0.0);
     main_window.set_position_y(0.0);
     main_window.set_position_z(0.0);
-    
+
     // Initialize capability properties with defaults (no firmware detected)
     main_window.set_firmware_capabilities(slint::SharedString::from("No firmware detected"));
     main_window.set_cap_supports_arcs(false);
@@ -447,9 +534,11 @@ fn main() -> anyhow::Result<()> {
     // Initialize device console manager early to register listeners
     // Use Arc since communicator listeners need Arc for thread-safe sharing
     let console_manager = std::sync::Arc::new(DeviceConsoleManager::new());
-    
+
     // Shared state for detected firmware (thread-safe)
-    let detected_firmware = std::sync::Arc::new(std::sync::Mutex::new(None::<gcodekit4::firmware::firmware_detector::FirmwareDetectionResult>));
+    let detected_firmware = std::sync::Arc::new(std::sync::Mutex::new(
+        None::<gcodekit4::firmware::firmware_detector::FirmwareDetectionResult>,
+    ));
 
     // Create and register console listener with communicator and firmware state
     let console_listener = ConsoleListener::new_with_firmware_state(
@@ -469,7 +558,7 @@ fn main() -> anyhow::Result<()> {
     main_window.set_designer_spindle_speed(3000.0);
     main_window.set_designer_tool_diameter(3.175);
     main_window.set_designer_cut_depth(-5.0);
-    
+
     // Sync initial values to backend
     {
         let mut state = designer_mgr.borrow_mut();
@@ -481,7 +570,7 @@ fn main() -> anyhow::Result<()> {
 
     // Initialize Materials Manager backend
     let materials_backend = Rc::new(RefCell::new(gcodekit4::ui::MaterialsManagerBackend::new()));
-    
+
     // Load initial materials into UI
     {
         let backend = materials_backend.borrow();
@@ -513,24 +602,27 @@ fn main() -> anyhow::Result<()> {
     }
 
     // Initialize Custom G-code Editor with undo/redo
-    let editor_bridge = Rc::new(EditorBridge::new(600.0, 20.0));
-    
+    // Start with a reasonable default viewport height
+    // The viewport will adapt based on scroll position to show the right lines
+    // Using 1000px (50 lines visible) as a safe default for most screens
+    let editor_bridge = Rc::new(EditorBridge::new(1000.0, 20.0));
+
     // Initialize editor with empty content
     editor_bridge.load_text("");
-    
+
     // Set initial editor state in UI
     main_window.set_can_undo(false);
     main_window.set_can_redo(false);
     main_window.set_cursor_line(0);
     main_window.set_cursor_column(0);
     main_window.set_total_lines(0);
-    
+
     // Update visible lines
     update_visible_lines(&main_window, &editor_bridge);
-    
+
     // Initialize CNC Tools Manager backend
     let tools_backend = Rc::new(RefCell::new(gcodekit4::ui::ToolsManagerBackend::new()));
-    
+
     // Load initial tools into UI
     {
         let backend = tools_backend.borrow();
@@ -548,7 +640,12 @@ fn main() -> anyhow::Result<()> {
                 flute_length: t.flute_length,
                 shaft_diameter: t.shaft_diameter.unwrap_or(t.diameter),
                 flutes: t.flutes as i32,
-                coating: t.coating.as_ref().map(|c| format!("{}", c)).unwrap_or_else(|| "None".to_string()).into(),
+                coating: t
+                    .coating
+                    .as_ref()
+                    .map(|c| format!("{}", c))
+                    .unwrap_or_else(|| "None".to_string())
+                    .into(),
                 manufacturer: t.manufacturer.clone().unwrap_or_default().into(),
                 part_number: t.part_number.clone().unwrap_or_default().into(),
                 description: t.description.clone().into(),
@@ -629,7 +726,7 @@ fn main() -> anyhow::Result<()> {
                 }
                 Err(_) => {}
             }
-        } 
+        }
 
         // Populate dialog with settings
         let mut dialog = settings_dialog.borrow_mut();
@@ -693,22 +790,22 @@ fn main() -> anyhow::Result<()> {
                     DeviceMessageType::Success,
                     format!("Successfully connected to {} at {} baud", port_str, baud),
                 );
-                
+
                 if let Some(window) = window_weak.upgrade() {
                     window.set_connected(true);
                     window.set_connection_status(slint::SharedString::from("Connected"));
-                    window.set_device_version(slint::SharedString::from("GRBL 1.1")); 
+                    window.set_device_version(slint::SharedString::from("GRBL 1.1"));
                     window.set_machine_state(slint::SharedString::from("IDLE"));
                     let console_output = console_manager_clone.get_output();
                     window.set_console_output(slint::SharedString::from(console_output));
-                    
+
                     // Initialize Device Info panel with default GRBL 1.1
                     // Will be updated after firmware detection completes
                     use gcodekit4::firmware::firmware_version::{FirmwareType, SemanticVersion};
                     let firmware_type = FirmwareType::Grbl;
                     let version = SemanticVersion::new(1, 1, 0);
                     update_device_info_panel(&window, firmware_type, version, &capability_manager_clone);
-                    
+
                     // Set up timer to check for firmware detection and update Device Info
                     let window_weak_timer = window_weak.clone();
                     let detected_firmware_timer = detected_firmware.clone();
@@ -717,7 +814,7 @@ fn main() -> anyhow::Result<()> {
                     timer.start(slint::TimerMode::Repeated, std::time::Duration::from_millis(500), move || {
                         if let Some(detection) = detected_firmware_timer.lock().unwrap().as_ref().cloned() {
                             if let Some(window) = window_weak_timer.upgrade() {
-                                tracing::info!("Timer: Updating Device Info with detected firmware: {} {}", 
+                                tracing::info!("Timer: Updating Device Info with detected firmware: {} {}",
                                     detection.firmware_type, detection.version);
                                 update_device_info_panel(&window, detection.firmware_type.clone(), detection.version.clone(), &capability_manager_timer);
                                 window.set_device_version(slint::SharedString::from(
@@ -735,7 +832,7 @@ fn main() -> anyhow::Result<()> {
                     DeviceMessageType::Output,
                     "Starting status polling...".to_string(),
                 );
-                
+
                 polling_stop_connect.store(false, std::sync::atomic::Ordering::Relaxed);
                 let window_weak_poll = window_weak.clone();
                 let polling_active = status_polling_active.clone();
@@ -746,7 +843,7 @@ fn main() -> anyhow::Result<()> {
 
                 std::thread::spawn(move || {
                     polling_active.store(true, std::sync::atomic::Ordering::Relaxed);
-                    
+
                     // Send $I once at startup to get firmware version
                     {
                         let mut comm = communicator_poll.lock().unwrap();
@@ -756,14 +853,14 @@ fn main() -> anyhow::Result<()> {
                             tracing::info!("Sent $I to query firmware version");
                         }
                     }
-                    
+
                     // Wait for firmware detection to complete (listener will process the response)
                     // The UI timer will update Device Info panel automatically
                     std::thread::sleep(std::time::Duration::from_millis(1000));
 
                     // GRBL buffer is 128 bytes, but we use 127 for safety
                     const GRBL_RX_BUFFER_SIZE: usize = 127;
-                    
+
                     // Main polling loop runs at 50ms intervals (20Hz)
                     // - Reads responses continuously (ok, error, status reports)
                     // - Sends G-code lines using character-counting protocol
@@ -779,14 +876,14 @@ fn main() -> anyhow::Result<()> {
                             let response = if connected { comm.receive().ok() } else { None };
                             (response, connected)
                         }; // Lock released immediately after reading
-                        
+
                         if is_connected {
                             // Step 1: Process responses (without holding lock)
                             if let Some(response) = response_data {
                                 if !response.is_empty() {
                                     let response_str = String::from_utf8_lossy(&response);
                                     debug!("Poll received: {}", response_str);
-                                    
+
                                     // Count "ok" responses for buffer management
                                     let ok_count = response_str.matches("ok").count() + response_str.matches("OK").count();
                                     if ok_count > 0 {
@@ -800,7 +897,7 @@ fn main() -> anyhow::Result<()> {
                                         }
                                         drop(gstate);
                                     }
-                                    
+
                                     // Check for errors and handle them
                                     if response_str.contains("error:") {
                                         warn!("GRBL error in response: {}", response_str);
@@ -811,7 +908,7 @@ fn main() -> anyhow::Result<()> {
                                             DeviceMessageType::Error,
                                             error_msg.clone()
                                         );
-                                        
+
                                         // Show error dialog
                                         let wh = window_weak_poll.clone();
                                         let em = error_msg.clone();
@@ -822,19 +919,19 @@ fn main() -> anyhow::Result<()> {
                                                     "GRBL Error\n\nThe device reported an error.\n\n{}",
                                                     em
                                                 )));
-                                                
+
                                                 let error_dialog_weak = error_dialog.as_weak();
                                                 error_dialog.on_close_dialog(move || {
                                                     if let Some(dlg) = error_dialog_weak.upgrade() {
                                                         dlg.hide().ok();
                                                     }
                                                 });
-                                                
+
                                                 error_dialog.show().ok();
                                             }
                                         }).ok();
                                     }
-                                    
+
                                     // Process status responses
                                     if response_str.contains("<") && response_str.contains(">") {
                                         debug!("Status response: {}", response_str);
@@ -842,14 +939,14 @@ fn main() -> anyhow::Result<()> {
                                         // Parse full status from response
                                         use gcodekit4::firmware::grbl::status_parser::StatusParser;
                                         let full_status = StatusParser::parse_full(&response_str);
-                                        
+
                                         let window_handle = window_weak_poll.clone();
                                         let raw_response = response_str.to_string();
                                         slint::invoke_from_event_loop(move || {
                                             if let Some(window) = window_handle.upgrade() {
                                                 // Update raw status response
                                                 window.set_raw_status_response(slint::SharedString::from(raw_response.trim()));
-                                                
+
                                                 // Update machine position
                                                 if let Some(mpos) = full_status.mpos {
                                                     window.set_position_x(mpos.x as f32);
@@ -865,17 +962,17 @@ fn main() -> anyhow::Result<()> {
                                                         window.set_position_c(c as f32);
                                                     }
                                                 }
-                                                
+
                                                 // Update machine state
                                                 if let Some(state) = full_status.machine_state {
                                                     window.set_machine_state(slint::SharedString::from(state));
                                                 }
-                                                
+
                                                 // Update feed rate
                                                 if let Some(feed) = full_status.feed_rate {
                                                     window.set_feed_rate(feed as f32);
                                                 }
-                                                
+
                                                 // Update spindle speed
                                                 if let Some(spindle) = full_status.spindle_speed {
                                                     window.set_spindle_speed(spindle as f32);
@@ -886,23 +983,23 @@ fn main() -> anyhow::Result<()> {
                                     }
                                 }
                             }
-                            
+
                             // Step 2: Send G-code lines if queued
                             // Send up to 5 lines per cycle, respecting buffer limits
                             {
                                 let mut gstate = gcode_state_poll.lock().unwrap();
                                 let mut lines_sent_this_cycle = 0;
-                                
+
                                 while !gstate.lines.is_empty() && lines_sent_this_cycle < 5 {
                                     let line = gstate.lines.front().cloned().unwrap_or_default();
                                     let trimmed = line.trim();
-                                    
+
                                     // Skip empty lines and comments quickly
                                     if trimmed.is_empty() || trimmed.starts_with(';') {
                                         gstate.lines.pop_front();
                                         continue; // Don't count skipped lines
                                     }
-                                    
+
                                     // Check buffer space before sending
                                     let line_len = trimmed.len() + 1;
                                     if gstate.pending_bytes + line_len <= GRBL_RX_BUFFER_SIZE {
@@ -911,7 +1008,7 @@ fn main() -> anyhow::Result<()> {
                                             let mut comm = communicator_poll.lock().unwrap();
                                             comm.send(format!("{}\n", trimmed).as_bytes())
                                         }; // Lock released immediately
-                                        
+
                                         match send_result {
                                             Ok(_) => {
                                                 gstate.lines.pop_front();
@@ -919,11 +1016,11 @@ fn main() -> anyhow::Result<()> {
                                                 gstate.line_lengths.push_back(line_len);
                                                 gstate.total_sent += 1;
                                                 lines_sent_this_cycle += 1;
-                                                
+
                                                 debug!("Sent line {}/{}: {} [buffer: {}/{} bytes, {} pending acks]",
                                                     gstate.total_sent, gstate.total_lines, trimmed,
                                                     gstate.pending_bytes, GRBL_RX_BUFFER_SIZE, gstate.line_lengths.len());
-                                                
+
                                                 if gstate.total_sent % 10 == 0 || gstate.lines.is_empty() {
                                                     let sent = gstate.total_sent;
                                                     let total = gstate.total_lines;
@@ -946,7 +1043,7 @@ fn main() -> anyhow::Result<()> {
                                                     error_msg.clone()
                                                 );
                                                 gstate.lines.clear();
-                                                
+
                                                 // Show error dialog
                                                 let wh = window_weak_poll.clone();
                                                 let em = error_msg.clone();
@@ -957,18 +1054,18 @@ fn main() -> anyhow::Result<()> {
                                                             "Send Error\n\nFailed to send G-code to device.\n\n{}",
                                                             em
                                                         )));
-                                                        
+
                                                         let error_dialog_weak = error_dialog.as_weak();
                                                         error_dialog.on_close_dialog(move || {
                                                             if let Some(dlg) = error_dialog_weak.upgrade() {
                                                                 dlg.hide().ok();
                                                             }
                                                         });
-                                                        
+
                                                         error_dialog.show().ok();
                                                     }
                                                 }).ok();
-                                                
+
                                                 break;
                                             }
                                         }
@@ -977,7 +1074,7 @@ fn main() -> anyhow::Result<()> {
                                         break; // Buffer full, stop sending this cycle
                                     }
                                 }
-                                
+
                                 // Check if done sending
                                 if gstate.total_lines > 0 && gstate.lines.is_empty() && gstate.line_lengths.is_empty() {
                                     let total = gstate.total_sent;
@@ -998,7 +1095,7 @@ fn main() -> anyhow::Result<()> {
                                     gstate.total_sent = 0;
                                 }
                             } // Release gstate lock
-                            
+
                             // Step 3: Send status query periodically (real-time command - doesn't use buffer)
                             // Send every 200ms (4 cycles of 50ms)
                             static mut CYCLE: u32 = 0;
@@ -1028,21 +1125,21 @@ fn main() -> anyhow::Result<()> {
                     window.set_machine_state(slint::SharedString::from("DISCONNECTED"));
                     let console_output = console_manager_clone.get_output();
                     window.set_console_output(slint::SharedString::from(console_output));
-                    
+
                     // Show error dialog
                     let error_dialog = ErrorDialog::new().unwrap();
                     error_dialog.set_error_message(slint::SharedString::from(format!(
                         "Connection Failed\n\nUnable to connect to {} at {} baud.\n\nError: {}",
                         port_str, baud, error_msg
                     )));
-                    
+
                     let error_dialog_weak = error_dialog.as_weak();
                     error_dialog.on_close_dialog(move || {
                         if let Some(dlg) = error_dialog_weak.upgrade() {
                             dlg.hide().ok();
                         }
                     });
-                    
+
                     error_dialog.show().ok();
                 }
             }
@@ -1084,7 +1181,7 @@ fn main() -> anyhow::Result<()> {
                     window.set_position_z(0.0);
                     let console_output = console_manager_clone.get_output();
                     window.set_console_output(slint::SharedString::from(console_output));
-                    
+
                     // Reset capabilities to defaults
                     capability_manager_disconnect.reset();
                     sync_capabilities_to_ui(&window, &capability_manager_disconnect);
@@ -1097,21 +1194,21 @@ fn main() -> anyhow::Result<()> {
                     window.set_connection_status(slint::SharedString::from("Disconnect error"));
                     let console_output = console_manager_clone.get_output();
                     window.set_console_output(slint::SharedString::from(console_output));
-                    
+
                     // Show error dialog
                     let error_dialog = ErrorDialog::new().unwrap();
                     error_dialog.set_error_message(slint::SharedString::from(format!(
                         "Disconnect Error\n\nAn error occurred while disconnecting from the device.\n\nError: {}",
                         e
                     )));
-                    
+
                     let error_dialog_weak = error_dialog.as_weak();
                     error_dialog.on_close_dialog(move || {
                         if let Some(dlg) = error_dialog_weak.upgrade() {
                             dlg.hide().ok();
                         }
                     });
-                    
+
                     error_dialog.show().ok();
                 }
             }
@@ -1133,8 +1230,8 @@ fn main() -> anyhow::Result<()> {
         if let Some(window) = window_weak.upgrade() {
             // Clear the editor content and reset filename
             window.set_gcode_filename(slint::SharedString::from("unknown.gcode"));
-            window.set_gcode_content(slint::SharedString::from(""));
-            
+            window.invoke_clear_editor();
+
             debug!("Editor cleared, new file created");
         }
     });
@@ -1148,7 +1245,7 @@ fn main() -> anyhow::Result<()> {
         if let Some(window) = window_weak.upgrade() {
             window.set_is_busy(true);
         }
-        
+
         // Open file dialog and load file
         match gcode_editor_clone.open_and_load_file() {
             Ok(path) => {
@@ -1208,7 +1305,7 @@ fn main() -> anyhow::Result<()> {
 
                     // Load into custom editor
                     editor_bridge_open.load_text(&content);
-                    
+
                     window.set_gcode_content(slint::SharedString::from(content.clone()));
 
                     // Update custom editor state
@@ -1248,7 +1345,15 @@ fn main() -> anyhow::Result<()> {
 
                     // Use Slint's invoke_from_event_loop to safely update UI from background thread
                     std::thread::spawn(move || {
-                        while let Ok((progress, status, path_data, rapid_moves_data, grid_data, origin_data)) = rx.recv() {
+                        while let Ok((
+                            progress,
+                            status,
+                            path_data,
+                            rapid_moves_data,
+                            grid_data,
+                            origin_data,
+                        )) = rx.recv()
+                        {
                             let window_handle = window_weak.clone();
                             let status_clone = status.clone();
                             let path_clone = path_data.clone();
@@ -1265,16 +1370,24 @@ fn main() -> anyhow::Result<()> {
 
                                     // Set canvas path data if available
                                     if let Some(path) = path_clone {
-                                        window.set_visualization_path_data(slint::SharedString::from(path));
+                                        window.set_visualization_path_data(
+                                            slint::SharedString::from(path),
+                                        );
                                     }
                                     if let Some(rapid_moves) = rapid_moves_clone {
-                                        window.set_visualization_rapid_moves_data(slint::SharedString::from(rapid_moves));
+                                        window.set_visualization_rapid_moves_data(
+                                            slint::SharedString::from(rapid_moves),
+                                        );
                                     }
                                     if let Some(grid) = grid_clone {
-                                        window.set_visualization_grid_data(slint::SharedString::from(grid));
+                                        window.set_visualization_grid_data(
+                                            slint::SharedString::from(grid),
+                                        );
                                     }
                                     if let Some(origin) = origin_clone {
-                                        window.set_visualization_origin_data(slint::SharedString::from(origin));
+                                        window.set_visualization_origin_data(
+                                            slint::SharedString::from(origin),
+                                        );
                                     }
                                 }
                             })
@@ -1320,7 +1433,7 @@ fn main() -> anyhow::Result<()> {
                 }
             }
         }
-        
+
         // Always clear busy state at end
         if let Some(window) = window_weak.upgrade() {
             window.set_is_busy(false);
@@ -1457,20 +1570,20 @@ fn main() -> anyhow::Result<()> {
                 window.set_connection_status(slint::SharedString::from(
                     "Error: Device not connected",
                 ));
-                
+
                 // Show error dialog
                 let error_dialog = ErrorDialog::new().unwrap();
                 error_dialog.set_error_message(slint::SharedString::from(
                     "Device Not Connected\n\nPlease connect to a device before sending G-Code."
                 ));
-                
+
                 let error_dialog_weak = error_dialog.as_weak();
                 error_dialog.on_close_dialog(move || {
                     if let Some(dlg) = error_dialog_weak.upgrade() {
                         dlg.hide().ok();
                     }
                 });
-                
+
                 error_dialog.show().ok();
                 return;
             }
@@ -1481,20 +1594,20 @@ fn main() -> anyhow::Result<()> {
                 console_manager_clone
                     .add_message(DeviceMessageType::Error, "✗ No G-Code content to send.");
                 window.set_connection_status(slint::SharedString::from("Error: No G-Code content"));
-                
+
                 // Show error dialog
                 let error_dialog = ErrorDialog::new().unwrap();
                 error_dialog.set_error_message(slint::SharedString::from(
                     "No G-Code Content\n\nThere is no G-Code loaded to send. Please load or create G-Code first."
                 ));
-                
+
                 let error_dialog_weak = error_dialog.as_weak();
                 error_dialog.on_close_dialog(move || {
                     if let Some(dlg) = error_dialog_weak.upgrade() {
                         dlg.hide().ok();
                     }
                 });
-                
+
                 error_dialog.show().ok();
                 return;
             }
@@ -1511,7 +1624,7 @@ fn main() -> anyhow::Result<()> {
             // Queue the lines for the polling thread
             let lines: Vec<String> = current_content.lines().map(|s| s.to_string()).collect();
             let line_count = lines.len();
-            
+
             {
                 let mut gstate = gcode_send_state_clone.lock().unwrap();
                 gstate.lines = lines.into();
@@ -1529,6 +1642,7 @@ fn main() -> anyhow::Result<()> {
             let console_output = console_manager_clone.get_output();
             window.set_console_output(slint::SharedString::from(console_output));
 
+            #[allow(dead_code)]
             struct SendState {
                 lines: Vec<String>,
                 line_index: usize,
@@ -1558,14 +1672,12 @@ fn main() -> anyhow::Result<()> {
                 gstate.pending_bytes = 0;
                 gstate.line_lengths.clear();
             }
-            
-            console_manager_stop.add_message(
-                DeviceMessageType::Output,
-                "⏹ G-Code transmission stopped"
-            );
+
+            console_manager_stop
+                .add_message(DeviceMessageType::Output, "⏹ G-Code transmission stopped");
             window.set_connection_status("G-Code transmission stopped".into());
             window.set_progress_value(0.0);
-            
+
             let console_output = console_manager_stop.get_output();
             window.set_console_output(console_output.into());
         }
@@ -1581,27 +1693,25 @@ fn main() -> anyhow::Result<()> {
             let comm = communicator_pause.lock().unwrap();
             if comm.is_connected() {
                 drop(comm);
-                
+
                 // Send pause command
                 if let Err(e) = communicator_pause.lock().unwrap().send_command("!") {
                     console_manager_pause.add_message(
                         DeviceMessageType::Error,
-                        format!("✗ Failed to send pause command: {}", e)
+                        format!("✗ Failed to send pause command: {}", e),
                     );
                 } else {
                     console_manager_pause.add_message(
                         DeviceMessageType::Output,
-                        "⏸ G-Code transmission paused (feed hold)"
+                        "⏸ G-Code transmission paused (feed hold)",
                     );
                     window.set_connection_status("G-Code transmission paused".into());
                 }
             } else {
-                console_manager_pause.add_message(
-                    DeviceMessageType::Error,
-                    "✗ Device not connected"
-                );
+                console_manager_pause
+                    .add_message(DeviceMessageType::Error, "✗ Device not connected");
             }
-            
+
             let console_output = console_manager_pause.get_output();
             window.set_console_output(console_output.into());
         }
@@ -1617,27 +1727,25 @@ fn main() -> anyhow::Result<()> {
             let comm = communicator_resume.lock().unwrap();
             if comm.is_connected() {
                 drop(comm);
-                
+
                 // Send resume command
                 if let Err(e) = communicator_resume.lock().unwrap().send_command("~") {
                     console_manager_resume.add_message(
                         DeviceMessageType::Error,
-                        format!("✗ Failed to send resume command: {}", e)
+                        format!("✗ Failed to send resume command: {}", e),
                     );
                 } else {
                     console_manager_resume.add_message(
                         DeviceMessageType::Output,
-                        "▶ G-Code transmission resumed (cycle start)"
+                        "▶ G-Code transmission resumed (cycle start)",
                     );
                     window.set_connection_status("G-Code transmission resumed".into());
                 }
             } else {
-                console_manager_resume.add_message(
-                    DeviceMessageType::Error,
-                    "✗ Device not connected"
-                );
+                console_manager_resume
+                    .add_message(DeviceMessageType::Error, "✗ Device not connected");
             }
-            
+
             let console_output = console_manager_resume.get_output();
             window.set_console_output(console_output.into());
         }
@@ -1653,11 +1761,11 @@ fn main() -> anyhow::Result<()> {
                 window.set_can_undo(editor_bridge_undo.can_undo());
                 window.set_can_redo(editor_bridge_undo.can_redo());
                 update_visible_lines(&window, &editor_bridge_undo);
-                
+
                 // Update g-code content
                 let content = editor_bridge_undo.get_text();
                 window.set_gcode_content(slint::SharedString::from(content));
-                
+
                 // Update cursor position
                 let (line, col) = editor_bridge_undo.cursor_position();
                 window.set_cursor_line(line as i32);
@@ -1676,11 +1784,11 @@ fn main() -> anyhow::Result<()> {
                 window.set_can_undo(editor_bridge_redo.can_redo());
                 window.set_can_redo(editor_bridge_redo.can_redo());
                 update_visible_lines(&window, &editor_bridge_redo);
-                
+
                 // Update g-code content
                 let content = editor_bridge_redo.get_text();
                 window.set_gcode_content(slint::SharedString::from(content));
-                
+
                 // Update cursor position
                 let (line, col) = editor_bridge_redo.cursor_position();
                 window.set_cursor_line(line as i32);
@@ -1693,7 +1801,6 @@ fn main() -> anyhow::Result<()> {
     let window_weak = main_window.as_weak();
     let editor_bridge_scroll = editor_bridge.clone();
     main_window.on_scroll_changed(move |line| {
-        eprintln!("SCROLL: line={}", line);
         tracing::debug!("scroll_changed callback: line={}", line);
         editor_bridge_scroll.scroll_to_line(line as usize);
         if let Some(window) = window_weak.upgrade() {
@@ -1717,6 +1824,8 @@ fn main() -> anyhow::Result<()> {
     main_window.on_clear_editor(move || {
         editor_bridge_clear.load_text("");
         if let Some(window) = window_weak.upgrade() {
+            let line_count = editor_bridge_clear.line_count();
+            window.set_total_lines(line_count as i32);
             update_visible_lines(&window, &editor_bridge_clear);
         }
     });
@@ -1732,7 +1841,28 @@ fn main() -> anyhow::Result<()> {
         };
         editor_bridge_append.load_text(&new_text);
         if let Some(window) = window_weak.upgrade() {
+            let line_count = editor_bridge_append.line_count();
+            window.set_total_lines(line_count as i32);
             update_visible_lines(&window, &editor_bridge_append);
+        }
+    });
+
+    let window_weak = main_window.as_weak();
+    let editor_bridge_loader = editor_bridge.clone();
+    main_window.on_load_editor_text(move |text| {
+        let shared = text.clone();
+        let content = text.to_string();
+        editor_bridge_loader.load_text(&content);
+        // Scroll to top
+        editor_bridge_loader.scroll_to_line(0);
+        if let Some(window) = window_weak.upgrade() {
+            window.set_gcode_content(shared);
+            window.set_can_undo(editor_bridge_loader.can_undo());
+            window.set_can_redo(editor_bridge_loader.can_redo());
+            window.set_total_lines(editor_bridge_loader.line_count() as i32);
+            window.set_cursor_line(0);
+            window.set_cursor_column(0);
+            update_visible_lines(&window, &editor_bridge_loader);
         }
     });
 
@@ -1942,7 +2072,7 @@ fn main() -> anyhow::Result<()> {
 
                 setting.value = new_value;
                 dialog.has_unsaved_changes = true;
-            } 
+            }
         },
     );
 
@@ -2394,17 +2524,13 @@ fn main() -> anyhow::Result<()> {
                     .add_message(DeviceMessageType::Error, "✗ Device not connected.");
             } else {
                 // Send unlock command $X to clear alarm state
-                console_manager_clone.add_message(
-                    DeviceMessageType::Output,
-                    "Sending unlock command ($X)...",
-                );
+                console_manager_clone
+                    .add_message(DeviceMessageType::Output, "Sending unlock command ($X)...");
 
                 match comm.send(b"$X\n") {
                     Ok(_) => {
-                        console_manager_clone.add_message(
-                            DeviceMessageType::Success,
-                            "✓ Unlock command sent",
-                        );
+                        console_manager_clone
+                            .add_message(DeviceMessageType::Success, "✓ Unlock command sent");
                     }
                     Err(e) => {
                         warn!("Failed to send unlock command: {}", e);
@@ -2442,46 +2568,53 @@ fn main() -> anyhow::Result<()> {
     let window_weak = main_window.as_weak();
     main_window.on_config_retrieve_settings(move || {
         if let Some(window) = window_weak.upgrade() {
-            window.set_config_status_message(slint::SharedString::from("Retrieving settings from controller..."));
-            
+            window.set_config_status_message(slint::SharedString::from(
+                "Retrieving settings from controller...",
+            ));
+
             // Send $$ command to query settings
             let mut comm = communicator_clone.lock().unwrap();
             if let Err(e) = comm.send(b"$$\n") {
-                window.set_config_status_message(slint::SharedString::from(format!("Error: {}", e)));
+                window
+                    .set_config_status_message(slint::SharedString::from(format!("Error: {}", e)));
                 return;
             }
-            
+
             // Brief delay for response
             std::thread::sleep(std::time::Duration::from_millis(100));
-            
+
             // Read response
             match comm.receive() {
                 Ok(response) => {
                     let response_str = String::from_utf8_lossy(&response);
                     let mut settings = Vec::new();
-                    
+
                     // Parse each line
                     for line in response_str.lines() {
                         if let Some(setting) = parse_grbl_setting_line(line) {
                             settings.push(setting);
                         }
                     }
-                    
+
                     // Convert to Slint model
                     let settings_model = Rc::new(VecModel::from(settings.clone()));
                     window.set_config_settings(slint::ModelRc::from(settings_model));
-                    
+
                     // Initialize filtered settings to show all
                     let filtered_model = Rc::new(VecModel::from(settings));
                     window.set_config_filtered_settings(slint::ModelRc::from(filtered_model));
-                    
+
                     window.set_config_has_loaded_settings(true);
-                    window.set_config_status_message(slint::SharedString::from(
-                        format!("Retrieved {} settings from controller", window.get_config_settings().row_count())
-                    ));
+                    window.set_config_status_message(slint::SharedString::from(format!(
+                        "Retrieved {} settings from controller",
+                        window.get_config_settings().row_count()
+                    )));
                 }
                 Err(e) => {
-                    window.set_config_status_message(slint::SharedString::from(format!("Error reading response: {}", e)));
+                    window.set_config_status_message(slint::SharedString::from(format!(
+                        "Error reading response: {}",
+                        e
+                    )));
                 }
             }
         }
@@ -2492,10 +2625,12 @@ fn main() -> anyhow::Result<()> {
         if let Some(window) = window_weak.upgrade() {
             // Check if we have settings to save
             if window.get_config_settings().row_count() == 0 {
-                window.set_config_status_message(slint::SharedString::from("No settings to save. Retrieve settings first."));
+                window.set_config_status_message(slint::SharedString::from(
+                    "No settings to save. Retrieve settings first.",
+                ));
                 return;
             }
-            
+
             // Open file dialog
             if let Some(path) = rfd::FileDialog::new()
                 .set_file_name("grbl_config.json")
@@ -2505,7 +2640,7 @@ fn main() -> anyhow::Result<()> {
                 // Build JSON structure
                 let settings_model = window.get_config_settings();
                 let mut settings_json = Vec::new();
-                
+
                 for i in 0..settings_model.row_count() {
                     if let Some(setting) = settings_model.row_data(i) {
                         settings_json.push(serde_json::json!({
@@ -2518,7 +2653,7 @@ fn main() -> anyhow::Result<()> {
                         }));
                     }
                 }
-                
+
                 let backup = serde_json::json!({
                     "timestamp": chrono::Utc::now().to_rfc3339(),
                     "firmware_type": "GRBL",
@@ -2527,7 +2662,7 @@ fn main() -> anyhow::Result<()> {
                     "settings": settings_json,
                     "notes": "Configuration backup from GCodeKit4",
                 });
-                
+
                 // Write to file
                 match std::fs::write(&path, serde_json::to_string_pretty(&backup).unwrap()) {
                     Ok(_) => {
@@ -2562,7 +2697,7 @@ fn main() -> anyhow::Result<()> {
                         match serde_json::from_str::<serde_json::Value>(&contents) {
                             Ok(json) => {
                                 let mut settings = Vec::new();
-                                
+
                                 if let Some(settings_array) = json["settings"].as_array() {
                                     for setting_json in settings_array {
                                         if let (Some(number), Some(name), Some(value)) = (
@@ -2575,40 +2710,47 @@ fn main() -> anyhow::Result<()> {
                                                 name: slint::SharedString::from(name),
                                                 value: slint::SharedString::from(value),
                                                 unit: slint::SharedString::from(
-                                                    setting_json["unit"].as_str().unwrap_or("")
+                                                    setting_json["unit"].as_str().unwrap_or(""),
                                                 ),
                                                 description: slint::SharedString::from(
-                                                    setting_json["description"].as_str().unwrap_or("")
+                                                    setting_json["description"]
+                                                        .as_str()
+                                                        .unwrap_or(""),
                                                 ),
                                                 category: slint::SharedString::from(
-                                                    setting_json["category"].as_str().unwrap_or("Other")
+                                                    setting_json["category"]
+                                                        .as_str()
+                                                        .unwrap_or("Other"),
                                                 ),
                                                 read_only: false,
                                             });
                                         }
                                     }
                                 }
-                                
+
                                 // Update UI
                                 let settings_model = Rc::new(VecModel::from(settings.clone()));
                                 window.set_config_settings(slint::ModelRc::from(settings_model));
-                                
+
                                 // Initialize filtered settings to show all
                                 let filtered_model = Rc::new(VecModel::from(settings));
-                                window.set_config_filtered_settings(slint::ModelRc::from(filtered_model));
-                                
+                                window.set_config_filtered_settings(slint::ModelRc::from(
+                                    filtered_model,
+                                ));
+
                                 window.set_config_has_loaded_settings(true);
-                                window.set_config_status_message(slint::SharedString::from(format!(
-                                    "Loaded {} settings from {}",
-                                    window.get_config_settings().row_count(),
-                                    path.display()
-                                )));
+                                window.set_config_status_message(slint::SharedString::from(
+                                    format!(
+                                        "Loaded {} settings from {}",
+                                        window.get_config_settings().row_count(),
+                                        path.display()
+                                    ),
+                                ));
                             }
                             Err(e) => {
-                                window.set_config_status_message(slint::SharedString::from(format!(
-                                    "Error parsing JSON: {}",
-                                    e
-                                )));
+                                window.set_config_status_message(slint::SharedString::from(
+                                    format!("Error parsing JSON: {}", e),
+                                ));
                             }
                         }
                     }
@@ -2629,29 +2771,33 @@ fn main() -> anyhow::Result<()> {
         if let Some(window) = window_weak.upgrade() {
             // Check if we have settings to restore
             if window.get_config_settings().row_count() == 0 {
-                window.set_config_status_message(slint::SharedString::from("No settings to restore. Load settings first."));
+                window.set_config_status_message(slint::SharedString::from(
+                    "No settings to restore. Load settings first.",
+                ));
                 return;
             }
-            
-            window.set_config_status_message(slint::SharedString::from("Restoring settings to controller..."));
-            
+
+            window.set_config_status_message(slint::SharedString::from(
+                "Restoring settings to controller...",
+            ));
+
             // Get all settings from model
             let settings_model = window.get_config_settings();
             let mut success_count = 0;
             let mut error_count = 0;
-            
+
             let mut comm = communicator_clone.lock().unwrap();
-            
+
             for i in 0..settings_model.row_count() {
                 if let Some(setting) = settings_model.row_data(i) {
                     // Skip read-only settings
                     if setting.read_only {
                         continue;
                     }
-                    
+
                     // Send $n=value command
                     let command = format!("${}={}\n", setting.number, setting.value.as_str());
-                    
+
                     match comm.send(command.as_bytes()) {
                         Ok(_) => {
                             // Brief delay between commands
@@ -2664,7 +2810,7 @@ fn main() -> anyhow::Result<()> {
                     }
                 }
             }
-            
+
             // Show results
             if error_count == 0 {
                 window.set_config_status_message(slint::SharedString::from(format!(
@@ -2674,8 +2820,7 @@ fn main() -> anyhow::Result<()> {
             } else {
                 window.set_config_status_message(slint::SharedString::from(format!(
                     "Restored {} settings, {} errors",
-                    success_count,
-                    error_count
+                    success_count, error_count
                 )));
             }
         }
@@ -2716,7 +2861,7 @@ fn main() -> anyhow::Result<()> {
                     DeviceMessageType::Output,
                     format!("Updating setting ${} to {}", number, value),
                 );
-                
+
                 match comm.send(command.as_bytes()) {
                     Ok(_) => {
                         std::thread::sleep(std::time::Duration::from_millis(100));
@@ -2724,13 +2869,13 @@ fn main() -> anyhow::Result<()> {
                             let response_str = String::from_utf8_lossy(&response);
                             if response_str.contains("ok") {
                                 window.set_config_status_message(slint::SharedString::from(
-                                    format!("✓ Setting ${} updated successfully", number)
+                                    format!("✓ Setting ${} updated successfully", number),
                                 ));
                                 console_manager_clone.add_message(
                                     DeviceMessageType::Success,
                                     format!("✓ Setting ${} updated to {}", number, value),
                                 );
-                                
+
                                 // Update the setting in the model
                                 let settings_model = window.get_config_settings();
                                 let mut updated_settings = Vec::new();
@@ -2745,12 +2890,12 @@ fn main() -> anyhow::Result<()> {
                                 use slint::{Model, ModelRc, VecModel};
                                 let new_model = Rc::new(VecModel::from(updated_settings));
                                 window.set_config_settings(ModelRc::from(new_model));
-                                
+
                                 // Trigger filter update to refresh display
                                 window.invoke_config_filter_changed();
                             } else {
                                 window.set_config_status_message(slint::SharedString::from(
-                                    format!("✗ Failed to update setting ${}", number)
+                                    format!("✗ Failed to update setting ${}", number),
                                 ));
                                 console_manager_clone.add_message(
                                     DeviceMessageType::Error,
@@ -2760,20 +2905,22 @@ fn main() -> anyhow::Result<()> {
                         }
                     }
                     Err(e) => {
-                        window.set_config_status_message(slint::SharedString::from(
-                            format!("✗ Communication error: {}", e)
-                        ));
+                        window.set_config_status_message(slint::SharedString::from(format!(
+                            "✗ Communication error: {}",
+                            e
+                        )));
                         console_manager_clone.add_message(
                             DeviceMessageType::Error,
                             format!("✗ Failed to send command: {}", e),
                         );
                     }
                 }
-                
+
                 let console_output = console_manager_clone.get_output();
                 window.set_console_output(slint::SharedString::from(console_output));
             } else {
-                window.set_config_status_message(slint::SharedString::from("✗ Device not connected"));
+                window
+                    .set_config_status_message(slint::SharedString::from("✗ Device not connected"));
             }
         }
     });
@@ -2784,39 +2931,45 @@ fn main() -> anyhow::Result<()> {
             // Get filter text and category
             let filter_text = window.get_config_filter_text();
             let category = window.get_config_selected_category();
-            
-            debug!("Filter changed - text: '{}', category: '{}'", filter_text, category);
-            
+
+            debug!(
+                "Filter changed - text: '{}', category: '{}'",
+                filter_text, category
+            );
+
             let settings_model = window.get_config_settings();
             let mut filtered = Vec::new();
-            
+
             let filter_lower = filter_text.to_lowercase();
-            
+
             debug!("Total settings: {}", settings_model.row_count());
-            
+
             for i in 0..settings_model.row_count() {
                 if let Some(setting) = settings_model.row_data(i) {
                     // Check category filter
-                    let category_match = category == "All" || setting.category.as_str() == category.as_str();
-                    
+                    let category_match =
+                        category == "All" || setting.category.as_str() == category.as_str();
+
                     // Check text filter (matches ID, name, value, or description)
-                    let text_match = filter_lower.is_empty() || 
-                        format!("${}", setting.number).to_lowercase().contains(&filter_lower) ||
-                        setting.name.to_lowercase().contains(&filter_lower) ||
-                        setting.value.to_lowercase().contains(&filter_lower) ||
-                        setting.description.to_lowercase().contains(&filter_lower);
-                    
+                    let text_match = filter_lower.is_empty()
+                        || format!("${}", setting.number)
+                            .to_lowercase()
+                            .contains(&filter_lower)
+                        || setting.name.to_lowercase().contains(&filter_lower)
+                        || setting.value.to_lowercase().contains(&filter_lower)
+                        || setting.description.to_lowercase().contains(&filter_lower);
+
                     if category_match && text_match {
                         filtered.push(setting);
                     }
                 }
             }
-            
+
             // Update filtered settings
             debug!("Filtered settings count: {}", filtered.len());
             let filtered_model = Rc::new(VecModel::from(filtered));
             window.set_config_filtered_settings(slint::ModelRc::from(filtered_model));
-            
+
             // Update status message to show filter is working
             window.set_config_status_message(slint::SharedString::from(format!(
                 "Showing {} of {} settings",
@@ -2842,7 +2995,7 @@ fn main() -> anyhow::Result<()> {
         if let Some(window) = window_weak.upgrade() {
             window.set_current_view(slint::SharedString::from("gcode-visualizer"));
             window.set_connection_status(slint::SharedString::from("Visualizer panel activated"));
-            
+
             // Defer refresh to allow canvas to be laid out first
             let window_weak_timer = window.as_weak();
             slint::Timer::single_shot(std::time::Duration::from_millis(50), move || {
@@ -2908,16 +3061,18 @@ fn main() -> anyhow::Result<()> {
     main_window.on_create_material(move |material_data| {
         if let Some(window) = window_weak.upgrade() {
             let mut backend = materials_backend_clone.borrow_mut();
-            
+
             // Convert UI material to backend material
-            if let Some(category) = gcodekit4::ui::materials_manager_backend::string_to_category(&material_data.category.to_string()) {
+            if let Some(category) = gcodekit4::ui::materials_manager_backend::string_to_category(
+                &material_data.category.to_string(),
+            ) {
                 let mut material = gcodekit4::data::materials::Material::new(
                     gcodekit4::data::materials::MaterialId(material_data.id.to_string()),
                     material_data.name.to_string(),
                     category,
                     material_data.subcategory.to_string(),
                 );
-                
+
                 material.description = material_data.description.to_string();
                 material.density = material_data.density;
                 material.machinability_rating = material_data.machinability_rating as u8;
@@ -2931,18 +3086,35 @@ fn main() -> anyhow::Result<()> {
                 } else {
                     None
                 };
-                material.chip_type = gcodekit4::ui::materials_manager_backend::string_to_chip_type(&material_data.chip_type.to_string());
-                material.heat_sensitivity = gcodekit4::ui::materials_manager_backend::string_to_heat_sensitivity(&material_data.heat_sensitivity.to_string());
-                material.abrasiveness = gcodekit4::ui::materials_manager_backend::string_to_abrasiveness(&material_data.abrasiveness.to_string());
-                material.surface_finish = gcodekit4::ui::materials_manager_backend::string_to_surface_finish(&material_data.surface_finish.to_string());
-                material.dust_hazard = gcodekit4::ui::materials_manager_backend::string_to_hazard_level(&material_data.dust_hazard.to_string());
-                material.fume_hazard = gcodekit4::ui::materials_manager_backend::string_to_hazard_level(&material_data.fume_hazard.to_string());
+                material.chip_type = gcodekit4::ui::materials_manager_backend::string_to_chip_type(
+                    &material_data.chip_type.to_string(),
+                );
+                material.heat_sensitivity =
+                    gcodekit4::ui::materials_manager_backend::string_to_heat_sensitivity(
+                        &material_data.heat_sensitivity.to_string(),
+                    );
+                material.abrasiveness =
+                    gcodekit4::ui::materials_manager_backend::string_to_abrasiveness(
+                        &material_data.abrasiveness.to_string(),
+                    );
+                material.surface_finish =
+                    gcodekit4::ui::materials_manager_backend::string_to_surface_finish(
+                        &material_data.surface_finish.to_string(),
+                    );
+                material.dust_hazard =
+                    gcodekit4::ui::materials_manager_backend::string_to_hazard_level(
+                        &material_data.dust_hazard.to_string(),
+                    );
+                material.fume_hazard =
+                    gcodekit4::ui::materials_manager_backend::string_to_hazard_level(
+                        &material_data.fume_hazard.to_string(),
+                    );
                 material.coolant_required = material_data.coolant_required;
                 material.custom = true;
                 material.notes = material_data.notes.to_string();
-                
+
                 backend.add_material(material);
-                
+
                 // Reload the materials list
                 let materials = backend.get_all_materials();
                 let materials_ui: Vec<MaterialData> = materials
@@ -2979,15 +3151,17 @@ fn main() -> anyhow::Result<()> {
         if let Some(window) = window_weak.upgrade() {
             // Same as create_material since add_material will replace if ID exists
             let mut backend = materials_backend_clone.borrow_mut();
-            
-            if let Some(category) = gcodekit4::ui::materials_manager_backend::string_to_category(&material_data.category.to_string()) {
+
+            if let Some(category) = gcodekit4::ui::materials_manager_backend::string_to_category(
+                &material_data.category.to_string(),
+            ) {
                 let mut material = gcodekit4::data::materials::Material::new(
                     gcodekit4::data::materials::MaterialId(material_data.id.to_string()),
                     material_data.name.to_string(),
                     category,
                     material_data.subcategory.to_string(),
                 );
-                
+
                 material.description = material_data.description.to_string();
                 material.density = material_data.density;
                 material.machinability_rating = material_data.machinability_rating as u8;
@@ -3001,18 +3175,35 @@ fn main() -> anyhow::Result<()> {
                 } else {
                     None
                 };
-                material.chip_type = gcodekit4::ui::materials_manager_backend::string_to_chip_type(&material_data.chip_type.to_string());
-                material.heat_sensitivity = gcodekit4::ui::materials_manager_backend::string_to_heat_sensitivity(&material_data.heat_sensitivity.to_string());
-                material.abrasiveness = gcodekit4::ui::materials_manager_backend::string_to_abrasiveness(&material_data.abrasiveness.to_string());
-                material.surface_finish = gcodekit4::ui::materials_manager_backend::string_to_surface_finish(&material_data.surface_finish.to_string());
-                material.dust_hazard = gcodekit4::ui::materials_manager_backend::string_to_hazard_level(&material_data.dust_hazard.to_string());
-                material.fume_hazard = gcodekit4::ui::materials_manager_backend::string_to_hazard_level(&material_data.fume_hazard.to_string());
+                material.chip_type = gcodekit4::ui::materials_manager_backend::string_to_chip_type(
+                    &material_data.chip_type.to_string(),
+                );
+                material.heat_sensitivity =
+                    gcodekit4::ui::materials_manager_backend::string_to_heat_sensitivity(
+                        &material_data.heat_sensitivity.to_string(),
+                    );
+                material.abrasiveness =
+                    gcodekit4::ui::materials_manager_backend::string_to_abrasiveness(
+                        &material_data.abrasiveness.to_string(),
+                    );
+                material.surface_finish =
+                    gcodekit4::ui::materials_manager_backend::string_to_surface_finish(
+                        &material_data.surface_finish.to_string(),
+                    );
+                material.dust_hazard =
+                    gcodekit4::ui::materials_manager_backend::string_to_hazard_level(
+                        &material_data.dust_hazard.to_string(),
+                    );
+                material.fume_hazard =
+                    gcodekit4::ui::materials_manager_backend::string_to_hazard_level(
+                        &material_data.fume_hazard.to_string(),
+                    );
                 material.coolant_required = material_data.coolant_required;
                 material.custom = material_data.custom;
                 material.notes = material_data.notes.to_string();
-                
+
                 backend.add_material(material);
-                
+
                 // Reload the materials list
                 let materials = backend.get_all_materials();
                 let materials_ui: Vec<MaterialData> = materials
@@ -3049,7 +3240,7 @@ fn main() -> anyhow::Result<()> {
         if let Some(window) = window_weak.upgrade() {
             let mut backend = materials_backend_clone.borrow_mut();
             backend.remove_material(&gcodekit4::data::materials::MaterialId(id.to_string()));
-            
+
             // Reload the materials list
             let materials = backend.get_all_materials();
             let materials_ui: Vec<MaterialData> = materials
@@ -3117,7 +3308,9 @@ fn main() -> anyhow::Result<()> {
     main_window.on_filter_by_category(move |category| {
         if let Some(window) = window_weak.upgrade() {
             let backend = materials_backend_clone.borrow();
-            if let Some(mat_category) = gcodekit4::ui::materials_manager_backend::string_to_category(&category.to_string()) {
+            if let Some(mat_category) =
+                gcodekit4::ui::materials_manager_backend::string_to_category(&category.to_string())
+            {
                 let materials = backend.filter_by_category(mat_category);
                 let materials_ui: Vec<MaterialData> = materials
                     .iter()
@@ -3174,7 +3367,12 @@ fn main() -> anyhow::Result<()> {
                     flute_length: t.flute_length,
                     shaft_diameter: t.shaft_diameter.unwrap_or(t.diameter),
                     flutes: t.flutes as i32,
-                    coating: t.coating.as_ref().map(|c| format!("{}", c)).unwrap_or_else(|| "None".to_string()).into(),
+                    coating: t
+                        .coating
+                        .as_ref()
+                        .map(|c| format!("{}", c))
+                        .unwrap_or_else(|| "None".to_string())
+                        .into(),
                     manufacturer: t.manufacturer.clone().unwrap_or_default().into(),
                     part_number: t.part_number.clone().unwrap_or_default().into(),
                     description: t.description.clone().into(),
@@ -3191,10 +3389,13 @@ fn main() -> anyhow::Result<()> {
     main_window.on_create_tool(move |tool_data| {
         if let Some(window) = window_weak.upgrade() {
             let mut backend = tools_backend_clone.borrow_mut();
-            
-            if let Some(tool_type) = gcodekit4::ui::tools_manager_backend::string_to_tool_type(&tool_data.tool_type.to_string()) {
-                let tool_id = gcodekit4::data::tools::ToolId(format!("custom_{}", tool_data.number));
-                
+
+            if let Some(tool_type) = gcodekit4::ui::tools_manager_backend::string_to_tool_type(
+                &tool_data.tool_type.to_string(),
+            ) {
+                let tool_id =
+                    gcodekit4::data::tools::ToolId(format!("custom_{}", tool_data.number));
+
                 let mut tool = gcodekit4::data::tools::Tool::new(
                     tool_id,
                     tool_data.number as u32,
@@ -3203,23 +3404,27 @@ fn main() -> anyhow::Result<()> {
                     tool_data.diameter,
                     tool_data.length,
                 );
-                
+
                 tool.flute_length = tool_data.flute_length;
                 tool.shaft_diameter = Some(tool_data.shaft_diameter);
                 tool.flutes = tool_data.flutes as u32;
-                
-                if let Some(material) = gcodekit4::ui::tools_manager_backend::string_to_tool_material(&tool_data.material.to_string()) {
+
+                if let Some(material) =
+                    gcodekit4::ui::tools_manager_backend::string_to_tool_material(
+                        &tool_data.material.to_string(),
+                    )
+                {
                     tool.material = material;
                 }
-                
+
                 tool.manufacturer = Some(tool_data.manufacturer.to_string());
                 tool.part_number = Some(tool_data.part_number.to_string());
                 tool.description = tool_data.description.to_string();
                 tool.notes = tool_data.notes.to_string();
                 tool.custom = true;
-                
+
                 backend.add_tool(tool);
-                
+
                 // Reload tools list
                 let tools = backend.get_all_tools();
                 let tools_ui: Vec<ToolData> = tools
@@ -3235,7 +3440,12 @@ fn main() -> anyhow::Result<()> {
                         flute_length: t.flute_length,
                         shaft_diameter: t.shaft_diameter.unwrap_or(t.diameter),
                         flutes: t.flutes as i32,
-                        coating: t.coating.as_ref().map(|c| format!("{}", c)).unwrap_or_else(|| "None".to_string()).into(),
+                        coating: t
+                            .coating
+                            .as_ref()
+                            .map(|c| format!("{}", c))
+                            .unwrap_or_else(|| "None".to_string())
+                            .into(),
                         manufacturer: t.manufacturer.clone().unwrap_or_default().into(),
                         part_number: t.part_number.clone().unwrap_or_default().into(),
                         description: t.description.clone().into(),
@@ -3253,10 +3463,12 @@ fn main() -> anyhow::Result<()> {
     main_window.on_update_tool(move |tool_data| {
         if let Some(window) = window_weak.upgrade() {
             let mut backend = tools_backend_clone.borrow_mut();
-            
-            if let Some(tool_type) = gcodekit4::ui::tools_manager_backend::string_to_tool_type(&tool_data.tool_type.to_string()) {
+
+            if let Some(tool_type) = gcodekit4::ui::tools_manager_backend::string_to_tool_type(
+                &tool_data.tool_type.to_string(),
+            ) {
                 let tool_id = gcodekit4::data::tools::ToolId(tool_data.id.to_string());
-                
+
                 let mut tool = gcodekit4::data::tools::Tool::new(
                     tool_id,
                     tool_data.number as u32,
@@ -3265,23 +3477,27 @@ fn main() -> anyhow::Result<()> {
                     tool_data.diameter,
                     tool_data.length,
                 );
-                
+
                 tool.flute_length = tool_data.flute_length;
                 tool.shaft_diameter = Some(tool_data.shaft_diameter);
                 tool.flutes = tool_data.flutes as u32;
-                
-                if let Some(material) = gcodekit4::ui::tools_manager_backend::string_to_tool_material(&tool_data.material.to_string()) {
+
+                if let Some(material) =
+                    gcodekit4::ui::tools_manager_backend::string_to_tool_material(
+                        &tool_data.material.to_string(),
+                    )
+                {
                     tool.material = material;
                 }
-                
+
                 tool.manufacturer = Some(tool_data.manufacturer.to_string());
                 tool.part_number = Some(tool_data.part_number.to_string());
                 tool.description = tool_data.description.to_string();
                 tool.notes = tool_data.notes.to_string();
                 tool.custom = tool_data.custom;
-                
+
                 backend.add_tool(tool);
-                
+
                 // Reload tools list
                 let tools = backend.get_all_tools();
                 let tools_ui: Vec<ToolData> = tools
@@ -3297,7 +3513,12 @@ fn main() -> anyhow::Result<()> {
                         flute_length: t.flute_length,
                         shaft_diameter: t.shaft_diameter.unwrap_or(t.diameter),
                         flutes: t.flutes as i32,
-                        coating: t.coating.as_ref().map(|c| format!("{}", c)).unwrap_or_else(|| "None".to_string()).into(),
+                        coating: t
+                            .coating
+                            .as_ref()
+                            .map(|c| format!("{}", c))
+                            .unwrap_or_else(|| "None".to_string())
+                            .into(),
                         manufacturer: t.manufacturer.clone().unwrap_or_default().into(),
                         part_number: t.part_number.clone().unwrap_or_default().into(),
                         description: t.description.clone().into(),
@@ -3316,7 +3537,7 @@ fn main() -> anyhow::Result<()> {
         if let Some(window) = window_weak.upgrade() {
             let mut backend = tools_backend_clone.borrow_mut();
             backend.remove_tool(&gcodekit4::data::tools::ToolId(id.to_string()));
-            
+
             // Reload tools list
             let tools = backend.get_all_tools();
             let tools_ui: Vec<ToolData> = tools
@@ -3332,7 +3553,12 @@ fn main() -> anyhow::Result<()> {
                     flute_length: t.flute_length,
                     shaft_diameter: t.shaft_diameter.unwrap_or(t.diameter),
                     flutes: t.flutes as i32,
-                    coating: t.coating.as_ref().map(|c| format!("{}", c)).unwrap_or_else(|| "None".to_string()).into(),
+                    coating: t
+                        .coating
+                        .as_ref()
+                        .map(|c| format!("{}", c))
+                        .unwrap_or_else(|| "None".to_string())
+                        .into(),
                     manufacturer: t.manufacturer.clone().unwrap_or_default().into(),
                     part_number: t.part_number.clone().unwrap_or_default().into(),
                     description: t.description.clone().into(),
@@ -3363,7 +3589,12 @@ fn main() -> anyhow::Result<()> {
                     flute_length: t.flute_length,
                     shaft_diameter: t.shaft_diameter.unwrap_or(t.diameter),
                     flutes: t.flutes as i32,
-                    coating: t.coating.as_ref().map(|c| format!("{}", c)).unwrap_or_else(|| "None".to_string()).into(),
+                    coating: t
+                        .coating
+                        .as_ref()
+                        .map(|c| format!("{}", c))
+                        .unwrap_or_else(|| "None".to_string())
+                        .into(),
                     manufacturer: t.manufacturer.clone().unwrap_or_default().into(),
                     part_number: t.part_number.clone().unwrap_or_default().into(),
                     description: t.description.clone().into(),
@@ -3380,7 +3611,9 @@ fn main() -> anyhow::Result<()> {
     main_window.on_filter_by_tool_type(move |tool_type| {
         if let Some(window) = window_weak.upgrade() {
             let backend = tools_backend_clone.borrow();
-            if let Some(tt) = gcodekit4::ui::tools_manager_backend::string_to_tool_type(&tool_type.to_string()) {
+            if let Some(tt) =
+                gcodekit4::ui::tools_manager_backend::string_to_tool_type(&tool_type.to_string())
+            {
                 let tools = backend.filter_by_type(tt);
                 let tools_ui: Vec<ToolData> = tools
                     .iter()
@@ -3395,7 +3628,12 @@ fn main() -> anyhow::Result<()> {
                         flute_length: t.flute_length,
                         shaft_diameter: t.shaft_diameter.unwrap_or(t.diameter),
                         flutes: t.flutes as i32,
-                        coating: t.coating.as_ref().map(|c| format!("{}", c)).unwrap_or_else(|| "None".to_string()).into(),
+                        coating: t
+                            .coating
+                            .as_ref()
+                            .map(|c| format!("{}", c))
+                            .unwrap_or_else(|| "None".to_string())
+                            .into(),
                         manufacturer: t.manufacturer.clone().unwrap_or_default().into(),
                         part_number: t.part_number.clone().unwrap_or_default().into(),
                         description: t.description.clone().into(),
@@ -3426,10 +3664,10 @@ fn main() -> anyhow::Result<()> {
                 .add_filter("All Files", &["*"])
                 .set_title("Import GTC Tool Catalog")
                 .pick_file();
-            
+
             if let Some(file_path) = file_result {
                 let mut backend = tools_backend_clone.borrow_mut();
-                
+
                 // Determine file type and import
                 let extension = file_path.extension().and_then(|s| s.to_str());
                 let result = match extension {
@@ -3440,7 +3678,7 @@ fn main() -> anyhow::Result<()> {
                         return;
                     }
                 };
-                
+
                 match result {
                     Ok(import_result) => {
                         tracing::info!(
@@ -3449,14 +3687,14 @@ fn main() -> anyhow::Result<()> {
                             import_result.total_tools,
                             import_result.skipped_tools
                         );
-                        
+
                         if !import_result.errors.is_empty() {
                             tracing::warn!("Import errors:");
                             for error in &import_result.errors {
                                 tracing::warn!("  {}", error);
                             }
                         }
-                        
+
                         // Reload tools list
                         let tools = backend.get_all_tools();
                         let tools_ui: Vec<ToolData> = tools
@@ -3472,7 +3710,12 @@ fn main() -> anyhow::Result<()> {
                                 flute_length: t.flute_length,
                                 shaft_diameter: t.shaft_diameter.unwrap_or(t.diameter),
                                 flutes: t.flutes as i32,
-                                coating: t.coating.as_ref().map(|c| format!("{}", c)).unwrap_or_else(|| "None".to_string()).into(),
+                                coating: t
+                                    .coating
+                                    .as_ref()
+                                    .map(|c| format!("{}", c))
+                                    .unwrap_or_else(|| "None".to_string())
+                                    .into(),
                                 manufacturer: t.manufacturer.clone().unwrap_or_default().into(),
                                 part_number: t.part_number.clone().unwrap_or_default().into(),
                                 description: t.description.clone().into(),
@@ -3481,9 +3724,12 @@ fn main() -> anyhow::Result<()> {
                             })
                             .collect();
                         window.set_cnc_tools(slint::ModelRc::new(VecModel::from(tools_ui)));
-                        
+
                         // Show success message
-                        tracing::info!("Successfully imported {} tools from GTC catalog", import_result.imported_tools.len());
+                        tracing::info!(
+                            "Successfully imported {} tools from GTC catalog",
+                            import_result.imported_tools.len()
+                        );
                     }
                     Err(e) => {
                         tracing::error!("Failed to import GTC catalog: {}", e);
@@ -3544,16 +3790,14 @@ fn main() -> anyhow::Result<()> {
     let window_weak = main_window.as_weak();
     main_window.on_send_command(move |command: slint::SharedString| {
         let cmd = command.to_string();
-        
+
         // Send command to device
         let mut comm = communicator_clone.lock().unwrap();
         if comm.is_connected() {
             match comm.send_command(&cmd) {
                 Ok(_) => {
-                    console_manager_clone.add_message(
-                        DeviceMessageType::Command,
-                        format!(">>> {}", cmd),
-                    );
+                    console_manager_clone
+                        .add_message(DeviceMessageType::Command, format!(">>> {}", cmd));
                     if let Some(window) = window_weak.upgrade() {
                         let console_output = console_manager_clone.get_output();
                         window.set_console_output(slint::SharedString::from(console_output));
@@ -3571,10 +3815,7 @@ fn main() -> anyhow::Result<()> {
                 }
             }
         } else {
-            console_manager_clone.add_message(
-                DeviceMessageType::Error,
-                "Not connected to device",
-            );
+            console_manager_clone.add_message(DeviceMessageType::Error, "Not connected to device");
             if let Some(window) = window_weak.upgrade() {
                 let console_output = console_manager_clone.get_output();
                 window.set_console_output(slint::SharedString::from(console_output));
@@ -3735,21 +3976,23 @@ fn main() -> anyhow::Result<()> {
         if let Some(window) = window_weak.upgrade() {
             window.set_is_busy(true);
         }
-        
+
         let window_weak_inner = window_weak.clone();
         let designer_mgr_inner = designer_mgr_clone.clone();
-        
+
         // Use timer to allow UI to update cursor before blocking operation
         slint::Timer::single_shot(std::time::Duration::from_millis(50), move || {
             let gcode = {
                 let mut state = designer_mgr_inner.borrow_mut();
                 state.generate_gcode()
             };
-            
+
             if let Some(window) = window_weak_inner.upgrade() {
                 window.set_designer_generated_gcode(slint::SharedString::from(gcode));
                 window.set_designer_gcode_generated(true);
-                window.set_connection_status(slint::SharedString::from("G-code generated successfully"));
+                window.set_connection_status(slint::SharedString::from(
+                    "G-code generated successfully",
+                ));
                 window.set_is_busy(false);
             }
         });
@@ -3762,21 +4005,22 @@ fn main() -> anyhow::Result<()> {
         if let Some(window) = window_weak.upgrade() {
             window.set_is_busy(true);
         }
-        
+
         let window_weak_inner = window_weak.clone();
         let designer_mgr_inner = designer_mgr_clone.clone();
-        
+
         // Use timer to allow UI to update cursor before blocking operation
         slint::Timer::single_shot(std::time::Duration::from_millis(50), move || {
             let gcode = {
                 let mut state = designer_mgr_inner.borrow_mut();
                 state.generate_gcode()
             };
-            
+
             if let Some(window) = window_weak_inner.upgrade() {
                 window.set_gcode_content(slint::SharedString::from(gcode));
                 window.set_current_view(slint::SharedString::from("gcode-editor"));
-                window.set_connection_status(slint::SharedString::from("G-code exported to editor"));
+                window
+                    .set_connection_status(slint::SharedString::from("G-code exported to editor"));
                 window.set_is_busy(false);
             }
         });
@@ -3786,9 +4030,9 @@ fn main() -> anyhow::Result<()> {
     let window_weak = main_window.as_weak();
     let designer_mgr_clone = designer_mgr.clone();
     main_window.on_designer_import_dxf(move || {
-        use rfd::FileDialog;
         use gcodekit4::designer::{DxfImporter, DxfParser};
-        
+        use rfd::FileDialog;
+
         if let Some(path) = FileDialog::new()
             .add_filter("DXF Files", &["dxf"])
             .set_title("Import DXF File")
@@ -3796,41 +4040,43 @@ fn main() -> anyhow::Result<()> {
         {
             if let Some(window) = window_weak.upgrade() {
                 match std::fs::read_to_string(&path) {
-                    Ok(content) => {
-                        match DxfParser::parse(&content) {
-                            Ok(dxf_file) => {
-                                let importer = DxfImporter::new(1.0, 0.0, 0.0);
-                                match importer.import_string(&content) {
-                                    Ok(design) => {
-                                        let mut state = designer_mgr_clone.borrow_mut();
-                                        for shape in design.shapes {
-                                            state.canvas.add_shape(shape);
-                                        }
-                                        window.set_connection_status(slint::SharedString::from(
-                                            format!("DXF imported: {} entities from {} layers", 
-                                                   dxf_file.entity_count(), 
-                                                   dxf_file.layer_names().len())
-                                        ));
-                                        update_designer_ui(&window, &mut state);
+                    Ok(content) => match DxfParser::parse(&content) {
+                        Ok(dxf_file) => {
+                            let importer = DxfImporter::new(1.0, 0.0, 0.0);
+                            match importer.import_string(&content) {
+                                Ok(design) => {
+                                    let mut state = designer_mgr_clone.borrow_mut();
+                                    for shape in design.shapes {
+                                        state.canvas.add_shape(shape);
                                     }
-                                    Err(e) => {
-                                        window.set_connection_status(slint::SharedString::from(
-                                            format!("DXF import failed: {}", e)
-                                        ));
-                                    }
+                                    window.set_connection_status(slint::SharedString::from(
+                                        format!(
+                                            "DXF imported: {} entities from {} layers",
+                                            dxf_file.entity_count(),
+                                            dxf_file.layer_names().len()
+                                        ),
+                                    ));
+                                    update_designer_ui(&window, &mut state);
+                                }
+                                Err(e) => {
+                                    window.set_connection_status(slint::SharedString::from(
+                                        format!("DXF import failed: {}", e),
+                                    ));
                                 }
                             }
-                            Err(e) => {
-                                window.set_connection_status(slint::SharedString::from(
-                                    format!("DXF parse error: {}", e)
-                                ));
-                            }
                         }
-                    }
+                        Err(e) => {
+                            window.set_connection_status(slint::SharedString::from(format!(
+                                "DXF parse error: {}",
+                                e
+                            )));
+                        }
+                    },
                     Err(e) => {
-                        window.set_connection_status(slint::SharedString::from(
-                            format!("Failed to read file: {}", e)
-                        ));
+                        window.set_connection_status(slint::SharedString::from(format!(
+                            "Failed to read file: {}",
+                            e
+                        )));
                     }
                 }
             }
@@ -3841,9 +4087,9 @@ fn main() -> anyhow::Result<()> {
     let window_weak = main_window.as_weak();
     let designer_mgr_clone = designer_mgr.clone();
     main_window.on_designer_import_svg(move || {
-        use rfd::FileDialog;
         use gcodekit4::designer::SvgImporter;
-        
+        use rfd::FileDialog;
+
         if let Some(path) = FileDialog::new()
             .add_filter("SVG Files", &["svg"])
             .set_title("Import SVG File")
@@ -3861,24 +4107,25 @@ fn main() -> anyhow::Result<()> {
                                 for shape in design.shapes {
                                     state.canvas.add_shape(shape);
                                 }
-                                window.set_connection_status(slint::SharedString::from(
-                                    format!("SVG imported: {} shapes from {} layers", 
-                                           shape_count, 
-                                           layer_count)
-                                ));
+                                window.set_connection_status(slint::SharedString::from(format!(
+                                    "SVG imported: {} shapes from {} layers",
+                                    shape_count, layer_count
+                                )));
                                 update_designer_ui(&window, &mut state);
                             }
                             Err(e) => {
-                                window.set_connection_status(slint::SharedString::from(
-                                    format!("SVG import failed: {}", e)
-                                ));
+                                window.set_connection_status(slint::SharedString::from(format!(
+                                    "SVG import failed: {}",
+                                    e
+                                )));
                             }
                         }
                     }
                     Err(e) => {
-                        window.set_connection_status(slint::SharedString::from(
-                            format!("Failed to read file: {}", e)
-                        ));
+                        window.set_connection_status(slint::SharedString::from(format!(
+                            "Failed to read file: {}",
+                            e
+                        )));
                     }
                 }
             }
@@ -3899,7 +4146,7 @@ fn main() -> anyhow::Result<()> {
     main_window.on_designer_file_new(move || {
         let mut state = designer_mgr_clone.borrow_mut();
         state.new_design();
-        
+
         if let Some(window) = window_weak.upgrade() {
             update_designer_ui(&window, &mut state);
             window.set_connection_status(slint::SharedString::from("New design created"));
@@ -3942,7 +4189,7 @@ fn main() -> anyhow::Result<()> {
     let window_weak = main_window.as_weak();
     main_window.on_designer_file_save(move || {
         let mut state = designer_mgr_clone.borrow_mut();
-        
+
         // If no current file, prompt for filename
         let path = if let Some(existing_path) = &state.current_file_path {
             existing_path.clone()
@@ -3957,7 +4204,7 @@ fn main() -> anyhow::Result<()> {
                 return; // User cancelled
             }
         };
-        
+
         match state.save_to_file(&path) {
             Ok(()) => {
                 if let Some(window) = window_weak.upgrade() {
@@ -4173,10 +4420,10 @@ fn main() -> anyhow::Result<()> {
     main_window.on_designer_set_shift_pressed(move |pressed: bool| {
         *shift_pressed_clone.borrow_mut() = pressed;
     });
-    
+
     // Designer: Save shape properties (corner radius)
     let pending_properties = Rc::new(RefCell::new((0.0f64, 0.0f64, 0.0f64, 0.0f64, 0.0f64)));
-    
+
     let pending_clone = pending_properties.clone();
     main_window.on_designer_update_shape_property(move |prop_id: i32, value: f32| {
         let mut props = pending_clone.borrow_mut();
@@ -4189,7 +4436,7 @@ fn main() -> anyhow::Result<()> {
             _ => {}
         }
     });
-    
+
     let designer_mgr_clone2 = designer_mgr.clone();
     let window_weak2 = main_window.as_weak();
     let pending_clone2 = pending_properties.clone();
@@ -4198,7 +4445,7 @@ fn main() -> anyhow::Result<()> {
         let mut state = designer_mgr_clone2.borrow_mut();
         state.set_selected_position_and_size(props.0, props.1, props.2, props.3);
         state.set_selected_corner_radius(props.4);
-        
+
         if let Some(window) = window_weak2.upgrade() {
             update_designer_ui(&window, &mut state);
         }
@@ -4275,10 +4522,10 @@ fn main() -> anyhow::Result<()> {
     main_window.on_generate_tabbed_box(move || {
         if let Some(main_win) = window_weak.upgrade() {
             let dialog = TabbedBoxDialog::new().unwrap();
-            
+
             // Store dialog in holder to keep it alive
             *dialog_holder.borrow_mut() = Some(dialog.clone_strong());
-            
+
             // Initialize dialog with current values from main window
             dialog.set_box_x(main_win.get_tbox_x());
             dialog.set_box_y(main_win.get_tbox_y());
@@ -4295,7 +4542,7 @@ fn main() -> anyhow::Result<()> {
             dialog.set_laser_passes(main_win.get_tbox_laser_passes());
             dialog.set_laser_power(main_win.get_tbox_laser_power());
             dialog.set_feed_rate(main_win.get_tbox_feed_rate());
-            
+
             // Cancel button callback
             let dialog_weak_cancel = dialog.as_weak();
             dialog.on_cancel_dialog(move || {
@@ -4303,7 +4550,7 @@ fn main() -> anyhow::Result<()> {
                     dlg.hide().ok();
                 }
             });
-            
+
             // Generate button callback
             let main_win_clone = main_win.as_weak();
             let dialog_weak = dialog.as_weak();
@@ -4318,15 +4565,19 @@ fn main() -> anyhow::Result<()> {
                         let burn = dlg.get_burn().parse::<f32>().unwrap_or(0.1);
                         let finger_width = dlg.get_finger_width().parse::<f32>().unwrap_or(2.0);
                         let space_width = dlg.get_space_width().parse::<f32>().unwrap_or(2.0);
-                        let surrounding_spaces = dlg.get_surrounding_spaces().parse::<f32>().unwrap_or(2.0);
+                        let surrounding_spaces =
+                            dlg.get_surrounding_spaces().parse::<f32>().unwrap_or(2.0);
                         let play = dlg.get_play().parse::<f32>().unwrap_or(0.0);
                         let finger_style = FingerStyle::from(dlg.get_finger_style());
                         let box_type = BoxType::from(dlg.get_box_type());
                         let outside = dlg.get_outside_dimensions();
-                        let laser_passes = dlg.get_laser_passes().parse::<i32>().unwrap_or(3).max(1);
-                        let laser_power = dlg.get_laser_power().parse::<i32>().unwrap_or(1000).max(0);
-                        let feed_rate = dlg.get_feed_rate().parse::<f32>().unwrap_or(500.0).max(1.0);
-                        
+                        let laser_passes =
+                            dlg.get_laser_passes().parse::<i32>().unwrap_or(3).max(1);
+                        let laser_power =
+                            dlg.get_laser_power().parse::<i32>().unwrap_or(1000).max(0);
+                        let feed_rate =
+                            dlg.get_feed_rate().parse::<f32>().unwrap_or(500.0).max(1.0);
+
                         // Save values back to main window for next time
                         window.set_tbox_x(dlg.get_box_x());
                         window.set_tbox_y(dlg.get_box_y());
@@ -4370,10 +4621,10 @@ fn main() -> anyhow::Result<()> {
                         // Show progress and spawn background thread
                         window.set_connection_status("Generating tabbed box G-code...".into());
                         window.set_progress_value(0.1); // 10% - Starting
-                        
+
                         // Close dialog immediately
                         dlg.hide().ok();
-                        
+
                         // Spawn background thread for generation
                         let window_weak_thread = window.as_weak();
                         std::thread::spawn(move || {
@@ -4388,7 +4639,7 @@ fn main() -> anyhow::Result<()> {
                                             }
                                         }
                                     });
-                                    
+
                                     maker.generate().map(|_| maker)
                                 })
                                 .map(|maker| {
@@ -4401,55 +4652,80 @@ fn main() -> anyhow::Result<()> {
                                             }
                                         }
                                     });
-                                    
+
                                     maker.to_gcode()
                                 });
-                            
+
                             // Update UI from main thread
                             let _ = slint::invoke_from_event_loop(move || {
                                 if let Some(win) = window_weak_thread.upgrade() {
                                     match result {
                                         Ok(gcode) => {
-                                            // Clear editor and append line by line
-                                            win.invoke_clear_editor();
-                                            for line in gcode.lines() {
-                                                win.invoke_append_gcode_line(slint::SharedString::from(line));
-                                            }
-                                            
-                                            win.set_gcode_filename(slint::SharedString::from(format!(
-                                                "box_{}x{}x{}.gcode",
-                                                x as i32, y as i32, h as i32
-                                            )));
-                                            win.set_current_view(slint::SharedString::from("gcode-editor"));
+                                            win.invoke_load_editor_text(slint::SharedString::from(
+                                                gcode.clone(),
+                                            ));
+
+                                            win.set_gcode_filename(slint::SharedString::from(
+                                                format!(
+                                                    "box_{}x{}x{}.gcode",
+                                                    x as i32, y as i32, h as i32
+                                                ),
+                                            ));
+                                            win.set_current_view(slint::SharedString::from(
+                                                "gcode-editor",
+                                            ));
                                             win.set_connection_status(slint::SharedString::from(
-                                                "Tabbed box G-code generated successfully"
+                                                "Tabbed box G-code generated successfully",
                                             ));
                                             win.set_progress_value(1.0); // 100%
-                                            
-                                            // Hide progress after 1 second
-                                            let win_weak = win.as_weak();
-                                            slint::Timer::single_shot(std::time::Duration::from_secs(1), move || {
-                                                if let Some(w) = win_weak.upgrade() {
-                                                    w.set_progress_value(0.0);
+
+                                            // Show success dialog
+                                            let success_dialog = ErrorDialog::new().unwrap();
+                                            success_dialog.set_error_message(
+                                                slint::SharedString::from("Tabbed box G-code has been generated and loaded into the editor."),
+                                            );
+
+                                            let success_dialog_weak = success_dialog.as_weak();
+                                            success_dialog.on_close_dialog(move || {
+                                                if let Some(dlg) = success_dialog_weak.upgrade() {
+                                                    dlg.hide().ok();
                                                 }
                                             });
+
+                                            success_dialog.show().ok();
+
+                                            // Hide progress after 1 second
+                                            let win_weak = win.as_weak();
+                                            slint::Timer::single_shot(
+                                                std::time::Duration::from_secs(1),
+                                                move || {
+                                                    if let Some(w) = win_weak.upgrade() {
+                                                        w.set_progress_value(0.0);
+                                                    }
+                                                },
+                                            );
                                         }
                                         Err(e) => {
-                                            let error_msg = format!("Failed to generate box: {}", e);
-                                            win.set_connection_status(slint::SharedString::from(&error_msg));
+                                            let error_msg =
+                                                format!("Failed to generate box: {}", e);
+                                            win.set_connection_status(slint::SharedString::from(
+                                                &error_msg,
+                                            ));
                                             win.set_progress_value(0.0); // Hide progress
-                                            
+
                                             // Show error dialog
                                             let error_dialog = ErrorDialog::new().unwrap();
-                                            error_dialog.set_error_message(slint::SharedString::from(&error_msg));
-                                            
+                                            error_dialog.set_error_message(
+                                                slint::SharedString::from(&error_msg),
+                                            );
+
                                             let error_dialog_weak = error_dialog.as_weak();
                                             error_dialog.on_close_dialog(move || {
                                                 if let Some(dlg) = error_dialog_weak.upgrade() {
                                                     dlg.hide().ok();
                                                 }
                                             });
-                                            
+
                                             error_dialog.show().ok();
                                         }
                                     }
@@ -4459,7 +4735,7 @@ fn main() -> anyhow::Result<()> {
                     }
                 }
             });
-            
+
             dialog.show().unwrap();
         }
     });
@@ -4470,10 +4746,10 @@ fn main() -> anyhow::Result<()> {
     main_window.on_generate_jigsaw_puzzle(move || {
         if let Some(main_win) = window_weak.upgrade() {
             let dialog = JigsawPuzzleDialog::new().unwrap();
-            
+
             // Store dialog in holder to keep it alive
             *dialog_holder.borrow_mut() = Some(dialog.clone_strong());
-            
+
             // Initialize dialog with current values from main window
             dialog.set_puzzle_width(main_win.get_puzzle_width());
             dialog.set_puzzle_height(main_win.get_puzzle_height());
@@ -4487,7 +4763,7 @@ fn main() -> anyhow::Result<()> {
             dialog.set_tab_size(main_win.get_puzzle_tab_size());
             dialog.set_jitter(main_win.get_puzzle_jitter());
             dialog.set_corner_radius(main_win.get_puzzle_corner_radius());
-            
+
             // Cancel button callback
             let dialog_weak_cancel = dialog.as_weak();
             dialog.on_cancel_dialog(move || {
@@ -4495,7 +4771,7 @@ fn main() -> anyhow::Result<()> {
                     dlg.hide().ok();
                 }
             });
-            
+
             // Generate button callback
             let main_win_clone = main_win.as_weak();
             let dialog_weak = dialog.as_weak();
@@ -4508,14 +4784,29 @@ fn main() -> anyhow::Result<()> {
                         let pieces_across = dlg.get_pieces_across().parse::<i32>().unwrap_or(4);
                         let pieces_down = dlg.get_pieces_down().parse::<i32>().unwrap_or(3);
                         let kerf = dlg.get_kerf().parse::<f32>().unwrap_or(0.5);
-                        let laser_passes = dlg.get_laser_passes().parse::<i32>().unwrap_or(3).max(1);
-                        let laser_power = dlg.get_laser_power().parse::<i32>().unwrap_or(1000).max(0);
-                        let feed_rate = dlg.get_feed_rate().parse::<f32>().unwrap_or(500.0).max(1.0);
+                        let laser_passes =
+                            dlg.get_laser_passes().parse::<i32>().unwrap_or(3).max(1);
+                        let laser_power =
+                            dlg.get_laser_power().parse::<i32>().unwrap_or(1000).max(0);
+                        let feed_rate =
+                            dlg.get_feed_rate().parse::<f32>().unwrap_or(500.0).max(1.0);
                         let seed = dlg.get_seed().parse::<u32>().unwrap_or(42);
-                        let tab_size_percent = dlg.get_tab_size().parse::<f32>().unwrap_or(20.0).clamp(10.0, 30.0);
-                        let jitter_percent = dlg.get_jitter().parse::<f32>().unwrap_or(4.0).clamp(0.0, 13.0);
-                        let corner_radius = dlg.get_corner_radius().parse::<f32>().unwrap_or(2.0).clamp(0.0, 10.0);
-                        
+                        let tab_size_percent = dlg
+                            .get_tab_size()
+                            .parse::<f32>()
+                            .unwrap_or(20.0)
+                            .clamp(10.0, 30.0);
+                        let jitter_percent = dlg
+                            .get_jitter()
+                            .parse::<f32>()
+                            .unwrap_or(4.0)
+                            .clamp(0.0, 13.0);
+                        let corner_radius = dlg
+                            .get_corner_radius()
+                            .parse::<f32>()
+                            .unwrap_or(2.0)
+                            .clamp(0.0, 10.0);
+
                         // Save values back to main window for next time
                         window.set_puzzle_width(dlg.get_puzzle_width());
                         window.set_puzzle_height(dlg.get_puzzle_height());
@@ -4548,10 +4839,10 @@ fn main() -> anyhow::Result<()> {
                         // Show progress and spawn background thread
                         window.set_connection_status("Generating jigsaw puzzle G-code...".into());
                         window.set_progress_value(0.1); // 10% - Starting
-                        
+
                         // Close dialog immediately
                         dlg.hide().ok();
-                        
+
                         // Spawn background thread for generation
                         let window_weak_thread = window.as_weak();
                         std::thread::spawn(move || {
@@ -4566,7 +4857,7 @@ fn main() -> anyhow::Result<()> {
                                             }
                                         }
                                     });
-                                    
+
                                     maker.generate().map(|_| maker)
                                 })
                                 .map(|maker| {
@@ -4579,55 +4870,83 @@ fn main() -> anyhow::Result<()> {
                                             }
                                         }
                                     });
-                                    
+
                                     maker.to_gcode(300.0, 3.0)
                                 });
-                            
+
                             // Update UI from main thread
                             let _ = slint::invoke_from_event_loop(move || {
                                 if let Some(win) = window_weak_thread.upgrade() {
                                     match result {
                                         Ok(gcode) => {
-                                            // Clear editor and append line by line
-                                            win.invoke_clear_editor();
-                                            for line in gcode.lines() {
-                                                win.invoke_append_gcode_line(slint::SharedString::from(line));
-                                            }
-                                            
-                                            win.set_gcode_filename(slint::SharedString::from(format!(
-                                                "puzzle_{}x{}_{}x{}.gcode",
-                                                width as i32, height as i32, pieces_across, pieces_down
-                                            )));
-                                            win.set_current_view(slint::SharedString::from("gcode-editor"));
+                                            win.invoke_load_editor_text(slint::SharedString::from(
+                                                gcode.clone(),
+                                            ));
+
+                                            win.set_gcode_filename(slint::SharedString::from(
+                                                format!(
+                                                    "puzzle_{}x{}_{}x{}.gcode",
+                                                    width as i32,
+                                                    height as i32,
+                                                    pieces_across,
+                                                    pieces_down
+                                                ),
+                                            ));
+                                            win.set_current_view(slint::SharedString::from(
+                                                "gcode-editor",
+                                            ));
                                             win.set_connection_status(slint::SharedString::from(
-                                                "Jigsaw puzzle G-code generated successfully"
+                                                "Jigsaw puzzle G-code generated successfully",
                                             ));
                                             win.set_progress_value(1.0); // 100%
-                                            
-                                            // Hide progress after 1 second
-                                            let win_weak = win.as_weak();
-                                            slint::Timer::single_shot(std::time::Duration::from_secs(1), move || {
-                                                if let Some(w) = win_weak.upgrade() {
-                                                    w.set_progress_value(0.0);
+
+                                            // Show success dialog
+                                            let success_dialog = ErrorDialog::new().unwrap();
+                                            success_dialog.set_error_message(
+                                                slint::SharedString::from("Jigsaw puzzle G-code has been generated and loaded into the editor."),
+                                            );
+
+                                            let success_dialog_weak = success_dialog.as_weak();
+                                            success_dialog.on_close_dialog(move || {
+                                                if let Some(dlg) = success_dialog_weak.upgrade() {
+                                                    dlg.hide().ok();
                                                 }
                                             });
+
+                                            success_dialog.show().ok();
+
+                                            // Hide progress after 1 second
+                                            let win_weak = win.as_weak();
+                                            slint::Timer::single_shot(
+                                                std::time::Duration::from_secs(1),
+                                                move || {
+                                                    if let Some(w) = win_weak.upgrade() {
+                                                        w.set_progress_value(0.0);
+                                                    }
+                                                },
+                                            );
                                         }
                                         Err(e) => {
-                                            let error_msg = format!("Failed to generate puzzle: {}", e);
-                                            win.set_connection_status(slint::SharedString::from(&error_msg));
+                                            let error_msg =
+                                                format!("Failed to generate puzzle: {}", e);
+                                            win.set_connection_status(slint::SharedString::from(
+                                                &error_msg,
+                                            ));
                                             win.set_progress_value(0.0); // Hide progress
-                                            
+
                                             // Show error dialog
                                             let error_dialog = ErrorDialog::new().unwrap();
-                                            error_dialog.set_error_message(slint::SharedString::from(&error_msg));
-                                            
+                                            error_dialog.set_error_message(
+                                                slint::SharedString::from(&error_msg),
+                                            );
+
                                             let error_dialog_weak = error_dialog.as_weak();
                                             error_dialog.on_close_dialog(move || {
                                                 if let Some(dlg) = error_dialog_weak.upgrade() {
                                                     dlg.hide().ok();
                                                 }
                                             });
-                                            
+
                                             error_dialog.show().ok();
                                         }
                                     }
@@ -4637,7 +4956,7 @@ fn main() -> anyhow::Result<()> {
                     }
                 }
             });
-            
+
             dialog.show().unwrap();
         }
     });
@@ -4648,10 +4967,10 @@ fn main() -> anyhow::Result<()> {
     main_window.on_generate_laser_engraving(move || {
         if let Some(main_win) = window_weak.upgrade() {
             let dialog = LaserEngraverDialog::new().unwrap();
-            
+
             // Store dialog in holder to keep it alive
             *dialog_holder.borrow_mut() = Some(dialog.clone_strong());
-            
+
             // Initialize dialog with default values
             dialog.set_width_mm(100.0);
             dialog.set_feed_rate(1000.0);
@@ -4664,7 +4983,7 @@ fn main() -> anyhow::Result<()> {
             dialog.set_invert(false);
             dialog.set_line_spacing(1.0);
             dialog.set_power_scale(1000.0);
-            
+
             // Load image callback
             let dialog_weak_load = dialog.as_weak();
             dialog.on_load_image(move || {
@@ -4676,33 +4995,36 @@ fn main() -> anyhow::Result<()> {
                         .pick_file()
                     {
                         dlg.set_image_path(path.display().to_string().into());
-                        
+
                         // Load and convert image to Slint format for preview
                         if let Ok(img) = image::open(&path) {
                             // Convert to RGB8 for display
                             let rgb_img = img.to_rgb8();
                             let width = rgb_img.width();
                             let height = rgb_img.height();
-                            
+
                             // Create Slint image buffer
-                            let buffer = slint::SharedPixelBuffer::<slint::Rgb8Pixel>::clone_from_slice(
-                                rgb_img.as_raw(),
-                                width,
-                                height
-                            );
+                            let buffer =
+                                slint::SharedPixelBuffer::<slint::Rgb8Pixel>::clone_from_slice(
+                                    rgb_img.as_raw(),
+                                    width,
+                                    height,
+                                );
                             dlg.set_preview_image(slint::Image::from_rgb8(buffer));
-                            
+
                             // Calculate and display output size
-                            let pixels_per_mm = dlg.get_pixels_per_mm();
+                            let _pixels_per_mm = dlg.get_pixels_per_mm();
                             let width_mm = dlg.get_width_mm();
                             let aspect_ratio = height as f32 / width as f32;
                             let height_mm = width_mm * aspect_ratio;
-                            dlg.set_output_size(format!("{:.1} x {:.1} mm", width_mm, height_mm).into());
+                            dlg.set_output_size(
+                                format!("{:.1} x {:.1} mm", width_mm, height_mm).into(),
+                            );
                         }
                     }
                 }
             });
-            
+
             // Update preview callback (when parameters change)
             let dialog_weak_update = dialog.as_weak();
             dialog.on_update_preview(move || {
@@ -4716,12 +5038,14 @@ fn main() -> anyhow::Result<()> {
                             let travel_rate = dlg.get_travel_rate();
                             let bidirectional = dlg.get_bidirectional();
                             let line_spacing = dlg.get_line_spacing();
-                            
+
                             // Calculate output dimensions
                             let aspect_ratio = img.height() as f32 / img.width() as f32;
                             let height_mm = width_mm * aspect_ratio;
-                            dlg.set_output_size(format!("{:.1} x {:.1} mm", width_mm, height_mm).into());
-                            
+                            dlg.set_output_size(
+                                format!("{:.1} x {:.1} mm", width_mm, height_mm).into(),
+                            );
+
                             // Estimate engraving time
                             let num_lines = (height_mm * pixels_per_mm / line_spacing) as u32;
                             let engrave_time = (width_mm * num_lines as f32) / feed_rate * 60.0;
@@ -4738,34 +5062,38 @@ fn main() -> anyhow::Result<()> {
                     }
                 }
             });
-            
+
             // Generate G-code callback
             let main_win_clone = main_win.as_weak();
             let dialog_weak_generate = dialog.as_weak();
-            let editor_bridge_engraver = editor_bridge.clone();
+            let _editor_bridge_engraver = editor_bridge.clone();
             dialog.on_generate_gcode(move || {
                 if let Some(window) = main_win_clone.upgrade() {
                     if let Some(dlg) = dialog_weak_generate.upgrade() {
                         let image_path = dlg.get_image_path().to_string();
-                        
+
                         if image_path.is_empty() {
                             let error_dialog = ErrorDialog::new().unwrap();
-                            error_dialog.set_error_message("No Image Selected\n\nPlease select an image file first.".into());
-                            
+                            error_dialog.set_error_message(
+                                "No Image Selected\n\nPlease select an image file first.".into(),
+                            );
+
                             let error_dialog_weak = error_dialog.as_weak();
                             error_dialog.on_close_dialog(move || {
                                 if let Some(dlg) = error_dialog_weak.upgrade() {
                                     dlg.hide().ok();
                                 }
                             });
-                            
+
                             error_dialog.show().ok();
                             return;
                         }
-                        
+
                         // Create engraving parameters - collect all data before spawning thread
-                        use gcodekit4_parser::processing::{LaserEngraver, EngravingParameters, ScanDirection};
-                        
+                        use gcodekit4_parser::processing::{
+                            EngravingParameters, LaserEngraver, ScanDirection,
+                        };
+
                         let width_mm = dlg.get_width_mm();
                         let feed_rate = dlg.get_feed_rate();
                         let travel_rate = dlg.get_travel_rate();
@@ -4777,20 +5105,20 @@ fn main() -> anyhow::Result<()> {
                         let invert = dlg.get_invert();
                         let line_spacing = dlg.get_line_spacing();
                         let power_scale = dlg.get_power_scale();
-                        
+
                         // Show status message and initial progress
                         window.set_connection_status("Generating laser engraving G-code...".into());
                         window.set_progress_value(0.0); // Starting
-                        
+
                         // Close dialog immediately
                         dlg.hide().ok();
-                        
+
                         // Spawn thread FIRST, before any UI operations
                         let window_weak_thread = window.as_weak();
                         let image_path_clone = image_path.clone();
                         std::thread::spawn(move || {
                             tracing::info!("Background thread: Starting G-code generation");
-                            
+
                             let params = EngravingParameters {
                                 width_mm,
                                 height_mm: None,
@@ -4809,72 +5137,105 @@ fn main() -> anyhow::Result<()> {
                                 line_spacing,
                                 power_scale,
                             };
-                            
+
                             let result = LaserEngraver::from_file(&image_path_clone, params)
                                 .and_then(|engraver| {
                                     // Generate G-code with progress updates (0-100%)
-                                    let gcode = engraver.generate_gcode_with_progress(|progress| {
-                                        // Map internal progress (0.0-1.0) to 0-100% range
-                                        let overall_progress = progress * 100.0;
-                                        let _ = slint::invoke_from_event_loop({
-                                            let ww = window_weak_thread.clone();
-                                            move || {
-                                                if let Some(w) = ww.upgrade() {
-                                                    w.set_progress_value(overall_progress);
+                                    let gcode =
+                                        engraver.generate_gcode_with_progress(|progress| {
+                                            // Map internal progress (0.0-1.0) to 0-100% range
+                                            let overall_progress = progress * 100.0;
+                                            let _ = slint::invoke_from_event_loop({
+                                                let ww = window_weak_thread.clone();
+                                                move || {
+                                                    if let Some(w) = ww.upgrade() {
+                                                        w.set_progress_value(overall_progress);
+                                                    }
                                                 }
-                                            }
-                                        });
-                                    })?;
-                                    
+                                            });
+                                        })?;
+
                                     Ok(gcode)
                                 });
-                            
-                            tracing::info!("Background thread: G-code generation complete, updating UI");
-                            
+
+                            tracing::info!(
+                                "Background thread: G-code generation complete, updating UI"
+                            );
+
                             // Update UI from the main thread using slint::invoke_from_event_loop
                             let _ = slint::invoke_from_event_loop(move || {
                                 if let Some(win) = window_weak_thread.upgrade() {
                                     match result {
                                         Ok(gcode) => {
-                                            tracing::info!("Setting G-code content ({} bytes)", gcode.len());
+                                            tracing::info!(
+                                                "Setting G-code content ({} bytes)",
+                                                gcode.len()
+                                            );
                                             win.set_progress_value(95.0); // Show progress before UI update
-                                            win.set_connection_status("Loading G-code into editor...".into());
-                                            
+                                            win.set_connection_status(
+                                                "Loading G-code into editor...".into(),
+                                            );
+
                                             // Load into custom editor using callbacks
-                                            win.invoke_clear_editor();
-                                            for line in gcode.lines() {
-                                                win.invoke_append_gcode_line(slint::SharedString::from(line));
-                                            }
-                                            
+                                            win.invoke_load_editor_text(slint::SharedString::from(
+                                                gcode.clone(),
+                                            ));
+
                                             // Switch to editor view
                                             win.set_current_view("gcode-editor".into());
-                                            win.set_connection_status("Laser engraving G-code generated successfully".into());
+                                            win.set_connection_status(
+                                                "Laser engraving G-code generated successfully"
+                                                    .into(),
+                                            );
                                             win.set_progress_value(100.0); // 100%
-                                            
-                                            // Hide progress after 1 second
-                                            let win_weak = win.as_weak();
-                                            slint::Timer::single_shot(std::time::Duration::from_secs(1), move || {
-                                                if let Some(w) = win_weak.upgrade() {
-                                                    w.set_progress_value(0.0);
+
+                                            // Show success dialog
+                                            let success_dialog = ErrorDialog::new().unwrap();
+                                            success_dialog.set_error_message(
+                                                slint::SharedString::from("Laser engraving G-code has been generated and loaded into the editor."),
+                                            );
+
+                                            let success_dialog_weak = success_dialog.as_weak();
+                                            success_dialog.on_close_dialog(move || {
+                                                if let Some(dlg) = success_dialog_weak.upgrade() {
+                                                    dlg.hide().ok();
                                                 }
                                             });
+
+                                            success_dialog.show().ok();
+
+                                            // Hide progress after 1 second
+                                            let win_weak = win.as_weak();
+                                            slint::Timer::single_shot(
+                                                std::time::Duration::from_secs(1),
+                                                move || {
+                                                    if let Some(w) = win_weak.upgrade() {
+                                                        w.set_progress_value(0.0);
+                                                    }
+                                                },
+                                            );
                                         }
                                         Err(e) => {
-                                            let error_msg = format!("Failed to generate laser engraving: {}", e);
+                                            let error_msg = format!(
+                                                "Failed to generate laser engraving: {}",
+                                                e
+                                            );
                                             win.set_connection_status(error_msg.clone().into());
                                             win.set_progress_value(0.0); // Hide progress
                                             tracing::error!("G-code generation error: {}", e);
-                                            
+
                                             let error_dialog = ErrorDialog::new().unwrap();
-                                            error_dialog.set_error_message(format!("G-code Generation Failed\n\n{}", e).into());
-                                            
+                                            error_dialog.set_error_message(
+                                                format!("G-code Generation Failed\n\n{}", e).into(),
+                                            );
+
                                             let error_dialog_weak = error_dialog.as_weak();
                                             error_dialog.on_close_dialog(move || {
                                                 if let Some(dlg) = error_dialog_weak.upgrade() {
                                                     dlg.hide().ok();
                                                 }
                                             });
-                                            
+
                                             error_dialog.show().ok();
                                         }
                                     }
@@ -4884,7 +5245,7 @@ fn main() -> anyhow::Result<()> {
                     }
                 }
             });
-            
+
             // Close dialog callback
             let dialog_weak_close = dialog.as_weak();
             dialog.on_close_dialog(move || {
@@ -4892,7 +5253,7 @@ fn main() -> anyhow::Result<()> {
                     dlg.hide().ok();
                 }
             });
-            
+
             dialog.show().unwrap();
         }
     });
@@ -4916,7 +5277,7 @@ fn main() -> anyhow::Result<()> {
             );
             return;
         }
-        
+
         // Get the current G-code content
         if let Some(window) = window_weak.upgrade() {
             let content = window.get_gcode_content();
@@ -4925,16 +5286,18 @@ fn main() -> anyhow::Result<()> {
 
             // Reset progress
             window.set_visualizer_progress(0.0);
-            
+
             if content.is_empty() {
                 debug!("Content is empty, clearing paths");
                 // No G-code loaded, but still generate grid and origin
                 window.set_visualizer_status(slint::SharedString::from("Ready"));
                 window.set_visualization_path_data(slint::SharedString::from(""));
                 window.set_visualization_rapid_moves_data(slint::SharedString::from(""));
-                
+
                 // Generate empty visualizer with just grid and origin
-                use gcodekit4::visualizer::{Visualizer2D, render_grid_to_path, render_origin_to_path};
+                use gcodekit4::visualizer::{
+                    render_grid_to_path, render_origin_to_path, Visualizer2D,
+                };
                 let mut visualizer = Visualizer2D::new();
                 visualizer.set_default_view(canvas_width, canvas_height);
                 let show_grid = window.get_visualizer_show_grid();
@@ -4943,7 +5306,8 @@ fn main() -> anyhow::Result<()> {
                 } else {
                     String::new()
                 };
-                let origin_data = render_origin_to_path(&visualizer, canvas_width as u32, canvas_height as u32);
+                let origin_data =
+                    render_origin_to_path(&visualizer, canvas_width as u32, canvas_height as u32);
                 window.set_visualization_grid_data(slint::SharedString::from(grid_data));
                 window.set_visualization_origin_data(slint::SharedString::from(origin_data));
                 return;
@@ -4953,9 +5317,16 @@ fn main() -> anyhow::Result<()> {
 
             // Spawn rendering thread
             let content_owned = content.to_string();
-            
+
             // Message format: (progress, status, path_data, rapid_moves_data, grid_data, origin_data)
-            let (tx, rx) = std::sync::mpsc::channel::<(f32, String, Option<String>, Option<String>, Option<String>, Option<String>)>();
+            let (tx, rx) = std::sync::mpsc::channel::<(
+                f32,
+                String,
+                Option<String>,
+                Option<String>,
+                Option<String>,
+                Option<String>,
+            )>();
             let window_weak_render = window_weak.clone();
             let zoom_scale_render = zoom_for_refresh.clone();
             let pan_offset_render = pan_for_refresh.clone();
@@ -4966,7 +5337,10 @@ fn main() -> anyhow::Result<()> {
             let show_grid = window.get_visualizer_show_grid();
 
             std::thread::spawn(move || {
-                use gcodekit4::visualizer::{Visualizer2D, render_toolpath_to_path, render_rapid_moves_to_path, render_grid_to_path, render_origin_to_path};
+                use gcodekit4::visualizer::{
+                    render_grid_to_path, render_origin_to_path, render_rapid_moves_to_path,
+                    render_toolpath_to_path, Visualizer2D,
+                };
 
                 let _ = tx.send((0.1, "Parsing G-code...".to_string(), None, None, None, None));
 
@@ -4974,7 +5348,7 @@ fn main() -> anyhow::Result<()> {
                 visualizer.show_grid = show_grid;
 
                 visualizer.parse_gcode(&content_owned);
-                
+
                 // Set default view to position origin at bottom-left
                 visualizer.set_default_view(canvas_width, canvas_height);
 
@@ -4992,20 +5366,38 @@ fn main() -> anyhow::Result<()> {
                 let _ = tx.send((0.3, "Rendering...".to_string(), None, None, None, None));
 
                 // Generate canvas path data
-                let path_data = render_toolpath_to_path(&visualizer, canvas_width as u32, canvas_height as u32);
-                let rapid_moves_data = render_rapid_moves_to_path(&visualizer, canvas_width as u32, canvas_height as u32);
+                let path_data =
+                    render_toolpath_to_path(&visualizer, canvas_width as u32, canvas_height as u32);
+                let rapid_moves_data = render_rapid_moves_to_path(
+                    &visualizer,
+                    canvas_width as u32,
+                    canvas_height as u32,
+                );
                 let grid_data = if show_grid {
                     render_grid_to_path(&visualizer, canvas_width as u32, canvas_height as u32)
                 } else {
                     String::new()
                 };
-                let origin_data = render_origin_to_path(&visualizer, canvas_width as u32, canvas_height as u32);
+                let origin_data =
+                    render_origin_to_path(&visualizer, canvas_width as u32, canvas_height as u32);
 
-                debug!("Refresh render complete: path={}, rapid={}, grid={}, origin={}",
-                       path_data.len(), rapid_moves_data.len(), grid_data.len(), origin_data.len());
+                debug!(
+                    "Refresh render complete: path={}, rapid={}, grid={}, origin={}",
+                    path_data.len(),
+                    rapid_moves_data.len(),
+                    grid_data.len(),
+                    origin_data.len()
+                );
 
                 if !path_data.is_empty() || !rapid_moves_data.is_empty() || !grid_data.is_empty() {
-                    let _ = tx.send((1.0, "Complete".to_string(), Some(path_data), Some(rapid_moves_data), Some(grid_data), Some(origin_data)));
+                    let _ = tx.send((
+                        1.0,
+                        "Complete".to_string(),
+                        Some(path_data),
+                        Some(rapid_moves_data),
+                        Some(grid_data),
+                        Some(origin_data),
+                    ));
                 } else {
                     let _ = tx.send((1.0, "Error: no data".to_string(), None, None, None, None));
                 }
@@ -5013,7 +5405,15 @@ fn main() -> anyhow::Result<()> {
 
             // Process messages from rendering thread
             std::thread::spawn(move || {
-                while let Ok((progress, status, path_data, rapid_moves_data, grid_data, origin_data)) = rx.recv() {
+                while let Ok((
+                    progress,
+                    status,
+                    path_data,
+                    rapid_moves_data,
+                    grid_data,
+                    origin_data,
+                )) = rx.recv()
+                {
                     let window_handle = window_weak_render.clone();
                     let status_clone = status.clone();
                     let path_clone = path_data.clone();
@@ -5036,8 +5436,13 @@ fn main() -> anyhow::Result<()> {
                                 window.set_visualization_path_data(slint::SharedString::from(path));
                             }
                             if let Some(rapid_moves) = rapid_moves_clone {
-                                debug!("Setting visualization rapid moves data: {} chars", rapid_moves.len());
-                                window.set_visualization_rapid_moves_data(slint::SharedString::from(rapid_moves));
+                                debug!(
+                                    "Setting visualization rapid moves data: {} chars",
+                                    rapid_moves.len()
+                                );
+                                window.set_visualization_rapid_moves_data(
+                                    slint::SharedString::from(rapid_moves),
+                                );
                             }
                             if let Some(grid) = grid_clone {
                                 debug!("Setting visualization grid data: {} chars", grid.len());
@@ -5045,7 +5450,9 @@ fn main() -> anyhow::Result<()> {
                             }
                             if let Some(origin) = origin_clone {
                                 debug!("Setting visualization origin data: {} chars", origin.len());
-                                window.set_visualization_origin_data(slint::SharedString::from(origin));
+                                window.set_visualization_origin_data(slint::SharedString::from(
+                                    origin,
+                                ));
                             }
 
                             // Update indicator properties
@@ -5283,16 +5690,26 @@ fn get_available_ports() -> anyhow::Result<Vec<slint::SharedString>> {
 /// Render G-code visualization in background thread using message passing
 fn render_gcode_visualization_background_channel(
     gcode_content: String,
-    tx: std::sync::mpsc::Sender<(f32, String, Option<String>, Option<String>, Option<String>, Option<String>)>,
+    tx: std::sync::mpsc::Sender<(
+        f32,
+        String,
+        Option<String>,
+        Option<String>,
+        Option<String>,
+        Option<String>,
+    )>,
 ) {
-    use gcodekit4::visualizer::{Visualizer2D, render_toolpath_to_path, render_rapid_moves_to_path, render_grid_to_path, render_origin_to_path};
+    use gcodekit4::visualizer::{
+        render_grid_to_path, render_origin_to_path, render_rapid_moves_to_path,
+        render_toolpath_to_path, Visualizer2D,
+    };
 
     let _ = tx.send((0.1, "Parsing G-code...".to_string(), None, None, None, None));
 
     // Parse G-code
     let mut visualizer = Visualizer2D::new();
     visualizer.parse_gcode(&gcode_content);
-    
+
     // Set default view to position origin at bottom-left
     visualizer.set_default_view(1600.0, 1200.0);
 
@@ -5304,11 +5721,23 @@ fn render_gcode_visualization_background_channel(
     let grid_data = render_grid_to_path(&visualizer, 1600, 1200);
     let origin_data = render_origin_to_path(&visualizer, 1600, 1200);
 
-    debug!("Rendering complete: path={}, rapid={}, grid={}, origin={}", 
-           path_data.len(), rapid_moves_data.len(), grid_data.len(), origin_data.len());
-    
+    debug!(
+        "Rendering complete: path={}, rapid={}, grid={}, origin={}",
+        path_data.len(),
+        rapid_moves_data.len(),
+        grid_data.len(),
+        origin_data.len()
+    );
+
     if !path_data.is_empty() || !rapid_moves_data.is_empty() || !grid_data.is_empty() {
-        let _ = tx.send((1.0, "Complete".to_string(), Some(path_data), Some(rapid_moves_data), Some(grid_data), Some(origin_data)));
+        let _ = tx.send((
+            1.0,
+            "Complete".to_string(),
+            Some(path_data),
+            Some(rapid_moves_data),
+            Some(grid_data),
+            Some(origin_data),
+        ));
     } else {
         let _ = tx.send((1.0, "Error: no data".to_string(), None, None, None, None));
     }

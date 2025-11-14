@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 //! # GCodeKit4 Communication
 //!
 //! Communication protocols and firmware implementations for GCodeKit4.

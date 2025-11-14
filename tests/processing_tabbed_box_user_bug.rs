@@ -1,39 +1,36 @@
 //! Test to reproduce user-reported bug: thickness=1.5mm produces 6.7mm tabs
 
-use gcodekit4_parser::processing::tabbed_box::{BoxParameters, TabbedBoxMaker, TabType, BoxType, LayoutStyle};
+use gcodekit4_parser::processing::tabbed_box::{
+    BoxParameters, BoxType, FingerJointSettings, TabbedBoxMaker,
+};
 
 #[test]
 fn test_user_reported_bug_thickness_1_5mm() {
     let params = BoxParameters {
-        length: 100.0,
-        width: 100.0,
-        height: 100.0,
-        thickness: 1.5,  // User's reported value
-        tab_width: 25.0,
-        kerf: 0.0,
-        spacing: 5.0,
+        x: 100.0,
+        y: 100.0,
+        h: 100.0,
+        thickness: 1.5,
+        outside: false,
         box_type: BoxType::FullBox,
-        tab_type: TabType::Laser,
-        layout_style: LayoutStyle::Diagrammatic,
-        inside_dimensions: false,
-        dividers_length: 0,
-        dividers_width: 0,
+        finger_joint: FingerJointSettings::default(),
+        burn: 0.0,
         laser_passes: 1,
         laser_power: 1000,
         feed_rate: 500.0,
     };
-    
+
     let mut maker = TabbedBoxMaker::new(params).expect("Failed to create TabbedBoxMaker");
     maker.generate().expect("Failed to generate box");
-    let gcode = maker.to_gcode(500.0, 100.0, 1.5);
-    
+    let gcode = maker.to_gcode();
+
     let mut y_coords: Vec<f32> = Vec::new();
     let mut x_coords: Vec<f32> = Vec::new();
-    
+
     for line in gcode.lines() {
         if line.starts_with("G1") || line.starts_with("G0") {
             if let Some(y_start) = line.find("Y") {
-                let y_str: String = line[y_start+1..]
+                let y_str: String = line[y_start + 1..]
                     .chars()
                     .take_while(|c| c.is_numeric() || *c == '.' || *c == '-')
                     .collect();
@@ -42,7 +39,7 @@ fn test_user_reported_bug_thickness_1_5mm() {
                 }
             }
             if let Some(x_start) = line.find("X") {
-                let x_str: String = line[x_start+1..]
+                let x_str: String = line[x_start + 1..]
                     .chars()
                     .take_while(|c| c.is_numeric() || *c == '.' || *c == '-')
                     .collect();
@@ -52,28 +49,31 @@ fn test_user_reported_bug_thickness_1_5mm() {
             }
         }
     }
-    
+
     let min_y = y_coords.iter().cloned().fold(f32::INFINITY, f32::min);
     let min_x = x_coords.iter().cloned().fold(f32::INFINITY, f32::min);
-    
+
     println!("\n=== USER BUG REPRODUCTION ===");
     println!("Thickness parameter: 1.5mm");
     println!("User reports actual cut tab depth: 6.7mm");
     println!("Min Y in G-code: {:.2}", min_y);
     println!("Min X in G-code: {:.2}", min_x);
-    
+
     if min_y < 0.0 {
         let tab_depth = min_y.abs();
         println!("Measured tab depth (Y): {:.2}mm", tab_depth);
-        
+
         if (tab_depth - 6.7).abs() < 0.5 {
-            panic!("BUG CONFIRMED: Tab depth is {:.2}mm instead of 1.5mm!", tab_depth);
+            panic!(
+                "BUG CONFIRMED: Tab depth is {:.2}mm instead of 1.5mm!",
+                tab_depth
+            );
         } else if (tab_depth - 1.5).abs() > 0.1 {
             println!("WARNING: Tab depth {:.2}mm != expected 1.5mm", tab_depth);
             println!("But also != user's 6.7mm measurement");
         }
     }
-    
+
     // Print first 50 lines of G-code for inspection
     println!("\nFirst 50 G-code lines:");
     for (i, line) in gcode.lines().take(50).enumerate() {

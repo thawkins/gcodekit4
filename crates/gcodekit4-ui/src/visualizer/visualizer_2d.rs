@@ -4,23 +4,23 @@
 use std::collections::HashMap;
 
 const CANVAS_PADDING: f32 = 20.0;
-const CANVAS_PADDING_2X: f32 = 40.0;
+const _CANVAS_PADDING_2X: f32 = 40.0;
 const MIN_ZOOM: f32 = 0.1;
 const MAX_ZOOM: f32 = 10.0;
 const ZOOM_STEP: f32 = 1.1;
 const PAN_PERCENTAGE: f32 = 0.1;
 const BOUNDS_PADDING_FACTOR: f32 = 0.1;
 const FIT_MARGIN_FACTOR: f32 = 0.05;
-const ORIGIN_CROSS_SIZE: i32 = 5;
-const MARKER_RADIUS: i32 = 4;
-const MAX_GRID_ITERATIONS: usize = 500;
-const MAX_SCALE: f32 = 100.0;
-const MIN_SCALE: f32 = 0.1;
+const _ORIGIN_CROSS_SIZE: i32 = 5;
+const _MARKER_RADIUS: i32 = 4;
+const _MAX_GRID_ITERATIONS: usize = 500;
+const _MAX_SCALE: f32 = 100.0;
+const _MIN_SCALE: f32 = 0.1;
 const DEFAULT_SCALE_FACTOR: f32 = 1.0;
-const GRID_MAJOR_STEP_MM: f32 = 10.0;
-const GRID_MINOR_STEP_MM: f32 = 1.0;
-const GRID_MAJOR_VISIBILITY_SCALE: f32 = 0.3;
-const GRID_MINOR_VISIBILITY_SCALE: f32 = 1.5;
+const _GRID_MAJOR_STEP_MM: f32 = 10.0;
+const _GRID_MINOR_STEP_MM: f32 = 1.0;
+const _GRID_MAJOR_VISIBILITY_SCALE: f32 = 0.3;
+const _GRID_MINOR_VISIBILITY_SCALE: f32 = 1.5;
 
 /// 2D Point for visualization
 #[derive(Debug, Clone, Copy)]
@@ -110,6 +110,7 @@ pub enum GCodeCommand {
 }
 
 /// Coordinate transformation helper
+#[allow(dead_code)]
 struct CoordTransform {
     min_x: f32,
     min_y: f32,
@@ -120,6 +121,7 @@ struct CoordTransform {
     y_offset: f32,
 }
 
+#[allow(dead_code)]
 impl CoordTransform {
     fn new(
         min_x: f32,
@@ -144,7 +146,8 @@ impl CoordTransform {
     fn world_to_screen(&self, x: f32, y: f32) -> (i32, i32) {
         let screen_x = (x - self.min_x) * self.scale + CANVAS_PADDING + self.x_offset;
         // Flip Y axis: higher Y values should move up the screen (smaller screen_y)
-        let screen_y = self.height - ((y - self.min_y) * self.scale + CANVAS_PADDING - self.y_offset);
+        let screen_y =
+            self.height - ((y - self.min_y) * self.scale + CANVAS_PADDING - self.y_offset);
         (safe_to_i32(screen_x), safe_to_i32(screen_y))
     }
 
@@ -191,7 +194,7 @@ impl Visualizer2D {
             scale_factor: DEFAULT_SCALE_FACTOR,
         }
     }
-    
+
     /// Calculate and set offsets to position origin (0,0) at bottom-left of canvas
     pub fn set_default_view(&mut self, _canvas_width: f32, canvas_height: f32) {
         // Target position: 5px from left, 5px from bottom
@@ -199,11 +202,11 @@ impl Visualizer2D {
         let target_y = canvas_height - 5.0;
         let padding = 20.0;
         let effective_scale = self.zoom_scale * self.scale_factor;
-        
+
         // screen_x = (0 - min_x) * scale + padding + x_offset
         // x_offset = target_x - ((0 - min_x) * scale + padding)
         self.x_offset = target_x - ((0.0 - self.min_x) * effective_scale + padding);
-        
+
         // screen_y = height - ((0 - min_y) * scale + padding - y_offset)
         // y_offset = (0 - min_y) * scale + padding - (height - target_y)
         self.y_offset = (0.0 - self.min_y) * effective_scale + padding - (canvas_height - target_y);
@@ -287,12 +290,24 @@ impl Visualizer2D {
         (self.min_x, self.max_x, self.min_y, self.max_y) =
             bounds.finalize_with_padding(BOUNDS_PADDING_FACTOR);
         self.current_pos = current_pos;
-        
-        tracing::debug!("Parsed G-code: G0={}, G1={}, G2={}, G3={}, total commands={}",
-            g0_count, g1_count, g2_count, g3_count, self.commands.len());
+
+        tracing::debug!(
+            "Parsed G-code: G0={}, G1={}, G2={}, G3={}, total commands={}",
+            g0_count,
+            g1_count,
+            g2_count,
+            g3_count,
+            self.commands.len()
+        );
     }
 
-    fn parse_linear_move(&mut self, line: &str, current_pos: &mut Point2D, bounds: &mut Bounds, is_rapid: bool) {
+    fn parse_linear_move(
+        &mut self,
+        line: &str,
+        current_pos: &mut Point2D,
+        bounds: &mut Bounds,
+        is_rapid: bool,
+    ) {
         let params = Self::extract_params(line, &['X', 'Y']);
 
         // Get new position, using current position if X or Y not specified
@@ -302,9 +317,14 @@ impl Visualizer2D {
         // Only create a command if at least one axis changed
         if new_x != current_pos.x || new_y != current_pos.y {
             let to = Point2D::new(new_x, new_y);
-            tracing::debug!("Adding {} move: ({},{}) -> ({},{})", 
+            tracing::debug!(
+                "Adding {} move: ({},{}) -> ({},{})",
                 if is_rapid { "rapid" } else { "feed" },
-                current_pos.x, current_pos.y, new_x, new_y);
+                current_pos.x,
+                current_pos.y,
+                new_x,
+                new_y
+            );
             self.commands.push(GCodeCommand::Move {
                 from: *current_pos,
                 to,
@@ -317,7 +337,13 @@ impl Visualizer2D {
         }
     }
 
-    fn parse_arc_move(&mut self, line: &str, current_pos: &mut Point2D, bounds: &mut Bounds, clockwise: bool) {
+    fn parse_arc_move(
+        &mut self,
+        line: &str,
+        current_pos: &mut Point2D,
+        bounds: &mut Bounds,
+        clockwise: bool,
+    ) {
         let params = Self::extract_params(line, &['X', 'Y', 'I', 'J']);
 
         if let (Some(&new_x), Some(&new_y), Some(&offset_x), Some(&offset_y)) = (
@@ -478,6 +504,7 @@ impl Default for Visualizer2D {
 }
 
 /// Safely convert a float to i32, clamping to valid range
+#[allow(dead_code)]
 fn safe_to_i32(value: f32) -> i32 {
     if !value.is_finite() {
         return 0;

@@ -154,7 +154,9 @@ impl ConnectionParams {
         match self.driver {
             ConnectionDriver::Serial => {
                 if self.port.is_empty() {
-                    return Err(gcodekit4_core::Error::other("Serial port name cannot be empty"));
+                    return Err(gcodekit4_core::Error::other(
+                        "Serial port name cannot be empty",
+                    ));
                 }
                 if self.baud_rate == 0 {
                     return Err(gcodekit4_core::Error::other("Baud rate must be > 0"));

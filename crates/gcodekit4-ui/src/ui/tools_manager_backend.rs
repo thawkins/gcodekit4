@@ -3,8 +3,8 @@
 //! This module provides backend logic for the CNC Tools Manager UI,
 //! including persistence for custom tools.
 
-use gcodekit4_core::data::gtc_import::{GtcImporter, GtcImportResult};
-use gcodekit4_core::data::tools::{Tool, ToolId, ToolLibrary, ToolType, ToolMaterial};
+use gcodekit4_core::data::gtc_import::{GtcImportResult, GtcImporter};
+use gcodekit4_core::data::tools::{Tool, ToolId, ToolLibrary, ToolMaterial, ToolType};
 use std::path::{Path, PathBuf};
 
 pub struct ToolsManagerBackend {
@@ -16,17 +16,20 @@ impl ToolsManagerBackend {
     pub fn new() -> Self {
         let storage_path = Self::get_storage_path();
         let mut library = gcodekit4_core::data::tools::init_standard_library();
-        
+
         // Load custom tools from disk if they exist
         if let Ok(custom_tools) = Self::load_from_file(&storage_path) {
             for tool in custom_tools {
                 library.add_tool(tool);
             }
         }
-        
-        Self { library, storage_path }
+
+        Self {
+            library,
+            storage_path,
+        }
     }
-    
+
     fn get_storage_path() -> PathBuf {
         let mut path = dirs::config_dir()
             .or_else(|| dirs::home_dir())
@@ -36,21 +39,22 @@ impl ToolsManagerBackend {
         path.push("custom_tools.json");
         path
     }
-    
+
     fn load_from_file(path: &PathBuf) -> Result<Vec<Tool>, Box<dyn std::error::Error>> {
         let contents = std::fs::read_to_string(path)?;
         let tools: Vec<Tool> = serde_json::from_str(&contents)?;
         Ok(tools)
     }
-    
+
     fn save_to_file(&self) -> Result<(), Box<dyn std::error::Error>> {
         // Only save custom tools
-        let custom_tools: Vec<&Tool> = self.library
+        let custom_tools: Vec<&Tool> = self
+            .library
             .get_all_tools()
             .into_iter()
             .filter(|t| t.custom)
             .collect();
-        
+
         let json = serde_json::to_string_pretty(&custom_tools)?;
         std::fs::write(&self.storage_path, json)?;
         Ok(())
@@ -98,66 +102,73 @@ impl ToolsManagerBackend {
     }
 
     pub fn filter_by_diameter(&self, diameter: f32, tolerance: f32) -> Vec<&Tool> {
-        self.library.search_by_diameter(diameter - tolerance, diameter + tolerance)
+        self.library
+            .search_by_diameter(diameter - tolerance, diameter + tolerance)
     }
 
     pub fn get_all_tools(&self) -> Vec<&Tool> {
         self.library.get_all_tools()
     }
-    
+
     /// Import tools from a GTC package (.zip file)
     pub fn import_gtc_package<P: AsRef<Path>>(
         &mut self,
         zip_path: P,
     ) -> Result<GtcImportResult, Box<dyn std::error::Error>> {
         // Determine next tool number
-        let next_number = self.library.get_all_tools()
+        let next_number = self
+            .library
+            .get_all_tools()
             .iter()
             .map(|t| t.number)
             .max()
-            .unwrap_or(0) + 1;
-        
+            .unwrap_or(0)
+            + 1;
+
         let mut importer = GtcImporter::new(next_number);
         let result = importer.import_from_zip(zip_path)?;
-        
+
         // Add imported tools to library
         for tool in &result.imported_tools {
             self.library.add_tool(tool.clone());
         }
-        
+
         // Save to disk
         if let Err(e) = self.save_to_file() {
             tracing::warn!("Failed to save tools after GTC import: {}", e);
         }
-        
+
         Ok(result)
     }
-    
+
     /// Import tools from a GTC JSON file
     pub fn import_gtc_json<P: AsRef<Path>>(
         &mut self,
         json_path: P,
     ) -> Result<GtcImportResult, Box<dyn std::error::Error>> {
         // Determine next tool number
-        let next_number = self.library.get_all_tools()
+        let next_number = self
+            .library
+            .get_all_tools()
             .iter()
             .map(|t| t.number)
             .max()
-            .unwrap_or(0) + 1;
-        
+            .unwrap_or(0)
+            + 1;
+
         let mut importer = GtcImporter::new(next_number);
         let result = importer.import_from_json(json_path)?;
-        
+
         // Add imported tools to library
         for tool in &result.imported_tools {
             self.library.add_tool(tool.clone());
         }
-        
+
         // Save to disk
         if let Err(e) = self.save_to_file() {
             tracing::warn!("Failed to save tools after GTC import: {}", e);
         }
-        
+
         Ok(result)
     }
 }
@@ -210,10 +221,7 @@ mod tests {
             string_to_tool_type("Flat End Mill"),
             Some(ToolType::EndMillFlat)
         );
-        assert_eq!(
-            string_to_tool_type("Drill Bit"),
-            Some(ToolType::DrillBit)
-        );
+        assert_eq!(string_to_tool_type("Drill Bit"), Some(ToolType::DrillBit));
     }
 
     #[test]
@@ -234,7 +242,7 @@ mod tests {
             6.35, // diameter
             38.0, // length
         );
-        
+
         // Add and save
         {
             let mut backend = ToolsManagerBackend::new();
@@ -242,7 +250,7 @@ mod tests {
             tool.custom = true;
             backend.add_tool(tool);
         }
-        
+
         // Create new backend and verify tool was loaded
         {
             let backend = ToolsManagerBackend::new();
@@ -250,7 +258,7 @@ mod tests {
             assert!(loaded.is_some());
             assert_eq!(loaded.unwrap().name, "Test Persist Tool");
         }
-        
+
         // Cleanup
         {
             let mut backend = ToolsManagerBackend::new();

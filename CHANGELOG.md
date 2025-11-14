@@ -5,28 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.25.6-alpha] - 2025-11-13
+## [0.25.6-alpha] - 2025-11-14
 
 ### Added
-- **Progress Bar on Status Bar**: Real-time visual progress indicator for long-running operations
-  - Positioned flush right with proper 10px spacing from screen edge
-  - Shows percentage completion for G-code generation tasks
-  - Smooth progress updates with throttling to prevent UI thread overload
-  - Auto-hides after completion
+- **New `load_editor_text()` callback**: Optimized method for bulk loading generated G-code into editor
+  - Single operation replaces line-by-line appending for better performance
+  - Automatically scrolls viewport to top (line 0) on load
+- **Success dialogs for generators**: All G-code generators (TabbedBox, JigsawPuzzle, LaserEngraving) now show completion messages
 
 ### Changed
-- **Laser Engraving Progress Tracking**: Enhanced image-to-G-code generation with granular progress updates
-  - Added `generate_gcode_with_progress()` method with callback support
-  - Progress updates every 10 scan lines to balance responsiveness and performance
-  - Clear status messages: "Generating laser engraving G-code..." → "Loading G-code into editor..."
-  - Progress mapping: 0-10% resize, 10-90% scan generation, 90-95% finalization, 95-100% UI transfer
+- **CustomTextEdit alignment fixes**: 
+  - Added `spacing: 0px` to both VerticalLayout components for consistent line spacing
+  - Wrapped Text elements in VerticalLayout with `alignment: center` for proper vertical centering
+  - Line numbers and content now properly aligned vertically
+- **G-code generation performance**: Tabbed box, jigsaw puzzle, and laser engraving generators now use `load_editor_text()` instead of line-by-line insertion
+  - Eliminates UI thread blocking during large G-code insertions
+  - Progress bar continues updating smoothly throughout generation
 
 ### Fixed
-- Status bar text visibility - all text now properly displays in white on dark background
-- Progress bar alignment - blue fill bar now grows left-to-right (flush left) instead of centered
-- Progress bar vertical positioning - adjusted to be vertically centered in 30px status bar
+- **"New" button on G-code editor**: Now properly clears editor content by calling `clear_editor()` callback
+- **Text line vertical alignment**: Half-line displacement between line numbers and text content resolved
+- **Content not showing until scroll**: New loaded content now displays immediately at top of viewport
+- **UI stall during G-code insertion**: ImageEngraving and other generators no longer block UI thread
 
 ## [0.25.5-alpha] - 2025-11-13
+
 
 ### Changed
 - **Tabbed Box Generator**: Complete rewrite using boxes.py algorithm from https://github.com/florianfesti/boxes

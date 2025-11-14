@@ -10,7 +10,7 @@
 //! - Provide recent files menu functionality
 //! - Persist recent files to disk
 
-use gcodekit4::utils::{FileEncoding, GcodeFileReader, RecentFilesManager};
+use gcodekit4_parser::utils::{FileEncoding, GcodeFileReader, RecentFilesManager};
 use std::fs;
 use std::path::PathBuf;
 use tempfile::TempDir;

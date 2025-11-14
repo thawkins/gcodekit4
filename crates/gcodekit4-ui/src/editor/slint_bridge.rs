@@ -1,9 +1,9 @@
 //! Bridge between Slint UI and EditorState backend
 
-use super::{EditorState, TextLine};
+use super::EditorState;
 use slint::{Model, ModelRc, VecModel};
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::rc::Rc;
 
 /// Slint-compatible text line structure
 #[derive(Clone, Debug)]
@@ -34,11 +34,19 @@ impl EditorBridge {
     pub fn new(viewport_height: f32, line_height: f32) -> Self {
         let editor = Rc::new(RefCell::new(EditorState::new(viewport_height, line_height)));
         let visible_lines = Rc::new(VecModel::default());
-        
+
         Self {
             editor,
             visible_lines,
         }
+    }
+
+    /// Update viewport dimensions (called when UI resizes)
+    pub fn set_viewport_size(&self, viewport_height: f32, line_height: f32) {
+        let mut editor = self.editor.borrow_mut();
+        editor.set_viewport_size(viewport_height, line_height);
+        drop(editor);
+        self.update_visible_lines();
     }
 
     /// Load text into editor
@@ -132,7 +140,7 @@ impl EditorBridge {
     }
 
     /// Set cursor position
-    pub fn set_cursor(&self, line: usize, column: usize) {
+    pub fn set_cursor(&self, _line: usize, _column: usize) {
         let mut editor = self.editor.borrow_mut();
         let char_pos = editor.line_count(); // Simplified - would need proper line/col to char conversion
         editor.set_cursor(char_pos);
@@ -162,7 +170,7 @@ impl EditorBridge {
     pub fn get_visible_lines_model(&self) -> ModelRc<SlintTextLine> {
         ModelRc::from(self.visible_lines.clone())
     }
-    
+
     /// Get visible lines as raw data for constructing Slint types
     pub fn get_visible_lines_data(&self) -> Vec<(i32, String, bool)> {
         self.visible_lines
@@ -174,31 +182,31 @@ impl EditorBridge {
     /// Update visible lines from editor state
     fn update_visible_lines(&self) {
         let editor = self.editor.borrow();
-        let lines = editor.get_visible_lines();
+        let (first_line_idx, lines) = editor.get_visible_lines();
         let viewport = editor.viewport();
-        let start_line = viewport.start_line;
-        let end_line = viewport.end_line;
         let total_lines = editor.line_count();
-        
+
         tracing::debug!(
-            "update_visible_lines: showing lines {}-{} of {} (fetched {} lines)",
-            start_line,
-            end_line,
+            "update_visible_lines: viewport {}-{} of {}, fetched {} lines starting at line {}",
+            viewport.start_line,
+            viewport.end_line,
             total_lines,
-            lines.len()
+            lines.len(),
+            first_line_idx
         );
-        
+
         // Clear and rebuild visible lines
         let mut new_lines = Vec::new();
         for (idx, content) in lines.iter().enumerate() {
-            let line_number = start_line + idx + 1; // Line numbers start at 1, not 0
+            // Line numbers are 1-indexed for display, first_line_idx is 0-indexed
+            let line_number = first_line_idx + idx + 1;
             new_lines.push(SlintTextLine::new(
                 line_number,
                 content.clone(),
                 false, // Could check dirty state here
             ));
         }
-        
+
         // Update model
         self.visible_lines.set_vec(new_lines);
     }
@@ -227,11 +235,11 @@ mod tests {
         let bridge = EditorBridge::new(400.0, 20.0);
         bridge.load_text("");
         bridge.insert_text("Hello");
-        
+
         assert!(bridge.can_undo());
         assert!(bridge.undo());
         assert_eq!(bridge.get_text(), "");
-        
+
         assert!(bridge.can_redo());
         assert!(bridge.redo());
         assert_eq!(bridge.get_text(), "Hello");
@@ -249,10 +257,10 @@ mod tests {
         let bridge = EditorBridge::new(400.0, 20.0);
         bridge.load_text("Test");
         assert!(!bridge.is_modified());
-        
+
         bridge.insert_text(" more");
         assert!(bridge.is_modified());
-        
+
         bridge.mark_unmodified();
         assert!(!bridge.is_modified());
     }

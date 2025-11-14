@@ -202,11 +202,10 @@ impl StatusParser {
         }
         None
     }
-    
+
     /// Parse machine position from status report
     pub fn parse_mpos(status_line: &str) -> Option<MachinePosition> {
-        Self::extract_field(status_line, "MPos:")
-            .and_then(MachinePosition::parse)
+        Self::extract_field(status_line, "MPos:").and_then(MachinePosition::parse)
     }
 
     /// Parse work position from status report
@@ -216,8 +215,7 @@ impl StatusParser {
 
     /// Parse work coordinate offset from status report
     pub fn parse_wco(status_line: &str) -> Option<WorkCoordinateOffset> {
-        Self::extract_field(status_line, "WCO:")
-            .and_then(WorkCoordinateOffset::parse)
+        Self::extract_field(status_line, "WCO:").and_then(WorkCoordinateOffset::parse)
     }
 
     /// Parse buffer state from status report
@@ -400,18 +398,30 @@ mod tests {
     #[test]
     fn test_status_parser_machine_state() {
         let idle_status = "<Idle|MPos:10.000,20.000,30.000>";
-        assert_eq!(StatusParser::parse_machine_state(idle_status).unwrap(), "Idle");
-        
+        assert_eq!(
+            StatusParser::parse_machine_state(idle_status).unwrap(),
+            "Idle"
+        );
+
         let run_status = "<Run|MPos:10,20,30|F:1500>";
-        assert_eq!(StatusParser::parse_machine_state(run_status).unwrap(), "Run");
-        
+        assert_eq!(
+            StatusParser::parse_machine_state(run_status).unwrap(),
+            "Run"
+        );
+
         let hold_status = "<Hold:0|MPos:10,20,30>";
-        assert_eq!(StatusParser::parse_machine_state(hold_status).unwrap(), "Hold:0");
-        
+        assert_eq!(
+            StatusParser::parse_machine_state(hold_status).unwrap(),
+            "Hold:0"
+        );
+
         let alarm_status = "<Alarm|MPos:0,0,0>";
-        assert_eq!(StatusParser::parse_machine_state(alarm_status).unwrap(), "Alarm");
+        assert_eq!(
+            StatusParser::parse_machine_state(alarm_status).unwrap(),
+            "Alarm"
+        );
     }
-    
+
     #[test]
     fn test_status_parser_full_parse() {
         let status = "<Run|MPos:10,20,30|WPos:5,8,2|Buf:10:100|F:1500|S:1000>";

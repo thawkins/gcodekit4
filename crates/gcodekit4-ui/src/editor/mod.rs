@@ -3,15 +3,15 @@
 //! This module provides a high-performance text editor implementation optimized
 //! for large G-code files with efficient text manipulation and rendering.
 
+mod slint_bridge;
 mod text_buffer;
 mod undo_manager;
 mod viewport;
-mod slint_bridge;
 
+pub use slint_bridge::{EditorBridge, SlintTextLine};
 pub use text_buffer::TextBuffer;
 pub use undo_manager::{TextChange, UndoManager};
 pub use viewport::Viewport;
-pub use slint_bridge::{EditorBridge, SlintTextLine};
 
 // Re-export for Slint UI
 #[derive(Clone, Debug)]
@@ -37,7 +37,7 @@ impl EditorState {
         let mut viewport = Viewport::new(viewport_height, line_height);
         let buffer = TextBuffer::new();
         viewport.set_total_lines(buffer.len_lines());
-        
+
         Self {
             buffer,
             undo_manager: UndoManager::new(),
@@ -67,10 +67,10 @@ impl EditorState {
     pub fn insert_text(&mut self, text: &str) {
         let old_text = String::new();
         let old_cursor = self.cursor_pos;
-        
+
         self.buffer.insert(self.cursor_pos, text);
         let new_cursor = self.cursor_pos + text.len();
-        
+
         let change = TextChange::new(
             self.cursor_pos..self.cursor_pos,
             old_text,
@@ -78,7 +78,7 @@ impl EditorState {
             old_cursor,
             new_cursor,
         );
-        
+
         self.undo_manager.record(change);
         self.cursor_pos = new_cursor;
         self.viewport.set_total_lines(self.buffer.len_lines());
@@ -87,14 +87,14 @@ impl EditorState {
 
     /// Delete text at cursor (delete key) or selection
     pub fn delete_forward(&mut self, count: usize) {
-        if let Some((start, end)) = self.selection {
+        if let Some((_start, _end)) = self.selection {
             self.delete_selection();
         } else if self.cursor_pos < self.buffer.len_chars() {
             let end = (self.cursor_pos + count).min(self.buffer.len_chars());
             let old_text = self.buffer.slice(self.cursor_pos, end);
-            
+
             self.buffer.delete(self.cursor_pos..end);
-            
+
             let change = TextChange::new(
                 self.cursor_pos..end,
                 old_text,
@@ -102,7 +102,7 @@ impl EditorState {
                 self.cursor_pos,
                 self.cursor_pos,
             );
-            
+
             self.undo_manager.record(change);
             self.viewport.set_total_lines(self.buffer.len_lines());
             self.modified = true;
@@ -111,14 +111,14 @@ impl EditorState {
 
     /// Delete text before cursor (backspace key)
     pub fn delete_backward(&mut self, count: usize) {
-        if let Some((start, end)) = self.selection {
+        if let Some((_start, _end)) = self.selection {
             self.delete_selection();
         } else if self.cursor_pos > 0 {
             let start = self.cursor_pos.saturating_sub(count);
             let old_text = self.buffer.slice(start, self.cursor_pos);
-            
+
             self.buffer.delete(start..self.cursor_pos);
-            
+
             let change = TextChange::new(
                 start..self.cursor_pos,
                 old_text,
@@ -126,7 +126,7 @@ impl EditorState {
                 self.cursor_pos,
                 start,
             );
-            
+
             self.undo_manager.record(change);
             self.cursor_pos = start;
             self.viewport.set_total_lines(self.buffer.len_lines());
@@ -139,15 +139,10 @@ impl EditorState {
         if let Some((start, end)) = self.selection {
             let old_text = self.buffer.slice(start, end);
             self.buffer.delete(start..end);
-            
-            let change = TextChange::new(
-                start..end,
-                old_text,
-                String::new(),
-                self.cursor_pos,
-                start,
-            );
-            
+
+            let change =
+                TextChange::new(start..end, old_text, String::new(), self.cursor_pos, start);
+
             self.undo_manager.record(change);
             self.cursor_pos = start;
             self.selection = None;
@@ -159,10 +154,8 @@ impl EditorState {
     /// Undo last change
     pub fn undo(&mut self) -> bool {
         if let Some(change) = self.undo_manager.undo() {
-            self.buffer.replace(
-                change.char_range.clone(),
-                &change.new_text,
-            );
+            self.buffer
+                .replace(change.char_range.clone(), &change.new_text);
             self.cursor_pos = change.new_cursor;
             self.viewport.set_total_lines(self.buffer.len_lines());
             self.modified = true;
@@ -175,10 +168,8 @@ impl EditorState {
     /// Redo last undone change
     pub fn redo(&mut self) -> bool {
         if let Some(change) = self.undo_manager.redo() {
-            self.buffer.replace(
-                change.char_range.clone(),
-                &change.new_text,
-            );
+            self.buffer
+                .replace(change.char_range.clone(), &change.new_text);
             self.cursor_pos = change.new_cursor;
             self.viewport.set_total_lines(self.buffer.len_lines());
             self.modified = true;
@@ -198,9 +189,14 @@ impl EditorState {
         self.undo_manager.can_redo()
     }
 
-    /// Get visible lines for rendering
-    pub fn get_visible_lines(&self) -> Vec<String> {
-        self.buffer.lines_in_range(self.viewport.visible_range())
+    /// Get visible lines for rendering with overscan for smooth scrolling
+    /// Returns (start_line, Vec<String>) where start_line is the 0-indexed line number of the first line
+    pub fn get_visible_lines(&self) -> (usize, Vec<String>) {
+        // Use small overscan (5 lines) to reduce lag while maintaining smooth scrolling
+        let range = self.viewport.overscan_range(5);
+        let start_line = range.start;
+        let lines = self.buffer.lines_in_range(range);
+        (start_line, lines)
     }
 
     /// Scroll viewport by delta lines
@@ -221,7 +217,7 @@ impl EditorState {
     /// Set cursor position
     pub fn set_cursor(&mut self, pos: usize) {
         self.cursor_pos = pos.min(self.buffer.len_chars());
-        
+
         // Scroll to cursor if needed
         let (line, _) = self.buffer.char_to_line_col(self.cursor_pos);
         self.viewport.scroll_to_line(line);
@@ -256,6 +252,12 @@ impl EditorState {
     pub fn char_count(&self) -> usize {
         self.buffer.len_chars()
     }
+
+    /// Update viewport size (when UI resizes)
+    pub fn set_viewport_size(&mut self, viewport_height: f32, line_height: f32) {
+        self.viewport
+            .set_viewport_size(viewport_height, line_height);
+    }
 }
 
 #[cfg(test)]
@@ -275,11 +277,11 @@ mod tests {
     fn test_editor_undo_redo() {
         let mut editor = EditorState::new(400.0, 20.0);
         editor.insert_text("Hello");
-        
+
         assert!(editor.can_undo());
         editor.undo();
         assert_eq!(editor.get_text(), "");
-        
+
         assert!(editor.can_redo());
         editor.redo();
         assert_eq!(editor.get_text(), "Hello");

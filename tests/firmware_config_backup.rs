@@ -1,15 +1,15 @@
 //! Tests for GRBL firmware configuration backup and restore
 
+use chrono::Utc;
 use gcodekit4::firmware::grbl::settings::{
     ConfigBackup, Setting, SettingCategory, SettingsManager,
 };
-use chrono::Utc;
 use std::fs;
 
 #[test]
 fn test_create_and_export_backup() {
     let mut manager = SettingsManager::new();
-    
+
     // Add some test settings
     manager.set_setting(Setting {
         number: 100,
@@ -22,7 +22,7 @@ fn test_create_and_export_backup() {
         range: Some((1.0, 1000.0)),
         read_only: false,
     });
-    
+
     manager.set_setting(Setting {
         number: 110,
         name: "X-axis max rate".to_string(),
@@ -34,14 +34,14 @@ fn test_create_and_export_backup() {
         range: Some((1.0, 20000.0)),
         read_only: false,
     });
-    
+
     // Create backup
     let backup = manager.create_backup(
         "GRBL 1.1h".to_string(),
         "Test Machine".to_string(),
         "Test configuration".to_string(),
     );
-    
+
     assert_eq!(backup.firmware_version, "GRBL 1.1h");
     assert_eq!(backup.machine_name, "Test Machine");
     assert_eq!(backup.notes, "Test configuration");
@@ -52,9 +52,9 @@ fn test_create_and_export_backup() {
 fn test_export_and_load_backup() {
     let temp_dir = std::env::temp_dir();
     let backup_path = temp_dir.join("test_grbl_backup.json");
-    
+
     let mut manager = SettingsManager::new();
-    
+
     // Add test settings
     manager.set_setting(Setting {
         number: 100,
@@ -67,7 +67,7 @@ fn test_export_and_load_backup() {
         range: Some((1.0, 1000.0)),
         read_only: false,
     });
-    
+
     // Export to file
     let result = manager.export_backup(
         &backup_path,
@@ -76,20 +76,20 @@ fn test_export_and_load_backup() {
         "Test backup".to_string(),
     );
     assert!(result.is_ok());
-    
+
     // Verify file exists
     assert!(backup_path.exists());
-    
+
     // Load backup from file
     let loaded_backup = SettingsManager::load_backup(&backup_path);
     assert!(loaded_backup.is_ok());
-    
+
     let backup = loaded_backup.unwrap();
     assert_eq!(backup.firmware_version, "GRBL 1.1h");
     assert_eq!(backup.machine_name, "Test Machine");
     assert_eq!(backup.settings.len(), 1);
     assert_eq!(backup.settings[0].number, 100);
-    
+
     // Clean up
     fs::remove_file(&backup_path).ok();
 }
@@ -97,7 +97,7 @@ fn test_export_and_load_backup() {
 #[test]
 fn test_apply_backup() {
     let mut manager = SettingsManager::new();
-    
+
     // Create a backup manually
     let backup = ConfigBackup {
         timestamp: Utc::now(),
@@ -129,15 +129,15 @@ fn test_apply_backup() {
         ],
         notes: "Test backup".to_string(),
     };
-    
+
     // Apply backup
     manager.apply_backup(&backup);
-    
+
     // Verify settings were applied
     assert_eq!(manager.count(), 2);
     assert!(manager.get_setting(100).is_some());
     assert!(manager.get_setting(110).is_some());
-    
+
     let setting_100 = manager.get_setting(100).unwrap();
     assert_eq!(setting_100.value, "80.0");
 }
@@ -145,7 +145,7 @@ fn test_apply_backup() {
 #[test]
 fn test_enrich_settings() {
     let mut manager = SettingsManager::new();
-    
+
     // Add a setting without metadata
     manager.set_setting(Setting {
         number: 100,
@@ -158,10 +158,10 @@ fn test_enrich_settings() {
         range: None,
         read_only: false,
     });
-    
+
     // Enrich with metadata
     manager.enrich_settings();
-    
+
     // Verify metadata was added
     let setting = manager.get_setting(100).unwrap();
     assert_eq!(setting.name, "X-axis steps per mm");
@@ -175,7 +175,7 @@ fn test_enrich_settings() {
 fn test_backup_json_format() {
     let temp_dir = std::env::temp_dir();
     let backup_path = temp_dir.join("test_grbl_format.json");
-    
+
     let mut manager = SettingsManager::new();
     manager.set_setting(Setting {
         number: 100,
@@ -188,7 +188,7 @@ fn test_backup_json_format() {
         range: Some((1.0, 1000.0)),
         read_only: false,
     });
-    
+
     // Export
     manager
         .export_backup(
@@ -198,7 +198,7 @@ fn test_backup_json_format() {
             "Test notes".to_string(),
         )
         .unwrap();
-    
+
     // Read and verify JSON structure
     let json_content = fs::read_to_string(&backup_path).unwrap();
     assert!(json_content.contains("firmware_version"));
@@ -207,7 +207,7 @@ fn test_backup_json_format() {
     assert!(json_content.contains("timestamp"));
     assert!(json_content.contains("settings"));
     assert!(json_content.contains("X-axis steps per mm"));
-    
+
     // Clean up
     fs::remove_file(&backup_path).ok();
 }

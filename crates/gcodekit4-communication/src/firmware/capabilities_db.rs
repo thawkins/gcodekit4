@@ -464,9 +464,11 @@ impl CapabilitiesDatabase {
         // Try major.minor matching (ignore patch)
         for (key, caps) in &self.database {
             if key.0 == firmware_type
-                && caps.version.major == version.major && caps.version.minor == version.minor {
-                    return Some(caps.clone());
-                }
+                && caps.version.major == version.major
+                && caps.version.minor == version.minor
+            {
+                return Some(caps.clone());
+            }
         }
 
         // Return None if not found

@@ -57,8 +57,7 @@ impl std::fmt::Display for CommandState {
 ///
 /// Captures the controller's response to a sent command,
 /// including any error messages or status information.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct CommandResponse {
     /// Whether the command was accepted/acknowledged
     pub success: bool,
@@ -69,7 +68,6 @@ pub struct CommandResponse {
     /// Additional response data
     pub data: Option<String>,
 }
-
 
 /// Represents a parsed and tracked G-Code command
 ///

@@ -112,8 +112,6 @@ pub fn list_ports() -> Result<Vec<SerialPortInfo>> {
                 .map(|port| {
                     let info = SerialPortInfo::new(&port.port_name, get_port_description(port));
 
-                    
-
                     match &port.port_type {
                         serialport::SerialPortType::UsbPort(usb_info) => {
                             let mut info = info.with_usb_ids(usb_info.vid, usb_info.pid);

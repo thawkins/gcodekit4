@@ -4,9 +4,9 @@
 //! Bridges FirmwareSettingsPanel with SettingsDialog and Config persistence.
 //! Provides firmware parameter management, validation, and backup/restore.
 
-use gcodekit4_core::Result;
 use crate::ui::firmware_settings_panel::{FirmwareParameter, FirmwareSettingsPanel, ParameterType};
 use crate::ui::settings_dialog::{Setting, SettingValue, SettingsCategory, SettingsDialog};
+use gcodekit4_core::Result;
 use std::collections::HashMap;
 use tracing::warn;
 

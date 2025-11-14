@@ -4,8 +4,8 @@
 //! The actual UI integration happens in main.rs after slint modules are generated.
 
 use gcodekit4_core::data::materials::{
-    Abrasiveness, ChipType, HazardLevel, HeatSensitivity, Material, MaterialCategory,
-    MaterialId, MaterialLibrary, SurfaceFinishability,
+    Abrasiveness, ChipType, HazardLevel, HeatSensitivity, Material, MaterialCategory, MaterialId,
+    MaterialLibrary, SurfaceFinishability,
 };
 use std::path::PathBuf;
 
@@ -18,17 +18,20 @@ impl MaterialsManagerBackend {
     pub fn new() -> Self {
         let storage_path = Self::get_storage_path();
         let mut library = gcodekit4_core::data::materials::init_standard_library();
-        
+
         // Load custom materials from disk if they exist
         if let Ok(custom_materials) = Self::load_from_file(&storage_path) {
             for material in custom_materials {
                 library.add_material(material);
             }
         }
-        
-        Self { library, storage_path }
+
+        Self {
+            library,
+            storage_path,
+        }
     }
-    
+
     fn get_storage_path() -> PathBuf {
         let mut path = dirs::config_dir()
             .or_else(|| dirs::home_dir())
@@ -38,21 +41,22 @@ impl MaterialsManagerBackend {
         path.push("custom_materials.json");
         path
     }
-    
+
     fn load_from_file(path: &PathBuf) -> Result<Vec<Material>, Box<dyn std::error::Error>> {
         let contents = std::fs::read_to_string(path)?;
         let materials: Vec<Material> = serde_json::from_str(&contents)?;
         Ok(materials)
     }
-    
+
     fn save_to_file(&self) -> Result<(), Box<dyn std::error::Error>> {
         // Only save custom materials
-        let custom_materials: Vec<&Material> = self.library
+        let custom_materials: Vec<&Material> = self
+            .library
             .get_all_materials()
             .into_iter()
             .filter(|m| m.custom)
             .collect();
-        
+
         let json = serde_json::to_string_pretty(&custom_materials)?;
         std::fs::write(&self.storage_path, json)?;
         Ok(())
@@ -183,10 +187,7 @@ mod tests {
 
     #[test]
     fn test_category_conversion() {
-        assert_eq!(
-            string_to_category("Wood"),
-            Some(MaterialCategory::Wood)
-        );
+        assert_eq!(string_to_category("Wood"), Some(MaterialCategory::Wood));
         assert_eq!(
             string_to_category("Non-Ferrous Metal"),
             Some(MaterialCategory::NonFerrousMetal)
@@ -203,7 +204,7 @@ mod tests {
     #[test]
     fn test_persistence() {
         use std::fs;
-        
+
         // Create a test material
         let test_material = Material::new(
             MaterialId("test_persist".to_string()),
@@ -211,7 +212,7 @@ mod tests {
             MaterialCategory::Wood,
             "Test".to_string(),
         );
-        
+
         // Add and save
         {
             let mut backend = MaterialsManagerBackend::new();
@@ -219,7 +220,7 @@ mod tests {
             material.custom = true;
             backend.add_material(material);
         }
-        
+
         // Create new backend and verify material was loaded
         {
             let backend = MaterialsManagerBackend::new();
@@ -227,7 +228,7 @@ mod tests {
             assert!(loaded.is_some());
             assert_eq!(loaded.unwrap().name, "Test Persist Material");
         }
-        
+
         // Cleanup
         {
             let mut backend = MaterialsManagerBackend::new();

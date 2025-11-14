@@ -208,7 +208,7 @@ impl Canvas {
     pub fn shapes(&self) -> &[DrawingObject] {
         &self.shapes
     }
-    
+
     /// Returns a mutable reference to the shapes array.
     pub fn shapes_mut(&mut self) -> &mut [DrawingObject] {
         &mut self.shapes

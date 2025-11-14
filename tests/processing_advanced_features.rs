@@ -1,6 +1,6 @@
 //! Tests for processing::advanced_features
 
-use gcodekit4::processing::advanced_features::*;
+use gcodekit4_parser::processing::advanced_features::*;
 
 #[test]
 fn test_probing_system() {

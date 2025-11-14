@@ -1,12 +1,11 @@
 // Integration tests for Phase 7 (Tasks 121-150)
 
-use gcodekit4::utils::{
+use gcodekit4_parser::utils::{
     BufferDiagnostics, CalibrationStepType, CalibrationWizard, CommunicationDiagnostics,
     DiagnosticReport, EmergencyStopManager, EmergencyStopState, ExportFormat, FeedHoldManager,
     FormatExporter, MotionInterlock, PerformanceProfiler, PluginConfig, PluginMetadata,
     PluginRegistry, PostProcessor, SafetyFeaturesManager,
 };
-use std::collections::HashMap;
 
 // ============================================================================
 // Task 121: Safety Features Integration Tests

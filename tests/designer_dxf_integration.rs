@@ -469,10 +469,10 @@ EOF"#;
 
     let result = DxfParser::parse(dxf_content);
     assert!(result.is_ok());
-    
+
     let file = result.unwrap();
     assert_eq!(file.entity_count(), 1);
-    
+
     if let DxfEntity::Line(line) = &file.entities[0] {
         assert_eq!(line.layer, "TestLayer");
         assert_eq!(line.color, 1);
@@ -510,10 +510,10 @@ EOF"#;
 
     let result = DxfParser::parse(dxf_content);
     assert!(result.is_ok());
-    
+
     let file = result.unwrap();
     assert_eq!(file.entity_count(), 1);
-    
+
     if let DxfEntity::Circle(circle) = &file.entities[0] {
         assert_eq!(circle.layer, "Circles");
         assert_eq!(circle.color, 2);
@@ -552,10 +552,10 @@ EOF"#;
 
     let result = DxfParser::parse(dxf_content);
     assert!(result.is_ok());
-    
+
     let file = result.unwrap();
     assert_eq!(file.entity_count(), 1);
-    
+
     if let DxfEntity::Arc(arc) = &file.entities[0] {
         assert_eq!(arc.layer, "Arcs");
         assert!((arc.radius - 10.0).abs() < 0.01);
@@ -597,7 +597,7 @@ EOF"#;
 
     let result = DxfParser::parse(dxf_content);
     assert!(result.is_ok());
-    
+
     let file = result.unwrap();
     assert_eq!(file.entity_count(), 2);
 }

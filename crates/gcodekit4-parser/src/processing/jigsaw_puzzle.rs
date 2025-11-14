@@ -1,5 +1,5 @@
 //! Jigsaw Puzzle Maker
-//! 
+//!
 //! Generates G-code toolpaths for laser/CNC cutting jigsaw puzzles with interlocking pieces.
 
 use std::f32::consts::PI;
@@ -66,18 +66,18 @@ impl JigsawPuzzleMaker {
             rng_state: params.seed as f32,
         })
     }
-    
+
     fn random(&mut self) -> f32 {
         let x = (self.rng_state.sin() * 10000.0).abs();
         self.rng_state += 1.0;
         x - x.floor()
     }
-    
+
     fn uniform(&mut self, min: f32, max: f32) -> f32 {
         let r = self.random();
         min + r * (max - min)
     }
-    
+
     fn rbool(&mut self) -> bool {
         self.random() > 0.5
     }
@@ -97,7 +97,7 @@ impl JigsawPuzzleMaker {
 
         let piece_width = params.width / params.pieces_across as f32;
         let piece_height = params.height / params.pieces_down as f32;
-        
+
         if piece_width < 15.0 || piece_height < 15.0 {
             return Err("Pieces too small (minimum 15mm per piece)".to_string());
         }
@@ -123,13 +123,13 @@ impl JigsawPuzzleMaker {
 
     pub fn generate(&mut self) -> Result<(), String> {
         self.paths.clear();
-        
+
         // Reset RNG state for reproducible results
         self.rng_state = self.params.seed as f32;
 
         let piece_width = self.params.width / self.params.pieces_across as f32;
         let piece_height = self.params.height / self.params.pieces_down as f32;
-        
+
         // Use tab_size_percent parameter
         let tab_width = piece_width * (self.params.tab_size_percent / 100.0);
         let tab_height = piece_height * (self.params.tab_size_percent / 200.0);
@@ -165,47 +165,47 @@ impl JigsawPuzzleMaker {
         if r > 0.0 {
             // Rounded corners using arc approximation
             let steps = 4;
-            
+
             // Bottom edge with bottom-left corner
             path.push(Point::new(r, 0.0));
             path.push(Point::new(w - r, 0.0));
-            
+
             // Bottom-right corner
             for i in 0..=steps {
                 let angle = (i as f32 / steps as f32) * PI / 2.0;
                 path.push(Point::new(w - r + r * angle.sin(), r - r * angle.cos()));
             }
-            
+
             // Right edge
             path.push(Point::new(w, r));
             path.push(Point::new(w, h - r));
-            
+
             // Top-right corner
             for i in 0..=steps {
                 let angle = (i as f32 / steps as f32) * PI / 2.0;
                 path.push(Point::new(w - r + r * angle.cos(), h - r + r * angle.sin()));
             }
-            
+
             // Top edge
             path.push(Point::new(w - r, h));
             path.push(Point::new(r, h));
-            
+
             // Top-left corner
             for i in 0..=steps {
                 let angle = (i as f32 / steps as f32) * PI / 2.0;
                 path.push(Point::new(r - r * angle.sin(), h - r + r * angle.cos()));
             }
-            
+
             // Left edge
             path.push(Point::new(0.0, h - r));
             path.push(Point::new(0.0, r));
-            
+
             // Bottom-left corner
             for i in 0..=steps {
                 let angle = (i as f32 / steps as f32) * PI / 2.0;
                 path.push(Point::new(r - r * angle.cos(), r - r * angle.sin()));
             }
-            
+
             path.push(Point::new(r, 0.0));
         } else {
             // Square corners
@@ -219,26 +219,32 @@ impl JigsawPuzzleMaker {
         self.paths.push(path);
     }
 
-    fn generate_vertical_cut(&mut self, x: f32, piece_height: f32, _tab_width: f32, _tab_height: f32) {
+    fn generate_vertical_cut(
+        &mut self,
+        x: f32,
+        piece_height: f32,
+        _tab_width: f32,
+        _tab_height: f32,
+    ) {
         let mut path = Vec::new();
         let num_tabs = self.params.pieces_down;
         let piece_width = self.params.width / self.params.pieces_across as f32;
-        
+
         path.push(Point::new(x, 0.0));
 
         for row in 0..num_tabs {
             let y_start = row as f32 * piece_height;
             let flip = self.rbool();
-            
+
             // Draw tab using Draradech's Bézier algorithm
             // Save current position
             let start_y = path.last().map(|p| p.y).unwrap_or(0.0);
-            
+
             // Generate tab path starting from current Y position
             let mut tab_path = Vec::new();
             tab_path.push(Point::new(x, start_y));
             self.draw_tab_vertical(&mut tab_path, x, piece_height, piece_width, flip);
-            
+
             // Offset tab to correct position and add to main path
             for point in tab_path.iter().skip(1) {
                 path.push(Point::new(point.x, y_start + point.y));
@@ -248,24 +254,30 @@ impl JigsawPuzzleMaker {
         self.paths.push(path);
     }
 
-    fn generate_horizontal_cut(&mut self, y: f32, piece_width: f32, _tab_width: f32, _tab_height: f32) {
+    fn generate_horizontal_cut(
+        &mut self,
+        y: f32,
+        piece_width: f32,
+        _tab_width: f32,
+        _tab_height: f32,
+    ) {
         let mut path = Vec::new();
         let num_tabs = self.params.pieces_across;
         let piece_height = self.params.height / self.params.pieces_down as f32;
-        
+
         path.push(Point::new(0.0, y));
 
         for col in 0..num_tabs {
             let x_start = col as f32 * piece_width;
             let flip = self.rbool();
-            
+
             // Draw tab using Draradech's Bézier algorithm
             let start_x = path.last().map(|p| p.x).unwrap_or(0.0);
-            
+
             let mut tab_path = Vec::new();
             tab_path.push(Point::new(start_x, y));
             self.draw_tab_horizontal(&mut tab_path, y, piece_width, piece_height, flip);
-            
+
             // Offset tab to correct position and add to main path
             for point in tab_path.iter().skip(1) {
                 path.push(Point::new(x_start + point.x, point.y));
@@ -275,25 +287,32 @@ impl JigsawPuzzleMaker {
         self.paths.push(path);
     }
 
-    fn draw_tab_vertical(&mut self, path: &mut Vec<Point>, x: f32, piece_length: f32, piece_width: f32, flip: bool) {
+    fn draw_tab_vertical(
+        &mut self,
+        path: &mut Vec<Point>,
+        x: f32,
+        piece_length: f32,
+        piece_width: f32,
+        flip: bool,
+    ) {
         // Draradech algorithm: Uses Bézier curves with random jitter
         // t = tab size (as fraction), j = jitter, a-e = random values
         let t = self.params.tab_size_percent / 200.0; // Divide by 200 to get fraction of piece
         let j = self.params.jitter_percent / 100.0;
-        
+
         // Generate random values for this tab (matches Draradech's next() function)
         let a = self.uniform(-j, j);
         let b = self.uniform(-j, j);
         let c = self.uniform(-j, j);
         let d = self.uniform(-j, j);
         let e = self.uniform(-j, j);
-        
+
         let sign = if flip { -1.0 } else { 1.0 };
-        
+
         // Convert l (length) and w (width) functions - vertical cuts
         let l = |v: f32| piece_length * v;
         let w = |v: f32| x + piece_width * v * sign;
-        
+
         // 10 control points using Draradech's algorithm (p0-p9)
         // These create 3 cubic Bézier curves
         let p0 = Point::new(w(0.0), l(0.0));
@@ -306,24 +325,24 @@ impl JigsawPuzzleMaker {
         let p7 = Point::new(w(-t + c), l(0.5 + b + d));
         let p8 = Point::new(w(e), l(0.8));
         let p9 = Point::new(w(0.0), l(1.0));
-        
+
         // Approximate cubic Bézier curves with line segments
         let steps = 10;
-        
+
         // First cubic Bézier: p0-p1-p2-p3
         for i in 1..=steps {
             let t_val = i as f32 / steps as f32;
             let point = Self::cubic_bezier(p0.clone(), p1.clone(), p2.clone(), p3.clone(), t_val);
             path.push(point);
         }
-        
+
         // Second cubic Bézier: p3-p4-p5-p6
         for i in 1..=steps {
             let t_val = i as f32 / steps as f32;
             let point = Self::cubic_bezier(p3.clone(), p4.clone(), p5.clone(), p6.clone(), t_val);
             path.push(point);
         }
-        
+
         // Third cubic Bézier: p6-p7-p8-p9
         for i in 1..=steps {
             let t_val = i as f32 / steps as f32;
@@ -332,23 +351,30 @@ impl JigsawPuzzleMaker {
         }
     }
 
-    fn draw_tab_horizontal(&mut self, path: &mut Vec<Point>, y: f32, piece_length: f32, piece_width: f32, flip: bool) {
+    fn draw_tab_horizontal(
+        &mut self,
+        path: &mut Vec<Point>,
+        y: f32,
+        piece_length: f32,
+        piece_width: f32,
+        flip: bool,
+    ) {
         // Draradech algorithm for horizontal tabs
         let t = self.params.tab_size_percent / 200.0;
         let j = self.params.jitter_percent / 100.0;
-        
+
         let a = self.uniform(-j, j);
         let b = self.uniform(-j, j);
         let c = self.uniform(-j, j);
         let d = self.uniform(-j, j);
         let e = self.uniform(-j, j);
-        
+
         let sign = if flip { -1.0 } else { 1.0 };
-        
+
         // For horizontal cuts, swap l and w
         let l = |v: f32| piece_length * v;
         let w = |v: f32| y + piece_width * v * sign;
-        
+
         let p0 = Point::new(l(0.0), w(0.0));
         let p1 = Point::new(l(0.2), w(a));
         let p2 = Point::new(l(0.5 + b + d), w(-t + c));
@@ -359,28 +385,28 @@ impl JigsawPuzzleMaker {
         let p7 = Point::new(l(0.5 + b + d), w(-t + c));
         let p8 = Point::new(l(0.8), w(e));
         let p9 = Point::new(l(1.0), w(0.0));
-        
+
         let steps = 10;
-        
+
         for i in 1..=steps {
             let t_val = i as f32 / steps as f32;
             let point = Self::cubic_bezier(p0.clone(), p1.clone(), p2.clone(), p3.clone(), t_val);
             path.push(point);
         }
-        
+
         for i in 1..=steps {
             let t_val = i as f32 / steps as f32;
             let point = Self::cubic_bezier(p3.clone(), p4.clone(), p5.clone(), p6.clone(), t_val);
             path.push(point);
         }
-        
+
         for i in 1..=steps {
             let t_val = i as f32 / steps as f32;
             let point = Self::cubic_bezier(p6.clone(), p7.clone(), p8.clone(), p9.clone(), t_val);
             path.push(point);
         }
     }
-    
+
     fn cubic_bezier(p0: Point, p1: Point, p2: Point, p3: Point, t: f32) -> Point {
         // Cubic Bézier curve formula: B(t) = (1-t)³P0 + 3(1-t)²tP1 + 3(1-t)t²P2 + t³P3
         let t2 = t * t;
@@ -388,7 +414,7 @@ impl JigsawPuzzleMaker {
         let mt = 1.0 - t;
         let mt2 = mt * mt;
         let mt3 = mt2 * mt;
-        
+
         Point::new(
             mt3 * p0.x + 3.0 * mt2 * t * p1.x + 3.0 * mt * t2 * p2.x + t3 * p3.x,
             mt3 * p0.y + 3.0 * mt2 * t * p1.y + 3.0 * mt * t2 * p2.y + t3 * p3.y,
@@ -397,88 +423,134 @@ impl JigsawPuzzleMaker {
 
     pub fn to_gcode(&self, plunge_rate: f32, cut_depth: f32) -> String {
         let mut gcode = String::new();
-        
+
         gcode.push_str("; Jigsaw Puzzle Maker G-code\n");
         gcode.push_str("; Enhanced with features from https://github.com/Draradech/jigsaw\n");
-        gcode.push_str(&format!("; Puzzle: {}x{} mm\n", self.params.width, self.params.height));
-        gcode.push_str(&format!("; Pieces: {}x{} ({})\n", 
-            self.params.pieces_across, 
+        gcode.push_str(&format!(
+            "; Puzzle: {}x{} mm\n",
+            self.params.width, self.params.height
+        ));
+        gcode.push_str(&format!(
+            "; Pieces: {}x{} ({})\n",
+            self.params.pieces_across,
             self.params.pieces_down,
-            self.params.pieces_across * self.params.pieces_down));
+            self.params.pieces_across * self.params.pieces_down
+        ));
         gcode.push_str(&format!("; Kerf: {} mm\n", self.params.kerf));
         gcode.push_str(&format!("; Laser passes: {}\n", self.params.laser_passes));
         gcode.push_str(&format!("; Laser power: S{}\n", self.params.laser_power));
-        gcode.push_str(&format!("; Feed rate: {:.0} mm/min\n", self.params.feed_rate));
+        gcode.push_str(&format!(
+            "; Feed rate: {:.0} mm/min\n",
+            self.params.feed_rate
+        ));
         gcode.push_str(";\n");
-        
+
         gcode.push_str("; Puzzle Parameters:\n");
-        gcode.push_str(&format!(";   Seed: {} (for reproducible patterns)\n", self.params.seed));
-        gcode.push_str(&format!(";   Tab size: {:.1}%\n", self.params.tab_size_percent));
-        gcode.push_str(&format!(";   Jitter: {:.1}% (randomness in piece positions)\n", self.params.jitter_percent));
-        gcode.push_str(&format!(";   Corner radius: {:.1} mm\n", self.params.corner_radius));
+        gcode.push_str(&format!(
+            ";   Seed: {} (for reproducible patterns)\n",
+            self.params.seed
+        ));
+        gcode.push_str(&format!(
+            ";   Tab size: {:.1}%\n",
+            self.params.tab_size_percent
+        ));
+        gcode.push_str(&format!(
+            ";   Jitter: {:.1}% (randomness in piece positions)\n",
+            self.params.jitter_percent
+        ));
+        gcode.push_str(&format!(
+            ";   Corner radius: {:.1} mm\n",
+            self.params.corner_radius
+        ));
         gcode.push_str(";\n");
-        
+
         gcode.push_str("; Puzzle Layout:\n");
-        gcode.push_str(&format!(";   Total pieces: {}\n", 
-            self.params.pieces_across * self.params.pieces_down));
+        gcode.push_str(&format!(
+            ";   Total pieces: {}\n",
+            self.params.pieces_across * self.params.pieces_down
+        ));
         let piece_w = self.params.width / self.params.pieces_across as f32;
         let piece_h = self.params.height / self.params.pieces_down as f32;
-        gcode.push_str(&format!(";   Piece size: {:.1}x{:.1} mm\n", piece_w, piece_h));
+        gcode.push_str(&format!(
+            ";   Piece size: {:.1}x{:.1} mm\n",
+            piece_w, piece_h
+        ));
         gcode.push_str("\n");
-        
+
         gcode.push_str("; Initialization sequence\n");
         gcode.push_str("G21 ; Set units to millimeters\n");
         gcode.push_str("G90 ; Absolute positioning\n");
         gcode.push_str("G17 ; XY plane selection\n");
         gcode.push_str("\n");
-        
+
         gcode.push_str("; Home and set work coordinate system\n");
         gcode.push_str("$H ; Home all axes (bottom-left corner)\n");
         gcode.push_str("G10 L2 P1 X0 Y0 Z0 ; Clear G54 offset\n");
         gcode.push_str("G54 ; Select work coordinate system 1\n");
         gcode.push_str("G0 X10.0 Y10.0 ; Move to work origin (10mm from corner)\n");
         gcode.push_str("G10 L20 P1 X0 Y0 Z0 ; Set current position as work zero\n");
-        gcode.push_str(&format!("G0 Z{:.2} F{:.0} ; Move to safe height\n", 5.0, self.params.feed_rate));
+        gcode.push_str(&format!(
+            "G0 Z{:.2} F{:.0} ; Move to safe height\n",
+            5.0, self.params.feed_rate
+        ));
         gcode.push_str("\n");
-        
+
         for (i, path) in self.paths.iter().enumerate() {
             if i == 0 {
                 gcode.push_str("; Outer border\n");
             } else if i <= self.params.pieces_across as usize {
                 gcode.push_str(&format!("; Vertical cut {}\n", i));
             } else {
-                gcode.push_str(&format!("; Horizontal cut {}\n", i - self.params.pieces_across as usize));
+                gcode.push_str(&format!(
+                    "; Horizontal cut {}\n",
+                    i - self.params.pieces_across as usize
+                ));
             }
-            
+
             if let Some(first_point) = path.first() {
-                gcode.push_str(&format!("G0 X{:.2} Y{:.2} ; Rapid to start\n", first_point.x, first_point.y));
-                gcode.push_str(&format!("G1 Z{:.2} F{:.0} ; Plunge\n", -cut_depth, plunge_rate));
-                
+                gcode.push_str(&format!(
+                    "G0 X{:.2} Y{:.2} ; Rapid to start\n",
+                    first_point.x, first_point.y
+                ));
+                gcode.push_str(&format!(
+                    "G1 Z{:.2} F{:.0} ; Plunge\n",
+                    -cut_depth, plunge_rate
+                ));
+
                 for pass_num in 1..=self.params.laser_passes {
-                    gcode.push_str(&format!("; Pass {}/{}\n", pass_num, self.params.laser_passes));
+                    gcode.push_str(&format!(
+                        "; Pass {}/{}\n",
+                        pass_num, self.params.laser_passes
+                    ));
                     gcode.push_str(&format!("M3 S{} ; Laser on\n", self.params.laser_power));
-                    
+
                     // Add feed rate to every G1 command for GRBL compatibility
                     for point in path.iter().skip(1) {
-                        gcode.push_str(&format!("G1 X{:.2} Y{:.2} F{:.0}\n", point.x, point.y, self.params.feed_rate));
+                        gcode.push_str(&format!(
+                            "G1 X{:.2} Y{:.2} F{:.0}\n",
+                            point.x, point.y, self.params.feed_rate
+                        ));
                     }
-                    
+
                     gcode.push_str("M5 ; Laser off\n");
-                    
+
                     if pass_num < self.params.laser_passes {
-                        gcode.push_str(&format!("G0 X{:.2} Y{:.2} ; Return to start for next pass\n", first_point.x, first_point.y));
+                        gcode.push_str(&format!(
+                            "G0 X{:.2} Y{:.2} ; Return to start for next pass\n",
+                            first_point.x, first_point.y
+                        ));
                     }
                 }
             }
-            
+
             gcode.push_str(&format!("G0 Z{:.2} ; Retract\n\n", 5.0));
         }
-        
+
         gcode.push_str("M5 ; Ensure laser off\n");
         gcode.push_str("G0 Z10.0 ; Move to safe height\n");
         gcode.push_str("G0 X0 Y0 ; Return to origin\n");
         gcode.push_str("M2 ; Program end\n");
-        
+
         gcode
     }
 }
@@ -500,7 +572,7 @@ mod tests {
     fn test_parameter_validation() {
         let mut params = PuzzleParameters::default();
         params.width = 10.0;
-        
+
         let result = JigsawPuzzleMaker::new(params);
         assert!(result.is_err());
     }
@@ -509,7 +581,7 @@ mod tests {
     fn test_generate_simple_puzzle() {
         let params = PuzzleParameters::default();
         let mut maker = JigsawPuzzleMaker::new(params).unwrap();
-        
+
         let result = maker.generate();
         assert!(result.is_ok());
         assert!(!maker.paths.is_empty());
@@ -520,7 +592,7 @@ mod tests {
         let params = PuzzleParameters::default();
         let mut maker = JigsawPuzzleMaker::new(params).unwrap();
         maker.generate().unwrap();
-        
+
         let gcode = maker.to_gcode(300.0, 3.0);
         assert!(gcode.contains("G21"));
         assert!(gcode.contains("G90"));

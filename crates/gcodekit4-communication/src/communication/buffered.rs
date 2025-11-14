@@ -144,10 +144,9 @@ impl BufferedCommunicatorWrapper {
 
     /// Queue a command for sending
     pub fn queue_command(&self, command: String) -> gcodekit4_core::Result<()> {
-        let mut queue = self
-            .command_queue
-            .lock()
-            .map_err(|e| gcodekit4_core::Error::other(format!("Failed to lock command queue: {}", e)))?;
+        let mut queue = self.command_queue.lock().map_err(|e| {
+            gcodekit4_core::Error::other(format!("Failed to lock command queue: {}", e))
+        })?;
 
         if queue.len() >= self.config.queue_size {
             return Err(gcodekit4_core::Error::other("Command queue is full"));
@@ -159,19 +158,17 @@ impl BufferedCommunicatorWrapper {
 
     /// Get the number of queued commands
     pub fn queued_commands_count(&self) -> gcodekit4_core::Result<usize> {
-        let queue = self
-            .command_queue
-            .lock()
-            .map_err(|e| gcodekit4_core::Error::other(format!("Failed to lock command queue: {}", e)))?;
+        let queue = self.command_queue.lock().map_err(|e| {
+            gcodekit4_core::Error::other(format!("Failed to lock command queue: {}", e))
+        })?;
         Ok(queue.len())
     }
 
     /// Get the number of active commands
     pub fn active_commands_count(&self) -> gcodekit4_core::Result<usize> {
-        let active = self
-            .active_commands
-            .lock()
-            .map_err(|e| gcodekit4_core::Error::other(format!("Failed to lock active commands: {}", e)))?;
+        let active = self.active_commands.lock().map_err(|e| {
+            gcodekit4_core::Error::other(format!("Failed to lock active commands: {}", e))
+        })?;
         Ok(active.len())
     }
 
@@ -192,10 +189,9 @@ impl BufferedCommunicatorWrapper {
         }
 
         loop {
-            let mut queue = self
-                .command_queue
-                .lock()
-                .map_err(|e| gcodekit4_core::Error::other(format!("Failed to lock command queue: {}", e)))?;
+            let mut queue = self.command_queue.lock().map_err(|e| {
+                gcodekit4_core::Error::other(format!("Failed to lock command queue: {}", e))
+            })?;
 
             if queue.is_empty() {
                 break;
@@ -227,7 +223,10 @@ impl BufferedCommunicatorWrapper {
     }
 
     /// Send a command and track it in the buffer
-    fn send_buffered_command(&mut self, command: &mut BufferedCommand) -> gcodekit4_core::Result<()> {
+    fn send_buffered_command(
+        &mut self,
+        command: &mut BufferedCommand,
+    ) -> gcodekit4_core::Result<()> {
         self.communicator
             .send_command(&command.command)
             .map_err(|e| {
@@ -243,10 +242,9 @@ impl BufferedCommunicatorWrapper {
 
     /// Handle acknowledgment from the device
     pub fn handle_acknowledgment(&mut self) -> gcodekit4_core::Result<()> {
-        let mut active = self
-            .active_commands
-            .lock()
-            .map_err(|e| gcodekit4_core::Error::other(format!("Failed to lock active commands: {}", e)))?;
+        let mut active = self.active_commands.lock().map_err(|e| {
+            gcodekit4_core::Error::other(format!("Failed to lock active commands: {}", e))
+        })?;
 
         if let Some(command) = active.first_mut() {
             let command_size = command.command.len() + 1;
@@ -267,10 +265,9 @@ impl BufferedCommunicatorWrapper {
 
     /// Handle error response from the device
     pub fn handle_error(&mut self, error_msg: String) -> gcodekit4_core::Result<()> {
-        let mut active = self
-            .active_commands
-            .lock()
-            .map_err(|e| gcodekit4_core::Error::other(format!("Failed to lock active commands: {}", e)))?;
+        let mut active = self.active_commands.lock().map_err(|e| {
+            gcodekit4_core::Error::other(format!("Failed to lock active commands: {}", e))
+        })?;
 
         if let Some(command) = active.first_mut() {
             command.mark_failed();
@@ -321,16 +318,14 @@ impl BufferedCommunicatorWrapper {
 
     /// Clear all queued commands
     pub fn clear_queue(&mut self) -> gcodekit4_core::Result<()> {
-        let mut queue = self
-            .command_queue
-            .lock()
-            .map_err(|e| gcodekit4_core::Error::other(format!("Failed to lock command queue: {}", e)))?;
+        let mut queue = self.command_queue.lock().map_err(|e| {
+            gcodekit4_core::Error::other(format!("Failed to lock command queue: {}", e))
+        })?;
         queue.clear();
 
-        let mut active = self
-            .active_commands
-            .lock()
-            .map_err(|e| gcodekit4_core::Error::other(format!("Failed to lock active commands: {}", e)))?;
+        let mut active = self.active_commands.lock().map_err(|e| {
+            gcodekit4_core::Error::other(format!("Failed to lock active commands: {}", e))
+        })?;
         active.clear();
 
         self.sent_buffer_size = 0;

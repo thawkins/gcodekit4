@@ -63,31 +63,40 @@ export component CustomTextEdit inherits Rectangle {
             Flickable {
                 viewport-y: root.sync-scroll-y;
                 interactive: false;
-                viewport-height: root.total-lines * root.line-height;
+                // Match the main text area viewport height
+                viewport-height: root.total-lines * root.line-height + 20px;
                 
                 VerticalLayout {
                     alignment: start;
-                    padding-top: 5px;
-                    padding-bottom: 5px;
+                    spacing: 0px;
+                    padding-top: 12px;
+                    padding-bottom: 20px;
                     padding-left: 5px;
                     padding-right: 0px;
                     
-                    // Spacer to match text positioning (line numbers start at 1)
-                    if root.visible-lines.length > 0: Rectangle {
-                        height: (root.visible-lines[0].line-number - 1) * root.line-height;
+                    if root.visible-start-line > 0: Rectangle {
+                        height: root.visible-start-line * root.line-height;
                     }
                     
                     for line in root.visible-lines: Rectangle {
                         height: root.line-height;
-                        
-                        Text {
-                            text: line.line-number;
-                            color: root.line-number-color;
-                            font-size: root.font-size;
-                            font-family: root.font-family;
-                            horizontal-alignment: right;
-                            vertical-alignment: center;
-                            width: 100%;
+
+                        HorizontalLayout {
+                            padding: 0px;
+                            alignment: center;
+
+                            VerticalLayout {
+                                alignment: center;
+                                padding: 0px;
+
+                                Text {
+                                    text: root.visible-start-line + (line.line-number - root.visible-lines[0].line-number) + 1;
+                                    color: root.line-number-color;
+                                    font-size: root.font-size;
+                                    font-family: root.font-family;
+                                    horizontal-alignment: right;
+                                }
+                            }
                         }
                     }
                 }
@@ -96,13 +105,17 @@ export component CustomTextEdit inherits Rectangle {
         
         // Main text area with virtual scrolling
         text-flickable := Flickable {
+            horizontal-stretch: 1.0;
+            vertical-stretch: 1.0;
             interactive: true;
-            viewport-height: root.total-lines * root.line-height;
+            // Add extra padding to viewport height to ensure last line is fully visible
+            viewport-height: root.total-lines * root.line-height + 20px;
             
             VerticalLayout {
+                spacing: 0px;
                 alignment: start;
                 padding-top: 12px;
-                padding-bottom: 5px;
+                padding-bottom: 20px;
                 padding-left: 5px;
                 padding-right: 5px;
                 
@@ -122,15 +135,19 @@ export component CustomTextEdit inherits Rectangle {
                     HorizontalLayout {
                         padding: 0px;
                         alignment: start;
-                        
-                        Text {
-                            text: line.content;
-                            color: root.text-color;
-                            font-size: root.font-size;
-                            font-family: root.font-family;
-                            vertical-alignment: center;
-                            horizontal-alignment: left;
-                            overflow: elide;
+
+                        VerticalLayout {
+                            alignment: center;
+                            padding: 0px;
+
+                            Text {
+                                text: line.content;
+                                color: root.text-color;
+                                font-size: root.font-size;
+                                font-family: root.font-family;
+                                horizontal-alignment: left;
+                                overflow: elide;
+                            }
                         }
                     }
                 }

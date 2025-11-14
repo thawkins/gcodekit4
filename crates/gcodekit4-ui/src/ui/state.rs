@@ -61,8 +61,7 @@ pub struct ControllerState {
 }
 
 /// File state
-#[derive(Debug, Clone)]
-#[derive(Default)]
+#[derive(Debug, Clone, Default)]
 pub struct FileState {
     /// Current file path
     pub current_file: Option<String>,
@@ -75,7 +74,6 @@ pub struct FileState {
     /// File is dirty (unsaved)
     pub is_dirty: bool,
 }
-
 
 /// Machine state
 #[derive(Debug, Clone, Default)]

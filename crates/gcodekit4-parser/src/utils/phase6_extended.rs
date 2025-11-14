@@ -1144,11 +1144,11 @@ pub struct AlarmManager {
     /// Active alarms
     alarms: Vec<Alarm>,
     /// Enable sound
-    sound_enabled: bool,
+    _sound_enabled: bool,
     /// Enable visual
-    visual_enabled: bool,
+    _visual_enabled: bool,
     /// Enable system tray
-    system_tray_enabled: bool,
+    _system_tray_enabled: bool,
 }
 
 impl AlarmManager {
@@ -1156,9 +1156,9 @@ impl AlarmManager {
     pub fn new() -> Self {
         Self {
             alarms: Vec::new(),
-            sound_enabled: true,
-            visual_enabled: true,
-            system_tray_enabled: true,
+            _sound_enabled: true,
+            _visual_enabled: true,
+            _system_tray_enabled: true,
         }
     }
 

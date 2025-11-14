@@ -55,8 +55,8 @@ pub enum SafetyError {
 #[derive(Debug, Clone)]
 pub struct EmergencyStopManager {
     state: EmergencyStopState,
-    auto_unlock: bool,
-    unlock_delay_ms: u32,
+    _auto_unlock: bool,
+    _unlock_delay_ms: u32,
 }
 
 impl EmergencyStopManager {
@@ -64,8 +64,8 @@ impl EmergencyStopManager {
     pub fn new(auto_unlock: bool, unlock_delay_ms: u32) -> Self {
         Self {
             state: EmergencyStopState::Armed,
-            auto_unlock,
-            unlock_delay_ms,
+            _auto_unlock: auto_unlock,
+            _unlock_delay_ms: unlock_delay_ms,
         }
     }
 
@@ -761,7 +761,7 @@ impl BufferDiagnostics {
 #[derive(Debug, Clone)]
 pub struct PerformanceProfiler {
     samples: Vec<u64>,
-    operation_name: String,
+    _operation_name: String,
 }
 
 impl PerformanceProfiler {
@@ -769,7 +769,7 @@ impl PerformanceProfiler {
     pub fn new(operation_name: impl Into<String>) -> Self {
         Self {
             samples: Vec::new(),
-            operation_name: operation_name.into(),
+            _operation_name: operation_name.into(),
         }
     }
 

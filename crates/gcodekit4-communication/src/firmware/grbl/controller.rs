@@ -4,10 +4,10 @@
 //! including connection management, command execution, and status polling.
 
 use crate::communication::{ConnectionParams, NoOpCommunicator};
-use gcodekit4_core::{ControllerTrait, OverrideState};
-use gcodekit4_core::{ControllerState, ControllerStatus, PartialPosition};
 use crate::firmware::grbl::{GrblCommunicator, GrblCommunicatorConfig};
 use async_trait::async_trait;
+use gcodekit4_core::{ControllerState, ControllerStatus, PartialPosition};
+use gcodekit4_core::{ControllerTrait, OverrideState};
 use parking_lot::RwLock;
 use std::sync::Arc;
 use tokio::task::JoinHandle;

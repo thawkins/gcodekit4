@@ -246,10 +246,7 @@ impl DxfFile {
         let layer = entity.layer().to_string();
         self.entities.push(entity.clone());
 
-        self.layers
-            .entry(layer)
-            .or_default()
-            .push(entity);
+        self.layers.entry(layer).or_default().push(entity);
     }
 
     /// Get all entities in a layer
@@ -438,18 +435,18 @@ impl DxfParser {
         while *index < lines.len() {
             let code = lines[*index].trim();
             *index += 1;
-            
+
             if *index >= lines.len() {
                 break;
             }
-            
+
             let value = lines[*index].trim();
-            
+
             if code == "0" && !value.is_empty() {
                 *index -= 1;
                 break;
             }
-            
+
             match code {
                 "8" => layer = value.to_string(),
                 "62" => color = value.parse().unwrap_or(256),
@@ -459,7 +456,7 @@ impl DxfParser {
                 "21" => end.y = value.parse().unwrap_or(0.0),
                 _ => {}
             }
-            
+
             *index += 1;
         }
 
@@ -481,18 +478,18 @@ impl DxfParser {
         while *index < lines.len() {
             let code = lines[*index].trim();
             *index += 1;
-            
+
             if *index >= lines.len() {
                 break;
             }
-            
+
             let value = lines[*index].trim();
-            
+
             if code == "0" && !value.is_empty() {
                 *index -= 1;
                 break;
             }
-            
+
             match code {
                 "8" => layer = value.to_string(),
                 "62" => color = value.parse().unwrap_or(256),
@@ -501,7 +498,7 @@ impl DxfParser {
                 "40" => radius = value.parse().unwrap_or(0.0),
                 _ => {}
             }
-            
+
             *index += 1;
         }
 
@@ -525,18 +522,18 @@ impl DxfParser {
         while *index < lines.len() {
             let code = lines[*index].trim();
             *index += 1;
-            
+
             if *index >= lines.len() {
                 break;
             }
-            
+
             let value = lines[*index].trim();
-            
+
             if code == "0" && !value.is_empty() {
                 *index -= 1;
                 break;
             }
-            
+
             match code {
                 "8" => layer = value.to_string(),
                 "62" => color = value.parse().unwrap_or(256),
@@ -547,7 +544,7 @@ impl DxfParser {
                 "51" => end_angle = value.parse().unwrap_or(0.0),
                 _ => {}
             }
-            
+
             *index += 1;
         }
 
@@ -572,13 +569,13 @@ impl DxfParser {
         while *index < lines.len() {
             let code = lines[*index].trim();
             *index += 1;
-            
+
             if *index >= lines.len() {
                 break;
             }
-            
+
             let value = lines[*index].trim();
-            
+
             match code {
                 "0" => {
                     if value != "VERTEX" {
@@ -602,7 +599,7 @@ impl DxfParser {
                 }
                 _ => {}
             }
-            
+
             *index += 1;
         }
 
@@ -626,18 +623,18 @@ impl DxfParser {
         while *index < lines.len() {
             let code = lines[*index].trim();
             *index += 1;
-            
+
             if *index >= lines.len() {
                 break;
             }
-            
+
             let value = lines[*index].trim();
-            
+
             if code == "0" && !value.is_empty() {
                 *index -= 1;
                 break;
             }
-            
+
             match code {
                 "1" => content = value.to_string(),
                 "8" => layer = value.to_string(),
@@ -648,7 +645,7 @@ impl DxfParser {
                 "50" => rotation = value.parse().unwrap_or(0.0),
                 _ => {}
             }
-            
+
             *index += 1;
         }
 

@@ -3,11 +3,11 @@
 //! Slint-based user interface for GCodeKit4.
 //! Provides UI panels, visualizer, settings, and editor components.
 
+pub mod config;
+pub mod editor;
+pub mod testing;
 pub mod ui;
 pub mod visualizer;
-pub mod config;
-pub mod testing;
-pub mod editor;
 
 pub use ui::{
     ConsoleListener, DeviceConsoleManager, DeviceMessageType, FirmwareSettingsIntegration,
@@ -20,4 +20,7 @@ pub use config::{
     MachineSettings, SettingsManager, UiSettings,
 };
 
-pub use editor::{EditorState, TextBuffer, TextChange, UndoManager, Viewport, EditorBridge, SlintTextLine, TextLine};
+pub use editor::{
+    EditorBridge, EditorState, SlintTextLine, TextBuffer, TextChange, TextLine, UndoManager,
+    Viewport,
+};

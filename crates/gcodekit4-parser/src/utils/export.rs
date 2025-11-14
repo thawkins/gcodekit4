@@ -18,8 +18,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 /// File format options for export
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum FileFormat {
     /// Standard G-code (.nc)
     #[default]
@@ -59,7 +58,6 @@ impl FileFormat {
         }
     }
 }
-
 
 /// Export options
 #[derive(Debug, Clone, Serialize, Deserialize)]

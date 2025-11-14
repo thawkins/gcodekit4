@@ -197,8 +197,7 @@ pub trait FirmwareSettings: Serialize {
 /// Complete application configuration
 ///
 /// Aggregates all settings sections and provides file I/O operations.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Config {
     /// Connection settings
     pub connection: ConnectionSettings,
@@ -211,7 +210,6 @@ pub struct Config {
     /// Recent files list
     pub recent_files: Vec<PathBuf>,
 }
-
 
 impl Config {
     /// Create new config with defaults

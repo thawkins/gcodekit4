@@ -20,8 +20,8 @@ use std::path::{Path, PathBuf};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use gcodekit4_core::Position;
 use crate::utils::GcodeFileReader;
+use gcodekit4_core::Position;
 
 /// File processing statistics
 #[derive(Debug, Clone, Serialize, Deserialize)]

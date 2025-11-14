@@ -1,5 +1,4 @@
 use chrono::Utc;
-use std::env;
 
 fn main() {
     // Generate build timestamp

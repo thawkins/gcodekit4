@@ -114,8 +114,7 @@ impl FirmwareDetector {
         let version = SemanticVersion::parse(&version_string)
             .context("Failed to parse GRBL version number")?;
 
-        let mut result =
-            FirmwareDetectionResult::new(FirmwareType::Grbl, version, version_string);
+        let mut result = FirmwareDetectionResult::new(FirmwareType::Grbl, version, version_string);
         result.build_date = build_date;
         result.build_info = build_info;
         result.protocol_version = Some("1.1".to_string());
@@ -277,7 +276,10 @@ mod tests {
 
     #[test]
     fn test_get_query_command() {
-        assert_eq!(FirmwareDetector::get_query_command(FirmwareType::Grbl), "$I");
+        assert_eq!(
+            FirmwareDetector::get_query_command(FirmwareType::Grbl),
+            "$I"
+        );
         assert_eq!(
             FirmwareDetector::get_query_command(FirmwareType::Unknown),
             "$I"

@@ -149,10 +149,9 @@ fn insert_into_node(
             let children = node.children.as_mut().unwrap();
             // Insert into only the children that intersect with the item bounds
             for child in children.iter_mut() {
-                if child.bounds.intersects(bounds)
-                    && !child.items.contains(&item_idx) {
-                        child.items.push(item_idx);
-                    }
+                if child.bounds.intersects(bounds) && !child.items.contains(&item_idx) {
+                    child.items.push(item_idx);
+                }
             }
         }
     }

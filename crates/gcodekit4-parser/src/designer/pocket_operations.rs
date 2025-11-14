@@ -131,11 +131,13 @@ impl PocketGenerator {
 
             let _depth = -(self.operation.depth * pass as f64 / passes as f64);
 
-            let points = [Point::new(inset_x, inset_y),
+            let points = [
+                Point::new(inset_x, inset_y),
                 Point::new(inset_x + inset_width, inset_y),
                 Point::new(inset_x + inset_width, inset_y + inset_height),
                 Point::new(inset_x, inset_y + inset_height),
-                Point::new(inset_x, inset_y)];
+                Point::new(inset_x, inset_y),
+            ];
 
             for window in points.windows(2) {
                 let start = window[0];

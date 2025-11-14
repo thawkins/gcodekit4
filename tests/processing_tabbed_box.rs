@@ -1,40 +1,37 @@
 //! Test for verifying tabbed box tab protrusion dimensions
 
-use gcodekit4_parser::processing::tabbed_box::{BoxParameters, TabbedBoxMaker, TabType, BoxType, LayoutStyle};
+use gcodekit4_parser::processing::tabbed_box::{
+    BoxParameters, BoxType, FingerJointSettings, TabbedBoxMaker,
+};
 
 #[test]
 fn test_tab_protrusion_equals_thickness_no_kerf() {
     let params = BoxParameters {
-        length: 100.0,
-        width: 100.0,
-        height: 100.0,
+        x: 100.0,
+        y: 100.0,
+        h: 100.0,
         thickness: 3.0,
-        tab_width: 25.0,
-        kerf: 0.0,
-        spacing: 5.0,
+        outside: false,
         box_type: BoxType::FullBox,
-        tab_type: TabType::Laser,
-        layout_style: LayoutStyle::Diagrammatic,
-        inside_dimensions: false,
-        dividers_length: 0,
-        dividers_width: 0,
+        finger_joint: FingerJointSettings::default(),
+        burn: 0.0,
         laser_passes: 1,
         laser_power: 1000,
         feed_rate: 500.0,
     };
-    
+
     let mut maker = TabbedBoxMaker::new(params).expect("Failed to create TabbedBoxMaker");
     maker.generate().expect("Failed to generate box");
-    
-    let gcode = maker.to_gcode(500.0, 100.0, 3.0);
-    
+
+    let gcode = maker.to_gcode();
+
     let mut y_coords: Vec<f32> = Vec::new();
     let mut x_coords: Vec<f32> = Vec::new();
-    
+
     for line in gcode.lines() {
         if line.starts_with("G1") || line.starts_with("G0") {
             if let Some(y_start) = line.find("Y") {
-                let y_str: String = line[y_start+1..]
+                let y_str: String = line[y_start + 1..]
                     .chars()
                     .take_while(|c| c.is_numeric() || *c == '.' || *c == '-')
                     .collect();
@@ -43,7 +40,7 @@ fn test_tab_protrusion_equals_thickness_no_kerf() {
                 }
             }
             if let Some(x_start) = line.find("X") {
-                let x_str: String = line[x_start+1..]
+                let x_str: String = line[x_start + 1..]
                     .chars()
                     .take_while(|c| c.is_numeric() || *c == '.' || *c == '-')
                     .collect();
@@ -53,58 +50,56 @@ fn test_tab_protrusion_equals_thickness_no_kerf() {
             }
         }
     }
-    
+
     let min_y = y_coords.iter().cloned().fold(f32::INFINITY, f32::min);
     let max_y = y_coords.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
     let min_x = x_coords.iter().cloned().fold(f32::INFINITY, f32::min);
     let max_x = x_coords.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
-    
+
     println!("\n=== Test: No Kerf ===");
     println!("Material thickness: 3.0mm");
     println!("Y coordinate range: {:.2} to {:.2}", min_y, max_y);
     println!("X coordinate range: {:.2} to {:.2}", min_x, max_x);
-    
+
     if min_y < 0.0 {
         let tab_depth = min_y.abs();
         println!("Measured tab protrusion depth: {:.2}mm", tab_depth);
         println!("Expected: 3.0mm");
-        assert!((tab_depth - 3.0).abs() < 0.1, 
-                "Tab depth {:.2}mm != thickness 3.0mm", tab_depth);
+        assert!(
+            (tab_depth - 3.0).abs() < 0.1,
+            "Tab depth {:.2}mm != thickness 3.0mm",
+            tab_depth
+        );
     }
 }
 
 #[test]
 fn test_tab_protrusion_with_kerf() {
     let params = BoxParameters {
-        length: 100.0,
-        width: 100.0,
-        height: 100.0,
+        x: 100.0,
+        y: 100.0,
+        h: 100.0,
         thickness: 3.0,
-        tab_width: 25.0,
-        kerf: 0.5,
-        spacing: 5.0,
+        outside: false,
         box_type: BoxType::FullBox,
-        tab_type: TabType::Laser,
-        layout_style: LayoutStyle::Diagrammatic,
-        inside_dimensions: false,
-        dividers_length: 0,
-        dividers_width: 0,
+        finger_joint: FingerJointSettings::default(),
+        burn: 0.5,
         laser_passes: 1,
         laser_power: 1000,
         feed_rate: 500.0,
     };
-    
+
     let mut maker = TabbedBoxMaker::new(params).expect("Failed to create TabbedBoxMaker");
     maker.generate().expect("Failed to generate box");
-    
-    let gcode = maker.to_gcode(500.0, 100.0, 3.0);
-    
+
+    let gcode = maker.to_gcode();
+
     let mut y_coords: Vec<f32> = Vec::new();
-    
+
     for line in gcode.lines() {
         if line.starts_with("G1") || line.starts_with("G0") {
             if let Some(y_start) = line.find("Y") {
-                let y_str: String = line[y_start+1..]
+                let y_str: String = line[y_start + 1..]
                     .chars()
                     .take_while(|c| c.is_numeric() || *c == '.' || *c == '-')
                     .collect();
@@ -114,14 +109,14 @@ fn test_tab_protrusion_with_kerf() {
             }
         }
     }
-    
+
     let min_y = y_coords.iter().cloned().fold(f32::INFINITY, f32::min);
-    
+
     println!("\n=== Test: With Kerf 0.5mm ===");
     println!("Material thickness: 3.0mm");
     println!("Kerf: 0.5mm");
     println!("Min Y coordinate: {:.2}", min_y);
-    
+
     if min_y < 0.0 {
         let tab_depth = min_y.abs();
         println!("Measured tab protrusion depth: {:.2}mm", tab_depth);

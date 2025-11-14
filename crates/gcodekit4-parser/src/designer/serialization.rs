@@ -1,15 +1,15 @@
 //! Serialization and deserialization for designer files.
-//! 
+//!
 //! Implements save/load functionality for .gck4 (GCodeKit4) design files
 //! using JSON format with complete design state preservation.
 
+use anyhow::{Context, Result};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
-use chrono::{DateTime, Utc};
-use anyhow::{Context, Result};
 
-use super::shapes::*;
 use super::canvas::DrawingObject;
+use super::shapes::*;
 
 /// Design file format version
 const FILE_FORMAT_VERSION: &str = "1.0";
@@ -74,10 +74,18 @@ pub struct ToolpathParameters {
     pub cut_depth: f64,
 }
 
-fn default_feed_rate() -> f64 { 1000.0 }
-fn default_spindle_speed() -> f64 { 3000.0 }
-fn default_tool_diameter() -> f64 { 3.175 }
-fn default_cut_depth() -> f64 { -5.0 }
+fn default_feed_rate() -> f64 {
+    1000.0
+}
+fn default_spindle_speed() -> f64 {
+    3000.0
+}
+fn default_tool_diameter() -> f64 {
+    3.175
+}
+fn default_cut_depth() -> f64 {
+    -5.0
+}
 
 impl Default for ToolpathParameters {
     fn default() -> Self {
@@ -115,26 +123,24 @@ impl DesignFile {
 
     /// Save design to file
     pub fn save_to_file(&self, path: impl AsRef<Path>) -> Result<()> {
-        let json = serde_json::to_string_pretty(self)
-            .context("Failed to serialize design")?;
-        
-        std::fs::write(path.as_ref(), json)
-            .context("Failed to write design file")?;
-        
+        let json = serde_json::to_string_pretty(self).context("Failed to serialize design")?;
+
+        std::fs::write(path.as_ref(), json).context("Failed to write design file")?;
+
         Ok(())
     }
 
     /// Load design from file
     pub fn load_from_file(path: impl AsRef<Path>) -> Result<Self> {
-        let content = std::fs::read_to_string(path.as_ref())
-            .context("Failed to read design file")?;
-        
-        let mut design: DesignFile = serde_json::from_str(&content)
-            .context("Failed to parse design file")?;
-        
+        let content =
+            std::fs::read_to_string(path.as_ref()).context("Failed to read design file")?;
+
+        let mut design: DesignFile =
+            serde_json::from_str(&content).context("Failed to parse design file")?;
+
         // Update modified timestamp
         design.metadata.modified = Utc::now();
-        
+
         Ok(design)
     }
 
@@ -143,7 +149,7 @@ impl DesignFile {
         let (x, y, x2, y2) = obj.shape.bounding_box();
         let width = x2 - x;
         let height = y2 - y;
-        
+
         let shape_type = match obj.shape.shape_type() {
             ShapeType::Rectangle => "rectangle",
             ShapeType::Circle => "circle",
@@ -189,9 +195,13 @@ impl DesignFile {
                 let radius = data.width.min(data.height) / 2.0;
                 Box::new(Polygon::regular(center, radius, 6))
             }
-            "round_rectangle" => {
-                Box::new(RoundRectangle::new(data.x, data.y, data.width, data.height, data.radius))
-            }
+            "round_rectangle" => Box::new(RoundRectangle::new(
+                data.x,
+                data.y,
+                data.width,
+                data.height,
+                data.radius,
+            )),
             _ => anyhow::bail!("Unknown shape type: {}", data.shape_type),
         };
 
@@ -219,7 +229,7 @@ mod tests {
     fn test_save_and_load() {
         let temp_dir = std::env::temp_dir();
         let file_path = temp_dir.join("test_design.gck4");
-        
+
         let mut design = DesignFile::new("Test");
         design.shapes.push(ShapeData {
             id: 1,
@@ -232,13 +242,13 @@ mod tests {
             points: Vec::new(),
             selected: false,
         });
-        
+
         design.save_to_file(&file_path).unwrap();
         let loaded = DesignFile::load_from_file(&file_path).unwrap();
-        
+
         assert_eq!(loaded.shapes.len(), 1);
         assert_eq!(loaded.shapes[0].width, 100.0);
-        
+
         std::fs::remove_file(&file_path).ok();
     }
 }

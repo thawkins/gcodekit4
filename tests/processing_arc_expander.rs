@@ -1,6 +1,6 @@
 //! Tests for processing::arc_expander
 
-use gcodekit4::processing::arc_expander::*;
+use gcodekit4_parser::processing::arc_expander::*;
 
 #[test]
 fn test_arc_expander() {

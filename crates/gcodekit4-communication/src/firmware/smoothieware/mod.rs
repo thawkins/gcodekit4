@@ -15,8 +15,7 @@ pub use controller::SmoothiewareController;
 pub use response_parser::SmoothiewareResponseParser;
 
 /// Smoothieware version information
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[derive(Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct SmoothiewareVersion {
     /// Major version
     pub major: u32,
@@ -31,4 +30,3 @@ impl std::fmt::Display for SmoothiewareVersion {
         write!(f, "{}.{}.{}", self.major, self.minor, self.patch)
     }
 }
-

@@ -1,6 +1,6 @@
 //! Canvas renderer for designer shapes
 //! Renders shapes to an image buffer for display in the UI
-//! 
+//!
 //! Features:
 //! - Bright yellow crosshair at world origin (0,0)
 //! - Shape rendering with selection indicators
@@ -33,30 +33,72 @@ pub fn render_canvas(
     let (origin_x, origin_y) = viewport.world_to_pixel(0.0, 0.0);
     let origin_x = origin_x as i32;
     let origin_y = origin_y as i32;
-    
+
     // Draw horizontal line across entire canvas (Y axis at world 0,0)
     // Draw it slightly thicker to ensure visibility
     if origin_y >= 0 && origin_y < height as i32 {
-        draw_line(&mut img, 0, origin_y, width as i32 - 1, origin_y, CROSSHAIR_COLOR);
+        draw_line(
+            &mut img,
+            0,
+            origin_y,
+            width as i32 - 1,
+            origin_y,
+            CROSSHAIR_COLOR,
+        );
         // Draw second line for thickness
         if origin_y > 0 {
-            draw_line(&mut img, 0, origin_y - 1, width as i32 - 1, origin_y - 1, CROSSHAIR_COLOR);
+            draw_line(
+                &mut img,
+                0,
+                origin_y - 1,
+                width as i32 - 1,
+                origin_y - 1,
+                CROSSHAIR_COLOR,
+            );
         }
         if origin_y < height as i32 - 1 {
-            draw_line(&mut img, 0, origin_y + 1, width as i32 - 1, origin_y + 1, CROSSHAIR_COLOR);
+            draw_line(
+                &mut img,
+                0,
+                origin_y + 1,
+                width as i32 - 1,
+                origin_y + 1,
+                CROSSHAIR_COLOR,
+            );
         }
     }
-    
+
     // Draw vertical line across entire canvas (X axis at world 0,0)
     // Draw it slightly thicker to ensure visibility
     if origin_x >= 0 && origin_x < width as i32 {
-        draw_line(&mut img, origin_x, 0, origin_x, height as i32 - 1, CROSSHAIR_COLOR);
+        draw_line(
+            &mut img,
+            origin_x,
+            0,
+            origin_x,
+            height as i32 - 1,
+            CROSSHAIR_COLOR,
+        );
         // Draw second line for thickness
         if origin_x > 0 {
-            draw_line(&mut img, origin_x - 1, 0, origin_x - 1, height as i32 - 1, CROSSHAIR_COLOR);
+            draw_line(
+                &mut img,
+                origin_x - 1,
+                0,
+                origin_x - 1,
+                height as i32 - 1,
+                CROSSHAIR_COLOR,
+            );
         }
         if origin_x < width as i32 - 1 {
-            draw_line(&mut img, origin_x + 1, 0, origin_x + 1, height as i32 - 1, CROSSHAIR_COLOR);
+            draw_line(
+                &mut img,
+                origin_x + 1,
+                0,
+                origin_x + 1,
+                height as i32 - 1,
+                CROSSHAIR_COLOR,
+            );
         }
     }
 

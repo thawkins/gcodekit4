@@ -66,7 +66,7 @@ impl TextBuffer {
     pub fn lines_in_range(&self, range: Range<usize>) -> Vec<String> {
         let start = range.start.min(self.len_lines());
         let end = range.end.min(self.len_lines());
-        
+
         (start..end)
             .map(|idx| self.rope.line(idx).to_string())
             .collect()
@@ -83,7 +83,7 @@ impl TextBuffer {
     pub fn delete(&mut self, char_range: Range<usize>) {
         let start = char_range.start.min(self.len_chars());
         let end = char_range.end.min(self.len_chars());
-        
+
         if start < end {
             self.rope.remove(start..end);
             self.mark_dirty_at_char(start);
@@ -210,7 +210,7 @@ mod tests {
         let (line, col) = buffer.char_to_line_col(7);
         assert_eq!(line, 1);
         assert_eq!(col, 0);
-        
+
         let char_idx = buffer.line_col_to_char(1, 0);
         assert_eq!(char_idx, 7);
     }

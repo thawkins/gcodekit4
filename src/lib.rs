@@ -29,57 +29,53 @@
 #![allow(dead_code)]
 
 // Re-export modules for main.rs
-pub use gcodekit4_parser::designer;
 pub use gcodekit4_communication::firmware;
-pub use gcodekit4_ui::{visualizer, ui, config};
 pub use gcodekit4_core::data;
+pub use gcodekit4_parser::designer;
+pub use gcodekit4_ui::{config, ui, visualizer};
 
 pub use gcodekit4_core::{
-    ControllerEvent, ControllerListener, ControllerListenerHandle, ControllerTrait,
-    EventDispatcher, Message, MessageDispatcher, MessageLevel, OverrideState, SimpleController,
-    CNCPoint, CommunicatorState, ControllerState, ControllerStatus, MachineStatus,
-    MachineStatusSnapshot, PartialPosition, Position, Units,
-    ConnectionError, ControllerError, Error, FirmwareError, GcodeError, Result,
+    CNCPoint, CommunicatorState, ConnectionError, ControllerError, ControllerEvent,
+    ControllerListener, ControllerListenerHandle, ControllerState, ControllerStatus,
+    ControllerTrait, Error, EventDispatcher, FirmwareError, GcodeError, MachineStatus,
+    MachineStatusSnapshot, Message, MessageDispatcher, MessageLevel, OverrideState,
+    PartialPosition, Position, Result, SimpleController, Units,
 };
 
 pub use gcodekit4_parser::{
-    FileStreamReader, GcodeStreamReader, PausableStream, StringStreamReader,
-    CommandId, CommandLengthProcessor, CommandListener, CommandListenerHandle,
-    CommandNumberGenerator, CommandProcessor, CommandResponse, CommandState, CommentProcessor,
-    DecimalProcessor, EmptyLineRemoverProcessor, GcodeCommand, GcodeParser, GcodeState, ModalState,
-    ProcessorConfig, ProcessorHandle, ProcessorPipeline, ProcessorRegistry, WhitespaceProcessor,
-    BoxParameters, BoxType, FingerJointSettings, FingerStyle, TabbedBoxMaker,
-    JigsawPuzzleMaker, PuzzleParameters,
-    Canvas, CanvasPoint, Circle, DrawingMode, Line, Point, Rectangle, Shape, ShapeType, Toolpath,
-    ToolpathGenerator, ToolpathSegment, ToolpathSegmentType, ToolpathToGcode,
-    DesignerState,
     AdvancedProber, Alarm, AlarmManager, AlarmType, AutoConnectConfig, BackupEntry, BackupManager,
-    BasicProber, Bookmark, BookmarkManager, CommandHistory, CustomAction, CustomMacro,
-    DataLogger, DropEvent, DropFileType, DropIndicatorState, DropTarget, DropZone,
+    BasicProber, Bookmark, BookmarkManager, BoxParameters, BoxType, Canvas, CanvasPoint, Circle,
+    CommandHistory, CommandId, CommandLengthProcessor, CommandListener, CommandListenerHandle,
+    CommandNumberGenerator, CommandProcessor, CommandResponse, CommandState, CommentProcessor,
+    CustomAction, CustomMacro, DataLogger, DecimalProcessor, DesignerState, DrawingMode, DropEvent,
+    DropFileType, DropIndicatorState, DropTarget, DropZone, EmptyLineRemoverProcessor,
     ExportOptions, FeedRateStats, FileComparison, FileEncoding, FileExporter, FileFormat,
-    FileProcessingPipeline, FileReadStats, FileStatistics, FileValidation, GcodeFileReader,
-    GcodeTemplate, HeightPoint, HistoryEntry, LogEntry, NetworkConfig, PendantButton,
-    PendantConfig, PerformanceMetrics, ProbeMesh, ProbePoint, ProcessedFile, ProgramState,
-    RecentFileEntry, RecentFilesManager, SimulationPosition, Simulator, SoftLimits, SpindleStats,
-    Stepper, TemplateLibrary, TemplateVariable, ToolInfo, ToolLibrary, ToolOffset,
-    ToolOffsetManager, ValidationIssue, ValidationResult, ValidationSeverity,
-    WorkCoordinateSystem, WorkOffset,
+    FileProcessingPipeline, FileReadStats, FileStatistics, FileStreamReader, FileValidation,
+    FingerJointSettings, FingerStyle, GcodeCommand, GcodeFileReader, GcodeParser, GcodeState,
+    GcodeStreamReader, GcodeTemplate, HeightPoint, HistoryEntry, JigsawPuzzleMaker, Line, LogEntry,
+    ModalState, NetworkConfig, PausableStream, PendantButton, PendantConfig, PerformanceMetrics,
+    Point, ProbeMesh, ProbePoint, ProcessedFile, ProcessorConfig, ProcessorHandle,
+    ProcessorPipeline, ProcessorRegistry, ProgramState, PuzzleParameters, RecentFileEntry,
+    RecentFilesManager, Rectangle, Shape, ShapeType, SimulationPosition, Simulator, SoftLimits,
+    SpindleStats, Stepper, StringStreamReader, TabbedBoxMaker, TemplateLibrary, TemplateVariable,
+    ToolInfo, ToolLibrary, ToolOffset, ToolOffsetManager, Toolpath, ToolpathGenerator,
+    ToolpathSegment, ToolpathSegmentType, ToolpathToGcode, ValidationIssue, ValidationResult,
+    ValidationSeverity, WhitespaceProcessor, WorkCoordinateSystem, WorkOffset,
 };
 
 pub use gcodekit4_communication::{
-    list_ports, SerialPortInfo, TcpConnectionInfo,
-    Communicator, CommunicatorEvent, CommunicatorListener, CommunicatorListenerHandle,
-    ConnectionDriver, ConnectionParams, NoOpCommunicator, SerialCommunicator, SerialParity,
-    TcpCommunicator,
-    CapabilityManager, CapabilityState, ControllerType, FirmwareDetector,
+    list_ports, CapabilityManager, CapabilityState, Communicator, CommunicatorEvent,
+    CommunicatorListener, CommunicatorListenerHandle, ConnectionDriver, ConnectionParams,
+    ControllerType, FirmwareDetector, NoOpCommunicator, SerialCommunicator, SerialParity,
+    SerialPortInfo, TcpCommunicator, TcpConnectionInfo,
 };
 
 pub use gcodekit4_ui::{
-    ConsoleListener, DeviceConsoleManager, DeviceMessageType, FirmwareSettingsIntegration,
-    GcodeEditor, GcodeLine, KeyboardShortcut, Setting, SettingValue, SettingsCategory,
-    SettingsDialog, SettingsPersistence, Token, TokenType,
-    Config, ConnectionSettings, ConnectionType, FileProcessingSettings, FirmwareSettings,
-    MachineSettings, SettingsManager, UiSettings,
+    Config, ConnectionSettings, ConnectionType, ConsoleListener, DeviceConsoleManager,
+    DeviceMessageType, FileProcessingSettings, FirmwareSettings, FirmwareSettingsIntegration,
+    GcodeEditor, GcodeLine, KeyboardShortcut, MachineSettings, Setting, SettingValue,
+    SettingsCategory, SettingsDialog, SettingsManager, SettingsPersistence, Token, TokenType,
+    UiSettings,
 };
 
 /// Library version

@@ -2,32 +2,39 @@
 //!
 //! Run with: cargo run --example custom_editor_demo
 
-use gcodekit4_ui::{EditorBridge, SlintTextLine};
+use gcodekit4_ui::EditorBridge;
 use std::rc::Rc;
 
-slint::include_modules!();
+// slint::include_modules!();
 
-fn main() -> Result<(), slint::PlatformError> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    println!("This example requires a custom AppWindow slint component.");
+    println!("See ui_panels for complete UI examples.");
+
     // Create the editor bridge
     let bridge = Rc::new(EditorBridge::new(600.0, 20.0));
-    
+
     // Load some initial text
     bridge.load_text("G00 X0 Y0 Z0\nG01 X10 Y10 F500\nG01 Z-1\nG01 X20 Y20\nM5\n");
-    
+
+    println!("Text loaded: {} lines", bridge.line_count());
+    Ok(())
+
     // Create the UI
-    let ui = AppWindow::new()?;
-    
+    // let ui = AppWindow::new()?;
+
+    /*
     // Set initial state
     ui.set_can_undo(bridge.can_undo());
     ui.set_can_redo(bridge.can_redo());
     ui.set_total_lines(bridge.line_count() as i32);
     ui.set_cursor_line(0);
     ui.set_cursor_column(0);
-    
+
     // Update visible lines
     let visible_lines_model = bridge.get_visible_lines_model();
     ui.set_visible_lines(visible_lines_model);
-    
+
     // Handle undo
     {
         let bridge = bridge.clone();
@@ -42,7 +49,7 @@ fn main() -> Result<(), slint::PlatformError> {
             }
         });
     }
-    
+
     // Handle redo
     {
         let bridge = bridge.clone();
@@ -57,7 +64,7 @@ fn main() -> Result<(), slint::PlatformError> {
             }
         });
     }
-    
+
     // Handle scroll
     {
         let bridge = bridge.clone();
@@ -69,7 +76,7 @@ fn main() -> Result<(), slint::PlatformError> {
             }
         });
     }
-    
+
     // Handle text changes (simplified - in real app would track actual edits)
     {
         let bridge = bridge.clone();
@@ -81,7 +88,7 @@ fn main() -> Result<(), slint::PlatformError> {
             }
         });
     }
-    
+
     // Handle save
     {
         let bridge = bridge.clone();
@@ -91,7 +98,7 @@ fn main() -> Result<(), slint::PlatformError> {
             bridge.mark_unmodified();
         });
     }
-    
+
     // Handle open
     {
         let bridge = bridge.clone();
@@ -100,7 +107,7 @@ fn main() -> Result<(), slint::PlatformError> {
             // In real app, would open file dialog
             let sample_text = "G00 X0 Y0 Z5\nG01 Z-2 F200\nG01 X50 Y50\nG00 Z5\nM5\n";
             bridge.load_text(sample_text);
-            
+
             if let Some(ui) = ui_weak.upgrade() {
                 ui.set_can_undo(bridge.can_undo());
                 ui.set_can_redo(bridge.can_redo());
@@ -109,6 +116,7 @@ fn main() -> Result<(), slint::PlatformError> {
             }
         });
     }
-    
+
     ui.run()
+    */
 }

@@ -5,9 +5,9 @@
 //! g2core is the next generation of TinyG with support for 6 axes and advanced kinematics.
 
 use crate::communication::ConnectionParams;
+use async_trait::async_trait;
 use gcodekit4_core::ControllerTrait;
 use gcodekit4_core::{ControllerState, ControllerStatus, Position};
-use async_trait::async_trait;
 use parking_lot::RwLock;
 use std::sync::Arc;
 use tokio::task::JoinHandle;
@@ -334,7 +334,10 @@ impl ControllerTrait for G2CoreController {
         Ok(())
     }
 
-    async fn probe_z(&mut self, _feed_rate: f64) -> anyhow::Result<gcodekit4_core::PartialPosition> {
+    async fn probe_z(
+        &mut self,
+        _feed_rate: f64,
+    ) -> anyhow::Result<gcodekit4_core::PartialPosition> {
         if !self.is_connected() {
             anyhow::bail!("g2core controller not connected");
         }
@@ -342,7 +345,10 @@ impl ControllerTrait for G2CoreController {
         Ok(gcodekit4_core::PartialPosition::default())
     }
 
-    async fn probe_x(&mut self, _feed_rate: f64) -> anyhow::Result<gcodekit4_core::PartialPosition> {
+    async fn probe_x(
+        &mut self,
+        _feed_rate: f64,
+    ) -> anyhow::Result<gcodekit4_core::PartialPosition> {
         if !self.is_connected() {
             anyhow::bail!("g2core controller not connected");
         }
@@ -350,7 +356,10 @@ impl ControllerTrait for G2CoreController {
         Ok(gcodekit4_core::PartialPosition::default())
     }
 
-    async fn probe_y(&mut self, _feed_rate: f64) -> anyhow::Result<gcodekit4_core::PartialPosition> {
+    async fn probe_y(
+        &mut self,
+        _feed_rate: f64,
+    ) -> anyhow::Result<gcodekit4_core::PartialPosition> {
         if !self.is_connected() {
             anyhow::bail!("g2core controller not connected");
         }

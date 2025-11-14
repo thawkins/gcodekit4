@@ -316,6 +316,7 @@ export component MainWindow inherits Window {
     // Custom editor callbacks
     callback clear_editor();
     callback append_gcode_line(string);
+    callback load_editor_text(string);
     
     // Internal state for UI selections
     private property <int> port-index: 0;

@@ -1,4 +1,4 @@
-use gcodekit4::designer::{SvgImporter, FileFormat};
+use gcodekit4::designer::{FileFormat, SvgImporter};
 
 #[test]
 fn test_svg_import_comprehensive() {
@@ -18,14 +18,14 @@ fn test_svg_import_comprehensive() {
 
     assert!(result.is_ok());
     let design = result.unwrap();
-    
+
     // Verify format
     assert_eq!(design.format, FileFormat::Svg);
-    
+
     // Verify dimensions
     assert_eq!(design.dimensions.0, 300.0);
     assert_eq!(design.dimensions.1, 300.0);
-    
+
     // Verify we imported all shapes
     // rect(1) + circle(1) + line(1) + ellipse(1) + polyline(1) + polygon(1) + path(4 lines) = 10
     // Note: path has M, L, L, L, Z which creates 4 line segments
@@ -44,11 +44,11 @@ fn test_svg_import_with_scaling() {
 
     assert!(result.is_ok());
     let design = result.unwrap();
-    
+
     // Dimensions should be scaled
     assert_eq!(design.dimensions.0, 200.0);
     assert_eq!(design.dimensions.1, 200.0);
-    
+
     // Should have one rectangle
     assert_eq!(design.shapes.len(), 1);
 }
@@ -65,7 +65,7 @@ fn test_svg_import_with_offset() {
 
     assert!(result.is_ok());
     let design = result.unwrap();
-    
+
     // Should have one circle with offset applied
     assert_eq!(design.shapes.len(), 1);
 }
@@ -80,7 +80,7 @@ fn test_svg_import_empty_file() {
 
     assert!(result.is_ok());
     let design = result.unwrap();
-    
+
     // Should succeed but have no shapes
     assert_eq!(design.shapes.len(), 0);
 }
@@ -108,7 +108,7 @@ fn test_svg_import_path_commands() {
 
     assert!(result.is_ok());
     let design = result.unwrap();
-    
+
     // Path with M, L, H, V, Z should create 4 line segments
     assert_eq!(design.shapes.len(), 4);
 }
@@ -130,7 +130,7 @@ fn test_svg_import_nested_groups() {
 
     assert!(result.is_ok());
     let design = result.unwrap();
-    
+
     // Should flatten hierarchy and import both shapes
     assert_eq!(design.shapes.len(), 2);
 }

@@ -28,7 +28,7 @@ pub use capabilities::{CapabilitiesTrait, Capability, DefaultCapabilities};
 pub use capability_manager::{CapabilityManager, CapabilityState};
 pub use connection_watch::{ConnectionWatchConfig, ConnectionWatchState, ConnectionWatcher};
 pub use file_service::{FileInfo, FileServiceTrait, NoOpFileService, StorageInfo};
-pub use firmware_detector::{FirmwareDetector, FirmwareDetectionResult};
+pub use firmware_detector::{FirmwareDetectionResult, FirmwareDetector};
 pub use fluidnc::{FluidNCCapabilities, FluidNCController, FluidNCVersion};
 pub use g2core::{G2CoreCapabilities, G2CoreController, G2CoreVersion as G2CoreVer};
 pub use grbl::GrblCapabilities;

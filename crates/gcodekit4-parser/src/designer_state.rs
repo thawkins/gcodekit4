@@ -1,11 +1,11 @@
 //! Designer state manager for UI integration.
 //! Manages the designer canvas state and handles UI callbacks.
 
-use gcodekit4_core::Units;
 use crate::designer::{
     Canvas, Circle, DrawingMode, Line, Point, Polygon, Rectangle, ToolpathGenerator,
     ToolpathToGcode,
 };
+use gcodekit4_core::Units;
 
 /// Designer state for UI integration
 pub struct DesignerState {
@@ -237,11 +237,11 @@ impl DesignerState {
     pub fn deselect_all(&mut self) {
         self.canvas.deselect_all();
     }
-    
+
     /// Updates the corner radius of the selected shape (if it's a RoundRectangle)
     pub fn set_selected_corner_radius(&mut self, radius: f64) {
         use crate::designer::shapes::RoundRectangle;
-        
+
         if let Some(id) = self.canvas.selected_id() {
             if let Some(obj) = self.canvas.shapes_mut().iter_mut().find(|o| o.id == id) {
                 // Check if it's a RoundRectangle
@@ -249,7 +249,7 @@ impl DesignerState {
                     let (x, y, x2, y2) = obj.shape.bounding_box();
                     let width = (x2 - x).abs();
                     let height = (y2 - y).abs();
-                    
+
                     // Create new RoundRectangle with updated radius
                     obj.shape = Box::new(RoundRectangle::new(
                         x.min(x2),
@@ -265,20 +265,21 @@ impl DesignerState {
 
     pub fn set_selected_position_and_size(&mut self, x: f64, y: f64, w: f64, h: f64) {
         use crate::designer::shapes::*;
-        
+
         if let Some(id) = self.canvas.selected_id() {
             if let Some(obj) = self.canvas.shapes_mut().iter_mut().find(|o| o.id == id) {
                 let (old_x, old_y, old_x2, old_y2) = obj.shape.bounding_box();
                 let old_w = old_x2 - old_x;
                 let old_h = old_y2 - old_y;
-                
+
                 match obj.shape.shape_type() {
                     crate::designer::ShapeType::Rectangle => {
                         obj.shape = Box::new(Rectangle::new(x, y, w, h));
                     }
                     crate::designer::ShapeType::Circle => {
                         let radius = w.min(h) / 2.0;
-                        obj.shape = Box::new(Circle::new(Point::new(x + radius, y + radius), radius));
+                        obj.shape =
+                            Box::new(Circle::new(Point::new(x + radius, y + radius), radius));
                     }
                     crate::designer::ShapeType::Line => {
                         obj.shape = Box::new(Line::new(Point::new(x, y), Point::new(x + w, y + h)));
@@ -289,7 +290,11 @@ impl DesignerState {
                     }
                     crate::designer::ShapeType::Polygon => {
                         // For polygon, we recreate a regular hexagon at the new position/size
-                        obj.shape = Box::new(Polygon::regular(Point::new(x + w / 2.0, y + h / 2.0), w.min(h) / 2.0, 6));
+                        obj.shape = Box::new(Polygon::regular(
+                            Point::new(x + w / 2.0, y + h / 2.0),
+                            w.min(h) / 2.0,
+                            6,
+                        ));
                     }
                     crate::designer::ShapeType::RoundRectangle => {
                         // Get current radius from bounding box, preserve it
@@ -308,42 +313,43 @@ impl DesignerState {
     /// Save design to file
     pub fn save_to_file(&mut self, path: impl AsRef<std::path::Path>) -> anyhow::Result<()> {
         use crate::designer::serialization::DesignFile;
-        
+
         let mut design = DesignFile::new(&self.design_name);
-        
+
         // Save viewport state
         design.viewport.zoom = self.canvas.zoom();
         design.viewport.pan_x = self.canvas.pan_x();
         design.viewport.pan_y = self.canvas.pan_y();
-        
+
         // Save all shapes
         for obj in self.canvas.shapes() {
             design.shapes.push(DesignFile::from_drawing_object(obj));
         }
-        
+
         // Save to file
         design.save_to_file(&path)?;
-        
+
         // Update state
         self.current_file_path = Some(path.as_ref().to_path_buf());
         self.is_modified = false;
-        
+
         Ok(())
     }
 
     /// Load design from file
     pub fn load_from_file(&mut self, path: impl AsRef<std::path::Path>) -> anyhow::Result<()> {
         use crate::designer::serialization::DesignFile;
-        
+
         let design = DesignFile::load_from_file(&path)?;
-        
+
         // Clear existing shapes
         self.canvas.clear();
-        
+
         // Restore viewport
         self.canvas.set_zoom(design.viewport.zoom);
-        self.canvas.set_pan(design.viewport.pan_x, design.viewport.pan_y);
-        
+        self.canvas
+            .set_pan(design.viewport.pan_x, design.viewport.pan_y);
+
         // Restore shapes
         let mut next_id = 1;
         for shape_data in &design.shapes {
@@ -352,12 +358,12 @@ impl DesignerState {
                 next_id += 1;
             }
         }
-        
+
         // Update state
         self.design_name = design.metadata.name.clone();
         self.current_file_path = Some(path.as_ref().to_path_buf());
         self.is_modified = false;
-        
+
         Ok(())
     }
 
@@ -385,7 +391,7 @@ impl DesignerState {
         } else {
             &self.design_name
         };
-        
+
         if self.is_modified {
             format!("{}*", name)
         } else {

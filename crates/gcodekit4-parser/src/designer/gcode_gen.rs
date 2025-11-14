@@ -5,7 +5,7 @@ use gcodekit4_core::Units;
 
 /// G-code generator for converting toolpaths to G-code commands.
 pub struct ToolpathToGcode {
-    units: Units,
+    _units: Units,
     safe_z: f64,
     line_numbers_enabled: bool,
 }
@@ -14,7 +14,7 @@ impl ToolpathToGcode {
     /// Creates a new G-code generator.
     pub fn new(units: Units, safe_z: f64) -> Self {
         Self {
-            units,
+            _units: units,
             safe_z,
             line_numbers_enabled: false,
         }
@@ -23,7 +23,7 @@ impl ToolpathToGcode {
     /// Creates a new G-code generator with line numbers enabled.
     pub fn with_line_numbers(units: Units, safe_z: f64, enabled: bool) -> Self {
         Self {
-            units,
+            _units: units,
             safe_z,
             line_numbers_enabled: enabled,
         }
@@ -52,14 +52,8 @@ impl ToolpathToGcode {
             toolpath.tool_diameter
         ));
         gcode.push_str(&format!("; Cut depth: {:.3}mm\n", toolpath.depth));
-        gcode.push_str(&format!(
-            "; Feed rate: {:.0} mm/min\n",
-            feed_rate
-        ));
-        gcode.push_str(&format!(
-            "; Spindle speed: {} RPM\n",
-            spindle_speed
-        ));
+        gcode.push_str(&format!("; Feed rate: {:.0} mm/min\n", feed_rate));
+        gcode.push_str(&format!("; Spindle speed: {} RPM\n", spindle_speed));
         gcode.push_str(&format!(
             "; Total path length: {:.3}mm\n",
             toolpath.total_length()
@@ -70,7 +64,10 @@ impl ToolpathToGcode {
         gcode.push_str("G90         ; Absolute positioning\n");
         gcode.push_str("G21         ; Millimeter units\n");
         gcode.push_str("G17         ; XY plane\n");
-        gcode.push_str(&format!("M3 S{}      ; Spindle on at {} RPM\n", spindle_speed, spindle_speed));
+        gcode.push_str(&format!(
+            "M3 S{}      ; Spindle on at {} RPM\n",
+            spindle_speed, spindle_speed
+        ));
         gcode.push('\n');
 
         // Generate moves for each segment

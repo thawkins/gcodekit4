@@ -75,8 +75,7 @@ pub struct LaserEngraver {
 impl LaserEngraver {
     /// Create a new laser engraver from an image file
     pub fn from_file<P: AsRef<Path>>(path: P, params: EngravingParameters) -> Result<Self> {
-        let img = image::open(path.as_ref())
-            .context("Failed to load image file")?;
+        let img = image::open(path.as_ref()).context("Failed to load image file")?;
         Self::from_image(img, params)
     }
 
@@ -151,13 +150,31 @@ impl LaserEngraver {
 
         // Header comments
         gcode.push_str("; Laser Image Engraving G-code\n");
-        gcode.push_str(&format!("; Generated: {}\n", chrono::Utc::now().format("%Y-%m-%d %H:%M:%S UTC")));
+        gcode.push_str(&format!(
+            "; Generated: {}\n",
+            chrono::Utc::now().format("%Y-%m-%d %H:%M:%S UTC")
+        ));
         let (width_mm, height_mm) = self.output_size_mm();
-        gcode.push_str(&format!("; Image size: {:.2}mm x {:.2}mm\n", width_mm, height_mm));
-        gcode.push_str(&format!("; Resolution: {:.1} pixels/mm\n", self.params.pixels_per_mm));
-        gcode.push_str(&format!("; Feed rate: {:.0} mm/min\n", self.params.feed_rate));
-        gcode.push_str(&format!("; Power range: {:.0}%-{:.0}%\n", self.params.min_power, self.params.max_power));
-        gcode.push_str(&format!("; Estimated time: {:.1} minutes\n", self.estimate_time() / 60.0));
+        gcode.push_str(&format!(
+            "; Image size: {:.2}mm x {:.2}mm\n",
+            width_mm, height_mm
+        ));
+        gcode.push_str(&format!(
+            "; Resolution: {:.1} pixels/mm\n",
+            self.params.pixels_per_mm
+        ));
+        gcode.push_str(&format!(
+            "; Feed rate: {:.0} mm/min\n",
+            self.params.feed_rate
+        ));
+        gcode.push_str(&format!(
+            "; Power range: {:.0}%-{:.0}%\n",
+            self.params.min_power, self.params.max_power
+        ));
+        gcode.push_str(&format!(
+            "; Estimated time: {:.1} minutes\n",
+            self.estimate_time() / 60.0
+        ));
         gcode.push_str(";\n");
 
         // Initialization sequence
@@ -165,16 +182,19 @@ impl LaserEngraver {
         gcode.push_str("G90 ; Absolute positioning\n");
         gcode.push_str("G17 ; XY plane selection\n");
         gcode.push_str("\n");
-        
+
         gcode.push_str("; Home and set work coordinate system\n");
         gcode.push_str("$H ; Home all axes (bottom-left corner)\n");
         gcode.push_str("G10 L2 P1 X0 Y0 Z0 ; Clear G54 offset\n");
         gcode.push_str("G54 ; Select work coordinate system 1\n");
         gcode.push_str("G0 X10.0 Y10.0 ; Move to work origin (10mm from corner)\n");
         gcode.push_str("G10 L20 P1 X0 Y0 Z0 ; Set current position as work zero\n");
-        gcode.push_str(&format!("G0 Z{:.2} F{:.0} ; Move to safe height\n", 5.0, self.params.travel_rate));
+        gcode.push_str(&format!(
+            "G0 Z{:.2} F{:.0} ; Move to safe height\n",
+            5.0, self.params.travel_rate
+        ));
         gcode.push_str("\n");
-        
+
         gcode.push_str("M5 ; Laser off\n");
         gcode.push_str("\n");
 
@@ -195,10 +215,22 @@ impl LaserEngraver {
 
         match self.params.scan_direction {
             ScanDirection::Horizontal => {
-                self.generate_horizontal_scan_with_progress(&mut gcode, &resized, pixel_width, line_spacing, &mut progress_callback)?;
+                self.generate_horizontal_scan_with_progress(
+                    &mut gcode,
+                    &resized,
+                    pixel_width,
+                    line_spacing,
+                    &mut progress_callback,
+                )?;
             }
             ScanDirection::Vertical => {
-                self.generate_vertical_scan_with_progress(&mut gcode, &resized, pixel_width, line_spacing, &mut progress_callback)?;
+                self.generate_vertical_scan_with_progress(
+                    &mut gcode,
+                    &resized,
+                    pixel_width,
+                    line_spacing,
+                    &mut progress_callback,
+                )?;
             }
         }
 
@@ -242,23 +274,28 @@ impl LaserEngraver {
             if left_to_right || !self.params.bidirectional {
                 gcode.push_str(&format!("G0 X0 Y{:.3}\n", y_pos));
             } else {
-                gcode.push_str(&format!("G0 X{:.3} Y{:.3}\n", (width - 1) as f32 * pixel_width, y_pos));
+                gcode.push_str(&format!(
+                    "G0 X{:.3} Y{:.3}\n",
+                    (width - 1) as f32 * pixel_width,
+                    y_pos
+                ));
             }
 
             // Process pixels in this line
             let mut in_burn = false;
             let mut last_power = 0;
 
-            let x_range: Box<dyn Iterator<Item = u32>> = if left_to_right || !self.params.bidirectional {
-                Box::new(0..width)
-            } else {
-                Box::new((0..width).rev())
-            };
+            let x_range: Box<dyn Iterator<Item = u32>> =
+                if left_to_right || !self.params.bidirectional {
+                    Box::new(0..width)
+                } else {
+                    Box::new((0..width).rev())
+                };
 
             for x in x_range {
                 let pixel = image.get_pixel(x, y);
                 let intensity = pixel.0[0];
-                
+
                 // Convert intensity to laser power
                 let power = self.intensity_to_power(intensity);
                 let power_value = (power * self.params.power_scale / 100.0) as u32;
@@ -330,23 +367,28 @@ impl LaserEngraver {
             if top_to_bottom || !self.params.bidirectional {
                 gcode.push_str(&format!("G0 X{:.3} Y0\n", x_pos));
             } else {
-                gcode.push_str(&format!("G0 X{:.3} Y{:.3}\n", x_pos, (height - 1) as f32 * pixel_width));
+                gcode.push_str(&format!(
+                    "G0 X{:.3} Y{:.3}\n",
+                    x_pos,
+                    (height - 1) as f32 * pixel_width
+                ));
             }
 
             // Process pixels in this column
             let mut in_burn = false;
             let mut last_power = 0;
 
-            let y_range: Box<dyn Iterator<Item = u32>> = if top_to_bottom || !self.params.bidirectional {
-                Box::new(0..height)
-            } else {
-                Box::new((0..height).rev())
-            };
+            let y_range: Box<dyn Iterator<Item = u32>> =
+                if top_to_bottom || !self.params.bidirectional {
+                    Box::new(0..height)
+                } else {
+                    Box::new((0..height).rev())
+                };
 
             for y in y_range {
                 let pixel = image.get_pixel(x, y);
                 let intensity = pixel.0[0];
-                
+
                 let power = self.intensity_to_power(intensity);
                 let power_value = (power * self.params.power_scale / 100.0) as u32;
 
@@ -414,10 +456,10 @@ mod tests {
             max_power: 100.0,
             ..Default::default()
         };
-        
+
         let img = DynamicImage::new_luma8(10, 10);
         let engraver = LaserEngraver::from_image(img, params).unwrap();
-        
+
         assert_eq!(engraver.intensity_to_power(0), 0.0);
         assert_eq!(engraver.intensity_to_power(255), 100.0);
         assert!((engraver.intensity_to_power(127) - 49.8).abs() < 0.5);
@@ -431,10 +473,10 @@ mod tests {
             pixels_per_mm: 10.0,
             ..Default::default()
         };
-        
+
         let img = DynamicImage::new_luma8(100, 50); // 2:1 aspect ratio
         let engraver = LaserEngraver::from_image(img, params).unwrap();
-        
+
         let (w, h) = engraver.output_size_mm();
         assert_eq!(w, 50.0);
         assert_eq!(h, 25.0); // Maintains 2:1 aspect ratio

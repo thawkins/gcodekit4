@@ -4,8 +4,8 @@
 //! handling command input, and maintaining console state. Inspired by UGS
 //! ConsolePanel and CommandPanel architecture.
 
-use gcodekit4_communication::CommunicatorListener;
 use crate::ui::console_panel::{ConsolePanel, MessageLevel};
+use gcodekit4_communication::CommunicatorListener;
 use std::sync::{Arc, Mutex};
 
 /// Message type for device communication
@@ -74,10 +74,9 @@ impl DeviceConsoleManager {
             DeviceMessageType::Command => MessageLevel::Info,
         };
 
-        if msg_type == DeviceMessageType::Verbose
-            && !*self.verbose_enabled.lock().unwrap() {
-                return;
-            }
+        if msg_type == DeviceMessageType::Verbose && !*self.verbose_enabled.lock().unwrap() {
+            return;
+        }
 
         let mut console = self.console.lock().unwrap();
         if msg_type == DeviceMessageType::Command {
@@ -227,29 +226,32 @@ pub fn get_console_manager() -> Arc<DeviceConsoleManager> {
 pub struct ConsoleListener {
     console_manager: Arc<DeviceConsoleManager>,
     /// Buffer for accumulating multi-line responses (like $I)
-    response_buffer: Arc<Mutex<String>>,
+    _response_buffer: Arc<Mutex<String>>,
     /// Shared firmware detection result (optional)
-    detected_firmware: Option<Arc<Mutex<Option<gcodekit4_communication::firmware::FirmwareDetectionResult>>>>,
+    detected_firmware:
+        Option<Arc<Mutex<Option<gcodekit4_communication::firmware::FirmwareDetectionResult>>>>,
 }
 
 impl ConsoleListener {
     /// Create new console listener connected to a console manager
     pub fn new(console_manager: Arc<DeviceConsoleManager>) -> Arc<Self> {
-        Arc::new(Self { 
+        Arc::new(Self {
             console_manager,
-            response_buffer: Arc::new(Mutex::new(String::new())),
+            _response_buffer: Arc::new(Mutex::new(String::new())),
             detected_firmware: None,
         })
     }
-    
+
     /// Create with firmware detection state sharing
     pub fn new_with_firmware_state(
         console_manager: Arc<DeviceConsoleManager>,
-        detected_firmware: Arc<Mutex<Option<gcodekit4_communication::firmware::FirmwareDetectionResult>>>,
+        detected_firmware: Arc<
+            Mutex<Option<gcodekit4_communication::firmware::FirmwareDetectionResult>>,
+        >,
     ) -> Arc<Self> {
-        Arc::new(Self { 
+        Arc::new(Self {
             console_manager,
-            response_buffer: Arc::new(Mutex::new(String::new())),
+            _response_buffer: Arc::new(Mutex::new(String::new())),
             detected_firmware: Some(detected_firmware),
         })
     }
@@ -274,32 +276,41 @@ impl CommunicatorListener for ConsoleListener {
     fn on_data_received(&self, data: &[u8]) {
         if let Ok(text) = std::str::from_utf8(data) {
             let trimmed = text.trim();
-            
+
             tracing::debug!("ConsoleListener received: '{}'", trimmed);
-            
+
             // Suppress status polling responses (starts with '<')
             // Also suppress if it only contains status and 'ok' responses
-            if trimmed.starts_with('<') || (trimmed.contains('<') && trimmed.contains('>') && !trimmed.contains('[')) {
+            if trimmed.starts_with('<')
+                || (trimmed.contains('<') && trimmed.contains('>') && !trimmed.contains('['))
+            {
                 // Status response - don't log to console
                 return;
             }
-            
+
             // Check for startup message (single line, immediate detection)
             if (trimmed.contains("Grbl") || trimmed.contains("grbl")) && trimmed.contains("help") {
                 tracing::info!("Detected GRBL startup message: '{}'", trimmed);
                 use gcodekit4_communication::FirmwareDetector;
                 match FirmwareDetector::parse_grbl_startup(trimmed) {
                     Ok(detection) => {
-                        tracing::info!("Successfully detected from startup: {} {}", detection.firmware_type, detection.version_string);
-                        
+                        tracing::info!(
+                            "Successfully detected from startup: {} {}",
+                            detection.firmware_type,
+                            detection.version_string
+                        );
+
                         // Store in shared state if available
                         if let Some(ref fw_state) = self.detected_firmware {
                             *fw_state.lock().unwrap() = Some(detection.clone());
                         }
-                        
+
                         self.console_manager.add_message(
                             DeviceMessageType::Success,
-                            format!("Detected firmware: {} {}", detection.firmware_type, detection.version_string),
+                            format!(
+                                "Detected firmware: {} {}",
+                                detection.firmware_type, detection.version_string
+                            ),
                         );
                         // Don't show the raw startup message - we already showed the detection
                         return;
@@ -309,7 +320,7 @@ impl CommunicatorListener for ConsoleListener {
                     }
                 }
             }
-            
+
             // Handle multi-line $I response which may come as one chunk
             // Format: [VER:...]\n[OPT:...]\nok
             if trimmed.contains("[VER:") && trimmed.contains("[OPT:") && trimmed.contains("ok") {
@@ -318,28 +329,37 @@ impl CommunicatorListener for ConsoleListener {
                 use gcodekit4_communication::FirmwareDetector;
                 match FirmwareDetector::parse_grbl_version_info(trimmed) {
                     Ok(detection) => {
-                        tracing::info!("Successfully detected from $I: {} {}", detection.firmware_type, detection.version_string);
-                        
+                        tracing::info!(
+                            "Successfully detected from $I: {} {}",
+                            detection.firmware_type,
+                            detection.version_string
+                        );
+
                         // Store in shared state if available
                         if let Some(ref fw_state) = self.detected_firmware {
                             *fw_state.lock().unwrap() = Some(detection.clone());
                         }
-                        
+
                         self.console_manager.add_message(
                             DeviceMessageType::Success,
-                            format!("Detected firmware: {} {} (build: {})", 
-                                detection.firmware_type, 
+                            format!(
+                                "Detected firmware: {} {} (build: {})",
+                                detection.firmware_type,
                                 detection.version_string,
-                                detection.build_date.as_deref().unwrap_or("unknown")),
+                                detection.build_date.as_deref().unwrap_or("unknown")
+                            ),
                         );
                         // Show just the firmware info lines without the status pollution
                         if let Some(ver_line) = trimmed.lines().find(|l| l.starts_with("[VER:")) {
-                            self.console_manager.add_message(DeviceMessageType::Output, ver_line);
+                            self.console_manager
+                                .add_message(DeviceMessageType::Output, ver_line);
                         }
                         if let Some(opt_line) = trimmed.lines().find(|l| l.starts_with("[OPT:")) {
-                            self.console_manager.add_message(DeviceMessageType::Output, opt_line);
+                            self.console_manager
+                                .add_message(DeviceMessageType::Output, opt_line);
                         }
-                        self.console_manager.add_message(DeviceMessageType::Output, "ok");
+                        self.console_manager
+                            .add_message(DeviceMessageType::Output, "ok");
                         return; // Don't show the whole chunk
                     }
                     Err(e) => {
@@ -347,7 +367,7 @@ impl CommunicatorListener for ConsoleListener {
                     }
                 }
             }
-            
+
             if !trimmed.is_empty() {
                 self.console_manager
                     .add_message(DeviceMessageType::Output, trimmed);

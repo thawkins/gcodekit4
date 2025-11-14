@@ -28,15 +28,13 @@ impl Default for GrblCommunicatorConfig {
 }
 
 /// Manages character counting state for GRBL streaming protocol
-#[derive(Debug, Clone, Copy)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, Default)]
 struct CharacterCountingState {
     /// Number of characters sent but not yet acknowledged
     pub pending_chars: usize,
     /// Total characters acknowledged by GRBL
     pub acked_chars: usize,
 }
-
 
 /// GRBL-specific communicator
 ///
@@ -144,9 +142,8 @@ impl GrblCommunicator {
     /// Get available buffer space (for character counting protocol)
     pub fn get_available_buffer(&self) -> usize {
         let counting = self.char_counting.read();
-        
-        self
-            .config
+
+        self.config
             .rx_buffer_size
             .saturating_sub(counting.pending_chars)
     }

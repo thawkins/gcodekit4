@@ -86,7 +86,7 @@ fn test_svg_scaling() {
 #[test]
 fn test_dxf_scaling() {
     let dxf_content = "0\nSECTION\n2\nENTITIES\n0\nENDSEC\n0\nEOF";
-    
+
     let importer_1x = DxfImporter::new(1.0, 0.0, 0.0);
     let result_1x = importer_1x.import_string(dxf_content);
     assert!(result_1x.is_ok());

@@ -3,12 +3,12 @@
 //! G-code parsing, processing, and generation for GCodeKit4.
 //! Includes parser, preprocessors, stream readers, and designer tools.
 
+pub mod designer;
+pub mod designer_editor_integration;
+pub mod designer_state;
+pub mod designer_visualizer_integration;
 pub mod gcode;
 pub mod processing;
-pub mod designer;
-pub mod designer_state;
-pub mod designer_editor_integration;
-pub mod designer_visualizer_integration;
 pub mod utils;
 
 pub use gcode::{
@@ -20,8 +20,8 @@ pub use gcode::{
 };
 
 pub use processing::{
-    BoxParameters, BoxType, FingerJointSettings, FingerStyle, TabbedBoxMaker,
-    JigsawPuzzleMaker, PuzzleParameters,
+    BoxParameters, BoxType, FingerJointSettings, FingerStyle, JigsawPuzzleMaker, PuzzleParameters,
+    TabbedBoxMaker,
 };
 
 pub use designer::{
@@ -33,14 +33,13 @@ pub use designer_state::DesignerState;
 
 pub use utils::{
     AdvancedProber, Alarm, AlarmManager, AlarmType, AutoConnectConfig, BackupEntry, BackupManager,
-    BasicProber, Bookmark, BookmarkManager, CommandHistory, CustomAction, CustomMacro,
-    DataLogger, DropEvent, DropFileType, DropIndicatorState, DropTarget, DropZone,
-    ExportOptions, FeedRateStats, FileComparison, FileEncoding, FileExporter, FileFormat,
-    FileProcessingPipeline, FileReadStats, FileStatistics, FileValidation, GcodeFileReader,
-    GcodeTemplate, HeightPoint, HistoryEntry, LogEntry, NetworkConfig, PendantButton,
-    PendantConfig, PerformanceMetrics, ProbeMesh, ProbePoint, ProcessedFile, ProgramState,
-    RecentFileEntry, RecentFilesManager, SimulationPosition, Simulator, SoftLimits, SpindleStats,
-    Stepper, TemplateLibrary, TemplateVariable, ToolInfo, ToolLibrary, ToolOffset,
-    ToolOffsetManager, ValidationIssue, ValidationResult, ValidationSeverity,
-    WorkCoordinateSystem, WorkOffset,
+    BasicProber, Bookmark, BookmarkManager, CommandHistory, CustomAction, CustomMacro, DataLogger,
+    DropEvent, DropFileType, DropIndicatorState, DropTarget, DropZone, ExportOptions,
+    FeedRateStats, FileComparison, FileEncoding, FileExporter, FileFormat, FileProcessingPipeline,
+    FileReadStats, FileStatistics, FileValidation, GcodeFileReader, GcodeTemplate, HeightPoint,
+    HistoryEntry, LogEntry, NetworkConfig, PendantButton, PendantConfig, PerformanceMetrics,
+    ProbeMesh, ProbePoint, ProcessedFile, ProgramState, RecentFileEntry, RecentFilesManager,
+    SimulationPosition, Simulator, SoftLimits, SpindleStats, Stepper, TemplateLibrary,
+    TemplateVariable, ToolInfo, ToolLibrary, ToolOffset, ToolOffsetManager, ValidationIssue,
+    ValidationResult, ValidationSeverity, WorkCoordinateSystem, WorkOffset,
 };
