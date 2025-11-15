@@ -1768,8 +1768,8 @@ fn main() -> anyhow::Result<()> {
 
                 // Update cursor position
                 let (line, col) = editor_bridge_undo.cursor_position();
-                window.set_cursor_line(line as i32);
-                window.set_cursor_column(col as i32);
+                window.set_cursor_line((line + 1) as i32);
+                window.set_cursor_column((col + 1) as i32);
             }
         }
     });
@@ -1781,7 +1781,7 @@ fn main() -> anyhow::Result<()> {
         if editor_bridge_redo.redo() {
             if let Some(window) = window_weak.upgrade() {
                 // Update UI state
-                window.set_can_undo(editor_bridge_redo.can_redo());
+                window.set_can_undo(editor_bridge_redo.can_undo());
                 window.set_can_redo(editor_bridge_redo.can_redo());
                 update_visible_lines(&window, &editor_bridge_redo);
 
@@ -1791,8 +1791,8 @@ fn main() -> anyhow::Result<()> {
 
                 // Update cursor position
                 let (line, col) = editor_bridge_redo.cursor_position();
-                window.set_cursor_line(line as i32);
-                window.set_cursor_column(col as i32);
+                window.set_cursor_line((line + 1) as i32);
+                window.set_cursor_column((col + 1) as i32);
             }
         }
     });
@@ -1801,7 +1801,6 @@ fn main() -> anyhow::Result<()> {
     let window_weak = main_window.as_weak();
     let editor_bridge_scroll = editor_bridge.clone();
     main_window.on_scroll_changed(move |line| {
-        eprintln!("=== on_scroll_changed: line={}", line);
         tracing::debug!("scroll_changed callback: line={}", line);
         editor_bridge_scroll.scroll_to_line(line as usize);
         if let Some(window) = window_weak.upgrade() {
@@ -1872,7 +1871,6 @@ fn main() -> anyhow::Result<()> {
     let window_weak = main_window.as_weak();
     let editor_bridge_insert = editor_bridge.clone();
     main_window.on_text_inserted(move |_line, _col, text| {
-        eprintln!("=== on_text_inserted called: text={:?}", text);
         let text_str = text.to_string();
         editor_bridge_insert.insert_text(&text_str);
         if let Some(window) = window_weak.upgrade() {
@@ -1881,8 +1879,8 @@ fn main() -> anyhow::Result<()> {
             window.set_total_lines(editor_bridge_insert.line_count() as i32);
             update_visible_lines(&window, &editor_bridge_insert);
             let (line, col) = editor_bridge_insert.cursor_position();
-            window.set_cursor_line(line as i32);
-            window.set_cursor_column(col as i32);
+            window.set_cursor_line((line + 1) as i32);
+            window.set_cursor_column((col + 1) as i32);
             let content = editor_bridge_insert.get_text();
             window.set_gcode_content(slint::SharedString::from(content));
         }
@@ -1891,7 +1889,6 @@ fn main() -> anyhow::Result<()> {
     let window_weak = main_window.as_weak();
     let editor_bridge_delete = editor_bridge.clone();
     main_window.on_text_deleted(move |_start_line, start_col, _end_line, end_col| {
-        eprintln!("=== on_text_deleted called: start_col={}, end_col={}", start_col, end_col);
         let count = (end_col - start_col).max(0) as usize;
         if count > 0 {
             editor_bridge_delete.delete_backward(count);
@@ -1901,8 +1898,8 @@ fn main() -> anyhow::Result<()> {
                 window.set_total_lines(editor_bridge_delete.line_count() as i32);
                 update_visible_lines(&window, &editor_bridge_delete);
                 let (line, col) = editor_bridge_delete.cursor_position();
-                window.set_cursor_line(line as i32);
-                window.set_cursor_column(col as i32);
+                window.set_cursor_line((line + 1) as i32);
+                window.set_cursor_column((col + 1) as i32);
                 let content = editor_bridge_delete.get_text();
                 window.set_gcode_content(slint::SharedString::from(content));
             }
@@ -1913,7 +1910,6 @@ fn main() -> anyhow::Result<()> {
     let window_weak = main_window.as_weak();
     let editor_bridge_cursor = editor_bridge.clone();
     main_window.on_cursor_moved(move |line, col| {
-        eprintln!("=== on_cursor_moved: line={}, col={}", line, col);
         tracing::debug!("on_cursor_moved: line={}, col={}", line, col);
         
         // Update cursor in editor bridge - convert to 0-based indexing
@@ -1935,7 +1931,6 @@ fn main() -> anyhow::Result<()> {
 
     // Mouse click callback - convert pixels to line/column
     main_window.on_mouse_clicked(move |_x, _y| {
-        eprintln!("=== on_mouse_clicked called");
         // TODO: Implement mouse-based cursor positioning
         // Currently clicking just focuses the editor for keyboard input
     });
