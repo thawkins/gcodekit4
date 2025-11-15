@@ -101,6 +101,11 @@ This modular structure enables:
   - Lines, polygons, Bezier curves, and arcs
   - Round rectangles with adjustable corner radius
 - **File Import**: Import SVG and DXF vector files
+- **SVG to G-Code Conversion**:
+  - Full support for SVG group transforms (matrix transformations)
+  - Handles complex curved paths with multi-segment cubic/quadratic Bezier curves
+  - Adaptive curve approximation for smooth engraving output
+  - Example: 37-path tiger head design converts to 26,000+ precise movement commands
 - **Interactive Editing**:
   - Zoom, pan, and fit-to-view controls
   - Precise positioning (X, Y, Width, Height inputs)

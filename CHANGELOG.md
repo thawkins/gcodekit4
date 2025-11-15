@@ -8,6 +8,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.25.7-alpha] - 2025-11-15
 
 ### Added
+- **SVG to G-Code Vector Engraver - Complete Path Parsing**
+  - Full support for SVG group transforms (matrix transformations)
+  - Multi-segment curve and line parsing (handles multiple segments in single SVG command)
+  - Cubic Bezier (C/c) and quadratic (Q/q) curve approximation with adaptive segments
+  - Proper coordinate transformation from SVG to machine space
+  - 37-path tiger head design now converts correctly to 26,750+ G1 movement commands
+
+### Fixed
+- **SVG Path Transform Not Applied**: Group transforms ignored causing disconnected paths
+  - Manually parse and apply group matrix(a,b,c,d,e,f) transforms to all path coordinates
+  - Paths now correctly positioned in machine coordinate space
+
+- **Partial SVG Path Parsing**: Only first segment of multi-segment commands parsed
+  - C/c, Q/q, and L/l commands can contain multiple segments (e.g., 154 curves in one command)
+  - Loop through all segments within each command, not just first
+  - Increased G-code resolution ~15x for complex curved designs
+
 - **Custom G-Code Text Editor - Phase 1B (COMPLETE): Cursor Position Tracking & Text Editing**
   - Full cursor position tracking with proper 0-based (backend) to 1-based (UI) conversion
   - Cursor movement keys (arrow keys, Home, End, PageUp/PageDown) with immediate visual feedback
@@ -16,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Status bar displays accurate cursor line:column position
   - Undo/Redo operations properly update cursor position
 
-### Fixed
+### Fixed (Previous)
 - **Cursor Position Indexing Bug**: Cursor indexing conversion missing in text callbacks
   - Added +1 conversions in on_text_inserted, on_text_deleted, on_undo_requested, on_redo_requested
   - Fixed redo handler bug (was calling can_redo() instead of can_undo())

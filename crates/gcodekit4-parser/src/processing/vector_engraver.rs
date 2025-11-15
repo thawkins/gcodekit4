@@ -150,12 +150,6 @@ impl VectorEngraver {
                         let transform_str =
                             &g_tag[transform_start + 11..transform_start + 11 + transform_end];
                         group_transform = Self::parse_matrix_transform(transform_str);
-                        if let Some((a, b, c, d, e, f)) = group_transform {
-                            tracing::debug!(
-                                "Parsed group transform: matrix({}, {}, {}, {}, {}, {})",
-                                a, b, c, d, e, f
-                            );
-                        }
                     }
                 }
             }
@@ -1016,10 +1010,8 @@ impl VectorEngraver {
         }
 
         let current_width = max_x - min_x;
-        tracing::debug!("Vector bounds: min_x={:.2}, max_x={:.2}, current_width={:.2}", min_x, max_x, current_width);
         if current_width > 0.0001 {
             let scale = self.params.desired_width / current_width;
-            tracing::debug!("Calculated scale: {:.6} (desired_width: {:.2} / current_width: {:.2})", scale, self.params.desired_width, current_width);
             scale
         } else {
             1.0
@@ -1110,7 +1102,6 @@ impl VectorEngraver {
         let total_paths = self.paths.len() as f32;
         let scale = self.calculate_actual_scale();
         
-        tracing::debug!("Vector engraver: paths={}, scale={:.6}, desired_width={}", self.paths.len(), scale, self.params.desired_width);
 
         for (path_idx, path) in self.paths.iter().enumerate() {
             if path.is_empty() {
