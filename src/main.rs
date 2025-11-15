@@ -1945,11 +1945,19 @@ fn main() -> anyhow::Result<()> {
         
         if let Some(window) = window_weak.upgrade() {
             // Get actual cursor position from editor (0-based)
+            // The backend clamps column to the line's actual length
             let (actual_line, actual_col) = editor_bridge_cursor.cursor_position();
             // Convert back to 1-based for display
-            window.set_cursor_line((actual_line + 1) as i32);
-            window.set_cursor_column((actual_col + 1) as i32);
-            tracing::debug!("cursor updated to: line={}, col={}", actual_line + 1, actual_col + 1);
+            let display_line = (actual_line + 1) as i32;
+            let display_col = (actual_col + 1) as i32;
+            window.set_cursor_line(display_line);
+            window.set_cursor_column(display_col);
+            
+            // Log if column was clamped
+            if (col as usize) != actual_col + 1 {
+                tracing::debug!("cursor clamped: requested col={}, actual col={}", col, actual_col + 1);
+            }
+            tracing::debug!("cursor updated to: line={}, col={}", display_line, display_col);
             
             // Update viewport to keep cursor visible
             let (start_line, _end_line) = editor_bridge_cursor.viewport_range();

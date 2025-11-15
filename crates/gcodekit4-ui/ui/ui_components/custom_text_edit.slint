@@ -307,6 +307,25 @@ export component CustomTextEdit inherits Rectangle {
                     root.redo-requested();
                     return accept;
                 }
+                
+                // Ctrl+Home: Jump to beginning of file
+                if (event.text == Key.Home) {
+                    debug("CTRL+HOME: jump to beginning of file");
+                    root.cursor-line = 1;
+                    root.cursor-column = 1;
+                    root.cursor-moved(1, 1);
+                    return accept;
+                }
+                
+                // Ctrl+End: Jump to end of file
+                if (event.text == Key.End) {
+                    debug("CTRL+END: jump to end of file");
+                    // Move to last line, last column
+                    root.cursor-line = root.total-lines;
+                    root.cursor-column = 500;  // Will be clamped to actual line length
+                    root.cursor-moved(root.total-lines, 500);
+                    return accept;
+                }
             }
             
             // Handle backspace
