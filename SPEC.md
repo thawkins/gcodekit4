@@ -1,10 +1,10 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.25.6-alpha  
-**Last Updated**: 2025-11-14  
-**Status**: Phase 1 Editor Complete - Ready for Phase 2 (Selection & Advanced Editing)
+**Version**: 0.25.7-alpha  
+**Last Updated**: 2025-11-15  
+**Status**: SVG to G-Code Vector Engraver Complete - Editor Phase 1 Complete
 
-### Latest Release (v0.25.6-alpha) - Editor Phase 1
+### Latest Release (v0.25.7-alpha) - SVG to G-Code Vector Engraver
 - ✅ **Custom G-Code Text Editor - Phase 1 (COMPLETE)**
   - Full keyboard input support with proper event handling
   - Text insertion with automatic cursor advancement
