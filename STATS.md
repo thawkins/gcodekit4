@@ -4,30 +4,39 @@ Generated: 2025-11-15
 
 ## Recent Development Activity
 
+### SVG to G-Code Vector Engraver (COMPLETE)
+- **Full SVG Group Transform Support**: Correctly applies matrix(a,b,c,d,e,f) transformations
+- **Multi-Segment Path Parsing**: Fixed critical bug where only first segment of SVG commands parsed
+  - Cubic curves (C/c): Now handles all segments in one command (example: 154 curves in tiger head)
+  - Quadratic curves (Q/q): Full multi-segment support with adaptive approximation
+  - Lines (L/l): All segments within command properly sequenced
+- **Resolution Improvement**: 15x increase (1,726 → 26,750 G1 commands for tiger head design)
+- **Complex Design Support**: 37-path tiger head design now correctly converted
+
 ### G-Code Text Editor Phase 1B - Cursor Position & Navigation (COMPLETE)
 - Fixed cursor position indexing (0-based backend to 1-based UI conversion)
 - Fixed cursor rendering position (off-by-one error)
 - Fixed cursor movement keys (immediate visual feedback)
 - Fixed text insertion point (now inserts at cursor, not at top)
 - Established proper architecture: Backend 0-based, UI 1-based, conversions at boundary
-- All 4 bugs were blocking proper text editing functionality
-
-### Previous: Tabbed Box Generator Improvements
-- Complete algorithm rewrite using boxes.py approach
-- Fixed coordinate transformation issues
-- Implemented proper edge reversal and corner handling
-- Added duplicate point detection for cleaner paths
-- Enhanced finger joint configuration options
 
 ## Code Organization
 
 - **Workspace Structure**: 5 crates (core, parser, communication, ui, main)
+- **Vector Engraver**: Complete SVG to G-code pipeline with transform handling
 - **Editor Module**: Custom text editor with EditorBridge, virtual scrolling, undo/redo
-- **Processing Module**: Enhanced with boxes.py algorithm
+- **Processing Module**: Enhanced with boxes.py algorithm and SVG support
 - **UI Components**: Updated CAM Tools dialog, G-code Editor Panel with text editing
 - **Test Coverage**: 296 UI tests passing, custom editor integration tests
 
 ## Key Features Implemented
+
+### SVG to G-Code Conversion
+1. **Group Transform Application**: Matrix(a,b,c,d,e,f) transforms applied to all paths
+2. **Curve Approximation**: Adaptive segment generation for smooth output
+3. **Multi-Segment Parsing**: C/c, Q/q, L/l commands with multiple data sets
+4. **Coordinate Transformation**: SVG → Machine space with proper scaling
+5. **Complex Path Support**: Tiger head (37 paths, complex curves) → 26,000+ commands
 
 ### G-Code Text Editor (Phase 1B Complete)
 1. **Full Cursor Control**: Arrow keys, Home/End, PageUp/PageDown with instant feedback
