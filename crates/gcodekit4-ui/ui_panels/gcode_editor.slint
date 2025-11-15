@@ -44,6 +44,7 @@ export component GcodeEditorPanel inherits VerticalBox {
     callback text_deleted(int, int, int, int);  // start-line, start-col, end-line, end-col
     callback cursor_moved(int, int);
     callback scroll_changed(int);
+    callback end_key_pressed();  // End key pressed - let Rust handle line-end positioning
     callback request_focus();  // Called when panel becomes visible/active
     callback key_pressed_event(string);  // Forward key events
     
@@ -235,6 +236,10 @@ export component GcodeEditorPanel inherits VerticalBox {
         cursor-moved(line, col) => {
             debug("🟡 GcodeEditorPanel.cursor-moved: line=" + line + " col=" + col);
             root.cursor-moved(line, col);
+        }
+        
+        end-key-pressed() => {
+            root.end_key_pressed();
         }
         
         text_inserted(line, col, text) => {

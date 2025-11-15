@@ -322,6 +322,7 @@ export component MainWindow inherits Window {
     callback text_inserted(int, int, string);  // line, column, text
     callback text_deleted(int, int, int, int);  // start_line, start_col, end_line, end_col
     callback cursor_moved(int, int);  // line, column
+    callback end_key_pressed();  // End key pressed
     callback mouse_clicked(int, int);  // x, y in pixels
     callback find_requested(string);  // search text
     callback replace_requested(string, string);  // search, replace

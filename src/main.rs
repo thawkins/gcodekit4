@@ -1960,6 +1960,39 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
+    // End key pressed - move cursor to end of current line
+    let window_weak = main_window.as_weak();
+    let editor_bridge_end = editor_bridge.clone();
+    main_window.on_end_key_pressed(move || {
+        // Get current cursor position and move to end of line
+        let (line, _col) = editor_bridge_end.cursor_position();
+        // Get the length of the current line
+        let text = editor_bridge_end.get_text();
+        let lines: Vec<&str> = text.lines().collect();
+        let line_end_col = if line < lines.len() {
+            lines[line].len()
+        } else {
+            0
+        };
+        
+        // Move cursor to end of line (convert to 0-based cursor position)
+        editor_bridge_end.set_cursor(line, line_end_col);
+        
+        if let Some(window) = window_weak.upgrade() {
+            // Get actual cursor position
+            let (actual_line, actual_col) = editor_bridge_end.cursor_position();
+            // Convert to 1-based for display
+            window.set_cursor_line((actual_line + 1) as i32);
+            window.set_cursor_column((actual_col + 1) as i32);
+            
+            // Update viewport
+            let (start_line, _end_line) = editor_bridge_end.viewport_range();
+            window.set_visible_start_line(start_line as i32);
+            
+            update_visible_lines(&window, &editor_bridge_end);
+        }
+    });
+
     // Mouse click callback - convert pixels to line/column
     main_window.on_mouse_clicked(move |_x, _y| {
         // TODO: Implement mouse-based cursor positioning

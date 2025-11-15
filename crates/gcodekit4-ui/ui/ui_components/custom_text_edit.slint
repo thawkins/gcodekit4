@@ -45,6 +45,7 @@ export component CustomTextEdit inherits Rectangle {
     callback redo-requested();
     callback scroll-changed(int);
     callback ensure-cursor-visible();  // Request scroll to keep cursor in view
+    callback end-key-pressed();  // End key pressed - let Rust handle positioning to line end
     callback key-pressed(KeyEvent) -> EventResult;
     
     // Internal state
@@ -185,7 +186,8 @@ export component CustomTextEdit inherits Rectangle {
                 // Calculate which lines should be visible at current scroll position
                 // viewport-y is negative when scrolled down, so negate it to get scroll offset
                 root.visible-start-line = Math.max(0, Math.floor(-self.viewport-y / root.line-height));
-                root.visible-end-line = root.visible-start-line + Math.ceil(self.height / root.line-height);
+                // Use floor instead of ceil to show only fully visible lines (no partial lines)
+                root.visible-end-line = root.visible-start-line + Math.floor(self.height / root.line-height);
                 
                 // Request lines from backend (will clamp to valid range)
                 root.scroll-changed(root.visible-start-line);
@@ -266,8 +268,7 @@ export component CustomTextEdit inherits Rectangle {
             // The backend will clamp to actual line end
             if (event.text == Key.End) {
                 debug("END KEY PRESSED");
-                root.cursor-column = 500;
-                root.cursor-moved(root.cursor-line, 500);
+                root.end-key-pressed();
                 return accept;
             }
             
@@ -345,10 +346,11 @@ export component CustomTextEdit inherits Rectangle {
         // Scroll viewport if cursor is outside visible area
         // cursor-line is 1-based (1 = first line, 2 = second line, etc.)
         // visible-start-line is 0-based (0 = first line visible, 1 = second line visible, etc.)
-        let visible_height_lines = Math.ceil(text-flickable.height / root.line-height);
+        // Use floor to calculate only fully visible lines
+        let visible_height_lines = Math.floor(text-flickable.height / root.line-height);
         // First visible line in 1-based numbering
         let first_visible_line_1based = root.visible-start-line + 1;
-        // Last visible line in 1-based numbering
+        // Last fully visible line in 1-based numbering
         let last_visible_line_1based = root.visible-start-line + visible_height_lines;
         
         if root.cursor-line < first_visible_line_1based {
