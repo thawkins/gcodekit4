@@ -1760,6 +1760,11 @@ fn main() -> anyhow::Result<()> {
                 // Update UI state
                 window.set_can_undo(editor_bridge_undo.can_undo());
                 window.set_can_redo(editor_bridge_undo.can_redo());
+                
+                // Update viewport if cursor moved off-screen
+                let (start_line, _end_line) = editor_bridge_undo.viewport_range();
+                window.set_visible_start_line(start_line as i32);
+                
                 update_visible_lines(&window, &editor_bridge_undo);
 
                 // Update g-code content
@@ -1783,6 +1788,11 @@ fn main() -> anyhow::Result<()> {
                 // Update UI state
                 window.set_can_undo(editor_bridge_redo.can_undo());
                 window.set_can_redo(editor_bridge_redo.can_redo());
+                
+                // Update viewport if cursor moved off-screen
+                let (start_line, _end_line) = editor_bridge_redo.viewport_range();
+                window.set_visible_start_line(start_line as i32);
+                
                 update_visible_lines(&window, &editor_bridge_redo);
 
                 // Update g-code content
@@ -1882,6 +1892,9 @@ fn main() -> anyhow::Result<()> {
             window.set_can_undo(editor_bridge_insert.can_undo());
             window.set_can_redo(editor_bridge_insert.can_redo());
             window.set_total_lines(editor_bridge_insert.line_count() as i32);
+            // Update viewport if cursor moved off-screen
+            let (start_line, _end_line) = editor_bridge_insert.viewport_range();
+            window.set_visible_start_line(start_line as i32);
             update_visible_lines(&window, &editor_bridge_insert);
             let (line, col) = editor_bridge_insert.cursor_position();
             window.set_cursor_line((line + 1) as i32);
@@ -1906,6 +1919,9 @@ fn main() -> anyhow::Result<()> {
                 window.set_can_undo(editor_bridge_delete.can_undo());
                 window.set_can_redo(editor_bridge_delete.can_redo());
                 window.set_total_lines(editor_bridge_delete.line_count() as i32);
+                // Update viewport if cursor moved off-screen
+                let (start_line, _end_line) = editor_bridge_delete.viewport_range();
+                window.set_visible_start_line(start_line as i32);
                 update_visible_lines(&window, &editor_bridge_delete);
                 let (line, col) = editor_bridge_delete.cursor_position();
                 window.set_cursor_line((line + 1) as i32);
@@ -1934,6 +1950,11 @@ fn main() -> anyhow::Result<()> {
             window.set_cursor_line((actual_line + 1) as i32);
             window.set_cursor_column((actual_col + 1) as i32);
             tracing::debug!("cursor updated to: line={}, col={}", actual_line + 1, actual_col + 1);
+            
+            // Update viewport to keep cursor visible
+            let (start_line, _end_line) = editor_bridge_cursor.viewport_range();
+            window.set_visible_start_line(start_line as i32);
+            
             // Update visible lines to show cursor
             update_visible_lines(&window, &editor_bridge_cursor);
         }
