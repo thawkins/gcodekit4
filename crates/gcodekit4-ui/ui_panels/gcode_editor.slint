@@ -233,6 +233,7 @@ export component GcodeEditorPanel inherits VerticalBox {
         }
         
         cursor-moved(line, col) => {
+            debug("🟡 GcodeEditorPanel.cursor-moved: line=" + line + " col=" + col);
             root.cursor-moved(line, col);
         }
         

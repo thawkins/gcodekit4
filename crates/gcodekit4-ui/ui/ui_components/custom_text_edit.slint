@@ -225,33 +225,43 @@ export component CustomTextEdit inherits Rectangle {
             // Handle arrow keys for cursor navigation
             if (event.text == Key.LeftArrow) {
                 debug("LEFT ARROW: moving cursor left");
-                root.cursor-moved(root.cursor-line, Math.max(1, root.cursor-column - 1));
+                let new_col = Math.max(1, root.cursor-column - 1);
+                root.cursor-column = new_col;
+                root.cursor-moved(root.cursor-line, new_col);
                 return accept;
             }
             if (event.text == Key.RightArrow) {
                 debug("RIGHT ARROW: moving cursor right");
-                root.cursor-moved(root.cursor-line, root.cursor-column + 1);
+                let new_col = root.cursor-column + 1;
+                root.cursor-column = new_col;
+                root.cursor-moved(root.cursor-line, new_col);
                 return accept;
             }
             if (event.text == Key.UpArrow) {
                 debug("UP ARROW: moving cursor up");
-                root.cursor-moved(Math.max(1, root.cursor-line - 1), root.cursor-column);
+                let new_line = Math.max(1, root.cursor-line - 1);
+                root.cursor-line = new_line;
+                root.cursor-moved(new_line, root.cursor-column);
                 return accept;
             }
             if (event.text == Key.DownArrow) {
                 debug("DOWN ARROW: moving cursor down");
-                root.cursor-moved(Math.min(root.total-lines, root.cursor-line + 1), root.cursor-column);
+                let new_line = Math.min(root.total-lines, root.cursor-line + 1);
+                root.cursor-line = new_line;
+                root.cursor-moved(new_line, root.cursor-column);
                 return accept;
             }
             
             // Handle Home key
             if (event.text == Key.Home) {
+                root.cursor-column = 1;
                 root.cursor-moved(root.cursor-line, 1);
                 return accept;
             }
             
             // Handle End key
             if (event.text == Key.End) {
+                root.cursor-column = 10000;
                 root.cursor-moved(root.cursor-line, 10000);
                 return accept;
             }
@@ -264,11 +274,15 @@ export component CustomTextEdit inherits Rectangle {
             
             // Handle PageUp/PageDown
             if (event.text == Key.PageUp) {
-                root.cursor-moved(Math.max(1, root.cursor-line - 10), root.cursor-column);
+                let new_line = Math.max(1, root.cursor-line - 10);
+                root.cursor-line = new_line;
+                root.cursor-moved(new_line, root.cursor-column);
                 return accept;
             }
             if (event.text == Key.PageDown) {
-                root.cursor-moved(Math.min(root.total-lines, root.cursor-line + 10), root.cursor-column);
+                let new_line = Math.min(root.total-lines, root.cursor-line + 10);
+                root.cursor-line = new_line;
+                root.cursor-moved(new_line, root.cursor-column);
                 return accept;
             }
             
