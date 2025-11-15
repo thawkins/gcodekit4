@@ -261,11 +261,13 @@ export component CustomTextEdit inherits Rectangle {
                 return accept;
             }
             
-            // Handle End key
+            // Handle End key - move to end of current line
+            // Note: We don't know actual line length from Slint, so use large number
+            // The backend will clamp to actual line end
             if (event.text == Key.End) {
                 debug("END KEY PRESSED");
-                root.cursor-column = 10000;
-                root.cursor-moved(root.cursor-line, 10000);
+                root.cursor-column = 500;
+                root.cursor-moved(root.cursor-line, 500);
                 return accept;
             }
             
@@ -341,14 +343,18 @@ export component CustomTextEdit inherits Rectangle {
     // Auto-scroll to keep cursor visible when cursor line changes
     changed cursor-line => {
         // Scroll viewport if cursor is outside visible area
-        // cursor-line is 1-based, visible-start-line is 0-based
+        // cursor-line is 1-based (1 = first line, 2 = second line, etc.)
+        // visible-start-line is 0-based (0 = first line visible, 1 = second line visible, etc.)
         let visible_height_lines = Math.ceil(text-flickable.height / root.line-height);
-        let visible_end_line = root.visible-start-line + visible_height_lines;
+        // First visible line in 1-based numbering
+        let first_visible_line_1based = root.visible-start-line + 1;
+        // Last visible line in 1-based numbering
+        let last_visible_line_1based = root.visible-start-line + visible_height_lines;
         
-        if root.cursor-line <= root.visible-start-line {
+        if root.cursor-line < first_visible_line_1based {
             // Cursor moved above visible area, scroll up to show cursor at top
             text-flickable.viewport-y = -(root.cursor-line - 1) * root.line-height;
-        } else if root.cursor-line > visible_end_line {
+        } else if root.cursor-line > last_visible_line_1based {
             // Cursor moved below visible area, scroll down to show cursor at bottom
             let new_start = Math.max(0, root.cursor-line - visible_height_lines);
             text-flickable.viewport-y = -new_start * root.line-height;
