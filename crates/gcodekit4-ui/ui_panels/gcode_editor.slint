@@ -207,11 +207,11 @@ export component GcodeEditorPanel inherits VerticalBox {
         text: root.gcode-content;
         can-undo: root.can-undo;
         can-redo: root.can-redo;
-        cursor-line: root.cursor-line;
-        cursor-column: root.cursor-column;
-        visible-lines: root.visible-lines;
-        visible-start-line: root.visible-start-line;
-        total-lines: root.total-lines;
+        cursor-line <=> root.cursor-line;
+        cursor-column <=> root.cursor-column;
+        visible-lines <=> root.visible-lines;
+        visible-start-line <=> root.visible-start-line;
+        total-lines <=> root.total-lines;
         show-line-numbers: true;
         
         text-changed(text) => {
