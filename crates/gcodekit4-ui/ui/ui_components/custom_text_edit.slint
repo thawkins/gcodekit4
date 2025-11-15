@@ -167,7 +167,7 @@ export component CustomTextEdit inherits Rectangle {
                     
                     // Render cursor if this is the cursor line
                     if (line.line-number == root.cursor-line) : Rectangle {
-                        x: root.cursor-column * 8px;  // ~8px per character
+                        x: (root.cursor-column - 1) * 8px;  // Convert from 1-based to 0-based for rendering
                         y: 0px;
                         width: 2px;
                         height: root.line-height;
