@@ -44,6 +44,7 @@ export component CustomTextEdit inherits Rectangle {
     callback undo-requested();
     callback redo-requested();
     callback scroll-changed(int);
+    callback ensure-cursor-visible();  // Request scroll to keep cursor in view
     callback key-pressed(KeyEvent) -> EventResult;
     
     // Internal state
@@ -332,6 +333,21 @@ export component CustomTextEdit inherits Rectangle {
             
             // Pass other keys to callback for handling
             return root.key-pressed(event);
+        }
+    }
+    
+    // Auto-scroll to keep cursor visible when cursor line changes
+    changed cursor-line => {
+        // Scroll viewport if cursor is outside visible area
+        // cursor-line is 1-based, visible-start-line is 0-based
+        let visible_end_line = root.visible-start-line + Math.ceil(text-flickable.height / root.line-height);
+        
+        if root.cursor-line <= root.visible-start-line {
+            // Cursor moved above visible area, scroll up
+            text-flickable.viewport-y = -(root.cursor-line - 1) * root.line-height;
+        } else if root.cursor-line > visible_end_line {
+            // Cursor moved below visible area, scroll down
+            text-flickable.viewport-y = -Math.max(0, root.cursor-line - Math.ceil(text-flickable.height / root.line-height)) * root.line-height;
         }
     }
 }
