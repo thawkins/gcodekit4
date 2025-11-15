@@ -544,13 +544,15 @@ impl VectorEngraver {
                     }
                 }
                 "C" | "c" => {
-                    if i + 6 < commands.len() {
-                        let x1: f32 = commands[i + 1].parse().unwrap_or(0.0);
-                        let y1: f32 = commands[i + 2].parse().unwrap_or(0.0);
-                        let x2: f32 = commands[i + 3].parse().unwrap_or(0.0);
-                        let y2: f32 = commands[i + 4].parse().unwrap_or(0.0);
-                        let x: f32 = commands[i + 5].parse().unwrap_or(0.0);
-                        let y: f32 = commands[i + 6].parse().unwrap_or(0.0);
+                    // Handle multiple cubic curve segments in one command
+                    let mut j = i + 1;
+                    while j + 5 < commands.len() {
+                        let x1: f32 = commands[j].parse().unwrap_or(0.0);
+                        let y1: f32 = commands[j + 1].parse().unwrap_or(0.0);
+                        let x2: f32 = commands[j + 2].parse().unwrap_or(0.0);
+                        let y2: f32 = commands[j + 3].parse().unwrap_or(0.0);
+                        let x: f32 = commands[j + 4].parse().unwrap_or(0.0);
+                        let y: f32 = commands[j + 5].parse().unwrap_or(0.0);
 
                         let mut cp1_x = x1;
                         let mut cp1_y = y1;
@@ -599,17 +601,31 @@ impl VectorEngraver {
 
                         current_x = end_x;
                         current_y = end_y;
-                        i += 7;
-                    } else {
-                        i += 1;
+                        j += 6;
+
+                        // Check if next command is a digit (another curve segment) or a command letter
+                        if j < commands.len() {
+                            let next = &commands[j];
+                            // If it looks like a number, continue; if it's a command letter, break
+                            if next.len() == 1 && next.chars().all(|c| c.is_alphabetic()) {
+                                break;
+                            } else if next.parse::<f32>().is_err() {
+                                break;
+                            }
+                        } else {
+                            break;
+                        }
                     }
+                    i = j;
                 }
                 "Q" | "q" => {
-                    if i + 4 < commands.len() {
-                        let x1: f32 = commands[i + 1].parse().unwrap_or(0.0);
-                        let y1: f32 = commands[i + 2].parse().unwrap_or(0.0);
-                        let x: f32 = commands[i + 3].parse().unwrap_or(0.0);
-                        let y: f32 = commands[i + 4].parse().unwrap_or(0.0);
+                    // Handle multiple quadratic curve segments in one command
+                    let mut j = i + 1;
+                    while j + 3 < commands.len() {
+                        let x1: f32 = commands[j].parse().unwrap_or(0.0);
+                        let y1: f32 = commands[j + 1].parse().unwrap_or(0.0);
+                        let x: f32 = commands[j + 2].parse().unwrap_or(0.0);
+                        let y: f32 = commands[j + 3].parse().unwrap_or(0.0);
 
                         let mut cp_x = x1;
                         let mut cp_y = y1;
@@ -647,10 +663,21 @@ impl VectorEngraver {
 
                         current_x = end_x;
                         current_y = end_y;
-                        i += 5;
-                    } else {
-                        i += 1;
+                        j += 4;
+
+                        // Check if next is another segment or a new command
+                        if j < commands.len() {
+                            let next = &commands[j];
+                            if next.len() == 1 && next.chars().all(|c| c.is_alphabetic()) {
+                                break;
+                            } else if next.parse::<f32>().is_err() {
+                                break;
+                            }
+                        } else {
+                            break;
+                        }
                     }
+                    i = j;
                 }
                 "Z" | "z" => {
                     i += 1;
