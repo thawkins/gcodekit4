@@ -2004,6 +2004,64 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
+    // Ctrl+Home: Jump to beginning of file
+    let window_weak = main_window.as_weak();
+    let editor_bridge_ctrl_home = editor_bridge.clone();
+    main_window.on_ctrl_home_pressed(move || {
+        eprintln!(">>> CTRL+HOME PRESSED: Jump to beginning");
+        // Move to first line, first column
+        editor_bridge_ctrl_home.set_cursor(0, 0);
+        
+        if let Some(window) = window_weak.upgrade() {
+            // Get actual cursor position
+            let (actual_line, actual_col) = editor_bridge_ctrl_home.cursor_position();
+            // Convert to 1-based for display
+            window.set_cursor_line((actual_line + 1) as i32);
+            window.set_cursor_column((actual_col + 1) as i32);
+            
+            // Update viewport to top
+            window.set_visible_start_line(0);
+            
+            update_visible_lines(&window, &editor_bridge_ctrl_home);
+        }
+    });
+
+    // Ctrl+End: Jump to end of file
+    let window_weak = main_window.as_weak();
+    let editor_bridge_ctrl_end = editor_bridge.clone();
+    main_window.on_ctrl_end_pressed(move || {
+        eprintln!(">>> CTRL+END PRESSED: Jump to end");
+        // Get total lines and last line
+        let line_count = editor_bridge_ctrl_end.line_count();
+        let last_line = if line_count > 0 { line_count - 1 } else { 0 };
+        
+        // Get the length of the last line
+        let text = editor_bridge_ctrl_end.get_text();
+        let lines: Vec<&str> = text.lines().collect();
+        let last_col = if last_line < lines.len() {
+            lines[last_line].len()
+        } else {
+            0
+        };
+        
+        // Move cursor to end of last line
+        editor_bridge_ctrl_end.set_cursor(last_line, last_col);
+        
+        if let Some(window) = window_weak.upgrade() {
+            // Get actual cursor position
+            let (actual_line, actual_col) = editor_bridge_ctrl_end.cursor_position();
+            // Convert to 1-based for display
+            window.set_cursor_line((actual_line + 1) as i32);
+            window.set_cursor_column((actual_col + 1) as i32);
+            
+            // Update viewport to show cursor
+            let (start_line, _end_line) = editor_bridge_ctrl_end.viewport_range();
+            window.set_visible_start_line(start_line as i32);
+            
+            update_visible_lines(&window, &editor_bridge_ctrl_end);
+        }
+    });
+
     // Mouse click callback - convert pixels to line/column
     main_window.on_mouse_clicked(move |_x, _y| {
         // TODO: Implement mouse-based cursor positioning

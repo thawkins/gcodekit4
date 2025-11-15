@@ -45,6 +45,8 @@ export component GcodeEditorPanel inherits VerticalBox {
     callback cursor_moved(int, int);
     callback scroll_changed(int);
     callback end_key_pressed();  // End key pressed - let Rust handle line-end positioning
+    callback ctrl_home_pressed();  // Ctrl+Home - jump to beginning of file
+    callback ctrl_end_pressed();  // Ctrl+End - jump to end of file
     callback request_focus();  // Called when panel becomes visible/active
     callback key_pressed_event(string);  // Forward key events
     
@@ -240,6 +242,14 @@ export component GcodeEditorPanel inherits VerticalBox {
         
         end-key-pressed() => {
             root.end_key_pressed();
+        }
+        
+        ctrl-home-pressed() => {
+            root.ctrl_home_pressed();
+        }
+        
+        ctrl-end-pressed() => {
+            root.ctrl_end_pressed();
         }
         
         text_inserted(line, col, text) => {

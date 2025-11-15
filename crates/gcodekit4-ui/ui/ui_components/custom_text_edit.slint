@@ -46,6 +46,8 @@ export component CustomTextEdit inherits Rectangle {
     callback scroll-changed(int);
     callback ensure-cursor-visible();  // Request scroll to keep cursor in view
     callback end-key-pressed();  // End key pressed - let Rust handle positioning to line end
+    callback ctrl-home-pressed();  // Ctrl+Home pressed - jump to beginning of file
+    callback ctrl-end-pressed();  // Ctrl+End pressed - jump to end of file
     callback key-pressed(KeyEvent) -> EventResult;
     
     // Internal state
@@ -311,16 +313,14 @@ export component CustomTextEdit inherits Rectangle {
                 // Ctrl+Home: Jump to beginning of file
                 if (event.text == Key.Home) {
                     debug("CTRL+HOME: jump to beginning of file");
-                    // Don't set cursor properties - let Rust handler do it
-                    root.cursor-moved(1, 1);
+                    root.ctrl-home-pressed();
                     return accept;
                 }
                 
                 // Ctrl+End: Jump to end of file
                 if (event.text == Key.End) {
                     debug("CTRL+END: jump to end of file");
-                    // Move to last line, last column - let Rust handler clamp to actual line end
-                    root.cursor-moved(root.total-lines, 500);
+                    root.ctrl-end-pressed();
                     return accept;
                 }
             }

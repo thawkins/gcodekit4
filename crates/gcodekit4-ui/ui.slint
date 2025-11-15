@@ -323,6 +323,8 @@ export component MainWindow inherits Window {
     callback text_deleted(int, int, int, int);  // start_line, start_col, end_line, end_col
     callback cursor_moved(int, int);  // line, column
     callback end_key_pressed();  // End key pressed
+    callback ctrl_home_pressed();  // Ctrl+Home pressed
+    callback ctrl_end_pressed();  // Ctrl+End pressed
     callback mouse_clicked(int, int);  // x, y in pixels
     callback find_requested(string);  // search text
     callback replace_requested(string, string);  // search, replace
@@ -789,6 +791,14 @@ export component MainWindow inherits Window {
                     
                     end_key_pressed() => {
                         root.end_key_pressed();
+                    }
+                    
+                    ctrl_home_pressed() => {
+                        root.ctrl_home_pressed();
+                    }
+                    
+                    ctrl_end_pressed() => {
+                        root.ctrl_end_pressed();
                     }
                     
                     cursor_moved(line, col) => {
