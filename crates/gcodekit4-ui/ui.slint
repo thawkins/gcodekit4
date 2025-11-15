@@ -791,6 +791,10 @@ export component MainWindow inherits Window {
                         root.end_key_pressed();
                     }
                     
+                    cursor_moved(line, col) => {
+                        root.cursor_moved(line, col);
+                    }
+                    
                     request-focus => {
                         // Called when editor tab becomes active - text-input will request focus here
                     }
