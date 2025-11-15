@@ -291,7 +291,7 @@ impl Visualizer2D {
             bounds.finalize_with_padding(BOUNDS_PADDING_FACTOR);
         self.current_pos = current_pos;
 
-        tracing::debug!(
+        tracing::info!(
             "Parsed G-code: G0={}, G1={}, G2={}, G3={}, total commands={}",
             g0_count,
             g1_count,

@@ -1,26 +1,25 @@
 //! Tabbed Box Maker Dialog
-//! Dialog for capturing parameters to generate a tabbed box with CNC/laser cutting
+//! Dialog for capturing parameters based on boxes.py algorithm
 
 import { Button, LineEdit, ComboBox, CheckBox, VerticalBox, HorizontalBox, GridBox, ScrollView, GroupBox } from "std-widgets.slint";
 
 export component TabbedBoxDialog inherits Window {
-    title: "Tabbed Box Maker";
+    title: "Tabbed Box Maker (boxes.py algorithm)";
     width: 600px;
     height: 700px;
     
-    in-out property <string> box-length: "100.0";
-    in-out property <string> box-width: "100.0";
-    in-out property <string> box-height: "100.0";
+    in-out property <string> box-x: "100.0";
+    in-out property <string> box-y: "100.0";
+    in-out property <string> box-h: "100.0";
     in-out property <string> material-thickness: "3.0";
-    in-out property <string> tab-width: "25.0";
-    in-out property <string> kerf: "0.5";
-    in-out property <string> spacing: "5.0";
+    in-out property <string> burn: "0.1";
+    in-out property <string> finger-width: "2.0";
+    in-out property <string> space-width: "2.0";
+    in-out property <string> surrounding-spaces: "2.0";
+    in-out property <string> play: "0.0";
+    in-out property <int> finger-style: 0;
     in-out property <int> box-type: 0;
-    in-out property <int> tab-type: 0;
-    in-out property <int> layout-style: 0;
-    in-out property <bool> inside-dimensions: false;
-    in-out property <int> dividers-length: 0;
-    in-out property <int> dividers-width: 0;
+    in-out property <bool> outside-dimensions: false;
     in-out property <string> laser-passes: "3";
     in-out property <string> laser-power: "1000";
     in-out property <string> feed-rate: "500";
@@ -46,36 +45,36 @@ export component TabbedBoxDialog inherits Window {
                         spacing: 10px;
                         
                         Row {
-                            Text { text: "Length:"; }
+                            Text { text: "X (Width):"; }
                             LineEdit { 
-                                text <=> box-length;
+                                text <=> box-x;
                                 placeholder-text: "100.0";
                                 input-type: decimal;
                             }
                         }
                         
                         Row {
-                            Text { text: "Width:"; }
+                            Text { text: "Y (Depth):"; }
                             LineEdit { 
-                                text <=> box-width;
+                                text <=> box-y;
                                 placeholder-text: "100.0";
                                 input-type: decimal;
                             }
                         }
                         
                         Row {
-                            Text { text: "Height:"; }
+                            Text { text: "H (Height):"; }
                             LineEdit { 
-                                text <=> box-height;
+                                text <=> box-h;
                                 placeholder-text: "100.0";
                                 input-type: decimal;
                             }
                         }
                         
                         Row {
-                            Text { text: "Inside Dims:"; }
+                            Text { text: "Outside Dims:"; }
                             CheckBox { 
-                                checked <=> inside-dimensions;
+                                checked <=> outside-dimensions;
                             }
                         }
                     }
@@ -97,35 +96,59 @@ export component TabbedBoxDialog inherits Window {
                         }
                         
                         Row {
-                            Text { text: "Kerf:"; }
+                            Text { text: "Burn (kerf):"; }
                             LineEdit { 
-                                text <=> kerf;
-                                placeholder-text: "0.5";
+                                text <=> burn;
+                                placeholder-text: "0.1";
                             }
                         }
                     }
                 }
                 
-                // Tab Settings
+                // Finger Joint Settings
                 GroupBox {
-                    title: "Tab Settings";
+                    title: "Finger Joint Settings (multiples of thickness)";
                     
                     GridBox {
                         spacing: 10px;
                         
                         Row {
-                            Text { text: "Tab Width:"; }
+                            Text { text: "Finger Width:"; }
                             LineEdit { 
-                                text <=> tab-width;
-                                placeholder-text: "25.0";
+                                text <=> finger-width;
+                                placeholder-text: "2.0";
                             }
                         }
                         
                         Row {
-                            Text { text: "Tab Type:"; }
+                            Text { text: "Space Width:"; }
+                            LineEdit { 
+                                text <=> space-width;
+                                placeholder-text: "2.0";
+                            }
+                        }
+                        
+                        Row {
+                            Text { text: "Surrounding Spaces:"; }
+                            LineEdit { 
+                                text <=> surrounding-spaces;
+                                placeholder-text: "2.0";
+                            }
+                        }
+                        
+                        Row {
+                            Text { text: "Play (fit tolerance):"; }
+                            LineEdit { 
+                                text <=> play;
+                                placeholder-text: "0.0";
+                            }
+                        }
+                        
+                        Row {
+                            Text { text: "Finger Style:"; }
                             ComboBox {
-                                model: ["Laser (Fingerjoints)", "CNC (Dogbone)"];
-                                current-index <=> tab-type;
+                                model: ["Rectangular", "Springs", "Barbs", "Snap"];
+                                current-index <=> finger-style;
                             }
                         }
                     }
@@ -141,49 +164,8 @@ export component TabbedBoxDialog inherits Window {
                         Row {
                             Text { text: "Box Type:"; }
                             ComboBox {
-                                model: ["Full Box", "No Top", "No Top/Front", "No Top/Front/Right", "No Top/Bottom", "No Top/Front/Back/Right"];
+                                model: ["Full Box", "No Top"];
                                 current-index <=> box-type;
-                            }
-                        }
-                        
-                        Row {
-                            Text { text: "Layout Style:"; }
-                            ComboBox {
-                                model: ["Diagrammatic", "3-Piece", "Inline/Compact"];
-                                current-index <=> layout-style;
-                            }
-                        }
-                        
-                        Row {
-                            Text { text: "Spacing:"; }
-                            LineEdit { 
-                                text <=> spacing;
-                                placeholder-text: "5.0";
-                            }
-                        }
-                    }
-                }
-                
-                // Dividers
-                GroupBox {
-                    title: "Dividers (Optional)";
-                    
-                    GridBox {
-                        spacing: 10px;
-                        
-                        Row {
-                            Text { text: "Length Axis:"; }
-                            LineEdit { 
-                                text: dividers-length;
-                                placeholder-text: "0";
-                            }
-                        }
-                        
-                        Row {
-                            Text { text: "Width Axis:"; }
-                            LineEdit { 
-                                text: dividers-width;
-                                placeholder-text: "0";
                             }
                         }
                     }

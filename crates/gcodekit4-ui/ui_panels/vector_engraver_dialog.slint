@@ -1,0 +1,323 @@
+// Laser Vector Image Engraving Dialog
+import { Button, ScrollView, VerticalBox, HorizontalBox, LineEdit, ComboBox, CheckBox, Slider, GroupBox } from "std-widgets.slint";
+
+export struct VectorEngravingParams {
+    feed-rate: float,
+    travel-rate: float,
+    cut-power: float,
+    engrave-power: float,
+    power-scale: float,
+    multi-pass: bool,
+    num-passes: int,
+    z-increment: float,
+    invert-power: bool,
+    desired-width: float,
+}
+
+export component VectorEngraverDialog inherits Dialog {
+    in-out property <string> vector-path: "";
+    in property <string> file-info: "No file selected";
+    in property <string> estimated-time: "0:00";
+    
+    // Individual parameter properties for two-way binding
+    in-out property <float> feed-rate: 600.0;
+    in-out property <float> travel-rate: 3000.0;
+    in-out property <float> cut-power: 100.0;
+    in-out property <float> engrave-power: 50.0;
+    in-out property <float> power-scale: 1000.0;
+    in-out property <bool> multi-pass: false;
+    in-out property <int> num-passes: 1;
+    in-out property <float> z-increment: 0.5;
+    in-out property <bool> invert-power: false;
+    in-out property <float> desired-width: 100.0;
+    in property <float> output-width: 0.0;
+    in property <float> output-height: 0.0;
+    
+    callback load-vector-file();
+    callback generate-gcode();
+    callback update-preview();
+    callback close-dialog();
+    
+    title: "Laser Vector Image Engraver";
+    preferred-width: 700px;
+    preferred-height: 600px;
+    
+    VerticalBox {
+        padding: 10px;
+        spacing: 10px;
+        
+        // Header with file selection
+        HorizontalBox {
+            spacing: 10px;
+            alignment: start;
+            
+            Text {
+                text: "Vector File:";
+                vertical-alignment: center;
+            }
+            
+            LineEdit {
+                text <=> vector-path;
+                placeholder-text: "Select an SVG or DXF file...";
+                horizontal-stretch: 1;
+                enabled: false;
+            }
+            
+            Button {
+                text: "Browse...";
+                clicked => {
+                    load-vector-file();
+                }
+            }
+        }
+        
+        // File info display
+        Rectangle {
+            background: #3a3a3a;
+            border-color: #555;
+            border-width: 1px;
+            border-radius: 4px;
+            height: 30px;
+            
+            HorizontalBox {
+                padding: 5px;
+                spacing: 10px;
+                
+                Text {
+                    text: "File:";
+                    color: #aaa;
+                }
+                
+                Text {
+                    text: file-info;
+                    color: #4a9eff;
+                    font-weight: 500;
+                }
+            }
+        }
+        
+        // Main content area with parameters
+        ScrollView {
+            vertical-stretch: 1;
+            
+            VerticalBox {
+                spacing: 15px;
+                padding: 5px;
+                
+                // Cutting parameters
+                GroupBox {
+                    title: "Cutting Parameters";
+                    
+                    VerticalBox {
+                        spacing: 8px;
+                        
+                        HorizontalBox {
+                            Text { text: "Cut Power (%):"; width: 140px; }
+                            Slider {
+                                minimum: 0;
+                                maximum: 100;
+                                value <=> cut-power;
+                                horizontal-stretch: 1;
+                            }
+                            Text {
+                                text: cut-power;
+                                width: 40px;
+                            }
+                        }
+                        
+                        HorizontalBox {
+                            Text { text: "Engrave Power (%):"; width: 140px; }
+                            Slider {
+                                minimum: 0;
+                                maximum: 100;
+                                value <=> engrave-power;
+                                horizontal-stretch: 1;
+                            }
+                            Text {
+                                text: engrave-power;
+                                width: 40px;
+                            }
+                        }
+                        
+                        HorizontalBox {
+                            CheckBox {
+                                text: "Invert Power";
+                                checked <=> invert-power;
+                            }
+                        }
+                    }
+                }
+                
+                // Speed parameters
+                GroupBox {
+                    title: "Speed";
+                    
+                    VerticalBox {
+                        spacing: 8px;
+                        
+                        HorizontalBox {
+                            Text { text: "Feed Rate (mm/min):"; width: 140px; }
+                            LineEdit {
+                                text: feed-rate;
+                                horizontal-stretch: 1;
+                                edited => {
+                                    feed-rate = self.text.to-float();
+                                    update-preview();
+                                }
+                            }
+                        }
+                        
+                        HorizontalBox {
+                            Text { text: "Travel Rate (mm/min):"; width: 140px; }
+                            LineEdit {
+                                text: travel-rate;
+                                horizontal-stretch: 1;
+                                edited => {
+                                    travel-rate = self.text.to-float();
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Multi-pass options
+                GroupBox {
+                    title: "Multi-Pass Cutting";
+                    
+                    VerticalBox {
+                        spacing: 8px;
+                        
+                        HorizontalBox {
+                            CheckBox {
+                                text: "Enable Multi-Pass";
+                                checked <=> multi-pass;
+                                toggled => {
+                                    update-preview();
+                                }
+                            }
+                        }
+                        
+                        if multi-pass: HorizontalBox {
+                            Text { text: "Number of Passes:"; width: 140px; }
+                            Slider {
+                                minimum: 1;
+                                maximum: 10;
+                                value: num-passes;
+                                changed(val) => {
+                                    num-passes = round(val);
+                                    update-preview();
+                                }
+                                horizontal-stretch: 1;
+                            }
+                            Text {
+                                text: num-passes;
+                                width: 40px;
+                            }
+                        }
+                        
+                        if multi-pass: HorizontalBox {
+                            Text { text: "Z Increment (mm):"; width: 140px; }
+                            LineEdit {
+                                text: z-increment;
+                                horizontal-stretch: 1;
+                                edited => {
+                                    z-increment = self.text.to-float();
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Laser power scale
+                GroupBox {
+                    title: "Laser Configuration";
+                    
+                    VerticalBox {
+                        spacing: 8px;
+                        
+                        HorizontalBox {
+                            Text { text: "Desired Width (mm):"; width: 140px; }
+                            LineEdit {
+                                text: desired-width;
+                                placeholder-text: "100";
+                                horizontal-stretch: 1;
+                                edited => {
+                                    desired-width = self.text.to-float();
+                                    update-preview();
+                                }
+                            }
+                        }
+                        
+                        HorizontalBox {
+                            Text { text: "Output Size (mm):"; width: 140px; }
+                            Text {
+                                text: output-width > 0 ? root.output-width.round() + " × " + root.output-height.round() : "—";
+                                color: #4a9eff;
+                                font-weight: 500;
+                                horizontal-stretch: 1;
+                            }
+                        }
+                        
+                        HorizontalBox {
+                            Text { text: "Power Scale:"; width: 140px; }
+                            LineEdit {
+                                text: power-scale;
+                                placeholder-text: "1000 for GRBL";
+                                horizontal-stretch: 1;
+                                edited => {
+                                    power-scale = self.text.to-float();
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Estimated time
+                Rectangle {
+                    background: #3a3a3a;
+                    border-color: #555;
+                    border-width: 1px;
+                    border-radius: 4px;
+                    
+                    HorizontalBox {
+                        padding: 10px;
+                        spacing: 10px;
+                        
+                        Text {
+                            text: "Estimated Time:";
+                            color: #aaa;
+                        }
+                        
+                        Text {
+                            text: estimated-time;
+                            color: #4a9eff;
+                            font-weight: 700;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Bottom buttons
+        HorizontalBox {
+            spacing: 10px;
+            alignment: end;
+            
+            Button {
+                text: "Generate G-code";
+                primary: true;
+                enabled: vector-path != "";
+                clicked => {
+                    generate-gcode();
+                }
+            }
+            
+            Button {
+                text: "Close";
+                clicked => {
+                    close-dialog();
+                }
+            }
+        }
+    }
+}

@@ -54,11 +54,11 @@ impl CoordTransform {
 /// Render toolpath as SVG path commands (cutting moves only)
 pub fn render_toolpath_to_path(visualizer: &Visualizer2D, width: u32, height: u32) -> String {
     if visualizer.commands.is_empty() {
-        tracing::debug!("No commands to render");
+        tracing::warn!("No commands to render - visualizer.commands is empty!");
         return String::new();
     }
 
-    tracing::debug!(
+    tracing::info!(
         "Rendering toolpath: {} total commands",
         visualizer.commands.len()
     );

@@ -310,10 +310,11 @@ export component MainWindow inherits Window {
     callback designer-file-save();
     callback designer-file-save-as();
     
-    // CAM Tool callbacks
+     // CAM Tool callbacks
     callback generate-tabbed-box();
     callback generate-jigsaw-puzzle();
     callback generate-laser-engraving();
+    callback generate-vector-engraving();
     
     // Custom editor callbacks
     callback clear_editor();
@@ -1171,6 +1172,9 @@ export component MainWindow inherits Window {
                     }
                     open-laser-engraver => {
                         root.generate-laser-engraving();
+                    }
+                    open-vector-engraver => {
+                        root.generate-vector-engraving();
                     }
                 }
                 

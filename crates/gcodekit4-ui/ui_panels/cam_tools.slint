@@ -5,6 +5,7 @@ import { Button, VerticalBox, HorizontalBox, ScrollView } from "std-widgets.slin
 import { TabbedBoxDialog } from "tabbed_box_dialog.slint";
 import { JigsawPuzzleDialog } from "jigsaw_puzzle_dialog.slint";
 import { LaserEngraverDialog } from "laser_engraver_dialog.slint";
+import { VectorEngraverDialog } from "vector_engraver_dialog.slint";
 
 component ToolCard inherits Rectangle {
     in property <string> tool-title: "Tool";
@@ -62,6 +63,7 @@ export component CAMToolsPanel inherits Rectangle {
     callback open-tabbed-box-maker();
     callback open-jigsaw-puzzle-maker();
     callback open-laser-engraver();
+    callback open-vector-engraver();
     
     VerticalBox {
         padding: 10px;
@@ -107,7 +109,7 @@ export component CAMToolsPanel inherits Rectangle {
                         }
                         
                         ToolCard {
-                            tool-title: "Laser Image Engraver";
+                            tool-title: "Laser Bitmap Image Engraver";
                             tool-description: "Convert bitmap images to G-code for laser engraving with grayscale power control";
                             clicked => {
                                 root.open-laser-engraver();
@@ -125,10 +127,10 @@ export component CAMToolsPanel inherits Rectangle {
                         spacing: 10px;
                         
                         ToolCard {
-                            tool-title: "Tool 4";
-                            tool-description: "Tool to go here";
+                            tool-title: "Laser Vector Image Engraver";
+                            tool-description: "Convert SVG and DXF vector files to G-code for laser cutting and engraving";
                             clicked => {
-                                // Placeholder for future tool action
+                                root.open-vector-engraver();
                             }
                         }
                         

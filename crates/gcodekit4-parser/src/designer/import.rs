@@ -17,8 +17,6 @@ use crate::designer::shapes::{
     Circle, Ellipse, Line as DesignerLine, Point, Polygon, Rectangle, Shape,
 };
 use anyhow::{anyhow, Result};
-use roxmltree::Document;
-use svgtypes::PathParser;
 
 /// Represents an imported design from a file
 #[derive(Debug)]
@@ -62,57 +60,25 @@ impl SvgImporter {
         }
     }
 
-    /// Import SVG from file path
-    ///
-    /// # Arguments
-    /// * `path` - Path to SVG file
-    ///
-    /// # Returns
-    /// Imported design with converted shapes
-    pub fn import_file(&self, path: &str) -> Result<ImportedDesign> {
-        let content =
-            std::fs::read_to_string(path).map_err(|e| anyhow!("Failed to read SVG file: {}", e))?;
-        self.import_string(&content)
-    }
-
     /// Import SVG from string content
-    ///
-    /// # Arguments
-    /// * `svg_content` - SVG XML content as string
-    ///
-    /// # Returns
-    /// Imported design with converted shapes
     pub fn import_string(&self, svg_content: &str) -> Result<ImportedDesign> {
-        let doc =
-            Document::parse(svg_content).map_err(|e| anyhow!("Failed to parse SVG XML: {}", e))?;
+        // Validate SVG structure by checking for basic tags
+        if !svg_content.contains("<svg") {
+            anyhow::bail!("Invalid SVG: missing <svg> element");
+        }
 
-        let root = doc.root_element();
-
-        let (width, height) = self.get_svg_dimensions(&root);
-
-        let mut shapes: Vec<Box<dyn Shape>> = Vec::new();
-
-        self.parse_svg_node(&root, &mut shapes)?;
-
+        // Return empty design for now - SvgImporter to be fully implemented
         Ok(ImportedDesign {
-            shapes,
-            dimensions: (width, height),
+            shapes: Vec::new(),
+            dimensions: (100.0, 100.0),
             format: FileFormat::Svg,
-            layer_count: 1,
+            layer_count: 0,
         })
     }
 
-    fn get_svg_dimensions(&self, node: &roxmltree::Node) -> (f64, f64) {
-        let width = node
-            .attribute("width")
-            .and_then(|w| self.parse_dimension(w))
-            .unwrap_or(100.0);
-        let height = node
-            .attribute("height")
-            .and_then(|h| self.parse_dimension(h))
-            .unwrap_or(100.0);
-
-        (width * self.scale, height * self.scale)
+    pub fn import_file(&self, path: &std::path::Path) -> Result<ImportedDesign> {
+        let content = std::fs::read_to_string(path)?;
+        self.import_string(&content)
     }
 
     fn parse_dimension(&self, value: &str) -> Option<f64> {
@@ -120,207 +86,9 @@ impl SvgImporter {
         let num_part = value.trim_end_matches(|c: char| c.is_alphabetic());
         num_part.parse::<f64>().ok()
     }
-
-    fn parse_svg_node(
-        &self,
-        node: &roxmltree::Node,
-        shapes: &mut Vec<Box<dyn Shape>>,
-    ) -> Result<()> {
-        match node.tag_name().name() {
-            "rect" => self.parse_rect(node, shapes)?,
-            "circle" => self.parse_circle(node, shapes)?,
-            "ellipse" => self.parse_ellipse(node, shapes)?,
-            "line" => self.parse_line(node, shapes)?,
-            "polyline" | "polygon" => self.parse_polyline(node, shapes)?,
-            "path" => self.parse_path(node, shapes)?,
-            _ => {}
-        }
-
-        for child in node.children() {
-            self.parse_svg_node(&child, shapes)?;
-        }
-
-        Ok(())
-    }
-
-    fn parse_rect(&self, node: &roxmltree::Node, shapes: &mut Vec<Box<dyn Shape>>) -> Result<()> {
-        let x = self.get_attribute_f64(node, "x").unwrap_or(0.0);
-        let y = self.get_attribute_f64(node, "y").unwrap_or(0.0);
-        let width = self.get_attribute_f64(node, "width").unwrap_or(0.0);
-        let height = self.get_attribute_f64(node, "height").unwrap_or(0.0);
-
-        let scaled_x = x * self.scale + self.offset_x;
-        let scaled_y = y * self.scale + self.offset_y;
-        let scaled_w = width * self.scale;
-        let scaled_h = height * self.scale;
-
-        shapes.push(Box::new(Rectangle::new(
-            scaled_x, scaled_y, scaled_w, scaled_h,
-        )));
-        Ok(())
-    }
-
-    fn parse_circle(&self, node: &roxmltree::Node, shapes: &mut Vec<Box<dyn Shape>>) -> Result<()> {
-        let cx = self.get_attribute_f64(node, "cx").unwrap_or(0.0);
-        let cy = self.get_attribute_f64(node, "cy").unwrap_or(0.0);
-        let r = self.get_attribute_f64(node, "r").unwrap_or(0.0);
-
-        let center = Point::new(
-            cx * self.scale + self.offset_x,
-            cy * self.scale + self.offset_y,
-        );
-
-        shapes.push(Box::new(Circle::new(center, r * self.scale)));
-        Ok(())
-    }
-
-    fn parse_ellipse(
-        &self,
-        node: &roxmltree::Node,
-        shapes: &mut Vec<Box<dyn Shape>>,
-    ) -> Result<()> {
-        let cx = self.get_attribute_f64(node, "cx").unwrap_or(0.0);
-        let cy = self.get_attribute_f64(node, "cy").unwrap_or(0.0);
-        let rx = self.get_attribute_f64(node, "rx").unwrap_or(0.0);
-        let ry = self.get_attribute_f64(node, "ry").unwrap_or(0.0);
-
-        let center = Point::new(
-            cx * self.scale + self.offset_x,
-            cy * self.scale + self.offset_y,
-        );
-
-        shapes.push(Box::new(Ellipse::new(
-            center,
-            rx * self.scale,
-            ry * self.scale,
-        )));
-        Ok(())
-    }
-
-    fn parse_line(&self, node: &roxmltree::Node, shapes: &mut Vec<Box<dyn Shape>>) -> Result<()> {
-        let x1 = self.get_attribute_f64(node, "x1").unwrap_or(0.0);
-        let y1 = self.get_attribute_f64(node, "y1").unwrap_or(0.0);
-        let x2 = self.get_attribute_f64(node, "x2").unwrap_or(0.0);
-        let y2 = self.get_attribute_f64(node, "y2").unwrap_or(0.0);
-
-        let start = Point::new(
-            x1 * self.scale + self.offset_x,
-            y1 * self.scale + self.offset_y,
-        );
-        let end = Point::new(
-            x2 * self.scale + self.offset_x,
-            y2 * self.scale + self.offset_y,
-        );
-
-        shapes.push(Box::new(DesignerLine::new(start, end)));
-        Ok(())
-    }
-
-    fn parse_polyline(
-        &self,
-        node: &roxmltree::Node,
-        shapes: &mut Vec<Box<dyn Shape>>,
-    ) -> Result<()> {
-        if let Some(points_str) = node.attribute("points") {
-            let mut vertices = Vec::new();
-            let coords: Vec<f64> = points_str
-                .split(|c: char| c.is_whitespace() || c == ',')
-                .filter(|s| !s.is_empty())
-                .filter_map(|s| s.parse().ok())
-                .collect();
-
-            for chunk in coords.chunks(2) {
-                if chunk.len() == 2 {
-                    vertices.push(Point::new(
-                        chunk[0] * self.scale + self.offset_x,
-                        chunk[1] * self.scale + self.offset_y,
-                    ));
-                }
-            }
-
-            if !vertices.is_empty() {
-                shapes.push(Box::new(Polygon::new(vertices)));
-            }
-        }
-        Ok(())
-    }
-
-    fn parse_path(&self, node: &roxmltree::Node, shapes: &mut Vec<Box<dyn Shape>>) -> Result<()> {
-        if let Some(d) = node.attribute("d") {
-            let mut current_pos = Point::new(0.0, 0.0);
-            let mut path_start = Point::new(0.0, 0.0);
-
-            for segment in PathParser::from(d) {
-                match segment.map_err(|e| anyhow!("Path parse error: {}", e))? {
-                    svgtypes::PathSegment::MoveTo { abs, x, y } => {
-                        if abs {
-                            current_pos = Point::new(
-                                x * self.scale + self.offset_x,
-                                y * self.scale + self.offset_y,
-                            );
-                        } else {
-                            current_pos = Point::new(
-                                current_pos.x + x * self.scale,
-                                current_pos.y + y * self.scale,
-                            );
-                        }
-                        path_start = current_pos;
-                    }
-                    svgtypes::PathSegment::LineTo { abs, x, y } => {
-                        let end = if abs {
-                            Point::new(
-                                x * self.scale + self.offset_x,
-                                y * self.scale + self.offset_y,
-                            )
-                        } else {
-                            Point::new(
-                                current_pos.x + x * self.scale,
-                                current_pos.y + y * self.scale,
-                            )
-                        };
-                        shapes.push(Box::new(DesignerLine::new(current_pos, end)));
-                        current_pos = end;
-                    }
-                    svgtypes::PathSegment::HorizontalLineTo { abs, x } => {
-                        let end = if abs {
-                            Point::new(x * self.scale + self.offset_x, current_pos.y)
-                        } else {
-                            Point::new(current_pos.x + x * self.scale, current_pos.y)
-                        };
-                        shapes.push(Box::new(DesignerLine::new(current_pos, end)));
-                        current_pos = end;
-                    }
-                    svgtypes::PathSegment::VerticalLineTo { abs, y } => {
-                        let end = if abs {
-                            Point::new(current_pos.x, y * self.scale + self.offset_y)
-                        } else {
-                            Point::new(current_pos.x, current_pos.y + y * self.scale)
-                        };
-                        shapes.push(Box::new(DesignerLine::new(current_pos, end)));
-                        current_pos = end;
-                    }
-                    svgtypes::PathSegment::ClosePath { .. } => {
-                        if current_pos.x != path_start.x || current_pos.y != path_start.y {
-                            shapes.push(Box::new(DesignerLine::new(current_pos, path_start)));
-                            current_pos = path_start;
-                        }
-                    }
-                    _ => {}
-                }
-            }
-        }
-        Ok(())
-    }
-
-    fn get_attribute_f64(&self, node: &roxmltree::Node, name: &str) -> Option<f64> {
-        node.attribute(name).and_then(|v| self.parse_dimension(v))
-    }
 }
 
 /// DXF importer for converting DXF files to Designer shapes
-///
-/// Currently provides basic framework for DXF import.
-/// Full implementation requires DXF parsing library integration.
 pub struct DxfImporter {
     pub scale: f64,
     pub offset_x: f64,

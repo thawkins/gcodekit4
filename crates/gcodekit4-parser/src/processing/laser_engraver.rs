@@ -123,7 +123,7 @@ impl Default for EngravingParameters {
 }
 
 /// Laser engraving tool for bitmap images
-pub struct LaserEngraver {
+pub struct BitmapImageEngraver {
     image_data: Vec<u8>,
     width: u32,
     height: u32,
@@ -132,7 +132,7 @@ pub struct LaserEngraver {
     output_height: u32,
 }
 
-impl LaserEngraver {
+impl BitmapImageEngraver {
     /// Create a new laser engraver from an image file
     pub fn from_file<P: AsRef<Path>>(path: P, params: EngravingParameters) -> Result<Self> {
         let img = image::open(path.as_ref()).context("Failed to load image file")?;
@@ -708,7 +708,7 @@ mod tests {
     fn test_halftone_threshold() {
         let data = vec![0, 127, 128, 255];
         let result =
-            LaserEngraver::apply_halftoning(data.clone(), 4, 1, HalftoneMethod::Threshold, 127)
+            BitmapImageEngraver::apply_halftoning(data.clone(), 4, 1, HalftoneMethod::Threshold, 127)
                 .unwrap();
         assert_eq!(result[0], 0);    // 0 < 127 -> black
         assert_eq!(result[1], 255);  // 127 >= 127 -> white
@@ -720,7 +720,7 @@ mod tests {
     fn test_rotation_90_degrees() {
         let data = vec![1, 2, 3, 4, 5, 6];
         let (rotated, new_w, new_h) =
-            LaserEngraver::apply_rotation(data, 2, 3, RotationAngle::Degrees90);
+            BitmapImageEngraver::apply_rotation(data, 2, 3, RotationAngle::Degrees90);
         assert_eq!(new_w, 3);
         assert_eq!(new_h, 2);
         assert_eq!(rotated[0], 5);
@@ -731,7 +731,7 @@ mod tests {
     #[test]
     fn test_mirror_x() {
         let mut data = vec![1, 2, 3, 4];
-        LaserEngraver::mirror_x_data(&mut data, 2, 2);
+        BitmapImageEngraver::mirror_x_data(&mut data, 2, 2);
         // First row [1,2] -> [2,1], second row [3,4] -> [4,3]
         assert_eq!(data, vec![2, 1, 4, 3]);
     }

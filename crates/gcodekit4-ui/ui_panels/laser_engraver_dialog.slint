@@ -13,6 +13,11 @@ export struct EngravingParams {
     invert: bool,
     line-spacing: float,
     power-scale: float,
+    mirror-x: bool,
+    mirror-y: bool,
+    rotation: string,
+    halftone: string,
+    halftone-threshold: int,
 }
 
 export component LaserEngraverDialog inherits Dialog {
@@ -33,6 +38,11 @@ export component LaserEngraverDialog inherits Dialog {
     in-out property <bool> invert: false;
     in-out property <float> line-spacing: 1.0;
     in-out property <float> power-scale: 1000.0;
+    in-out property <bool> mirror-x: false;
+    in-out property <bool> mirror-y: false;
+    in-out property <string> rotation: "0°";
+    in-out property <string> halftone: "None";
+    in-out property <int> halftone-threshold: 127;
     
     callback load-image();
     callback generate-gcode();
@@ -283,6 +293,71 @@ export component LaserEngraverDialog inherits Dialog {
                                 CheckBox {
                                     text: "Invert (negative)";
                                     checked <=> invert;
+                                }
+                            }
+                            
+                            // Mirror options
+                            HorizontalBox {
+                                CheckBox {
+                                    text: "Mirror X (horizontal flip)";
+                                    checked <=> mirror-x;
+                                    toggled => {
+                                        update-preview();
+                                    }
+                                }
+                            }
+                            
+                            HorizontalBox {
+                                CheckBox {
+                                    text: "Mirror Y (vertical flip)";
+                                    checked <=> mirror-y;
+                                    toggled => {
+                                        update-preview();
+                                    }
+                                }
+                            }
+                            
+                            // Rotation
+                            HorizontalBox {
+                                Text { text: "Rotation:"; width: 120px; }
+                                ComboBox {
+                                    model: ["0°", "90°", "180°", "270°"];
+                                    current-value <=> rotation;
+                                    horizontal-stretch: 1;
+                                    selected(idx) => {
+                                        update-preview();
+                                    }
+                                }
+                            }
+                            
+                            // Halftoning
+                            HorizontalBox {
+                                Text { text: "Halftoning:"; width: 120px; }
+                                ComboBox {
+                                    model: ["None", "Threshold", "Ordered", "Error Diffusion"];
+                                    current-value <=> halftone;
+                                    horizontal-stretch: 1;
+                                    selected(idx) => {
+                                        update-preview();
+                                    }
+                                }
+                            }
+                            
+                            // Halftone threshold slider (only visible for threshold method)
+                            if halftone == "Threshold": HorizontalBox {
+                                Text { text: "Threshold:"; width: 120px; }
+                                Slider {
+                                    minimum: 0;
+                                    maximum: 255;
+                                    value: halftone-threshold;
+                                    changed(val) => {
+                                        halftone-threshold = round(val);
+                                    }
+                                    horizontal-stretch: 1;
+                                }
+                                Text {
+                                    text: halftone-threshold;
+                                    width: 40px;
                                 }
                             }
                         }

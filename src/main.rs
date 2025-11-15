@@ -14,10 +14,11 @@ use tracing::{debug, warn};
 slint::include_modules!();
 
 slint::slint! {
-    export { TabbedBoxDialog } from "src/ui_panels/tabbed_box_dialog.slint";
-    export { JigsawPuzzleDialog } from "src/ui_panels/jigsaw_puzzle_dialog.slint";
-    export { LaserEngraverDialog } from "src/ui_panels/laser_engraver_dialog.slint";
-    export { ErrorDialog } from "src/ui_panels/error_dialog.slint";
+    export { TabbedBoxDialog } from "crates/gcodekit4-ui/ui_panels/tabbed_box_dialog.slint";
+    export { JigsawPuzzleDialog } from "crates/gcodekit4-ui/ui_panels/jigsaw_puzzle_dialog.slint";
+    export { LaserEngraverDialog } from "crates/gcodekit4-ui/ui_panels/laser_engraver_dialog.slint";
+    export { VectorEngraverDialog } from "crates/gcodekit4-ui/ui_panels/vector_engraver_dialog.slint";
+    export { ErrorDialog } from "crates/gcodekit4-ui/ui_panels/error_dialog.slint";
 }
 
 /// Copy text to clipboard using arboard crate
@@ -3223,16 +3224,30 @@ fn main() -> anyhow::Result<()> {
 
             // Defer refresh to allow canvas to be laid out first
             let window_weak_timer = window.as_weak();
-            slint::Timer::single_shot(std::time::Duration::from_millis(50), move || {
+            slint::Timer::single_shot(std::time::Duration::from_millis(200), move || {
                 if let Some(window) = window_weak_timer.upgrade() {
                     let canvas_width = window.get_visualizer_canvas_width();
                     let canvas_height = window.get_visualizer_canvas_height();
-                    tracing::debug!(
+                    tracing::info!(
                         "Deferred visualizer refresh with canvas {}x{}",
                         canvas_width,
                         canvas_height
                     );
-                    window.invoke_refresh_visualization(canvas_width, canvas_height);
+                    if canvas_width < 100.0 || canvas_height < 100.0 {
+                        tracing::warn!("Canvas too small, retrying refresh in 200ms");
+                        // Retry one more time
+                        let window_weak_retry = window.as_weak();
+                        slint::Timer::single_shot(std::time::Duration::from_millis(200), move || {
+                            if let Some(window) = window_weak_retry.upgrade() {
+                                let canvas_width = window.get_visualizer_canvas_width();
+                                let canvas_height = window.get_visualizer_canvas_height();
+                                tracing::info!("Retry visualizer refresh with canvas {}x{}", canvas_width, canvas_height);
+                                window.invoke_refresh_visualization(canvas_width, canvas_height);
+                            }
+                        });
+                    } else {
+                        window.invoke_refresh_visualization(canvas_width, canvas_height);
+                    }
                 }
             });
         }
@@ -5189,6 +5204,7 @@ fn main() -> anyhow::Result<()> {
     // Laser Image Engraver
     let window_weak = main_window.as_weak();
     let dialog_holder: Rc<RefCell<Option<LaserEngraverDialog>>> = Rc::new(RefCell::new(None));
+    let editor_bridge_laser = editor_bridge.clone();
     main_window.on_generate_laser_engraving(move || {
         if let Some(main_win) = window_weak.upgrade() {
             let dialog = LaserEngraverDialog::new().unwrap();
@@ -5291,7 +5307,7 @@ fn main() -> anyhow::Result<()> {
             // Generate G-code callback
             let main_win_clone = main_win.as_weak();
             let dialog_weak_generate = dialog.as_weak();
-            let _editor_bridge_engraver = editor_bridge.clone();
+            let _editor_bridge_engraver = editor_bridge_laser.clone();
             dialog.on_generate_gcode(move || {
                 if let Some(window) = main_win_clone.upgrade() {
                     if let Some(dlg) = dialog_weak_generate.upgrade() {
@@ -5316,7 +5332,8 @@ fn main() -> anyhow::Result<()> {
 
                         // Create engraving parameters - collect all data before spawning thread
                         use gcodekit4_parser::processing::{
-                            EngravingParameters, ImageTransformations, LaserEngraver, ScanDirection,
+                            EngravingParameters, ImageTransformations, BitmapImageEngraver, ScanDirection,
+                            RotationAngle, HalftoneMethod,
                         };
 
                         let width_mm = dlg.get_width_mm();
@@ -5330,6 +5347,14 @@ fn main() -> anyhow::Result<()> {
                         let invert = dlg.get_invert();
                         let line_spacing = dlg.get_line_spacing();
                         let power_scale = dlg.get_power_scale();
+                        
+                        // For now, use default values for transformation parameters
+                        // They will be bound through the update-preview callback
+                        let mirror_x = false;
+                        let mirror_y = false;
+                        let rotation_str = "0°".to_string();
+                        let halftone_str = "None".to_string();
+                        let halftone_threshold = 127;
 
                         // Show status message and initial progress
                         window.set_connection_status("Generating laser engraving G-code...".into());
@@ -5361,12 +5386,26 @@ fn main() -> anyhow::Result<()> {
                                 line_spacing,
                                 power_scale,
                                 transformations: ImageTransformations {
+                                    mirror_x,
+                                    mirror_y,
+                                    rotation: match rotation_str.as_str() {
+                                        "90°" => RotationAngle::Degrees90,
+                                        "180°" => RotationAngle::Degrees180,
+                                        "270°" => RotationAngle::Degrees270,
+                                        _ => RotationAngle::Degrees0,
+                                    },
+                                    halftone: match halftone_str.as_str() {
+                                        "Threshold" => HalftoneMethod::Threshold,
+                                        "Ordered" => HalftoneMethod::Ordered,
+                                        "Error Diffusion" => HalftoneMethod::ErrorDiffusion,
+                                        _ => HalftoneMethod::None,
+                                    },
+                                    halftone_threshold: halftone_threshold as u8,
                                     invert,
-                                    ..Default::default()
                                 },
                             };
 
-                            let result = LaserEngraver::from_file(&image_path_clone, params)
+                            let result = BitmapImageEngraver::from_file(&image_path_clone, params)
                                 .and_then(|engraver| {
                                     // Generate G-code with progress updates (0-100%)
                                     let gcode =
@@ -5486,6 +5525,281 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
+    // Vector Image Engraver
+    let window_weak = main_window.as_weak();
+    let dialog_holder_vector: Rc<RefCell<Option<VectorEngraverDialog>>> = Rc::new(RefCell::new(None));
+    let editor_bridge_vector = editor_bridge.clone();
+    main_window.on_generate_vector_engraving(move || {
+        if let Some(main_win) = window_weak.upgrade() {
+            let dialog = VectorEngraverDialog::new().unwrap();
+
+            // Store dialog in holder to keep it alive
+            *dialog_holder_vector.borrow_mut() = Some(dialog.clone_strong());
+
+            // Initialize dialog with default values
+            dialog.set_feed_rate(600.0);
+            dialog.set_travel_rate(3000.0);
+            dialog.set_cut_power(100.0);
+            dialog.set_engrave_power(50.0);
+            dialog.set_power_scale(1000.0);
+            dialog.set_multi_pass(false);
+            dialog.set_num_passes(1);
+            dialog.set_z_increment(0.5);
+            dialog.set_invert_power(false);
+
+            // Load vector file callback
+            let dialog_weak_load = dialog.as_weak();
+            dialog.on_load_vector_file(move || {
+                if let Some(dlg) = dialog_weak_load.upgrade() {
+                    // Open file dialog to select vector file
+                    use rfd::FileDialog;
+                    if let Some(path) = FileDialog::new()
+                        .add_filter("Vector Files", &["svg", "dxf"])
+                        .pick_file()
+                    {
+                        dlg.set_vector_path(path.display().to_string().into());
+
+                        // Display file info
+                        let file_name = path
+                            .file_name()
+                            .and_then(|n| n.to_str())
+                            .unwrap_or("Unknown");
+                        let file_info = format!("{} ({})", file_name, 
+                            path.extension()
+                                .and_then(|e| e.to_str())
+                                .unwrap_or("unknown")
+                                .to_uppercase());
+                        dlg.set_file_info(file_info.into());
+                    }
+                }
+            });
+
+            // Update preview callback (when parameters change)
+            let dialog_weak_update = dialog.as_weak();
+            dialog.on_update_preview(move || {
+                if let Some(dlg) = dialog_weak_update.upgrade() {
+                    let vector_path = dlg.get_vector_path().to_string();
+                    if !vector_path.is_empty() {
+                        let _feed_rate = dlg.get_feed_rate();
+                        let _travel_rate = dlg.get_travel_rate();
+                        let multi_pass = dlg.get_multi_pass();
+                        let num_passes = dlg.get_num_passes();
+
+                        // Estimate cutting time (placeholder)
+                        let base_time = 60.0; // seconds - would be calculated from vector analysis
+                        let total_time = if multi_pass {
+                            base_time * num_passes as f32
+                        } else {
+                            base_time
+                        };
+                        let minutes = (total_time / 60.0) as i32;
+                        let seconds = (total_time % 60.0) as i32;
+                        dlg.set_estimated_time(format!("{}:{:02}", minutes, seconds).into());
+                    }
+                }
+            });
+
+            // Generate G-code callback
+            let main_win_clone = main_win.as_weak();
+            let dialog_weak_generate = dialog.as_weak();
+            let _editor_bridge_engraver_vector = editor_bridge_vector.clone();
+            dialog.on_generate_gcode(move || {
+                if let Some(window) = main_win_clone.upgrade() {
+                    if let Some(dlg) = dialog_weak_generate.upgrade() {
+                        let vector_path = dlg.get_vector_path().to_string();
+
+                        if vector_path.is_empty() {
+                            let error_dialog = ErrorDialog::new().unwrap();
+                            error_dialog.set_error_message(
+                                "No Vector File Selected\n\nPlease select an SVG or DXF file first.".into(),
+                            );
+
+                            let error_dialog_weak = error_dialog.as_weak();
+                            error_dialog.on_close_dialog(move || {
+                                if let Some(dlg) = error_dialog_weak.upgrade() {
+                                    dlg.hide().ok();
+                                }
+                            });
+
+                            error_dialog.show().ok();
+                            return;
+                        }
+
+                        // Create vector engraving parameters
+                        use gcodekit4_parser::processing::{
+                            VectorEngraver, VectorEngravingParameters,
+                        };
+
+                        let feed_rate = dlg.get_feed_rate();
+                        let travel_rate = dlg.get_travel_rate();
+                        let cut_power = dlg.get_cut_power();
+                        let engrave_power = dlg.get_engrave_power();
+                        let power_scale = dlg.get_power_scale();
+                        let multi_pass = dlg.get_multi_pass();
+                        let num_passes = dlg.get_num_passes() as u32;
+                        let z_increment = dlg.get_z_increment();
+                        let invert_power = dlg.get_invert_power();
+                        let desired_width = dlg.get_desired_width();
+
+                        // Show status message and initial progress
+                        window.set_connection_status("Generating vector engraving G-code...".into());
+                        window.set_progress_value(0.0); // Starting
+
+                        // Close dialog immediately
+                        dlg.hide().ok();
+
+                        // Spawn thread FIRST, before any UI operations
+                        let window_weak_thread = window.as_weak();
+                        let vector_path_clone = vector_path.clone();
+                        std::thread::spawn(move || {
+                            tracing::info!("Background thread: Starting vector G-code generation");
+
+                            let params = VectorEngravingParameters {
+                                feed_rate,
+                                travel_rate,
+                                cut_power,
+                                engrave_power,
+                                power_scale,
+                                multi_pass,
+                                num_passes,
+                                z_increment,
+                                invert_power,
+                                desired_width,
+                            };
+
+                            let result = VectorEngraver::from_file(&vector_path_clone, params)
+                                .and_then(|engraver| {
+                                    // Generate G-code with progress updates (0-100%)
+                                    let gcode =
+                                        engraver.generate_gcode_with_progress(|progress| {
+                                            // Map internal progress (0.0-1.0) to 0-100% range
+                                            let overall_progress = progress * 100.0;
+                                            let _ = slint::invoke_from_event_loop({
+                                                let ww = window_weak_thread.clone();
+                                                move || {
+                                                    if let Some(w) = ww.upgrade() {
+                                                        w.set_progress_value(overall_progress);
+                                                    }
+                                                }
+                                            });
+                                        })?;
+
+                                    Ok(gcode)
+                                });
+
+                            tracing::info!(
+                                "Background thread: Vector G-code generation complete, updating UI"
+                            );
+
+                            // Update UI from the main thread using slint::invoke_from_event_loop
+                            let _ = slint::invoke_from_event_loop(move || {
+                                if let Some(win) = window_weak_thread.upgrade() {
+                                    match result {
+                                        Ok(gcode) => {
+                                            tracing::info!(
+                                                "Setting G-code content ({} bytes)",
+                                                gcode.len()
+                                            );
+                                            win.set_progress_value(95.0); // Show progress before UI update
+                                            win.set_connection_status(
+                                                "Loading G-code into editor...".into(),
+                                            );
+
+                                            // Load into custom editor using callbacks
+                                            win.invoke_load_editor_text(slint::SharedString::from(
+                                                gcode.clone(),
+                                            ));
+
+                                            // Switch to editor view
+                                            win.set_current_view("gcode-editor".into());
+                                            win.set_connection_status(
+                                                "Vector engraving G-code generated successfully"
+                                                    .into(),
+                                            );
+                                            win.set_progress_value(100.0); // 100%
+
+                                            // Trigger visualizer refresh after switching view
+                                            let win_weak_viz = win.as_weak();
+                                            slint::Timer::single_shot(
+                                                std::time::Duration::from_millis(100),
+                                                move || {
+                                                    if let Some(w) = win_weak_viz.upgrade() {
+                                                        let canvas_width = w.get_visualizer_canvas_width();
+                                                        let canvas_height = w.get_visualizer_canvas_height();
+                                                        w.invoke_refresh_visualization(canvas_width, canvas_height);
+                                                    }
+                                                },
+                                            );
+
+                                            // Show success dialog
+                                            let success_dialog = ErrorDialog::new().unwrap();
+                                            success_dialog.set_error_message(
+                                                slint::SharedString::from("Vector engraving G-code has been generated and loaded into the editor."),
+                                            );
+
+                                            let success_dialog_weak = success_dialog.as_weak();
+                                            success_dialog.on_close_dialog(move || {
+                                                if let Some(dlg) = success_dialog_weak.upgrade() {
+                                                    dlg.hide().ok();
+                                                }
+                                            });
+
+                                            success_dialog.show().ok();
+
+                                            // Hide progress after 1 second
+                                            let win_weak = win.as_weak();
+                                            slint::Timer::single_shot(
+                                                std::time::Duration::from_secs(1),
+                                                move || {
+                                                    if let Some(w) = win_weak.upgrade() {
+                                                        w.set_progress_value(0.0);
+                                                    }
+                                                },
+                                            );
+                                        }
+                                        Err(e) => {
+                                            let error_msg = format!(
+                                                "Failed to generate vector engraving: {}",
+                                                e
+                                            );
+                                            win.set_connection_status(error_msg.clone().into());
+                                            win.set_progress_value(0.0); // Hide progress
+                                            tracing::error!("Vector G-code generation error: {}", e);
+
+                                            let error_dialog = ErrorDialog::new().unwrap();
+                                            error_dialog.set_error_message(
+                                                format!("G-code Generation Failed\n\n{}", e).into(),
+                                            );
+
+                                            let error_dialog_weak = error_dialog.as_weak();
+                                            error_dialog.on_close_dialog(move || {
+                                                if let Some(dlg) = error_dialog_weak.upgrade() {
+                                                    dlg.hide().ok();
+                                                }
+                                            });
+
+                                            error_dialog.show().ok();
+                                        }
+                                    }
+                                }
+                            });
+                        });
+                    }
+                }
+            });
+
+            // Close dialog callback
+            let dialog_weak_close = dialog.as_weak();
+            dialog.on_close_dialog(move || {
+                if let Some(dlg) = dialog_weak_close.upgrade() {
+                    dlg.hide().ok();
+                }
+            });
+
+            dialog.show().unwrap();
+        }
+    });
+
     // Zoom state tracking (Arc for shared state across closures)
     use std::sync::{Arc, Mutex};
     let zoom_scale = Arc::new(Mutex::new(1.0f32));
@@ -5509,14 +5823,15 @@ fn main() -> anyhow::Result<()> {
         // Get the current G-code content
         if let Some(window) = window_weak.upgrade() {
             let content = window.get_gcode_content();
+            let current_view = window.get_current_view();
 
-            debug!("Refresh visualization: content length = {}", content.len());
+            tracing::info!("Refresh visualization: current_view={}, content length = {}", current_view, content.len());
 
             // Reset progress
             window.set_visualizer_progress(0.0);
 
             if content.is_empty() {
-                debug!("Content is empty, clearing paths");
+                tracing::warn!("Content is empty, clearing paths");
                 // No G-code loaded, but still generate grid and origin
                 window.set_visualizer_status(slint::SharedString::from("Ready"));
                 window.set_visualization_path_data(slint::SharedString::from(""));
@@ -5565,17 +5880,21 @@ fn main() -> anyhow::Result<()> {
             let show_grid = window.get_visualizer_show_grid();
 
             std::thread::spawn(move || {
+                if let Err(e) = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 use gcodekit4::visualizer::{
                     render_grid_to_path, render_origin_to_path, render_rapid_moves_to_path,
                     render_toolpath_to_path, Visualizer2D,
                 };
 
+                tracing::info!("Render thread started");
                 let _ = tx.send((0.1, "Parsing G-code...".to_string(), None, None, None, None));
 
                 let mut visualizer = Visualizer2D::new();
                 visualizer.show_grid = show_grid;
 
+                tracing::info!("Parsing G-code, content length: {}", content_owned.len());
                 visualizer.parse_gcode(&content_owned);
+                tracing::info!("G-code parsing complete");
 
                 // Set default view to position origin at bottom-left
                 visualizer.set_default_view(canvas_width, canvas_height);
@@ -5609,7 +5928,7 @@ fn main() -> anyhow::Result<()> {
                 let origin_data =
                     render_origin_to_path(&visualizer, canvas_width as u32, canvas_height as u32);
 
-                debug!(
+                tracing::info!(
                     "Refresh render complete: path={}, rapid={}, grid={}, origin={}",
                     path_data.len(),
                     rapid_moves_data.len(),
@@ -5618,6 +5937,7 @@ fn main() -> anyhow::Result<()> {
                 );
 
                 if !path_data.is_empty() || !rapid_moves_data.is_empty() || !grid_data.is_empty() {
+                    tracing::info!("Sending render data to UI");
                     let _ = tx.send((
                         1.0,
                         "Complete".to_string(),
@@ -5627,7 +5947,11 @@ fn main() -> anyhow::Result<()> {
                         Some(origin_data),
                     ));
                 } else {
+                    tracing::error!("ERROR: no render data generated!");
                     let _ = tx.send((1.0, "Error: no data".to_string(), None, None, None, None));
+                }
+                })) {
+                    tracing::error!("Render thread panicked: {:?}", e);
                 }
             });
 
@@ -5660,11 +5984,11 @@ fn main() -> anyhow::Result<()> {
 
                             // Set canvas path data if available
                             if let Some(path) = path_clone {
-                                debug!("Setting visualization path data: {} chars", path.len());
+                                tracing::info!("Setting visualization path data: {} chars", path.len());
                                 window.set_visualization_path_data(slint::SharedString::from(path));
                             }
                             if let Some(rapid_moves) = rapid_moves_clone {
-                                debug!(
+                                tracing::info!(
                                     "Setting visualization rapid moves data: {} chars",
                                     rapid_moves.len()
                                 );
@@ -5673,11 +5997,11 @@ fn main() -> anyhow::Result<()> {
                                 );
                             }
                             if let Some(grid) = grid_clone {
-                                debug!("Setting visualization grid data: {} chars", grid.len());
+                                tracing::info!("Setting visualization grid data: {} chars", grid.len());
                                 window.set_visualization_grid_data(slint::SharedString::from(grid));
                             }
                             if let Some(origin) = origin_clone {
-                                debug!("Setting visualization origin data: {} chars", origin.len());
+                                tracing::info!("Setting visualization origin data: {} chars", origin.len());
                                 window.set_visualization_origin_data(slint::SharedString::from(
                                     origin,
                                 ));
