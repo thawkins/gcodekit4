@@ -786,6 +786,11 @@ export component MainWindow inherits Window {
                     scroll-changed(line) => {
                         root.scroll_changed(line);
                     }
+                    
+                    end_key_pressed() => {
+                        root.end_key_pressed();
+                    }
+                    
                     request-focus => {
                         // Called when editor tab becomes active - text-input will request focus here
                     }
