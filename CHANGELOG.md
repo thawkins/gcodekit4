@@ -5,6 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.7-alpha] - 2025-11-15
+
+### Added
+- **Custom G-Code Text Editor - Phase 1B (COMPLETE): Cursor Position Tracking & Text Editing**
+  - Full cursor position tracking with proper 0-based (backend) to 1-based (UI) conversion
+  - Cursor movement keys (arrow keys, Home, End, PageUp/PageDown) with immediate visual feedback
+  - Text insertion/deletion at correct cursor position (no longer inserts at top)
+  - Proper cursor rendering at correct horizontal position
+  - Status bar displays accurate cursor line:column position
+  - Undo/Redo operations properly update cursor position
+
+### Fixed
+- **Cursor Position Indexing Bug**: Cursor indexing conversion missing in text callbacks
+  - Added +1 conversions in on_text_inserted, on_text_deleted, on_undo_requested, on_redo_requested
+  - Fixed redo handler bug (was calling can_redo() instead of can_undo())
+  
+- **Cursor Rendering Position Bug**: Cursor displayed one character too far right
+  - Changed x position calculation to account for 1-based indexing
+  
+- **Cursor Movement Keys Not Working**: Arrow/Home/End/PageUp/Down keys didn't move cursor
+  - Direct property updates in Slint for immediate feedback
+  - Callback synchronization with Rust backend
+  
+- **Text Insertion at Wrong Location**: Text always inserted at document top
+  - Now uses provided line/col parameters to position cursor before insert/delete
+  - Proper cursor movement via EditorBridge.set_cursor() before operations
+
+### Technical Details
+- Established architecture: Backend 0-based, UI 1-based, conversions at boundary (main.rs)
+- Cursor rendering uses 0-based coordinates (subtract 1 from UI value)
+- Direct property updates for instant visual feedback + callback for Rust synchronization
+- Two-way binding of cursor-line and cursor-column properties to maintain UI-Rust sync
+
+### Verification
+- All 296 UI tests pass
+- Text inserts at actual cursor position
+- Text deletes from actual cursor position
+- Cursor updates immediately on keyboard navigation
+- Status bar shows correct position
+- Undo/Redo maintains cursor position
+- Release build successful
+
 ## [0.25.6-alpha] - 2025-11-14
 
 ### Added
