@@ -1870,8 +1870,13 @@ fn main() -> anyhow::Result<()> {
     // Text editing callbacks
     let window_weak = main_window.as_weak();
     let editor_bridge_insert = editor_bridge.clone();
-    main_window.on_text_inserted(move |_line, _col, text| {
+    main_window.on_text_inserted(move |line, col, text| {
         let text_str = text.to_string();
+        // Move cursor to the position where text should be inserted (convert 1-based to 0-based)
+        let line_0based = (line - 1).max(0) as usize;
+        let col_0based = (col - 1).max(0) as usize;
+        editor_bridge_insert.set_cursor(line_0based, col_0based);
+        // Now insert the text at the cursor position
         editor_bridge_insert.insert_text(&text_str);
         if let Some(window) = window_weak.upgrade() {
             window.set_can_undo(editor_bridge_insert.can_undo());
@@ -1888,9 +1893,14 @@ fn main() -> anyhow::Result<()> {
 
     let window_weak = main_window.as_weak();
     let editor_bridge_delete = editor_bridge.clone();
-    main_window.on_text_deleted(move |_start_line, start_col, _end_line, end_col| {
+    main_window.on_text_deleted(move |start_line, start_col, _end_line, end_col| {
         let count = (end_col - start_col).max(0) as usize;
         if count > 0 {
+            // Move cursor to the position where deletion should occur (convert 1-based to 0-based)
+            let line_0based = (start_line - 1).max(0) as usize;
+            let col_0based = (start_col - 1).max(0) as usize;
+            editor_bridge_delete.set_cursor(line_0based, col_0based);
+            // Now delete from the cursor position
             editor_bridge_delete.delete_backward(count);
             if let Some(window) = window_weak.upgrade() {
                 window.set_can_undo(editor_bridge_delete.can_undo());
