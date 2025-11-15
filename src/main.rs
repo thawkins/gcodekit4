@@ -5316,7 +5316,7 @@ fn main() -> anyhow::Result<()> {
 
                         // Create engraving parameters - collect all data before spawning thread
                         use gcodekit4_parser::processing::{
-                            EngravingParameters, LaserEngraver, ScanDirection,
+                            EngravingParameters, ImageTransformations, LaserEngraver, ScanDirection,
                         };
 
                         let width_mm = dlg.get_width_mm();
@@ -5358,9 +5358,12 @@ fn main() -> anyhow::Result<()> {
                                     ScanDirection::Vertical
                                 },
                                 bidirectional,
-                                invert,
                                 line_spacing,
                                 power_scale,
+                                transformations: ImageTransformations {
+                                    invert,
+                                    ..Default::default()
+                                },
                             };
 
                             let result = LaserEngraver::from_file(&image_path_clone, params)

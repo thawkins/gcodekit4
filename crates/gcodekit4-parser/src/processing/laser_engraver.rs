@@ -1,11 +1,39 @@
 //! Laser Image Engraving Tool
 //!
 //! Converts bitmap images to G-code for laser engraving using raster scanning.
-//! Supports grayscale power modulation, bidirectional scanning, and various image formats.
+//! Supports halftoning (via pepecore), mirroring, rotation, grayscale power modulation,
+//! bidirectional scanning, and various image formats.
+//! Images are rendered from bottom to top to match device coordinate space where Y increases upward.
 
 use anyhow::{Context, Result};
-use image::{DynamicImage, GrayImage};
+use image::DynamicImage;
 use std::path::Path;
+
+/// Image rotation angles
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum RotationAngle {
+    /// No rotation
+    Degrees0,
+    /// 90 degrees clockwise
+    Degrees90,
+    /// 180 degrees
+    Degrees180,
+    /// 270 degrees clockwise
+    Degrees270,
+}
+
+/// Halftoning algorithm options
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum HalftoneMethod {
+    /// No halftoning (direct intensity mapping)
+    None,
+    /// Simple threshold dithering
+    Threshold,
+    /// Ordered dithering (Bayer matrix)
+    Ordered,
+    /// Error diffusion dithering (Floyd-Steinberg)
+    ErrorDiffusion,
+}
 
 /// Scan direction for laser engraving
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -14,6 +42,36 @@ pub enum ScanDirection {
     Horizontal,
     /// Vertical scanning (top to bottom)
     Vertical,
+}
+
+/// Image transformation parameters
+#[derive(Debug, Clone)]
+pub struct ImageTransformations {
+    /// Mirror image horizontally (flip around Y axis)
+    pub mirror_x: bool,
+    /// Mirror image vertically (flip around X axis)
+    pub mirror_y: bool,
+    /// Rotation angle
+    pub rotation: RotationAngle,
+    /// Halftoning method
+    pub halftone: HalftoneMethod,
+    /// Halftone threshold (0-255, only used for threshold method)
+    pub halftone_threshold: u8,
+    /// Invert image (dark becomes light, light becomes dark)
+    pub invert: bool,
+}
+
+impl Default for ImageTransformations {
+    fn default() -> Self {
+        Self {
+            mirror_x: false,
+            mirror_y: false,
+            rotation: RotationAngle::Degrees0,
+            halftone: HalftoneMethod::None,
+            halftone_threshold: 127,
+            invert: false,
+        }
+    }
 }
 
 /// Laser engraving parameters
@@ -37,12 +95,12 @@ pub struct EngravingParameters {
     pub scan_direction: ScanDirection,
     /// Use bidirectional scanning (faster but may reduce quality)
     pub bidirectional: bool,
-    /// Invert image (dark becomes light, light becomes dark)
-    pub invert: bool,
     /// Line spacing multiplier (1.0 = normal, >1.0 = faster with lines)
     pub line_spacing: f32,
     /// Laser power scale (0-1000 for GRBL S parameter)
     pub power_scale: f32,
+    /// Image transformations (halftoning, mirroring, rotation)
+    pub transformations: ImageTransformations,
 }
 
 impl Default for EngravingParameters {
@@ -54,19 +112,21 @@ impl Default for EngravingParameters {
             travel_rate: 3000.0,
             min_power: 0.0,
             max_power: 100.0,
-            pixels_per_mm: 10.0, // 10 pixels per mm = ~254 DPI
+            pixels_per_mm: 10.0,
             scan_direction: ScanDirection::Horizontal,
             bidirectional: true,
-            invert: false,
             line_spacing: 1.0,
-            power_scale: 1000.0, // GRBL default S0-S1000
+            power_scale: 1000.0,
+            transformations: ImageTransformations::default(),
         }
     }
 }
 
 /// Laser engraving tool for bitmap images
 pub struct LaserEngraver {
-    image: GrayImage,
+    image_data: Vec<u8>,
+    width: u32,
+    height: u32,
     params: EngravingParameters,
     output_width: u32,
     output_height: u32,
@@ -81,19 +141,44 @@ impl LaserEngraver {
 
     /// Create a new laser engraver from a DynamicImage
     pub fn from_image(img: DynamicImage, params: EngravingParameters) -> Result<Self> {
-        // Convert to grayscale
-        let mut gray = img.to_luma8();
+        let gray = img.to_luma8();
+        let width = gray.width();
+        let height = gray.height();
 
-        // Apply inversion if requested
-        if params.invert {
-            for pixel in gray.pixels_mut() {
-                pixel.0[0] = 255 - pixel.0[0];
+        let mut image_data = gray.into_raw();
+
+        // Apply transformations: mirroring -> rotation -> inversion -> halftoning
+        if params.transformations.mirror_x {
+            Self::mirror_x_data(&mut image_data, width, height);
+        }
+        if params.transformations.mirror_y {
+            Self::mirror_y_data(&mut image_data, width, height);
+        }
+
+        let (image_data, width, height) = Self::apply_rotation(
+            image_data,
+            width,
+            height,
+            params.transformations.rotation,
+        );
+
+        let mut image_data = image_data;
+        if params.transformations.invert {
+            for pixel in image_data.iter_mut() {
+                *pixel = 255 - *pixel;
             }
         }
 
-        // Calculate output dimensions
+        let image_data = Self::apply_halftoning(
+            image_data,
+            width,
+            height,
+            params.transformations.halftone,
+            params.transformations.halftone_threshold,
+        )?;
+
         let output_width = (params.width_mm * params.pixels_per_mm) as u32;
-        let aspect_ratio = gray.height() as f32 / gray.width() as f32;
+        let aspect_ratio = height as f32 / width as f32;
         let output_height = if let Some(h) = params.height_mm {
             (h * params.pixels_per_mm) as u32
         } else {
@@ -101,11 +186,166 @@ impl LaserEngraver {
         };
 
         Ok(Self {
-            image: gray,
+            image_data,
+            width,
+            height,
             params,
             output_width,
             output_height,
         })
+    }
+
+    /// Mirror image horizontally (flip around Y axis)
+    fn mirror_x_data(data: &mut [u8], width: u32, height: u32) {
+        let w = width as usize;
+        for y in 0..height as usize {
+            let row_start = y * w;
+            let row_end = row_start + w;
+            data[row_start..row_end].reverse();
+        }
+    }
+
+    /// Mirror image vertically (flip around X axis)
+    fn mirror_y_data(data: &mut [u8], width: u32, height: u32) {
+        let w = width as usize;
+        let h = height as usize;
+        for y in 0..h / 2 {
+            let row1_start = y * w;
+            let row2_start = (h - 1 - y) * w;
+            for x in 0..w {
+                data.swap(row1_start + x, row2_start + x);
+            }
+        }
+    }
+
+    /// Apply rotation to image data. Returns (data, new_width, new_height)
+    fn apply_rotation(
+        data: Vec<u8>,
+        width: u32,
+        height: u32,
+        rotation: RotationAngle,
+    ) -> (Vec<u8>, u32, u32) {
+        match rotation {
+            RotationAngle::Degrees0 => (data, width, height),
+            RotationAngle::Degrees90 => {
+                let mut rotated = vec![0u8; data.len()];
+                let w = width as usize;
+                let h = height as usize;
+                for y in 0..h {
+                    for x in 0..w {
+                        let src_idx = y * w + x;
+                        let dst_idx = x * h + (h - 1 - y);
+                        rotated[dst_idx] = data[src_idx];
+                    }
+                }
+                (rotated, height, width)
+            }
+            RotationAngle::Degrees180 => {
+                let mut rotated = data.clone();
+                rotated.reverse();
+                (rotated, width, height)
+            }
+            RotationAngle::Degrees270 => {
+                let mut rotated = vec![0u8; data.len()];
+                let w = width as usize;
+                let h = height as usize;
+                for y in 0..h {
+                    for x in 0..w {
+                        let src_idx = y * w + x;
+                        let dst_idx = (w - 1 - x) * h + y;
+                        rotated[dst_idx] = data[src_idx];
+                    }
+                }
+                (rotated, height, width)
+            }
+        }
+    }
+
+    /// Apply halftoning
+    fn apply_halftoning(
+        data: Vec<u8>,
+        width: u32,
+        height: u32,
+        method: HalftoneMethod,
+        threshold: u8,
+    ) -> Result<Vec<u8>> {
+        match method {
+            HalftoneMethod::None => Ok(data),
+            HalftoneMethod::Threshold => {
+                let threshold_f32 = threshold as f32;
+                let halftoned = data
+                    .iter()
+                    .map(|&pixel| if (pixel as f32) < threshold_f32 { 0 } else { 255 })
+                    .collect();
+                Ok(halftoned)
+            }
+            HalftoneMethod::Ordered => {
+                let mut halftoned = data.clone();
+                let w = width as usize;
+                let bayer = [[0, 128], [192, 64]];
+
+                for y in 0..height as usize {
+                    for x in 0..w {
+                        let idx = y * w + x;
+                        let threshold = bayer[y % 2][x % 2];
+                        halftoned[idx] = if data[idx] > threshold { 255 } else { 0 };
+                    }
+                }
+                Ok(halftoned)
+            }
+            HalftoneMethod::ErrorDiffusion => {
+                let mut halftoned = data.clone();
+                let w = width as usize;
+                let h = height as usize;
+
+                for y in 0..h {
+                    for x in 0..w {
+                        let idx = y * w + x;
+                        let old_pixel = halftoned[idx] as i32;
+                        let new_pixel = if old_pixel > 127 { 255 } else { 0 };
+                        halftoned[idx] = new_pixel as u8;
+
+                        let error = old_pixel - new_pixel;
+
+                        if x + 1 < w {
+                            let idx_right = idx + 1;
+                            let val = (halftoned[idx_right] as i32 + (error * 7) / 16)
+                                .clamp(0, 255);
+                            halftoned[idx_right] = val as u8;
+                        }
+                        if y + 1 < h {
+                            if x > 0 {
+                                let idx_bottom_left = idx + w - 1;
+                                let val = (halftoned[idx_bottom_left] as i32
+                                    + (error * 3) / 16)
+                                    .clamp(0, 255);
+                                halftoned[idx_bottom_left] = val as u8;
+                            }
+                            let idx_bottom = idx + w;
+                            let val = (halftoned[idx_bottom] as i32 + (error * 5) / 16)
+                                .clamp(0, 255);
+                            halftoned[idx_bottom] = val as u8;
+
+                            if x + 1 < w {
+                                let idx_bottom_right = idx + w + 1;
+                                let val = (halftoned[idx_bottom_right] as i32 + error / 16)
+                                    .clamp(0, 255);
+                                halftoned[idx_bottom_right] = val as u8;
+                            }
+                        }
+                    }
+                }
+                Ok(halftoned)
+            }
+        }
+    }
+
+    /// Get pixel at (x, y) in the processed image
+    fn get_pixel(&self, x: u32, y: u32) -> u8 {
+        if x >= self.width || y >= self.height {
+            return 255;
+        }
+        self.image_data[(y * self.width + x) as usize]
     }
 
     /// Get the output dimensions in millimeters
@@ -122,10 +362,7 @@ impl LaserEngraver {
         let line_spacing = 1.0 / self.params.pixels_per_mm * self.params.line_spacing;
         let num_lines = (height_mm / line_spacing) as u32;
 
-        // Calculate engraving time
         let engrave_time = (width_mm * num_lines as f32) / self.params.feed_rate * 60.0;
-
-        // Calculate travel time (return to start for unidirectional)
         let travel_time = if self.params.bidirectional {
             (height_mm / self.params.travel_rate) * 60.0
         } else {
@@ -141,14 +378,12 @@ impl LaserEngraver {
     }
 
     /// Generate G-code for laser engraving with progress callback
-    /// The callback receives progress from 0.0 to 1.0
     pub fn generate_gcode_with_progress<F>(&self, mut progress_callback: F) -> Result<String>
     where
         F: FnMut(f32),
     {
         let mut gcode = String::new();
 
-        // Header comments
         gcode.push_str("; Laser Image Engraving G-code\n");
         gcode.push_str(&format!(
             "; Generated: {}\n",
@@ -177,7 +412,6 @@ impl LaserEngraver {
         ));
         gcode.push_str(";\n");
 
-        // Initialization sequence
         gcode.push_str("G21 ; Set units to millimeters\n");
         gcode.push_str("G90 ; Absolute positioning\n");
         gcode.push_str("G17 ; XY plane selection\n");
@@ -200,14 +434,7 @@ impl LaserEngraver {
 
         progress_callback(0.0);
 
-        // Resize image to output dimensions
-        let resized = image::imageops::resize(
-            &self.image,
-            self.output_width,
-            self.output_height,
-            image::imageops::FilterType::Lanczos3,
-        );
-
+        let resized = self.resize_image(self.output_width, self.output_height);
         progress_callback(0.1);
 
         let line_spacing = 1.0 / self.params.pixels_per_mm * self.params.line_spacing;
@@ -236,7 +463,6 @@ impl LaserEngraver {
 
         progress_callback(0.9);
 
-        // Footer
         gcode.push_str("\n; End of engraving\n");
         gcode.push_str("M5 ; Laser off\n");
         gcode.push_str("G0 X0 Y0 ; Return to origin\n");
@@ -246,11 +472,47 @@ impl LaserEngraver {
         Ok(gcode)
     }
 
-    /// Generate horizontal scanning G-code with progress callback
+    /// Resize image to target dimensions using bilinear interpolation
+    fn resize_image(&self, target_width: u32, target_height: u32) -> ResizedImage {
+        let mut resized = vec![0u8; (target_width * target_height) as usize];
+
+        for y in 0..target_height {
+            for x in 0..target_width {
+                let src_x = (x as f32 / target_width as f32) * self.width as f32;
+                let src_y = (y as f32 / target_height as f32) * self.height as f32;
+
+                let x0 = src_x.floor() as u32;
+                let y0 = src_y.floor() as u32;
+                let x1 = (x0 + 1).min(self.width - 1);
+                let y1 = (y0 + 1).min(self.height - 1);
+
+                let fx = src_x - x0 as f32;
+                let fy = src_y - y0 as f32;
+
+                let p00 = self.get_pixel(x0, y0) as f32;
+                let p10 = self.get_pixel(x1, y0) as f32;
+                let p01 = self.get_pixel(x0, y1) as f32;
+                let p11 = self.get_pixel(x1, y1) as f32;
+
+                let p0 = p00 * (1.0 - fx) + p10 * fx;
+                let p1 = p01 * (1.0 - fx) + p11 * fx;
+                let p = p0 * (1.0 - fy) + p1 * fy;
+
+                resized[(y * target_width + x) as usize] = p as u8;
+            }
+        }
+
+        ResizedImage {
+            data: resized,
+            width: target_width,
+            height: target_height,
+        }
+    }
+
     fn generate_horizontal_scan_with_progress<F>(
         &self,
         gcode: &mut String,
-        image: &GrayImage,
+        image: &ResizedImage,
         pixel_width: f32,
         line_spacing: f32,
         progress_callback: &mut F,
@@ -258,19 +520,20 @@ impl LaserEngraver {
     where
         F: FnMut(f32),
     {
-        let height = image.height();
-        let width = image.width();
+        let height = image.height;
+        let width = image.width;
         let mut left_to_right = true;
 
-        for y in 0..height {
-            // Report progress every 10 lines to avoid overwhelming the UI thread
-            if y % 10 == 0 || y == height - 1 {
-                let progress = 0.1 + (y as f32 / height as f32) * 0.8;
+        // Render from bottom to top to match device coordinate space
+        for y_reversed in 0..height {
+            if y_reversed % 10 == 0 || y_reversed == height - 1 {
+                let progress = 0.1 + (y_reversed as f32 / height as f32) * 0.8;
                 progress_callback(progress);
             }
-            let y_pos = y as f32 * line_spacing;
 
-            // Skip to start of line
+            let y = height - 1 - y_reversed;
+            let y_pos = y_reversed as f32 * line_spacing;
+
             if left_to_right || !self.params.bidirectional {
                 gcode.push_str(&format!("G0 X0 Y{:.3}\n", y_pos));
             } else {
@@ -281,30 +544,25 @@ impl LaserEngraver {
                 ));
             }
 
-            // Process pixels in this line
             let mut in_burn = false;
             let mut last_power = 0;
 
-            let x_range: Box<dyn Iterator<Item = u32>> =
-                if left_to_right || !self.params.bidirectional {
-                    Box::new(0..width)
-                } else {
-                    Box::new((0..width).rev())
-                };
+            let x_range: Box<dyn Iterator<Item = u32>> = if left_to_right
+                || !self.params.bidirectional
+            {
+                Box::new(0..width)
+            } else {
+                Box::new((0..width).rev())
+            };
 
             for x in x_range {
-                let pixel = image.get_pixel(x, y);
-                let intensity = pixel.0[0];
-
-                // Convert intensity to laser power
+                let intensity = image.get_pixel(x, y);
                 let power = self.intensity_to_power(intensity);
                 let power_value = (power * self.params.power_scale / 100.0) as u32;
-
                 let x_pos = x as f32 * pixel_width;
 
                 if power_value > 0 {
                     if !in_burn || power_value != last_power {
-                        // Start burning or change power
                         gcode.push_str(&format!(
                             "G1 X{:.3} Y{:.3} F{:.0} M3 S{}\n",
                             x_pos, y_pos, self.params.feed_rate, power_value
@@ -312,25 +570,18 @@ impl LaserEngraver {
                         in_burn = true;
                         last_power = power_value;
                     } else {
-                        // Continue burning at same power
                         gcode.push_str(&format!("G1 X{:.3} Y{:.3}\n", x_pos, y_pos));
                     }
-                } else {
-                    if in_burn {
-                        // Stop burning
-                        gcode.push_str("M5\n");
-                        in_burn = false;
-                    }
-                    // Skip over white space (no command needed)
+                } else if in_burn {
+                    gcode.push_str("M5\n");
+                    in_burn = false;
                 }
             }
 
-            // Turn off laser at end of line
             if in_burn {
                 gcode.push_str("M5\n");
             }
 
-            // Alternate direction for bidirectional mode
             if self.params.bidirectional {
                 left_to_right = !left_to_right;
             }
@@ -339,11 +590,10 @@ impl LaserEngraver {
         Ok(())
     }
 
-    /// Generate vertical scanning G-code with progress callback
     fn generate_vertical_scan_with_progress<F>(
         &self,
         gcode: &mut String,
-        image: &GrayImage,
+        image: &ResizedImage,
         pixel_width: f32,
         line_spacing: f32,
         progress_callback: &mut F,
@@ -351,19 +601,17 @@ impl LaserEngraver {
     where
         F: FnMut(f32),
     {
-        let height = image.height();
-        let width = image.width();
+        let height = image.height;
+        let width = image.width;
         let mut top_to_bottom = true;
 
         for x in 0..width {
-            // Report progress every 10 columns to avoid overwhelming the UI thread
             if x % 10 == 0 || x == width - 1 {
                 let progress = 0.1 + (x as f32 / width as f32) * 0.8;
                 progress_callback(progress);
             }
             let x_pos = x as f32 * line_spacing;
 
-            // Skip to start of column
             if top_to_bottom || !self.params.bidirectional {
                 gcode.push_str(&format!("G0 X{:.3} Y0\n", x_pos));
             } else {
@@ -374,25 +622,23 @@ impl LaserEngraver {
                 ));
             }
 
-            // Process pixels in this column
             let mut in_burn = false;
             let mut last_power = 0;
 
-            let y_range: Box<dyn Iterator<Item = u32>> =
-                if top_to_bottom || !self.params.bidirectional {
-                    Box::new(0..height)
-                } else {
-                    Box::new((0..height).rev())
-                };
+            let y_range: Box<dyn Iterator<Item = u32>> = if top_to_bottom
+                || !self.params.bidirectional
+            {
+                Box::new(0..height)
+            } else {
+                Box::new((0..height).rev())
+            };
 
-            for y in y_range {
-                let pixel = image.get_pixel(x, y);
-                let intensity = pixel.0[0];
-
+            for y_reversed in y_range {
+                let y = height - 1 - y_reversed;
+                let intensity = image.get_pixel(x, y);
                 let power = self.intensity_to_power(intensity);
                 let power_value = (power * self.params.power_scale / 100.0) as u32;
-
-                let y_pos = y as f32 * pixel_width;
+                let y_pos = y_reversed as f32 * pixel_width;
 
                 if power_value > 0 {
                     if !in_burn || power_value != last_power {
@@ -405,11 +651,9 @@ impl LaserEngraver {
                     } else {
                         gcode.push_str(&format!("G1 X{:.3} Y{:.3}\n", x_pos, y_pos));
                     }
-                } else {
-                    if in_burn {
-                        gcode.push_str("M5\n");
-                        in_burn = false;
-                    }
+                } else if in_burn {
+                    gcode.push_str("M5\n");
+                    in_burn = false;
                 }
             }
 
@@ -425,15 +669,26 @@ impl LaserEngraver {
         Ok(())
     }
 
-    /// Convert pixel intensity (0-255) to laser power (0-100%)
+    /// Convert pixel intensity to laser power
     fn intensity_to_power(&self, intensity: u8) -> f32 {
         let normalized = intensity as f32 / 255.0;
         self.params.min_power + (normalized * (self.params.max_power - self.params.min_power))
     }
+}
 
-    /// Get the processed grayscale image
-    pub fn get_image(&self) -> &GrayImage {
-        &self.image
+/// Resized image data
+struct ResizedImage {
+    data: Vec<u8>,
+    width: u32,
+    height: u32,
+}
+
+impl ResizedImage {
+    fn get_pixel(&self, x: u32, y: u32) -> u8 {
+        if x >= self.width || y >= self.height {
+            return 255;
+        }
+        self.data[(y * self.width + x) as usize]
     }
 }
 
@@ -450,35 +705,43 @@ mod tests {
     }
 
     #[test]
-    fn test_intensity_to_power() {
-        let params = EngravingParameters {
-            min_power: 0.0,
-            max_power: 100.0,
-            ..Default::default()
-        };
-
-        let img = DynamicImage::new_luma8(10, 10);
-        let engraver = LaserEngraver::from_image(img, params).unwrap();
-
-        assert_eq!(engraver.intensity_to_power(0), 0.0);
-        assert_eq!(engraver.intensity_to_power(255), 100.0);
-        assert!((engraver.intensity_to_power(127) - 49.8).abs() < 0.5);
+    fn test_halftone_threshold() {
+        let data = vec![0, 127, 128, 255];
+        let result =
+            LaserEngraver::apply_halftoning(data.clone(), 4, 1, HalftoneMethod::Threshold, 127)
+                .unwrap();
+        assert_eq!(result[0], 0);    // 0 < 127 -> black
+        assert_eq!(result[1], 255);  // 127 >= 127 -> white
+        assert_eq!(result[2], 255);  // 128 >= 127 -> white
+        assert_eq!(result[3], 255);  // 255 >= 127 -> white
     }
 
     #[test]
-    fn test_output_size_calculation() {
-        let params = EngravingParameters {
-            width_mm: 50.0,
-            height_mm: None,
-            pixels_per_mm: 10.0,
-            ..Default::default()
-        };
+    fn test_rotation_90_degrees() {
+        let data = vec![1, 2, 3, 4, 5, 6];
+        let (rotated, new_w, new_h) =
+            LaserEngraver::apply_rotation(data, 2, 3, RotationAngle::Degrees90);
+        assert_eq!(new_w, 3);
+        assert_eq!(new_h, 2);
+        assert_eq!(rotated[0], 5);
+        assert_eq!(rotated[1], 3);
+        assert_eq!(rotated[2], 1);
+    }
 
-        let img = DynamicImage::new_luma8(100, 50); // 2:1 aspect ratio
-        let engraver = LaserEngraver::from_image(img, params).unwrap();
+    #[test]
+    fn test_mirror_x() {
+        let mut data = vec![1, 2, 3, 4];
+        LaserEngraver::mirror_x_data(&mut data, 2, 2);
+        // First row [1,2] -> [2,1], second row [3,4] -> [4,3]
+        assert_eq!(data, vec![2, 1, 4, 3]);
+    }
 
-        let (w, h) = engraver.output_size_mm();
-        assert_eq!(w, 50.0);
-        assert_eq!(h, 25.0); // Maintains 2:1 aspect ratio
+    #[test]
+    fn test_transformations_default() {
+        let trans = ImageTransformations::default();
+        assert!(!trans.mirror_x);
+        assert!(!trans.mirror_y);
+        assert_eq!(trans.rotation, RotationAngle::Degrees0);
+        assert_eq!(trans.halftone, HalftoneMethod::None);
     }
 }

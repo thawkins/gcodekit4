@@ -1790,6 +1790,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "filebuffer"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c997bb4895e53c23e7ebdf8a315f0863206b19e51da2901cc24631eb0f26e209"
+dependencies = [
+ "libc",
+ "winapi",
+]
+
+[[package]]
 name = "filetime"
 version = "0.2.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2073,6 +2083,7 @@ dependencies = [
  "image",
  "mockall",
  "parking_lot",
+ "pepecore",
  "rfd",
  "serde_json",
  "slint",
@@ -2909,7 +2920,7 @@ dependencies = [
  "rayon",
  "rgb",
  "tiff",
- "zune-core",
+ "zune-core 0.4.12",
  "zune-jpeg",
 ]
 
@@ -4195,6 +4206,19 @@ checksum = "f8ed6a7761f76e3b9f92dfb0a60a6a6477c61024b775147ff0973a02653abaf2"
 dependencies = [
  "digest",
  "hmac",
+]
+
+[[package]]
+name = "pepecore"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2c04a464eda304e7e6fe4d19781c24e03c9512eda2b65d1453f97210660374a3"
+dependencies = [
+ "filebuffer",
+ "image",
+ "thiserror 2.0.17",
+ "zune-core 0.5.0",
+ "zune-psd",
 ]
 
 [[package]]
@@ -7618,6 +7642,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f423a2c17029964870cfaabb1f13dfab7d092a62a29a89264f4d36990ca414a"
 
 [[package]]
+name = "zune-core"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "111f7d9820f05fd715df3144e254d6fc02ee4088b0644c0ffd0efc9e6d9d2773"
+
+[[package]]
 name = "zune-inflate"
 version = "0.2.54"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7632,7 +7662,16 @@ version = "0.4.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "29ce2c8a9384ad323cf564b67da86e21d3cfdff87908bc1223ed5c99bc792713"
 dependencies = [
- "zune-core",
+ "zune-core 0.4.12",
+]
+
+[[package]]
+name = "zune-psd"
+version = "0.5.0-rc0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cff07a2b85fe8ebbe2fd4d4251abfc09d8ff9ca5f6eb2c49450cb3661ab3b1e6"
+dependencies = [
+ "zune-core 0.5.0",
 ]
 
 [[package]]

@@ -24,7 +24,10 @@ pub use arc_expander::ArcExpander;
 pub use comment_processor::CommentProcessor;
 pub use core_infrastructure::{AppConfig, ApplicationState, Logger, TelemetryData};
 pub use jigsaw_puzzle::{JigsawPuzzleMaker, PuzzleParameters};
-pub use laser_engraver::{EngravingParameters, LaserEngraver, ScanDirection};
+pub use laser_engraver::{
+    EngravingParameters, HalftoneMethod, ImageTransformations, LaserEngraver, RotationAngle,
+    ScanDirection,
+};
 pub use optimizer::GCodeOptimizer;
 pub use stats::StatsCalculator;
 pub use tabbed_box::{BoxParameters, BoxType, FingerJointSettings, FingerStyle, TabbedBoxMaker};
