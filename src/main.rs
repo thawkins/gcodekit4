@@ -1936,6 +1936,7 @@ fn main() -> anyhow::Result<()> {
     let window_weak = main_window.as_weak();
     let editor_bridge_cursor = editor_bridge.clone();
     main_window.on_cursor_moved(move |line, col| {
+        eprintln!(">>> on_cursor_moved CALLED: line={}, col={}", line, col);
         tracing::debug!("on_cursor_moved: line={}, col={}", line, col);
         
         // Update cursor in editor bridge - convert to 0-based indexing
@@ -1955,8 +1956,10 @@ fn main() -> anyhow::Result<()> {
             
             // Log if column was clamped
             if (col as usize) != actual_col + 1 {
+                eprintln!(">>> CLAMPED: requested col={}, actual col={}", col, actual_col + 1);
                 tracing::debug!("cursor clamped: requested col={}, actual col={}", col, actual_col + 1);
             }
+            eprintln!(">>> cursor updated to: line={}, col={}", display_line, display_col);
             tracing::debug!("cursor updated to: line={}, col={}", display_line, display_col);
             
             // Update viewport to keep cursor visible

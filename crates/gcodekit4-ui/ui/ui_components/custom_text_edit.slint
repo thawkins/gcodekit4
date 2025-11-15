@@ -229,28 +229,28 @@ export component CustomTextEdit inherits Rectangle {
             if (event.text == Key.LeftArrow) {
                 debug("LEFT ARROW: moving cursor left");
                 let new_col = Math.max(1, root.cursor-column - 1);
-                root.cursor-column = new_col;
+                // Don't set root.cursor-column here - let Rust handler do it
                 root.cursor-moved(root.cursor-line, new_col);
                 return accept;
             }
             if (event.text == Key.RightArrow) {
                 debug("RIGHT ARROW: moving cursor right");
                 let new_col = root.cursor-column + 1;
-                root.cursor-column = new_col;
+                // Don't set root.cursor-column here - let Rust handler do it
                 root.cursor-moved(root.cursor-line, new_col);
                 return accept;
             }
             if (event.text == Key.UpArrow) {
                 debug("UP ARROW: moving cursor up");
                 let new_line = Math.max(1, root.cursor-line - 1);
-                root.cursor-line = new_line;
+                // Don't set root.cursor-line here - let Rust handler do it after clamping
                 root.cursor-moved(new_line, root.cursor-column);
                 return accept;
             }
             if (event.text == Key.DownArrow) {
                 debug("DOWN ARROW: moving cursor down");
                 let new_line = Math.min(root.total-lines, root.cursor-line + 1);
-                root.cursor-line = new_line;
+                // Don't set root.cursor-line here - let Rust handler do it after clamping
                 root.cursor-moved(new_line, root.cursor-column);
                 return accept;
             }
@@ -258,7 +258,7 @@ export component CustomTextEdit inherits Rectangle {
             // Handle Home key
             if (event.text == Key.Home) {
                 debug("HOME KEY PRESSED");
-                root.cursor-column = 1;
+                // Don't set root.cursor-column - let Rust handler do it
                 root.cursor-moved(root.cursor-line, 1);
                 return accept;
             }
@@ -281,13 +281,13 @@ export component CustomTextEdit inherits Rectangle {
             // Handle PageUp/PageDown
             if (event.text == Key.PageUp) {
                 let new_line = Math.max(1, root.cursor-line - 10);
-                root.cursor-line = new_line;
+                // Don't set root.cursor-line - let Rust handler do it
                 root.cursor-moved(new_line, root.cursor-column);
                 return accept;
             }
             if (event.text == Key.PageDown) {
                 let new_line = Math.min(root.total-lines, root.cursor-line + 10);
-                root.cursor-line = new_line;
+                // Don't set root.cursor-line - let Rust handler do it
                 root.cursor-moved(new_line, root.cursor-column);
                 return accept;
             }
@@ -311,8 +311,7 @@ export component CustomTextEdit inherits Rectangle {
                 // Ctrl+Home: Jump to beginning of file
                 if (event.text == Key.Home) {
                     debug("CTRL+HOME: jump to beginning of file");
-                    root.cursor-line = 1;
-                    root.cursor-column = 1;
+                    // Don't set cursor properties - let Rust handler do it
                     root.cursor-moved(1, 1);
                     return accept;
                 }
@@ -320,9 +319,7 @@ export component CustomTextEdit inherits Rectangle {
                 // Ctrl+End: Jump to end of file
                 if (event.text == Key.End) {
                     debug("CTRL+END: jump to end of file");
-                    // Move to last line, last column
-                    root.cursor-line = root.total-lines;
-                    root.cursor-column = 500;  // Will be clamped to actual line length
+                    // Move to last line, last column - let Rust handler clamp to actual line end
                     root.cursor-moved(root.total-lines, 500);
                     return accept;
                 }
