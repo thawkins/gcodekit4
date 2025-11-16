@@ -463,7 +463,12 @@ export component MainWindow inherits Window {
     
     // Root FocusScope to receive keyboard focus
     // Does NOT handle keys - just passes them through
-    FocusScope {
+    startup-focus := FocusScope {
+        init => {
+            debug("🎯 [STARTUP] Root FocusScope init - requesting focus");
+            startup-focus.focus();
+        }
+        
         key-pressed(event) => {
             debug("🔑 [ROOT-FOCUSSCOPE] key-pressed: " + event.text + " - forwarding");
             return reject;  // Forward all keys to children
@@ -1488,5 +1493,5 @@ export component MainWindow inherits Window {
         menu-settings-restore-defaults => { root.menu-settings-restore-defaults(); }
         update-setting(id, value) => { root.update-setting(id, value); }
     }
-    }  // Close root FocusScope
+    }  // Close root FocusScope (startup-focus)
 }
