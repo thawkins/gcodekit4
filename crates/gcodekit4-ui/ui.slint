@@ -757,6 +757,9 @@ export component MainWindow inherits Window {
                     background: transparent;
                     vertical-stretch: 1;
                     horizontal-stretch: 1;
+                    init => {
+                        debug("🎯 [MAIN-WINDOW] GcodeEditorPanel Rectangle init - view just became visible");
+                    }
                     
                     // Debug TouchArea for main view
                     main-editor-touch := TouchArea {
