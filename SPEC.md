@@ -1,10 +1,15 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.25.7-alpha  
-**Last Updated**: 2025-11-15  
-**Status**: SVG to G-Code Vector Engraver Complete - Editor Phase 1 Complete
+**Version**: 0.27.0-alpha  
+**Last Updated**: 2025-11-16  
+**Status**: Editor Phase 2 Complete - Mouse & Focus Infrastructure - Vector Engraver Complete
 
-### Latest Release (v0.25.7-alpha) - SVG to G-Code Vector Engraver
+### Latest Release (v0.27.0-alpha) - Editor Phase 2 & Vector Engraver Complete
+- ✅ **Custom G-Code Text Editor - Phase 2 (COMPLETE)**
+  - Mouse click to cursor positioning
+  - Automatic line and column detection from click coordinates
+  - Complete focus infrastructure cascade through FocusScopes
+  - Keyboard input routing verified through entire hierarchy
 - ✅ **Custom G-Code Text Editor - Phase 1 (COMPLETE)**
   - Full keyboard input support with proper event handling
   - Text insertion with automatic cursor advancement

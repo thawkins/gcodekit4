@@ -16,20 +16,6 @@ export component GcodeEditorPanel inherits VerticalBox {
     horizontal-stretch: 1.0;
     vertical-stretch: 1.0;
     
-    init => {
-        debug("🎯 [GCODE-EDITOR-PANEL] init - scheduling focus");
-        focus-delay-timer.restart();
-    }
-    
-    focus-delay-timer := Timer {
-        interval: 1ms;
-        triggered => {
-            debug("🎯 [GCODE-EDITOR-PANEL] Timer - calling editor-focus.focus()");
-            editor-focus.focus();
-            focus-delay-timer.stop();
-        }
-    }
-    
     in-out property <string> gcode-content: "";
     in-out property <string> gcode-filename: "untitled.gcode";
     in-out property <int> focus-trigger: 0;  // Incrementing this triggers focus on editor
@@ -239,7 +225,7 @@ export component GcodeEditorPanel inherits VerticalBox {
         }
         
         // Custom G-Code Editor with virtual scrolling
-        CustomTextEdit {
+        custom-editor := CustomTextEdit {
             vertical-stretch: 1;
             horizontal-stretch: 1;
             text: root.gcode-content;

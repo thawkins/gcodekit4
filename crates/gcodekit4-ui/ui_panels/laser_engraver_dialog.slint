@@ -17,6 +17,7 @@ export struct EngravingParams {
     mirror-y: bool,
     rotation: string,
     halftone: string,
+    halftone-dot-size: int,
     halftone-threshold: int,
 }
 
@@ -42,6 +43,7 @@ export component LaserEngraverDialog inherits Dialog {
     in-out property <bool> mirror-y: false;
     in-out property <string> rotation: "0°";
     in-out property <string> halftone: "None";
+    in-out property <int> halftone-dot-size: 4;
     in-out property <int> halftone-threshold: 127;
     in-out property <string> offset-x: "10.0";
     in-out property <string> offset-y: "10.0";
@@ -336,7 +338,7 @@ export component LaserEngraverDialog inherits Dialog {
                             HorizontalBox {
                                 Text { text: "Halftoning:"; width: 120px; }
                                 ComboBox {
-                                    model: ["None", "Threshold", "Ordered", "Error Diffusion"];
+                                    model: ["None", "Circle", "Cross", "Ellipse", "Line", "Inverted Line"];
                                     current-value <=> halftone;
                                     horizontal-stretch: 1;
                                     selected(idx) => {
@@ -345,20 +347,21 @@ export component LaserEngraverDialog inherits Dialog {
                                 }
                             }
                             
-                            // Halftone threshold slider (only visible for threshold method)
-                            if halftone == "Threshold": HorizontalBox {
-                                Text { text: "Threshold:"; width: 120px; }
+                            // Halftone dot size slider (visible when halftone is enabled)
+                            if halftone != "None": HorizontalBox {
+                                Text { text: "Dot Size (px):"; width: 120px; }
                                 Slider {
-                                    minimum: 0;
-                                    maximum: 255;
-                                    value: halftone-threshold;
+                                    minimum: 1;
+                                    maximum: 10;
+                                    value: halftone-dot-size;
                                     changed(val) => {
-                                        halftone-threshold = round(val);
+                                        halftone-dot-size = round(val);
+                                        update-preview();
                                     }
                                     horizontal-stretch: 1;
                                 }
                                 Text {
-                                    text: halftone-threshold;
+                                    text: halftone-dot-size;
                                     width: 40px;
                                 }
                             }

@@ -83,6 +83,7 @@ export component MainWindow inherits Window {
     in property <string> raw-status-response: "";
     in property <string> app-version: "0.9.1";
     in property <string> app-build-date: "2025-10-22";
+    in property <string> app-description: "A Rust-based G-Code Sender for CNC and laser machines with support for GRBL and other controllers";
     in property <string> console-output: "[INFO] GCodeKit4 initialized\n[INFO] Ready for operation\n";
     in-out property <string> gcode-content: "";
     in-out property <string> current-view: "gcode-editor";
@@ -1423,41 +1424,59 @@ export component MainWindow inherits Window {
         }
         
         Rectangle {
-            x: (parent.width - 400px) / 2;
-            y: (parent.height - 300px) / 2;
-            width: 400px;
-            height: 300px;
+            x: (parent.width - 550px) / 2;
+            y: (parent.height - 362px) / 2;
+            width: 550px;
+            height: 362px;
             background: #ecf0f1;
             border-radius: 5px;
             z: 2001;
             
+            Image {
+                source: @image-url("ui/images/gcodekit4.png");
+                width: 100%;
+                height: 100%;
+                image-fit: cover;
+            }
+            
             VerticalBox {
-                padding: 20px;
+                padding: 15px;
                 spacing: 15px;
+                alignment: end;
+                padding-left: 300px;
                 
                 // Program Name - Triple Size
                 Text {
                     text: "GCodeKit4";
                     font-size: 42px;
                     font-weight: 700;
-                    color: #2c3e50;
-                    horizontal-alignment: center;
+                    color: yellow;
+                    horizontal-alignment: right;
+                }
+                
+                // Description
+                Text {                   
+                    text: root.app-description;
+                    font-size: 11px;
+                    color: lightgrey;
+                    horizontal-alignment: right;
+                    wrap: word-wrap;
                 }
                 
                 // Version
                 Text {
                     text: "Version: " + root.app-version;
                     font-size: 13px;
-                    color: #34495e;
-                    horizontal-alignment: center;
+                    color: lightblue;
+                    horizontal-alignment: right;
                 }
                 
                 // Build Date
                 Text {
                     text: "Built: " + root.app-build-date;
                     font-size: 13px;
-                    color: #34495e;
-                    horizontal-alignment: center;
+                    color: lightgrey;
+                    horizontal-alignment: right;
                 }
                 
                 // Spacer

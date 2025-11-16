@@ -1,0 +1,26 @@
+# Cargo configuration for GCodeKit4
+# Uses the wild linker for faster linking during development
+
+[build]
+# Use the wild linker for faster build times
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+
+[profile.dev]
+# Development profile with wild linker optimization
+opt-level = 0
+debug = true
+split-debuginfo = "packed"
+debug-assertions = true
+overflow-checks = true
+lto = false
+panic = "unwind"
+incremental = true
+
+[profile.release]
+# Release profile with wild linker optimization
+opt-level = 3
+debug = false
+debug-assertions = false
+overflow-checks = false
+lto = true
+panic = "abort"

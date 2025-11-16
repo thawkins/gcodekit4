@@ -1,6 +1,7 @@
 # GCodeKit4 Statistics
 
 Generated: 2025-11-16
+**Current Version**: 0.29.0-alpha
 
 ## Recent Development Activity
 

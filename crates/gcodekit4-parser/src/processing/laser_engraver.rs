@@ -1,12 +1,15 @@
 //! Laser Image Engraving Tool
 //!
 //! Converts bitmap images to G-code for laser engraving using raster scanning.
-//! Supports halftoning (via pepecore), mirroring, rotation, grayscale power modulation,
+//! Supports halftoning via pepecore, mirroring, rotation, grayscale power modulation,
 //! bidirectional scanning, and various image formats.
 //! Images are rendered from bottom to top to match device coordinate space where Y increases upward.
 
 use anyhow::{Context, Result};
 use image::DynamicImage;
+use pepecore::svec::SVec;
+use pepecore::svec::Shape;
+use pepecore::enums::{ImgData, DotType};
 use std::path::Path;
 
 /// Image rotation angles
@@ -27,12 +30,16 @@ pub enum RotationAngle {
 pub enum HalftoneMethod {
     /// No halftoning (direct intensity mapping)
     None,
-    /// Simple threshold dithering
-    Threshold,
-    /// Ordered dithering (Bayer matrix)
-    Ordered,
-    /// Error diffusion dithering (Floyd-Steinberg)
-    ErrorDiffusion,
+    /// Circle dot halftoning (pepecore)
+    Circle,
+    /// Cross dot halftoning (pepecore)
+    Cross,
+    /// Ellipse dot halftoning (pepecore)
+    Ellipse,
+    /// Line dot halftoning (pepecore)
+    Line,
+    /// Inverted line halftoning (pepecore)
+    InvertedLine,
 }
 
 /// Scan direction for laser engraving
@@ -55,7 +62,9 @@ pub struct ImageTransformations {
     pub rotation: RotationAngle,
     /// Halftoning method
     pub halftone: HalftoneMethod,
-    /// Halftone threshold (0-255, only used for threshold method)
+    /// Halftone dot size (cell size in pixels, typically 2-10)
+    pub halftone_dot_size: usize,
+    /// Halftone threshold (0-255, deprecated - kept for compatibility)
     pub halftone_threshold: u8,
     /// Invert image (dark becomes light, light becomes dark)
     pub invert: bool,
@@ -68,6 +77,7 @@ impl Default for ImageTransformations {
             mirror_y: false,
             rotation: RotationAngle::Degrees0,
             halftone: HalftoneMethod::None,
+            halftone_dot_size: 4,
             halftone_threshold: 127,
             invert: false,
         }
@@ -130,9 +140,7 @@ impl Default for EngravingParameters {
 
 /// Laser engraving tool for bitmap images
 pub struct BitmapImageEngraver {
-    image_data: Vec<u8>,
-    width: u32,
-    height: u32,
+    svec: SVec,
     params: EngravingParameters,
     output_width: u32,
     output_height: u32,
@@ -148,43 +156,46 @@ impl BitmapImageEngraver {
     /// Create a new laser engraver from a DynamicImage
     pub fn from_image(img: DynamicImage, params: EngravingParameters) -> Result<Self> {
         let gray = img.to_luma8();
-        let width = gray.width();
-        let height = gray.height();
+        let height = gray.height() as usize;
+        let width = gray.width() as usize;
 
-        let mut image_data = gray.into_raw();
+        tracing::debug!("Creating SVec from image: {}x{}", width, height);
+
+        // Create SVec in grayscale format using ImgData::U8
+        // Grayscale images must specify 1 channel explicitly for pepecore compatibility
+        let shape = Shape::new(height, width, Some(1));
+        let mut svec = SVec::new(shape, ImgData::U8(gray.into_raw()));
+
+        tracing::debug!("SVec created: {:?}", svec.shape());
 
         // Apply transformations: mirroring -> rotation -> inversion -> halftoning
         if params.transformations.mirror_x {
-            Self::mirror_x_data(&mut image_data, width, height);
+            tracing::debug!("Applying mirror_x");
+            Self::mirror_x_svec(&mut svec)?;
         }
         if params.transformations.mirror_y {
-            Self::mirror_y_data(&mut image_data, width, height);
+            tracing::debug!("Applying mirror_y");
+            Self::mirror_y_svec(&mut svec)?;
         }
 
-        let (image_data, width, height) = Self::apply_rotation(
-            image_data,
-            width,
-            height,
-            params.transformations.rotation,
-        );
+        if params.transformations.rotation != RotationAngle::Degrees0 {
+            tracing::debug!("Applying rotation: {:?}", params.transformations.rotation);
+            svec = Self::apply_rotation_svec(svec, params.transformations.rotation)?;
+        }
 
-        let mut image_data = image_data;
         if params.transformations.invert {
-            for pixel in image_data.iter_mut() {
-                *pixel = 255 - *pixel;
-            }
+            tracing::debug!("Applying invert");
+            Self::invert_svec(&mut svec)?;
         }
 
-        let image_data = Self::apply_halftoning(
-            image_data,
-            width,
-            height,
-            params.transformations.halftone,
-            params.transformations.halftone_threshold,
-        )?;
+        if params.transformations.halftone != HalftoneMethod::None {
+            tracing::debug!("Applying halftone: {:?}", params.transformations.halftone);
+            Self::apply_halftoning_svec(&mut svec, params.transformations.halftone, params.transformations.halftone_dot_size)?;
+        }
 
+        let (shape_h, shape_w, _) = svec.shape();
         let output_width = (params.width_mm * params.pixels_per_mm) as u32;
-        let aspect_ratio = height as f32 / width as f32;
+        let aspect_ratio = shape_h as f32 / shape_w as f32;
         let output_height = if let Some(h) = params.height_mm {
             (h * params.pixels_per_mm) as u32
         } else {
@@ -192,166 +203,257 @@ impl BitmapImageEngraver {
         };
 
         Ok(Self {
-            image_data,
-            width,
-            height,
+            svec,
             params,
             output_width,
             output_height,
         })
     }
 
-    /// Mirror image horizontally (flip around Y axis)
-    fn mirror_x_data(data: &mut [u8], width: u32, height: u32) {
-        let w = width as usize;
-        for y in 0..height as usize {
-            let row_start = y * w;
-            let row_end = row_start + w;
-            data[row_start..row_end].reverse();
-        }
-    }
-
-    /// Mirror image vertically (flip around X axis)
-    fn mirror_y_data(data: &mut [u8], width: u32, height: u32) {
-        let w = width as usize;
-        let h = height as usize;
-        for y in 0..h / 2 {
-            let row1_start = y * w;
-            let row2_start = (h - 1 - y) * w;
-            for x in 0..w {
-                data.swap(row1_start + x, row2_start + x);
+    /// Mirror image horizontally (flip around Y axis) using SVec
+    fn mirror_x_svec(svec: &mut SVec) -> Result<()> {
+        let (height, width, _) = svec.shape();
+        
+        // Get mutable access to data
+        match &mut svec.data {
+            ImgData::U8(data) => {
+                for y in 0..height {
+                    let row_start = y * width;
+                    let row_end = row_start + width;
+                    data[row_start..row_end].reverse();
+                }
+                Ok(())
+            }
+            ImgData::U16(data) => {
+                for y in 0..height {
+                    let row_start = y * width;
+                    let row_end = row_start + width;
+                    data[row_start..row_end].reverse();
+                }
+                Ok(())
+            }
+            ImgData::F32(data) => {
+                for y in 0..height {
+                    let row_start = y * width;
+                    let row_end = row_start + width;
+                    data[row_start..row_end].reverse();
+                }
+                Ok(())
             }
         }
     }
 
-    /// Apply rotation to image data. Returns (data, new_width, new_height)
-    fn apply_rotation(
-        data: Vec<u8>,
-        width: u32,
-        height: u32,
-        rotation: RotationAngle,
-    ) -> (Vec<u8>, u32, u32) {
-        match rotation {
-            RotationAngle::Degrees0 => (data, width, height),
-            RotationAngle::Degrees90 => {
-                let mut rotated = vec![0u8; data.len()];
-                let w = width as usize;
-                let h = height as usize;
-                for y in 0..h {
-                    for x in 0..w {
-                        let src_idx = y * w + x;
-                        let dst_idx = x * h + (h - 1 - y);
-                        rotated[dst_idx] = data[src_idx];
+    /// Mirror image vertically (flip around X axis) using SVec
+    fn mirror_y_svec(svec: &mut SVec) -> Result<()> {
+        let (height, width, _) = svec.shape();
+        
+        match &mut svec.data {
+            ImgData::U8(data) => {
+                for y in 0..height / 2 {
+                    let row1_start = y * width;
+                    let row2_start = (height - 1 - y) * width;
+                    for x in 0..width {
+                        data.swap(row1_start + x, row2_start + x);
                     }
                 }
-                (rotated, height, width)
+                Ok(())
+            }
+            ImgData::U16(data) => {
+                for y in 0..height / 2 {
+                    let row1_start = y * width;
+                    let row2_start = (height - 1 - y) * width;
+                    for x in 0..width {
+                        data.swap(row1_start + x, row2_start + x);
+                    }
+                }
+                Ok(())
+            }
+            ImgData::F32(data) => {
+                for y in 0..height / 2 {
+                    let row1_start = y * width;
+                    let row2_start = (height - 1 - y) * width;
+                    for x in 0..width {
+                        data.swap(row1_start + x, row2_start + x);
+                    }
+                }
+                Ok(())
+            }
+        }
+    }
+
+    /// Invert image brightness
+    fn invert_svec(svec: &mut SVec) -> Result<()> {
+        match &mut svec.data {
+            ImgData::U8(data) => {
+                for pixel in data.iter_mut() {
+                    *pixel = 255 - *pixel;
+                }
+                Ok(())
+            }
+            ImgData::U16(data) => {
+                for pixel in data.iter_mut() {
+                    *pixel = u16::MAX - *pixel;
+                }
+                Ok(())
+            }
+            ImgData::F32(data) => {
+                for pixel in data.iter_mut() {
+                    *pixel = 1.0 - *pixel;
+                }
+                Ok(())
+            }
+        }
+    }
+
+    /// Apply rotation to SVec image
+    fn apply_rotation_svec(
+        svec: SVec,
+        rotation: RotationAngle,
+    ) -> Result<SVec> {
+        let (height, width, channels) = svec.shape();
+        
+        match rotation {
+            RotationAngle::Degrees0 => Ok(svec),
+            RotationAngle::Degrees90 => {
+                let rotated_data = match &svec.data {
+                    ImgData::U8(data) => {
+                        let mut rotated = vec![0u8; data.len()];
+                        for y in 0..height {
+                            for x in 0..width {
+                                let src_idx = y * width + x;
+                                let dst_idx = x * height + (height - 1 - y);
+                                rotated[dst_idx] = data[src_idx];
+                            }
+                        }
+                        ImgData::U8(rotated)
+                    }
+                    ImgData::U16(data) => {
+                        let mut rotated = vec![0u16; data.len()];
+                        for y in 0..height {
+                            for x in 0..width {
+                                let src_idx = y * width + x;
+                                let dst_idx = x * height + (height - 1 - y);
+                                rotated[dst_idx] = data[src_idx];
+                            }
+                        }
+                        ImgData::U16(rotated)
+                    }
+                    ImgData::F32(data) => {
+                        let mut rotated = vec![0.0; data.len()];
+                        for y in 0..height {
+                            for x in 0..width {
+                                let src_idx = y * width + x;
+                                let dst_idx = x * height + (height - 1 - y);
+                                rotated[dst_idx] = data[src_idx];
+                            }
+                        }
+                        ImgData::F32(rotated)
+                    }
+                };
+                let shape = Shape::new(width, height, channels);
+                Ok(SVec::new(shape, rotated_data))
             }
             RotationAngle::Degrees180 => {
-                let mut rotated = data.clone();
-                rotated.reverse();
-                (rotated, width, height)
-            }
-            RotationAngle::Degrees270 => {
-                let mut rotated = vec![0u8; data.len()];
-                let w = width as usize;
-                let h = height as usize;
-                for y in 0..h {
-                    for x in 0..w {
-                        let src_idx = y * w + x;
-                        let dst_idx = (w - 1 - x) * h + y;
-                        rotated[dst_idx] = data[src_idx];
+                match svec.data {
+                    ImgData::U8(mut data) => {
+                        data.reverse();
+                        Ok(SVec::new(svec.shape, ImgData::U8(data)))
+                    }
+                    ImgData::U16(mut data) => {
+                        data.reverse();
+                        Ok(SVec::new(svec.shape, ImgData::U16(data)))
+                    }
+                    ImgData::F32(mut data) => {
+                        data.reverse();
+                        Ok(SVec::new(svec.shape, ImgData::F32(data)))
                     }
                 }
-                (rotated, height, width)
+            }
+            RotationAngle::Degrees270 => {
+                let rotated_data = match &svec.data {
+                    ImgData::U8(data) => {
+                        let mut rotated = vec![0u8; data.len()];
+                        for y in 0..height {
+                            for x in 0..width {
+                                let src_idx = y * width + x;
+                                let dst_idx = (width - 1 - x) * height + y;
+                                rotated[dst_idx] = data[src_idx];
+                            }
+                        }
+                        ImgData::U8(rotated)
+                    }
+                    ImgData::U16(data) => {
+                        let mut rotated = vec![0u16; data.len()];
+                        for y in 0..height {
+                            for x in 0..width {
+                                let src_idx = y * width + x;
+                                let dst_idx = (width - 1 - x) * height + y;
+                                rotated[dst_idx] = data[src_idx];
+                            }
+                        }
+                        ImgData::U16(rotated)
+                    }
+                    ImgData::F32(data) => {
+                        let mut rotated = vec![0.0; data.len()];
+                        for y in 0..height {
+                            for x in 0..width {
+                                let src_idx = y * width + x;
+                                let dst_idx = (width - 1 - x) * height + y;
+                                rotated[dst_idx] = data[src_idx];
+                            }
+                        }
+                        ImgData::F32(rotated)
+                    }
+                };
+                let shape = Shape::new(width, height, channels);
+                Ok(SVec::new(shape, rotated_data))
             }
         }
     }
 
-    /// Apply halftoning
-    fn apply_halftoning(
-        data: Vec<u8>,
-        width: u32,
-        height: u32,
-        method: HalftoneMethod,
-        threshold: u8,
-    ) -> Result<Vec<u8>> {
-        match method {
-            HalftoneMethod::None => Ok(data),
-            HalftoneMethod::Threshold => {
-                let threshold_f32 = threshold as f32;
-                let halftoned = data
-                    .iter()
-                    .map(|&pixel| if (pixel as f32) < threshold_f32 { 0 } else { 255 })
-                    .collect();
-                Ok(halftoned)
-            }
-            HalftoneMethod::Ordered => {
-                let mut halftoned = data.clone();
-                let w = width as usize;
-                let bayer = [[0, 128], [192, 64]];
+    /// Apply halftoning using pepecore on SVec with configurable dot size
+    fn apply_halftoning_svec(svec: &mut SVec, method: HalftoneMethod, dot_size: usize) -> Result<()> {
+        let dot_type = match method {
+            HalftoneMethod::Circle => DotType::CIRCLE,
+            HalftoneMethod::Cross => DotType::CROSS,
+            HalftoneMethod::Ellipse => DotType::ELLIPSE,
+            HalftoneMethod::Line => DotType::LINE,
+            HalftoneMethod::InvertedLine => DotType::INVLINE,
+            HalftoneMethod::None => return Ok(()),
+        };
 
-                for y in 0..height as usize {
-                    for x in 0..w {
-                        let idx = y * w + x;
-                        let threshold = bayer[y % 2][x % 2];
-                        halftoned[idx] = if data[idx] > threshold { 255 } else { 0 };
-                    }
-                }
-                Ok(halftoned)
-            }
-            HalftoneMethod::ErrorDiffusion => {
-                let mut halftoned = data.clone();
-                let w = width as usize;
-                let h = height as usize;
+        let (height, width, channels) = svec.shape();
+        tracing::debug!(
+            "Applying halftone: method={:?}, dot_size={}, image={}x{}, channels={:?}",
+            method,
+            dot_size,
+            width,
+            height,
+            channels
+        );
 
-                for y in 0..h {
-                    for x in 0..w {
-                        let idx = y * w + x;
-                        let old_pixel = halftoned[idx] as i32;
-                        let new_pixel = if old_pixel > 127 { 255 } else { 0 };
-                        halftoned[idx] = new_pixel as u8;
-
-                        let error = old_pixel - new_pixel;
-
-                        if x + 1 < w {
-                            let idx_right = idx + 1;
-                            let val = (halftoned[idx_right] as i32 + (error * 7) / 16)
-                                .clamp(0, 255);
-                            halftoned[idx_right] = val as u8;
-                        }
-                        if y + 1 < h {
-                            if x > 0 {
-                                let idx_bottom_left = idx + w - 1;
-                                let val = (halftoned[idx_bottom_left] as i32
-                                    + (error * 3) / 16)
-                                    .clamp(0, 255);
-                                halftoned[idx_bottom_left] = val as u8;
-                            }
-                            let idx_bottom = idx + w;
-                            let val = (halftoned[idx_bottom] as i32 + (error * 5) / 16)
-                                .clamp(0, 255);
-                            halftoned[idx_bottom] = val as u8;
-
-                            if x + 1 < w {
-                                let idx_bottom_right = idx + w + 1;
-                                let val = (halftoned[idx_bottom_right] as i32 + error / 16)
-                                    .clamp(0, 255);
-                                halftoned[idx_bottom_right] = val as u8;
-                            }
-                        }
-                    }
-                }
-                Ok(halftoned)
-            }
-        }
+        pepecore::halftone(svec, &[dot_size], &[dot_type])
+            .context("Failed to apply halftone effect")
     }
 
     /// Get pixel at (x, y) in the processed image
     fn get_pixel(&self, x: u32, y: u32) -> u8 {
-        if x >= self.width || y >= self.height {
+        let (height, width, _) = self.svec.shape();
+        if x >= width as u32 || y >= height as u32 {
             return 255;
         }
-        self.image_data[(y * self.width + x) as usize]
+        
+        match &self.svec.data {
+            ImgData::U8(data) => {
+                data[y as usize * width + x as usize]
+            }
+            ImgData::U16(data) => {
+                (data[y as usize * width + x as usize] >> 8) as u8
+            }
+            ImgData::F32(data) => {
+                (data[y as usize * width + x as usize] * 255.0) as u8
+            }
+        }
     }
 
     /// Get the output dimensions in millimeters
@@ -485,15 +587,19 @@ impl BitmapImageEngraver {
     fn resize_image(&self, target_width: u32, target_height: u32) -> ResizedImage {
         let mut resized = vec![0u8; (target_width * target_height) as usize];
 
+        let (height, width, _) = self.svec.shape();
+        let src_width = width as f32;
+        let src_height = height as f32;
+
         for y in 0..target_height {
             for x in 0..target_width {
-                let src_x = (x as f32 / target_width as f32) * self.width as f32;
-                let src_y = (y as f32 / target_height as f32) * self.height as f32;
+                let src_x = (x as f32 / target_width as f32) * src_width;
+                let src_y = (y as f32 / target_height as f32) * src_height;
 
                 let x0 = src_x.floor() as u32;
                 let y0 = src_y.floor() as u32;
-                let x1 = (x0 + 1).min(self.width - 1);
-                let y1 = (y0 + 1).min(self.height - 1);
+                let x1 = (x0 + 1).min(width as u32 - 1);
+                let y1 = (y0 + 1).min(height as u32 - 1);
 
                 let fx = src_x - x0 as f32;
                 let fy = src_y - y0 as f32;
@@ -714,43 +820,43 @@ mod tests {
     }
 
     #[test]
-    fn test_halftone_threshold() {
-        let data = vec![0, 127, 128, 255];
-        let result =
-            BitmapImageEngraver::apply_halftoning(data.clone(), 4, 1, HalftoneMethod::Threshold, 127)
-                .unwrap();
-        assert_eq!(result[0], 0);    // 0 < 127 -> black
-        assert_eq!(result[1], 255);  // 127 >= 127 -> white
-        assert_eq!(result[2], 255);  // 128 >= 127 -> white
-        assert_eq!(result[3], 255);  // 255 >= 127 -> white
-    }
-
-    #[test]
-    fn test_rotation_90_degrees() {
-        let data = vec![1, 2, 3, 4, 5, 6];
-        let (rotated, new_w, new_h) =
-            BitmapImageEngraver::apply_rotation(data, 2, 3, RotationAngle::Degrees90);
-        assert_eq!(new_w, 3);
-        assert_eq!(new_h, 2);
-        assert_eq!(rotated[0], 5);
-        assert_eq!(rotated[1], 3);
-        assert_eq!(rotated[2], 1);
-    }
-
-    #[test]
-    fn test_mirror_x() {
-        let mut data = vec![1, 2, 3, 4];
-        BitmapImageEngraver::mirror_x_data(&mut data, 2, 2);
-        // First row [1,2] -> [2,1], second row [3,4] -> [4,3]
-        assert_eq!(data, vec![2, 1, 4, 3]);
-    }
-
-    #[test]
     fn test_transformations_default() {
         let trans = ImageTransformations::default();
         assert!(!trans.mirror_x);
         assert!(!trans.mirror_y);
         assert_eq!(trans.rotation, RotationAngle::Degrees0);
         assert_eq!(trans.halftone, HalftoneMethod::None);
+    }
+
+    #[test]
+    fn test_mirror_x_svec() {
+        let data = vec![1, 2, 3, 4];
+        let shape = Shape::new(2, 2, None);
+        let mut svec = SVec::new(shape, ImgData::U8(data));
+        BitmapImageEngraver::mirror_x_svec(&mut svec).unwrap();
+        // First row [1,2] -> [2,1], second row [3,4] -> [4,3]
+        match &svec.data {
+            ImgData::U8(data) => assert_eq!(data, &vec![2, 1, 4, 3]),
+            _ => panic!("Expected U8 data"),
+        }
+    }
+
+    #[test]
+    fn test_rotation_90_degrees_svec() {
+        let data = vec![1, 2, 3, 4, 5, 6];
+        let shape = Shape::new(3, 2, None);
+        let svec = SVec::new(shape, ImgData::U8(data));
+        let rotated = BitmapImageEngraver::apply_rotation_svec(svec, RotationAngle::Degrees90).unwrap();
+        let (h, w, _) = rotated.shape();
+        assert_eq!(w, 3);
+        assert_eq!(h, 2);
+        match &rotated.data {
+            ImgData::U8(data) => {
+                assert_eq!(data[0], 5);
+                assert_eq!(data[1], 3);
+                assert_eq!(data[2], 1);
+            }
+            _ => panic!("Expected U8 data"),
+        }
     }
 }

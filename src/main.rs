@@ -8,6 +8,8 @@ use gcodekit4::{
 use gcodekit4_ui::EditorBridge;
 use slint::{Model, VecModel};
 use std::cell::RefCell;
+#[allow(unused_imports)]
+use std::error::Error;
 use std::rc::Rc;
 use tracing::warn;
 
@@ -5343,12 +5345,12 @@ fn main() -> anyhow::Result<()> {
                         let offset_x = dlg.get_offset_x().parse::<f32>().unwrap_or(10.0);
                         let offset_y = dlg.get_offset_y().parse::<f32>().unwrap_or(10.0);
                         
-                        // For now, use default values for transformation parameters
-                        // They will be bound through the update-preview callback
+                        // Get transformation parameters from dialog
                         let mirror_x = false;
                         let mirror_y = false;
                         let rotation_str = "0°".to_string();
-                        let halftone_str = "None".to_string();
+                        let halftone_str = dlg.get_halftone();
+                        let halftone_dot_size = dlg.get_halftone_dot_size() as usize;
                         let halftone_threshold = 127;
 
                         // Show status message and initial progress
@@ -5390,11 +5392,14 @@ fn main() -> anyhow::Result<()> {
                                         _ => RotationAngle::Degrees0,
                                     },
                                     halftone: match halftone_str.as_str() {
-                                        "Threshold" => HalftoneMethod::Threshold,
-                                        "Ordered" => HalftoneMethod::Ordered,
-                                        "Error Diffusion" => HalftoneMethod::ErrorDiffusion,
+                                        "Circle" => HalftoneMethod::Circle,
+                                        "Cross" => HalftoneMethod::Cross,
+                                        "Ellipse" => HalftoneMethod::Ellipse,
+                                        "Line" => HalftoneMethod::Line,
+                                        "Inverted Line" => HalftoneMethod::InvertedLine,
                                         _ => HalftoneMethod::None,
                                     },
+                                    halftone_dot_size,
                                     halftone_threshold: halftone_threshold as u8,
                                     invert,
                                 },
@@ -5480,18 +5485,29 @@ fn main() -> anyhow::Result<()> {
                                             );
                                         }
                                         Err(e) => {
-                                            let error_msg = format!(
-                                                "Failed to generate laser engraving: {}",
-                                                e
-                                            );
+                                            // Build detailed error message with full chain
+                                            let mut error_details = String::new();
+                                            error_details.push_str("G-code Generation Failed\n\n");
+                                            
+                                            // Add root error
+                                            error_details.push_str(&format!("Error: {}\n", e));
+                                            
+                                            // Add error chain if available (anyhow provides this)
+                                            let mut source = e.source();
+                                            let mut depth = 0;
+                                            while let Some(err) = source {
+                                                depth += 1;
+                                                error_details.push_str(&format!("  └─ {}: {}\n", depth, err));
+                                                source = err.source();
+                                            }
+                                            
+                                            let error_msg = format!("Failed to generate laser engraving: {}", e);
                                             win.set_connection_status(error_msg.clone().into());
                                             win.set_progress_value(0.0); // Hide progress
-                                            tracing::error!("G-code generation error: {}", e);
+                                            tracing::error!("G-code generation error:\n{}", error_details);
 
                                             let error_dialog = ErrorDialog::new().unwrap();
-                                            error_dialog.set_error_message(
-                                                format!("G-code Generation Failed\n\n{}", e).into(),
-                                            );
+                                            error_dialog.set_error_message(error_details.into());
 
                                             let error_dialog_weak = error_dialog.as_weak();
                                             error_dialog.on_close_dialog(move || {
@@ -5759,18 +5775,29 @@ fn main() -> anyhow::Result<()> {
                                             );
                                         }
                                         Err(e) => {
-                                            let error_msg = format!(
-                                                "Failed to generate vector engraving: {}",
-                                                e
-                                            );
+                                            // Build detailed error message with full chain
+                                            let mut error_details = String::new();
+                                            error_details.push_str("Vector G-code Generation Failed\n\n");
+                                            
+                                            // Add root error
+                                            error_details.push_str(&format!("Error: {}\n", e));
+                                            
+                                            // Add error chain if available
+                                            let mut source = e.source();
+                                            let mut depth = 0;
+                                            while let Some(err) = source {
+                                                depth += 1;
+                                                error_details.push_str(&format!("  └─ {}: {}\n", depth, err));
+                                                source = err.source();
+                                            }
+                                            
+                                            let error_msg = format!("Failed to generate vector engraving: {}", e);
                                             win.set_connection_status(error_msg.clone().into());
                                             win.set_progress_value(0.0); // Hide progress
-                                            tracing::error!("Vector G-code generation error: {}", e);
+                                            tracing::error!("Vector G-code generation error:\n{}", error_details);
 
                                             let error_dialog = ErrorDialog::new().unwrap();
-                                            error_dialog.set_error_message(
-                                                format!("G-code Generation Failed\n\n{}", e).into(),
-                                            );
+                                            error_dialog.set_error_message(error_details.into());
 
                                             let error_dialog_weak = error_dialog.as_weak();
                                             error_dialog.on_close_dialog(move || {

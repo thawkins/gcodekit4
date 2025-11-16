@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.28.0-alpha] - 2025-11-16
+
+### Added
+- **Minor Release Cycle**: Documentation and infrastructure improvements
+
+### Improved
+- **Documentation**: Comprehensive update to SPEC.md, STATS.md, and README.md
+- **Version Management**: Bumped to 0.28.0-alpha for next development cycle
+
 ## [0.26.1-alpha] - 2025-11-16
 
 ### Added
