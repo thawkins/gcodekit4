@@ -17,8 +17,17 @@ export component GcodeEditorPanel inherits VerticalBox {
     vertical-stretch: 1.0;
     
     init => {
-        debug("🎯 [GCODE-EDITOR-PANEL] init - calling editor-focus.focus()");
-        editor-focus.focus();
+        debug("🎯 [GCODE-EDITOR-PANEL] init - scheduling focus");
+        focus-delay-timer.restart();
+    }
+    
+    focus-delay-timer := Timer {
+        interval: 1ms;
+        triggered => {
+            debug("🎯 [GCODE-EDITOR-PANEL] Timer - calling editor-focus.focus()");
+            editor-focus.focus();
+            focus-delay-timer.stop();
+        }
     }
     
     in-out property <string> gcode-content: "";
