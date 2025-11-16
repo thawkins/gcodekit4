@@ -759,6 +759,7 @@ export component MainWindow inherits Window {
                     horizontal-stretch: 1;
                     init => {
                         debug("🎯 [MAIN-WINDOW] GcodeEditorPanel Rectangle init - view just became visible");
+                        gcode-editor-panel.request_focus();
                     }
                     
                     // Debug TouchArea for main view
@@ -768,7 +769,7 @@ export component MainWindow inherits Window {
                         }
                     }
                     
-                    GcodeEditorPanel {
+                    gcode-editor-panel := GcodeEditorPanel {
                     gcode-content <=> root.gcode-content;
                     gcode-filename <=> root.gcode-filename;
                     focus-trigger <=> root.gcode-focus-trigger;
