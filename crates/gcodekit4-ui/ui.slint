@@ -757,19 +757,23 @@ export component MainWindow inherits Window {
                     background: transparent;
                     vertical-stretch: 1;
                     horizontal-stretch: 1;
-                    init => {
-                        debug("🎯 [MAIN-WINDOW] GcodeEditorPanel Rectangle init - view just became visible");
-                        gcode-editor-panel.request_focus();
-                    }
                     
-                    // Debug TouchArea for main view
-                    main-editor-touch := TouchArea {
-                        clicked => {
-                            debug("🖱️ [MAIN-WINDOW] Main editor view clicked!");
+                    editor-focus-wrapper := FocusScope {
+                        vertical-stretch: 1;
+                        horizontal-stretch: 1;
+                        init => {
+                            debug("🎯 [MAIN-WINDOW] editor-focus-wrapper init - calling focus()");
+                            editor-focus-wrapper.focus();
                         }
-                    }
-                    
-                    gcode-editor-panel := GcodeEditorPanel {
+                        
+                        // Debug TouchArea for main view
+                        main-editor-touch := TouchArea {
+                            clicked => {
+                                debug("🖱️ [MAIN-WINDOW] Main editor view clicked!");
+                            }
+                        }
+                        
+                        gcode-editor-panel := GcodeEditorPanel {
                     gcode-content <=> root.gcode-content;
                     gcode-filename <=> root.gcode-filename;
                     focus-trigger <=> root.gcode-focus-trigger;
@@ -852,6 +856,7 @@ export component MainWindow inherits Window {
                     editor_clicked => {
                         debug("🖱️ [UI] GcodeEditorPanel.editor_clicked received!");
                     }
+                        }
                     }
                 }
                 
