@@ -80,6 +80,8 @@ pub struct BoxParameters {
     pub laser_passes: i32,
     pub laser_power: i32,
     pub feed_rate: f32,
+    pub offset_x: f32,
+    pub offset_y: f32,
 }
 
 impl Default for BoxParameters {
@@ -96,6 +98,8 @@ impl Default for BoxParameters {
             laser_passes: 3,
             laser_power: 1000,
             feed_rate: 500.0,
+            offset_x: 10.0,
+            offset_y: 10.0,
         }
     }
 }
@@ -442,7 +446,10 @@ impl TabbedBoxMaker {
         gcode.push_str("$H ; Home all axes\n");
         gcode.push_str("G10 L2 P1 X0 Y0 Z0 ; Clear G54 offset\n");
         gcode.push_str("G54 ; Select work coordinate system 1\n");
-        gcode.push_str("G0 X10.0 Y10.0 ; Move to work origin\n");
+        gcode.push_str(&format!(
+            "G0 X{:.1} Y{:.1} ; Move to work origin\n",
+            self.params.offset_x, self.params.offset_y
+        ));
         gcode.push_str("G10 L20 P1 X0 Y0 Z0 ; Set current position as work zero\n");
         gcode.push_str(&format!(
             "G0 Z{:.2} F{:.0} ; Move to safe height\n\n",

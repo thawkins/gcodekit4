@@ -101,6 +101,10 @@ pub struct EngravingParameters {
     pub power_scale: f32,
     /// Image transformations (halftoning, mirroring, rotation)
     pub transformations: ImageTransformations,
+    /// X offset from machine origin
+    pub offset_x: f32,
+    /// Y offset from machine origin
+    pub offset_y: f32,
 }
 
 impl Default for EngravingParameters {
@@ -118,6 +122,8 @@ impl Default for EngravingParameters {
             line_spacing: 1.0,
             power_scale: 1000.0,
             transformations: ImageTransformations::default(),
+            offset_x: 10.0,
+            offset_y: 10.0,
         }
     }
 }
@@ -421,7 +427,10 @@ impl BitmapImageEngraver {
         gcode.push_str("$H ; Home all axes (bottom-left corner)\n");
         gcode.push_str("G10 L2 P1 X0 Y0 Z0 ; Clear G54 offset\n");
         gcode.push_str("G54 ; Select work coordinate system 1\n");
-        gcode.push_str("G0 X10.0 Y10.0 ; Move to work origin (10mm from corner)\n");
+        gcode.push_str(&format!(
+            "G0 X{:.1} Y{:.1} ; Move to work origin\n",
+            self.params.offset_x, self.params.offset_y
+        ));
         gcode.push_str("G10 L20 P1 X0 Y0 Z0 ; Set current position as work zero\n");
         gcode.push_str(&format!(
             "G0 Z{:.2} F{:.0} ; Move to safe height\n",

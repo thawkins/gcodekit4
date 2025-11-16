@@ -184,6 +184,8 @@ export component MainWindow inherits Window {
     in-out property <string> tbox-laser-passes: "3";
     in-out property <string> tbox-laser-power: "1000";
     in-out property <string> tbox-feed-rate: "500";
+    in-out property <string> tbox-offset-x: "10.0";
+    in-out property <string> tbox-offset-y: "10.0";
     
     // Jigsaw Puzzle properties
     in-out property <string> puzzle-width: "200.0";
@@ -198,6 +200,8 @@ export component MainWindow inherits Window {
     in-out property <string> puzzle-tab-size: "20.0";
     in-out property <string> puzzle-jitter: "4.0";
     in-out property <string> puzzle-corner-radius: "2.0";
+    in-out property <string> puzzle-offset-x: "10.0";
+    in-out property <string> puzzle-offset-y: "10.0";
     
     callback refresh-ports();
     callback connect(string, int);

@@ -18,6 +18,8 @@ pub struct PuzzleParameters {
     pub tab_size_percent: f32,
     pub jitter_percent: f32,
     pub corner_radius: f32,
+    pub offset_x: f32,
+    pub offset_y: f32,
 }
 
 impl Default for PuzzleParameters {
@@ -35,6 +37,8 @@ impl Default for PuzzleParameters {
             tab_size_percent: 20.0,
             jitter_percent: 4.0,
             corner_radius: 2.0,
+            offset_x: 10.0,
+            offset_y: 10.0,
         }
     }
 }
@@ -487,7 +491,10 @@ impl JigsawPuzzleMaker {
         gcode.push_str("$H ; Home all axes (bottom-left corner)\n");
         gcode.push_str("G10 L2 P1 X0 Y0 Z0 ; Clear G54 offset\n");
         gcode.push_str("G54 ; Select work coordinate system 1\n");
-        gcode.push_str("G0 X10.0 Y10.0 ; Move to work origin (10mm from corner)\n");
+        gcode.push_str(&format!(
+            "G0 X{:.1} Y{:.1} ; Move to work origin\n",
+            self.params.offset_x, self.params.offset_y
+        ));
         gcode.push_str("G10 L20 P1 X0 Y0 Z0 ; Set current position as work zero\n");
         gcode.push_str(&format!(
             "G0 Z{:.2} F{:.0} ; Move to safe height\n",

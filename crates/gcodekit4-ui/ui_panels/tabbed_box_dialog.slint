@@ -6,7 +6,7 @@ import { Button, LineEdit, ComboBox, CheckBox, VerticalBox, HorizontalBox, GridB
 export component TabbedBoxDialog inherits Window {
     title: "Tabbed Box Maker (boxes.py algorithm)";
     width: 600px;
-    height: 700px;
+    height: 750px;
     
     in-out property <string> box-x: "100.0";
     in-out property <string> box-y: "100.0";
@@ -23,6 +23,8 @@ export component TabbedBoxDialog inherits Window {
     in-out property <string> laser-passes: "3";
     in-out property <string> laser-power: "1000";
     in-out property <string> feed-rate: "500";
+    in-out property <string> offset-x: "10.0";
+    in-out property <string> offset-y: "10.0";
     
     callback generate-box();
     callback cancel-dialog();
@@ -199,6 +201,33 @@ export component TabbedBoxDialog inherits Window {
                             LineEdit { 
                                 text <=> feed-rate;
                                 placeholder-text: "500";
+                            }
+                        }
+                    }
+                }
+                
+                // Work Origin Offsets
+                GroupBox {
+                    title: "Work Origin Offsets (mm)";
+                    
+                    GridBox {
+                        spacing: 10px;
+                        
+                        Row {
+                            Text { text: "Offset X:"; }
+                            LineEdit { 
+                                text <=> offset-x;
+                                placeholder-text: "10.0";
+                                input-type: decimal;
+                            }
+                        }
+                        
+                        Row {
+                            Text { text: "Offset Y:"; }
+                            LineEdit { 
+                                text <=> offset-y;
+                                placeholder-text: "10.0";
+                                input-type: decimal;
                             }
                         }
                     }

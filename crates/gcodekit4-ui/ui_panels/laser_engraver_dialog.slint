@@ -43,6 +43,8 @@ export component LaserEngraverDialog inherits Dialog {
     in-out property <string> rotation: "0°";
     in-out property <string> halftone: "None";
     in-out property <int> halftone-threshold: 127;
+    in-out property <string> offset-x: "10.0";
+    in-out property <string> offset-y: "10.0";
     
     callback load-image();
     callback generate-gcode();
@@ -358,6 +360,33 @@ export component LaserEngraverDialog inherits Dialog {
                                 Text {
                                     text: halftone-threshold;
                                     width: 40px;
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Work Origin Offsets
+                    GroupBox {
+                        title: "Work Origin Offsets (mm)";
+                        
+                        VerticalBox {
+                            spacing: 8px;
+                            
+                            HorizontalBox {
+                                Text { text: "Offset X:"; width: 120px; }
+                                LineEdit {
+                                    text <=> offset-x;
+                                    placeholder-text: "10.0";
+                                    horizontal-stretch: 1;
+                                }
+                            }
+                            
+                            HorizontalBox {
+                                Text { text: "Offset Y:"; width: 120px; }
+                                LineEdit {
+                                    text <=> offset-y;
+                                    placeholder-text: "10.0";
+                                    horizontal-stretch: 1;
                                 }
                             }
                         }

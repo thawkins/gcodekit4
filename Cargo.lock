@@ -1957,7 +1957,7 @@ dependencies = [
 
 [[package]]
 name = "gcodekit4"
-version = "0.25.6-alpha"
+version = "0.26.0-alpha"
 dependencies = [
  "anyhow",
  "arboard",
@@ -1979,7 +1979,7 @@ dependencies = [
 
 [[package]]
 name = "gcodekit4-communication"
-version = "0.25.6-alpha"
+version = "0.26.0-alpha"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1995,7 +1995,7 @@ dependencies = [
 
 [[package]]
 name = "gcodekit4-core"
-version = "0.25.6-alpha"
+version = "0.26.0-alpha"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2012,7 +2012,7 @@ dependencies = [
 
 [[package]]
 name = "gcodekit4-parser"
-version = "0.25.6-alpha"
+version = "0.26.0-alpha"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2031,7 +2031,7 @@ dependencies = [
 
 [[package]]
 name = "gcodekit4-ui"
-version = "0.25.6-alpha"
+version = "0.26.0-alpha"
 dependencies = [
  "anyhow",
  "chrono",

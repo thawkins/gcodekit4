@@ -4791,6 +4791,8 @@ fn main() -> anyhow::Result<()> {
                             dlg.get_laser_power().parse::<i32>().unwrap_or(1000).max(0);
                         let feed_rate =
                             dlg.get_feed_rate().parse::<f32>().unwrap_or(500.0).max(1.0);
+                        let offset_x = dlg.get_offset_x().parse::<f32>().unwrap_or(10.0);
+                        let offset_y = dlg.get_offset_y().parse::<f32>().unwrap_or(10.0);
 
                         // Save values back to main window for next time
                         window.set_tbox_x(dlg.get_box_x());
@@ -4808,6 +4810,8 @@ fn main() -> anyhow::Result<()> {
                         window.set_tbox_laser_passes(dlg.get_laser_passes());
                         window.set_tbox_laser_power(dlg.get_laser_power());
                         window.set_tbox_feed_rate(dlg.get_feed_rate());
+                        window.set_tbox_offset_x(dlg.get_offset_x());
+                        window.set_tbox_offset_y(dlg.get_offset_y());
 
                         let finger_joint = FingerJointSettings {
                             finger: finger_width,
@@ -4830,6 +4834,8 @@ fn main() -> anyhow::Result<()> {
                             laser_passes,
                             laser_power,
                             feed_rate,
+                            offset_x,
+                            offset_y,
                         };
 
                         // Show progress and spawn background thread
@@ -5020,6 +5026,8 @@ fn main() -> anyhow::Result<()> {
                             .parse::<f32>()
                             .unwrap_or(2.0)
                             .clamp(0.0, 10.0);
+                        let offset_x = dlg.get_offset_x().parse::<f32>().unwrap_or(10.0);
+                        let offset_y = dlg.get_offset_y().parse::<f32>().unwrap_or(10.0);
 
                         // Save values back to main window for next time
                         window.set_puzzle_width(dlg.get_puzzle_width());
@@ -5034,6 +5042,8 @@ fn main() -> anyhow::Result<()> {
                         window.set_puzzle_tab_size(dlg.get_tab_size());
                         window.set_puzzle_jitter(dlg.get_jitter());
                         window.set_puzzle_corner_radius(dlg.get_corner_radius());
+                        window.set_puzzle_offset_x(dlg.get_offset_x());
+                        window.set_puzzle_offset_y(dlg.get_offset_y());
 
                         let params = PuzzleParameters {
                             width,
@@ -5048,6 +5058,8 @@ fn main() -> anyhow::Result<()> {
                             tab_size_percent,
                             jitter_percent,
                             corner_radius,
+                            offset_x,
+                            offset_y,
                         };
 
                         // Show progress and spawn background thread
@@ -5321,6 +5333,8 @@ fn main() -> anyhow::Result<()> {
                         let invert = dlg.get_invert();
                         let line_spacing = dlg.get_line_spacing();
                         let power_scale = dlg.get_power_scale();
+                        let offset_x = dlg.get_offset_x().parse::<f32>().unwrap_or(10.0);
+                        let offset_y = dlg.get_offset_y().parse::<f32>().unwrap_or(10.0);
                         
                         // For now, use default values for transformation parameters
                         // They will be bound through the update-preview callback
@@ -5377,6 +5391,8 @@ fn main() -> anyhow::Result<()> {
                                     halftone_threshold: halftone_threshold as u8,
                                     invert,
                                 },
+                                offset_x,
+                                offset_y,
                             };
 
                             let result = BitmapImageEngraver::from_file(&image_path_clone, params)
@@ -5614,6 +5630,8 @@ fn main() -> anyhow::Result<()> {
                         let z_increment = dlg.get_z_increment();
                         let invert_power = dlg.get_invert_power();
                         let desired_width = dlg.get_desired_width();
+                        let offset_x = dlg.get_offset_x().parse::<f32>().unwrap_or(10.0);
+                        let offset_y = dlg.get_offset_y().parse::<f32>().unwrap_or(10.0);
 
                         // Show status message and initial progress
                         window.set_connection_status("Generating vector engraving G-code...".into());
@@ -5639,6 +5657,8 @@ fn main() -> anyhow::Result<()> {
                                 z_increment,
                                 invert_power,
                                 desired_width,
+                                offset_x,
+                                offset_y,
                             };
 
                             let result = VectorEngraver::from_file(&vector_path_clone, params)

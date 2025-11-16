@@ -6,7 +6,7 @@ import { Button, LineEdit, VerticalBox, HorizontalBox, GridBox, GroupBox, Scroll
 export component JigsawPuzzleDialog inherits Window {
     title: "Jigsaw Puzzle Maker";
     width: 500px;
-    height: 550px;
+    height: 600px;
     
     in-out property <string> puzzle-width: "200.0";
     in-out property <string> puzzle-height: "150.0";
@@ -20,6 +20,8 @@ export component JigsawPuzzleDialog inherits Window {
     in-out property <string> tab-size: "20.0";
     in-out property <string> jitter: "4.0";
     in-out property <string> corner-radius: "2.0";
+    in-out property <string> offset-x: "10.0";
+    in-out property <string> offset-y: "10.0";
     
     callback generate-puzzle();
     callback cancel-dialog();
@@ -194,6 +196,33 @@ export component JigsawPuzzleDialog inherits Window {
                             text <=> feed-rate;
                             placeholder-text: "500";
                             input-type: number;
+                        }
+                    }
+                }
+            }
+            
+            // Work Origin Offsets
+            GroupBox {
+                title: "Work Origin Offsets (mm)";
+                
+                GridBox {
+                    spacing: 10px;
+                    
+                    Row {
+                        Text { text: "Offset X:"; }
+                        LineEdit { 
+                            text <=> offset-x;
+                            placeholder-text: "10.0";
+                            input-type: decimal;
+                        }
+                    }
+                    
+                    Row {
+                        Text { text: "Offset Y:"; }
+                        LineEdit { 
+                            text <=> offset-y;
+                            placeholder-text: "10.0";
+                            input-type: decimal;
                         }
                     }
                 }

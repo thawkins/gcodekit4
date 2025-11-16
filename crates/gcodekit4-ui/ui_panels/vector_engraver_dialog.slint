@@ -12,6 +12,8 @@ export struct VectorEngravingParams {
     z-increment: float,
     invert-power: bool,
     desired-width: float,
+    offset-x: float,
+    offset-y: float,
 }
 
 export component VectorEngraverDialog inherits Dialog {
@@ -32,6 +34,8 @@ export component VectorEngraverDialog inherits Dialog {
     in-out property <float> desired-width: 100.0;
     in property <float> output-width: 0.0;
     in property <float> output-height: 0.0;
+    in-out property <string> offset-x: "10.0";
+    in-out property <string> offset-y: "10.0";
     
     callback load-vector-file();
     callback generate-gcode();
@@ -267,6 +271,33 @@ export component VectorEngraverDialog inherits Dialog {
                                 edited => {
                                     power-scale = self.text.to-float();
                                 }
+                            }
+                        }
+                    }
+                }
+                
+                // Work Origin Offsets
+                GroupBox {
+                    title: "Work Origin Offsets (mm)";
+                    
+                    VerticalBox {
+                        spacing: 8px;
+                        
+                        HorizontalBox {
+                            Text { text: "Offset X:"; width: 140px; }
+                            LineEdit {
+                                text <=> offset-x;
+                                placeholder-text: "10.0";
+                                horizontal-stretch: 1;
+                            }
+                        }
+                        
+                        HorizontalBox {
+                            Text { text: "Offset Y:"; width: 140px; }
+                            LineEdit {
+                                text <=> offset-y;
+                                placeholder-text: "10.0";
+                                horizontal-stretch: 1;
                             }
                         }
                     }
