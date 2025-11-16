@@ -141,7 +141,8 @@ export component CustomTextEdit inherits Rectangle {
                     let mouse_x_px = self.mouse-x;
                     
                     // Calculate which line was clicked (accounting for visible-start-line)
-                    let line_offset = (mouse_y_px - 12px) / root.line-height;
+                    // Round to nearest line (add 0.5 to round properly)
+                    let line_offset = ((mouse_y_px - 12px) / root.line-height) + 0.5;
                     let clicked_line = root.visible-start-line + line_offset;
                     
                     // Calculate column from horizontal position (rough estimate - 8px per character)
