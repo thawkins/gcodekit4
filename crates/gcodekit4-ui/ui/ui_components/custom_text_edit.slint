@@ -65,6 +65,11 @@ export component CustomTextEdit inherits Rectangle {
     // When this property is set to true, request focus
     in-out property <int> focus-trigger: 0;
     
+    // Watch focus-trigger property changes
+    changed focus-trigger => {
+        debug("🎯 [PROPERTY-WATCH] focus-trigger changed to: " + root.focus-trigger);
+    }
+    
     background: root.background-color;
     
     HorizontalBox {
@@ -240,8 +245,9 @@ export component CustomTextEdit inherits Rectangle {
     if root.focus-trigger > 0 : Rectangle {
         width: 0;
         height: 0;
+        
         init => {
-            debug("🎯 [CUSTOM-TEXT-EDIT] focus-trigger activated, calling fs.focus()");
+            debug("🎯 [CUSTOM-TEXT-EDIT] focus-trigger activated, calling fs.focus() immediately");
             fs.focus();
         }
     }
