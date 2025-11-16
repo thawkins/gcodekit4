@@ -467,21 +467,17 @@ export component MainWindow inherits Window {
         key-pressed(event) => {
             debug("🔴 MainWindow.FocusScope.key-pressed: text=[" + event.text + "]");
             
-            // Let arrow keys, Enter, Backspace, Delete, Tab, etc. pass through to child FocusScopes
-            if (event.text == Key.LeftArrow || event.text == Key.RightArrow ||
-                event.text == Key.UpArrow || event.text == Key.DownArrow ||
-                event.text == Key.Home || event.text == Key.End ||
-                event.text == Key.PageUp || event.text == Key.PageDown ||
-                event.text == Key.Return || event.text == "\u{8}" ||  // Backspace
-                event.text == Key.Delete || event.text == Key.Tab) {
-                debug("🔴 MainWindow.FocusScope: Navigation key - rejecting to let editor handle it");
+            // When in editor view, let ALL keys pass through to the editor
+            if (current-view == "gcode-editor") {
+                debug("🔴 MainWindow.FocusScope: In editor view - all keys pass through");
                 return reject;
             }
             
+            // In other views, handle certain keys at main window level
             // Forward to editor for handling
             root.key_pressed_event("FOCUSSCOPE: " + event.text);
             
-            // Handle printable characters only if editor doesn't have focus
+            // Handle printable characters
             if (event.text != "" && event.text != Key.Escape &&
                 !(event.modifiers.control || event.modifiers.meta)) {
                 debug("🔴 MainWindow.FocusScope: Calling text_inserted");
