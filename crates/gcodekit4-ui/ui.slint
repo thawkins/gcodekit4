@@ -461,7 +461,14 @@ export component MainWindow inherits Window {
         mouse-cursor: MouseCursor.wait;
     }
     
-    // Wrap main content in FocusScope to capture keyboard events
+    // Root FocusScope to receive keyboard focus
+    // Does NOT handle keys - just passes them through
+    FocusScope {
+        key-pressed(event) => {
+            debug("🔑 [ROOT-FOCUSSCOPE] key-pressed: " + event.text + " - forwarding");
+            return reject;  // Forward all keys to children
+        }
+    
     // Main content area - no FocusScope wrapper, let child elements handle focus
     VerticalBox {
         spacing: 0px;
@@ -1481,4 +1488,5 @@ export component MainWindow inherits Window {
         menu-settings-restore-defaults => { root.menu-settings-restore-defaults(); }
         update-setting(id, value) => { root.update-setting(id, value); }
     }
+    }  // Close root FocusScope
 }

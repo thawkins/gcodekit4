@@ -224,6 +224,11 @@ export component GcodeEditorPanel inherits VerticalBox {
         vertical-stretch: 1;
         horizontal-stretch: 1;
         
+        key-pressed(event) => {
+            debug("🔑 [EDITOR-FOCUS-WRAPPER] key-pressed: text=[" + event.text + "]");
+            return reject;  // Let it bubble to CustomTextEdit
+        }
+        
         touch-area := TouchArea {
             clicked => {
                 debug("🖱️ [MAIN-WINDOW] GcodeEditorPanel.TouchArea clicked!");

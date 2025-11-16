@@ -254,6 +254,7 @@ export component CustomTextEdit inherits Rectangle {
     
     fs := FocusScope {
         key-pressed(event) => {
+            debug("🔑 [FS-FOCUSSCOPE] key-pressed: text=[" + event.text + "]");
             // Handle arrow keys for cursor navigation
             if (event.text == Key.LeftArrow) {
                 let new_col = root.cursor-column - 1;
