@@ -2303,6 +2303,11 @@ fn main() -> anyhow::Result<()> {
     // Debug callback for key-pressed events from editor
     main_window.on_key_pressed_event(move |_msg| {
     });
+    
+    // Debug callback for editor clicked events
+    main_window.on_editor_clicked(move || {
+        tracing::info!("🖱️ [RUST] Editor clicked callback received!");
+    });
 
     // Set up menu-view-machine callback
     let window_weak = main_window.as_weak();

@@ -246,6 +246,7 @@ export component MainWindow inherits Window {
     callback menu-view-cnc-tools();
     callback menu-help-about();
     callback key-pressed-event(string);  // Debug callback for keyboard events
+    callback editor-clicked();  // Debug callback for editor clicks
     
     // Materials Manager callbacks
     callback load_materials();
@@ -752,7 +753,19 @@ export component MainWindow inherits Window {
                 }
                 
                 // GCode Editor View - using imported component
-                if current-view == "gcode-editor" : GcodeEditorPanel {
+                if current-view == "gcode-editor" : Rectangle {
+                    background: transparent;
+                    vertical-stretch: 1;
+                    horizontal-stretch: 1;
+                    
+                    // Debug TouchArea for main view
+                    main-editor-touch := TouchArea {
+                        clicked => {
+                            debug("🖱️ [MAIN-WINDOW] Main editor view clicked!");
+                        }
+                    }
+                    
+                    GcodeEditorPanel {
                     gcode-content <=> root.gcode-content;
                     gcode-filename <=> root.gcode-filename;
                     focus-trigger <=> root.gcode-focus-trigger;
@@ -830,6 +843,11 @@ export component MainWindow inherits Window {
                     
                     key-pressed-event(msg) => {
                         root.key_pressed_event(msg);
+                    }
+                    
+                    editor_clicked => {
+                        debug("🖱️ [UI] GcodeEditorPanel.editor_clicked received!");
+                    }
                     }
                 }
                 

@@ -54,6 +54,7 @@ export component CustomTextEdit inherits Rectangle {
     callback ctrl-end-pressed();  // Ctrl+End pressed - jump to end of file
     callback key-pressed(KeyEvent) -> EventResult;
     callback request-focus();  // Request focus on the text edit
+    callback text-area-clicked();  // Debug: Track clicks on text area
     
     // Internal state
     property <length> line-height: 20px;
@@ -123,6 +124,13 @@ export component CustomTextEdit inherits Rectangle {
             interactive: true;
             // Add extra padding to viewport height to ensure last line is fully visible
             viewport-height: root.total-lines * root.line-height + 20px;
+            
+            touch-in-editor := TouchArea {
+                clicked => {
+                    debug("🖱️ [TEXT-AREA] CustomTextEdit.touch-in-editor clicked!");
+                    root.text-area-clicked();
+                }
+            }
             
             VerticalLayout {
                 spacing: 0px;

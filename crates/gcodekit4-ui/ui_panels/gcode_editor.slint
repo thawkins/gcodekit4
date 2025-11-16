@@ -51,6 +51,7 @@ export component GcodeEditorPanel inherits VerticalBox {
     callback ctrl_end_pressed();  // Ctrl+End - jump to end of file
     callback request_focus();  // Called when panel becomes visible/active
     callback key_pressed_event(string);  // Forward key events
+    callback editor_clicked();  // Debug: Track mouse clicks on editor
     
     // Toolbar with undo/redo and file operations
     Rectangle {
@@ -208,6 +209,13 @@ export component GcodeEditorPanel inherits VerticalBox {
     editor-focus := FocusScope {
         vertical-stretch: 1;
         horizontal-stretch: 1;
+        
+        touch-area := TouchArea {
+            clicked => {
+                debug("🖱️ [MAIN-WINDOW] GcodeEditorPanel.TouchArea clicked!");
+                root.editor_clicked();
+            }
+        }
         
         // Custom G-Code Editor with virtual scrolling
         CustomTextEdit {
