@@ -762,10 +762,19 @@ export component MainWindow inherits Window {
                         vertical-stretch: 1;
                         horizontal-stretch: 1;
                         
-                        // Focus happens automatically when FocusScope becomes visible
-                        // Debug output to track when this appears
+                        // Use a timer to ensure focus is set after layout completes
+                        focus-timer := Timer {
+                            interval: 50ms;
+                            triggered => {
+                                debug("🎯 [TIMER] Focus timer triggered - calling focus");
+                                editor-focus-wrapper.focus();
+                                focus-timer.stop();
+                            }
+                        }
+                        
                         init => {
-                            debug("🎯 [MAIN-WINDOW] editor-focus-wrapper init - FocusScope now visible");
+                            debug("🎯 [MAIN-WINDOW] editor-focus-wrapper init - starting focus timer");
+                            focus-timer.restart();
                         }
                         
                         // Debug TouchArea for main view
