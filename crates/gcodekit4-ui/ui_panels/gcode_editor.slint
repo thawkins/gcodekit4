@@ -214,6 +214,8 @@ export component GcodeEditorPanel inherits VerticalBox {
             clicked => {
                 debug("🖱️ [MAIN-WINDOW] GcodeEditorPanel.TouchArea clicked!");
                 root.editor_clicked();
+                editor-focus.focus();
+                debug("🎯 [PANEL] Calling editor-focus.focus() on wrapper FocusScope");
             }
         }
         

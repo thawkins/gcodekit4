@@ -129,6 +129,8 @@ export component CustomTextEdit inherits Rectangle {
                 clicked => {
                     debug("🖱️ [TEXT-AREA] CustomTextEdit.touch-in-editor clicked!");
                     root.text-area-clicked();
+                    fs.focus();
+                    debug("🎯 [TEXT-AREA] Calling fs.focus() on FocusScope");
                 }
             }
             
@@ -234,11 +236,12 @@ export component CustomTextEdit inherits Rectangle {
         }
     }
     
-    // Watch for focus trigger
+    // Watch for focus trigger changes and call focus
     if root.focus-trigger > 0 : Rectangle {
         width: 0;
         height: 0;
         init => {
+            debug("🎯 [CUSTOM-TEXT-EDIT] focus-trigger activated, calling fs.focus()");
             fs.focus();
         }
     }
