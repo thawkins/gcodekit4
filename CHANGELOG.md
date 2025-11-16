@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.26.1-alpha] - 2025-11-16
+
+### Added
+- **Mouse Click to Cursor Positioning**
+  - Click anywhere in editor to position cursor at that location
+  - Automatic line detection from click Y position
+  - Column detection from click X position (8px per character)
+  - Proper rounding for accurate line selection
+  - Works with visible line viewport scrolling
+
+### Fixed
+- **Editor Focus Infrastructure**
+  - Complete focus cascade from root through all FocusScopes to CustomTextEdit
+  - Keyboard input routing verified through all layers (debug: 🔑 tracing)
+  - Focus works perfectly after initial click (known limitation: OS window focus required)
+  - Comprehensive debug output for focus tracking (debug: 🎯 tracing)
+
+### Improved
+- **Input Event Handling**
+  - Comprehensive key event tracing throughout FocusScope hierarchy
+  - Debug infrastructure for tracking keyboard and mouse events
+  - Root FocusScope forwards all keys without intercepting
+  - Mouse click position calculation accounts for viewport scrolling
+
 ## [0.26.0-alpha] - 2025-11-16
 
 ### Added

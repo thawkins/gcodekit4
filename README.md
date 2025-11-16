@@ -4,7 +4,7 @@ A modern, cross-platform G-Code sender and CNC machine controller written in Rus
 
 [![Build Status](https://github.com/thawkins/gcodekit4/workflows/CI/badge.svg)](https://github.com/thawkins/gcodekit4/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-0.26.0--alpha-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-0.26.1--alpha-brightgreen.svg)](CHANGELOG.md)
 
 ## Overview
 
@@ -65,7 +65,7 @@ This modular structure enables:
   - Tool change support
 
 ### 📝 G-Code Editor & Streaming
-- **Text Editor (Phase 1B - COMPLETE)**:
+- **Text Editor (Phase 2 - COMPLETE)**:
   - ✅ Full keyboard input support (characters, arrows, backspace, delete)
   - ✅ Text insertion and deletion with proper cursor tracking at correct position
   - ✅ Cursor movement keys (arrows, Home, End, PageUp/PageDown) with instant feedback
@@ -78,6 +78,8 @@ This modular structure enables:
   - ✅ PageUp/PageDown for viewport navigation (10 lines per page)
   - ✅ Real-time text updates as you type
   - ✅ Proper 0-based/1-based indexing conversion (backend/UI boundary)
+  - ✅ **NEW: Mouse click to position cursor** - Click anywhere to place cursor at that location
+  - ✅ **NEW: Complete focus infrastructure** - Automatic focus cascading through UI hierarchy
 - **Syntax Highlighting**: Color-coded commands, coordinates, and comments
 - **Line Numbers**: Easy navigation and reference
 - **File Operations**: Open, edit, and save G-code files

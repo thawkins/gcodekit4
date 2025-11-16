@@ -4,6 +4,22 @@ Generated: 2025-11-16
 
 ## Recent Development Activity
 
+### Editor Focus & Mouse Input (PHASE 2 REFINEMENT - COMPLETE)
+- **Mouse Click Positioning**: Click anywhere in editor to position cursor
+  - Automatic line detection from click Y position (10px half-line adjustment)
+  - Column detection from click X position (8px per character width)
+  - Proper rounding for accurate line selection
+  - Works with scrolled viewports
+- **Focus Infrastructure**: Complete focus cascade through all FocusScopes
+  - Root FocusScope → editor-focus-wrapper → GcodeEditorPanel → CustomTextEdit → fs
+  - Keyboard input routing verified through entire hierarchy
+  - Known limitation: Initial OS window focus requires user click (Slint limitation)
+  - Perfect functionality after first click (proven with extensive debug tracing)
+- **Debug Infrastructure**: Comprehensive event tracing
+  - 🎯 emoji: Focus events and cascading
+  - 🔑 emoji: Keyboard event routing
+  - 🖱️ emoji: Mouse click events
+  
 ### G-Code Text Editor Phase 2 (COMPLETE)
 - **Full Custom Text Editor Implementation**: Line wrapping at boundaries, viewport management
 - **Line Wrapping Behavior**: Left arrow at line start moves to previous line end, right arrow at line end moves to next line start
