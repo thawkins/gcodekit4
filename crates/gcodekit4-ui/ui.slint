@@ -462,32 +462,7 @@ export component MainWindow inherits Window {
     }
     
     // Wrap main content in FocusScope to capture keyboard events
-    // Wrap main content in FocusScope to capture keyboard events
-    FocusScope {
-        key-pressed(event) => {
-            debug("🔴 MainWindow.FocusScope.key-pressed: text=[" + event.text + "]");
-            
-            // When in editor view, let ALL keys pass through to the editor
-            if (current-view == "gcode-editor") {
-                debug("🔴 MainWindow.FocusScope: In editor view - all keys pass through");
-                return reject;
-            }
-            
-            // In other views, handle certain keys at main window level
-            // Forward to editor for handling
-            root.key_pressed_event("FOCUSSCOPE: " + event.text);
-            
-            // Handle printable characters
-            if (event.text != "" && event.text != Key.Escape &&
-                !(event.modifiers.control || event.modifiers.meta)) {
-                debug("🔴 MainWindow.FocusScope: Calling text_inserted");
-                root.text_inserted(1, 1, event.text);
-                return accept;
-            }
-            
-            return reject;
-        }
-    
+    // Main content area - no FocusScope wrapper, let child elements handle focus
     VerticalBox {
         spacing: 0px;
         
@@ -1414,7 +1389,6 @@ export component MainWindow inherits Window {
             }
         }
     }
-    }  // Close FocusScope
     
 
     
