@@ -761,9 +761,11 @@ export component MainWindow inherits Window {
                     editor-focus-wrapper := FocusScope {
                         vertical-stretch: 1;
                         horizontal-stretch: 1;
+                        
+                        // Focus happens automatically when FocusScope becomes visible
+                        // Debug output to track when this appears
                         init => {
-                            debug("🎯 [MAIN-WINDOW] editor-focus-wrapper init - calling focus()");
-                            editor-focus-wrapper.focus();
+                            debug("🎯 [MAIN-WINDOW] editor-focus-wrapper init - FocusScope now visible");
                         }
                         
                         // Debug TouchArea for main view
