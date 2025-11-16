@@ -128,6 +128,7 @@ export component MainWindow inherits Window {
     in property <float> visualizer-zoom-scale: 1.0;
     in-out property <bool> visualizer-show-grid: true;
     in-out property <bool> visualizer-show-rapid-moves: true;
+    in-out property <int> gcode-focus-trigger: 0;  // Incrementing this triggers editor focus
     in-out property <float> visualizer-canvas-width: 800.0;
     in-out property <float> visualizer-canvas-height: 600.0;
     in-out property <string> visualization-path-data: "";
@@ -386,6 +387,8 @@ export component MainWindow inherits Window {
                 activated => {
                     if (current-view != "gcode-editor") {
                         current-view = "gcode-editor";
+                        root.menu-view-gcode-editor();
+                    } else {
                         root.menu-view-gcode-editor();
                     }
                 }
@@ -752,6 +755,7 @@ export component MainWindow inherits Window {
                 if current-view == "gcode-editor" : GcodeEditorPanel {
                     gcode-content <=> root.gcode-content;
                     gcode-filename <=> root.gcode-filename;
+                    focus-trigger <=> root.gcode-focus-trigger;
                     can-undo <=> root.can-undo;
                     can-redo <=> root.can-redo;
                     cursor-line <=> root.cursor-line;
@@ -813,7 +817,7 @@ export component MainWindow inherits Window {
                     }
                     
                     request-focus => {
-                        // Called when editor tab becomes active - text-input will request focus here
+                        // Called when editor tab becomes active - handled from Rust
                     }
                     
                     text-inserted(line, col, text) => {

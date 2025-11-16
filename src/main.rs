@@ -2295,6 +2295,8 @@ fn main() -> anyhow::Result<()> {
     main_window.on_menu_view_gcode_editor(move || {
         if let Some(window) = window_weak.upgrade() {
             window.set_connection_status(slint::SharedString::from("G-Code Editor activated"));
+            // Trigger focus on the editor by incrementing the trigger counter
+            window.set_gcode_focus_trigger(window.get_gcode_focus_trigger() + 1);
         }
     });
     

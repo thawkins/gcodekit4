@@ -47,17 +47,22 @@ export component CustomTextEdit inherits Rectangle {
     callback cursor-moved(int, int);
     callback undo-requested();
     callback redo-requested();
-    callback scroll-changed(int);
+     callback scroll-changed(int);
     callback ensure-cursor-visible();  // Request scroll to keep cursor in view
     callback end-key-pressed();  // End key pressed - let Rust handle positioning to line end
     callback ctrl-home-pressed();  // Ctrl+Home pressed - jump to beginning of file
     callback ctrl-end-pressed();  // Ctrl+End pressed - jump to end of file
     callback key-pressed(KeyEvent) -> EventResult;
+    callback request-focus();  // Request focus on the text edit
     
     // Internal state
     property <length> line-height: 20px;
     property <length> line-number-width: 60px;
     property <length> sync-scroll-y: 0px;
+    property <bool> focus-requested: false;
+    
+    // When this property is set to true, request focus
+    in-out property <int> focus-trigger: 0;
     
     background: root.background-color;
     
@@ -221,34 +226,35 @@ export component CustomTextEdit inherits Rectangle {
         }
     }
     
-    FocusScope {
-        focus-scope := FocusScope {}
-        
+    // Watch for focus trigger
+    if root.focus-trigger > 0 : Rectangle {
+        width: 0;
+        height: 0;
+        init => {
+            fs.focus();
+        }
+    }
+    
+    fs := FocusScope {
         key-pressed(event) => {
-            debug("🔵 CustomTextEdit.key-pressed: text=[" + event.text + "]");
-            debug("KEY-PRESSED: text=[" + event.text + "]");
             // Handle arrow keys for cursor navigation
             if (event.text == Key.LeftArrow) {
-                debug("LEFT ARROW: moving cursor left");
                 let new_col = root.cursor-column - 1;
                 root.cursor-moved(root.cursor-line, new_col);
                 return accept;
             }
             if (event.text == Key.RightArrow) {
-                debug("RIGHT ARROW: moving cursor right");
                 let new_col = root.cursor-column + 1;
                 root.cursor-moved(root.cursor-line, new_col);
                 return accept;
             }
             if (event.text == Key.UpArrow) {
-                debug("UP ARROW: moving cursor up");
                 let new_line = Math.max(1, root.cursor-line - 1);
                 // Don't set root.cursor-line here - let Rust handler do it after clamping
                 root.cursor-moved(new_line, root.cursor-column);
                 return accept;
             }
             if (event.text == Key.DownArrow) {
-                debug("DOWN ARROW: moving cursor down");
                 let new_line = Math.min(root.total-lines, root.cursor-line + 1);
                 // Don't set root.cursor-line here - let Rust handler do it after clamping
                 root.cursor-moved(new_line, root.cursor-column);
@@ -257,7 +263,6 @@ export component CustomTextEdit inherits Rectangle {
             
             // Handle Home key
             if (event.text == Key.Home) {
-                debug("HOME KEY PRESSED");
                 // Don't set root.cursor-column - let Rust handler do it
                 root.cursor-moved(root.cursor-line, 1);
                 return accept;
@@ -267,7 +272,6 @@ export component CustomTextEdit inherits Rectangle {
             // Note: We don't know actual line length from Slint, so use large number
             // The backend will clamp to actual line end
             if (event.text == Key.End) {
-                debug("END KEY PRESSED");
                 root.end-key-pressed();
                 return accept;
             }
@@ -310,14 +314,12 @@ export component CustomTextEdit inherits Rectangle {
                 
                 // Ctrl+Home: Jump to beginning of file
                 if (event.text == Key.Home) {
-                    debug("CTRL+HOME: jump to beginning of file");
                     root.ctrl-home-pressed();
                     return accept;
                 }
                 
                 // Ctrl+End: Jump to end of file
                 if (event.text == Key.End) {
-                    debug("CTRL+END: jump to end of file");
                     root.ctrl-end-pressed();
                     return accept;
                 }
@@ -344,8 +346,6 @@ export component CustomTextEdit inherits Rectangle {
             // Handle regular character input - any printable character
             if (event.text != "" && event.text != Key.Escape &&
                 !(event.modifiers.control || event.modifiers.meta)) {
-                debug("🔵 CustomTextEdit.key-pressed: Inserting character: " + event.text + " at line=" + root.cursor-line + " col=" + root.cursor-column);
-                debug("🔵 CustomTextEdit calling root.text-inserted()");
                 root.text-inserted(root.cursor-line, root.cursor-column, event.text);
                 return accept;
             }

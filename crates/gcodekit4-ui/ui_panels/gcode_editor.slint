@@ -18,6 +18,7 @@ export component GcodeEditorPanel inherits VerticalBox {
     
     in-out property <string> gcode-content: "";
     in-out property <string> gcode-filename: "untitled.gcode";
+    in-out property <int> focus-trigger: 0;  // Incrementing this triggers focus on editor
     
     // Custom editor properties
     in-out property <bool> can-undo: false;
@@ -203,21 +204,28 @@ export component GcodeEditorPanel inherits VerticalBox {
         }
     }
     
-    // Custom G-Code Editor with virtual scrolling
-    CustomTextEdit {
+    // Wrapper with focus handling
+    Rectangle {
+        background: transparent;
         vertical-stretch: 1;
         horizontal-stretch: 1;
-        text: root.gcode-content;
-        can-undo: root.can-undo;
-        can-redo: root.can-redo;
-        cursor-line <=> root.cursor-line;
-        cursor-column <=> root.cursor-column;
-        visible-lines <=> root.visible-lines;
-        visible-start-line <=> root.visible-start-line;
-        total-lines <=> root.total-lines;
-        show-line-numbers: true;
         
-        text-changed(text) => {
+        // Custom G-Code Editor with virtual scrolling
+        CustomTextEdit {
+            vertical-stretch: 1;
+            horizontal-stretch: 1;
+            text: root.gcode-content;
+            can-undo: root.can-undo;
+            can-redo: root.can-redo;
+            cursor-line <=> root.cursor-line;
+            cursor-column <=> root.cursor-column;
+            visible-lines <=> root.visible-lines;
+            visible-start-line <=> root.visible-start-line;
+            total-lines <=> root.total-lines;
+            show-line-numbers: true;
+            focus-trigger <=> root.focus-trigger;
+            
+            text-changed(text) => {
             root.gcode-content = text;
             root.text-changed(text);
         }
@@ -237,7 +245,6 @@ export component GcodeEditorPanel inherits VerticalBox {
         }
         
         cursor-moved(line, col) => {
-            debug("🟡 GcodeEditorPanel.cursor-moved: line=" + line + " col=" + col);
             root.cursor-moved(line, col);
         }
         
@@ -254,18 +261,21 @@ export component GcodeEditorPanel inherits VerticalBox {
         }
         
         text_inserted(line, col, text) => {
-            debug("🟢 GcodeEditorPanel.text_inserted: line=" + line + " col=" + col + " text=" + text);
             root.text_inserted(line, col, text);
         }
         
         text_deleted(start_line, start_col, end_line, end_col) => {
-            debug("🟢 GcodeEditorPanel.text_deleted");
             root.text_deleted(start_line, start_col, end_line, end_col);
         }
         
         key_pressed(event) => {
             root.key_pressed-event("key=" + event.text);
             return accept;
+        }
+        
+        request-focus() => {
+            root.request_focus();
+        }
         }
     }
 }
