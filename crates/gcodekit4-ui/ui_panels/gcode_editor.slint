@@ -204,9 +204,8 @@ export component GcodeEditorPanel inherits VerticalBox {
         }
     }
     
-    // Wrapper with focus handling
-    Rectangle {
-        background: transparent;
+    // Wrapper FocusScope for editor focus management
+    editor-focus := FocusScope {
         vertical-stretch: 1;
         horizontal-stretch: 1;
         
@@ -274,7 +273,7 @@ export component GcodeEditorPanel inherits VerticalBox {
         }
         
         request-focus() => {
-            root.request_focus();
+            editor-focus.focus();
         }
         }
     }
