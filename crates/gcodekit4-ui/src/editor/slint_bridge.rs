@@ -182,6 +182,12 @@ impl EditorBridge {
             .collect()
     }
 
+    /// Get line content at given line index (0-based)
+    pub fn get_line_at(&self, line_idx: usize) -> Option<String> {
+        let editor = self.editor.borrow();
+        editor.buffer.line(line_idx)
+    }
+
     /// Update visible lines from editor state
     fn update_visible_lines(&self) {
         let editor = self.editor.borrow();

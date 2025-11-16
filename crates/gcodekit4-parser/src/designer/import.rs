@@ -13,9 +13,7 @@
 //! - Scale and offset adjustment
 
 use crate::designer::dxf_parser::{DxfEntity, DxfFile, DxfParser};
-use crate::designer::shapes::{
-    Circle, Ellipse, Line as DesignerLine, Point, Polygon, Rectangle, Shape,
-};
+use crate::designer::shapes::{Circle, Line as DesignerLine, Point, Shape};
 use anyhow::{anyhow, Result};
 
 /// Represents an imported design from a file
@@ -81,6 +79,7 @@ impl SvgImporter {
         self.import_string(&content)
     }
 
+    #[allow(dead_code)]
     fn parse_dimension(&self, value: &str) -> Option<f64> {
         let value = value.trim();
         let num_part = value.trim_end_matches(|c: char| c.is_alphabetic());

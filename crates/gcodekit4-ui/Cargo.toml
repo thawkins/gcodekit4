@@ -9,13 +9,9 @@ description = "Slint-based user interface for GCodeKit4"
 
 [dependencies]
 gcodekit4-core = { path = "../gcodekit4-core" }
-gcodekit4-parser = { path = "../gcodekit4-parser" }
 gcodekit4-communication = { path = "../gcodekit4-communication" }
 slint = { version = "1.14.1", features = ["backend-winit", "image-default-formats"] }
-tokio = { version = "1.35", features = ["full"] }
-image = "0.25"
 rfd = "0.15.4"
-arboard = "3.4"
 config = "0.15.18"
 toml = "0.9.8"
 serde = { version = "1.0", features = ["derive"] }
@@ -24,14 +20,12 @@ tracing = "0.1"
 anyhow = "1.0"
 uuid = { version = "1.6", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
-parking_lot = "0.12"
 dirs = "5.0"
 ropey = "1.6"
 
 [build-dependencies]
-slint-build = "1.14.1"
 chrono = "0.4"
+slint-build = "1.14.1"
 
 [dev-dependencies]
-tokio-test = "0.4"
 tempfile = "3.8"

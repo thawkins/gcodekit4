@@ -34,7 +34,11 @@ export component CustomTextEdit inherits Rectangle {
     in-out property <brush> current-line-color: #2a2a2a;
     in-out property <brush> selection-color: #264f78;
     in-out property <length> font-size: 14px;
-    in-out property <string> font-family: "monospace";
+    in-out property <string> font-family: "Fira Code";
+    
+    // Character width for monospace font (Fira Code-Regular)
+    // Calculated: font-size * (glyph-width / unitsPerEm) = 14px * (1200 / 1950)
+    property <length> char-width: root.font-size * 1200 / 1950;
     
     // Callbacks
     callback text-changed(string);
@@ -115,20 +119,6 @@ export component CustomTextEdit inherits Rectangle {
             // Add extra padding to viewport height to ensure last line is fully visible
             viewport-height: root.total-lines * root.line-height + 20px;
             
-            // Mouse interaction for cursor positioning
-            TouchArea {
-                clicked => {
-                    // Give focus to FocusScope so keyboard works
-                    focus-scope.focus();
-                    
-                    // Calculate line and column from mouse position
-                    // self.mouse-x and self.mouse-y are available in clicked handler
-                    let line = Math.floor(self.mouse-y / root.line-height) + root.visible-start-line + 1;
-                    let col = Math.floor(self.mouse-x / 8px) + 1;
-                    root.cursor-moved(line, Math.max(1, col));
-                }
-            }
-            
             VerticalLayout {
                 spacing: 0px;
                 alignment: start;
@@ -171,30 +161,40 @@ export component CustomTextEdit inherits Rectangle {
                     
                     // Render cursor if this is the cursor line
                     if (line.line-number == root.cursor-line) : Rectangle {
-                        x: (root.cursor-column - 1) * 8px;  // Convert from 1-based to 0-based for rendering
+                        x: (root.cursor-column - 1) * root.char-width;
                         y: 0px;
                         width: 2px;
                         height: root.line-height;
                         background: #00ff00;
+                        opacity: 1;
+                        
+                        animate opacity {
+                            duration: 400ms;
+                            iteration-count: -1.0;
+                            direction: alternate;
+                        }
                     }
                 }
             }
-
             
             changed viewport-y => {
                 // Update sync property to synchronize line numbers
-                root.sync-scroll-y = self.viewport-y;
+                root.sync-scroll-y = text-flickable.viewport-y;
                 
                 // Calculate which lines should be visible at current scroll position
                 // viewport-y is negative when scrolled down, so negate it to get scroll offset
-                root.visible-start-line = Math.max(0, Math.floor(-self.viewport-y / root.line-height));
+                root.visible-start-line = Math.max(0, Math.floor(-text-flickable.viewport-y / root.line-height));
                 // Use floor instead of ceil to show only fully visible lines (no partial lines)
-                root.visible-end-line = root.visible-start-line + Math.floor(self.height / root.line-height);
+                root.visible-end-line = root.visible-start-line + Math.floor(text-flickable.height / root.line-height);
                 
                 // Request lines from backend (will clamp to valid range)
                 root.scroll-changed(root.visible-start-line);
             }
         }
+        
+        // Mouse interaction overlay for cursor positioning - DISABLED for now
+        // Arrow keys work perfectly, so mouse clicking is lower priority
+        // TODO: Fix TouchArea event handling within Flickable context
     }
     
     // Keyboard and mouse interaction  
@@ -230,15 +230,13 @@ export component CustomTextEdit inherits Rectangle {
             // Handle arrow keys for cursor navigation
             if (event.text == Key.LeftArrow) {
                 debug("LEFT ARROW: moving cursor left");
-                let new_col = Math.max(1, root.cursor-column - 1);
-                // Don't set root.cursor-column here - let Rust handler do it
+                let new_col = root.cursor-column - 1;
                 root.cursor-moved(root.cursor-line, new_col);
                 return accept;
             }
             if (event.text == Key.RightArrow) {
                 debug("RIGHT ARROW: moving cursor right");
                 let new_col = root.cursor-column + 1;
-                // Don't set root.cursor-column here - let Rust handler do it
                 root.cursor-moved(root.cursor-line, new_col);
                 return accept;
             }

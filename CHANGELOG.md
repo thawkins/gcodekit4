@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.26.0-alpha] - 2025-11-16
+
+### Added
+- **Custom G-Code Text Editor - Phase 2 (COMPLETE)**
+  - Full custom text editor with line numbers, syntax highlighting ready for future implementation
+  - Proper line wrapping: Left arrow at line start moves to end of previous line
+  - Right arrow at line end moves to start of next line
+  - Full undo/redo stack with proper cursor position tracking
+  - Horizontal scrolling support with viewport management
+  - Visible lines viewport showing only rendered content for performance
+  - All text editing operations (insert, delete, replace) working correctly
+  - Cursor navigation (Home, End, Ctrl+Home, Ctrl+End) fully functional
+
+### Changed
+- Removed all temporary debug prints (eprintln!, debug! macros)
+- Maintained structured logging via tracing::debug! for proper log level control
+- Fixed all compiler warnings (unused imports, dead code, unused variables)
+
+### Fixed
+- Cursor navigation regression: restored line wrapping at line boundaries
+- Cursor position indexing: proper 0-based (backend) to 1-based (UI) conversion
+
 ## [0.25.7-alpha] - 2025-11-15
 
 ### Added

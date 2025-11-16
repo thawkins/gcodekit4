@@ -11,6 +11,8 @@
 - `cargo check` - Check code without building
 - Build only debug builds unless specificaly asked to perform a `release build`
 
+Builds can take a long time so allow up to 600 seconds for a rebuild
+
 ## Test Commands
 - `cargo test` - Run all tests
 - `cargo test <test_function_name>` - Run specific test function

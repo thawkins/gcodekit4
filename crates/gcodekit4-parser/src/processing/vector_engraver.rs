@@ -64,6 +64,7 @@ pub struct VectorEngraver {
     params: VectorEngravingParameters,
     paths: Vec<Vec<PathElement>>,
     /// Scale factor from SVG units to mm
+    #[allow(dead_code)]
     scale_factor: f32,
 }
 
@@ -233,6 +234,7 @@ impl VectorEngraver {
     }
 
     /// Parse SVG path commands from svg::node::element::path::Data
+    #[allow(dead_code)]
     fn parse_svg_path_commands(
         data: &svg::node::element::path::Data,
     ) -> Result<Vec<PathElement>> {
@@ -402,6 +404,7 @@ impl VectorEngraver {
     }
 
     /// Calculate adaptive number of segments for cubic Bezier curve
+    #[allow(dead_code)]
     fn adaptive_cubic_segments(x0: f32, y0: f32, x1: f32, y1: f32, x2: f32, y2: f32, x3: f32, y3: f32, tolerance: f32) -> u32 {
         // Calculate chord length
         let dx = x3 - x0;
@@ -700,6 +703,7 @@ impl VectorEngraver {
     }
 
     /// Parse SVG path data (simplified M, L, Z commands)
+    #[allow(dead_code)]
     fn parse_svg_path_data(path_data: &str) -> Result<Vec<PathElement>> {
         let mut elements = Vec::new();
         let mut current_x = 0.0f32;

@@ -11,7 +11,6 @@ description = "G-code parsing and processing for GCodeKit4"
 gcodekit4-core = { path = "../gcodekit4-core" }
 regex = "1.10"
 lazy_static = "1.4"
-num = "0.4"
 thiserror = "2.0.17"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -19,16 +18,8 @@ tracing = "0.1"
 anyhow = "1.0"
 svg = "0.18"
 dxf = "0.4"
-dirs = "5.0"
-zip = "2.2"
 chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1.6", features = ["v4", "serde"] }
 image = "0.25"
-parking_lot = "0.12"
-futures = "0.3"
-tokio = { version = "1.35", features = ["full"] }
-async-trait = "0.1"
 
 [dev-dependencies]
-tokio-test = "0.4"
-tempfile = "3.8"

@@ -9,7 +9,7 @@ use gcodekit4_ui::EditorBridge;
 use slint::{Model, VecModel};
 use std::cell::RefCell;
 use std::rc::Rc;
-use tracing::{debug, warn};
+use tracing::warn;
 
 slint::include_modules!();
 
@@ -449,12 +449,6 @@ fn update_visible_lines(window: &MainWindow, bridge: &EditorBridge) {
         .collect();
 
     if !lines.is_empty() {
-        tracing::debug!(
-            "update_visible_lines: {} lines, first={}, last={}",
-            lines.len(),
-            lines.first().map(|l| l.line_number).unwrap_or(-1),
-            lines.last().map(|l| l.line_number).unwrap_or(-1)
-        );
     }
 
     window.set_visible_lines(slint::ModelRc::new(VecModel::from(lines)));
@@ -883,8 +877,6 @@ fn main() -> anyhow::Result<()> {
                             if let Some(response) = response_data {
                                 if !response.is_empty() {
                                     let response_str = String::from_utf8_lossy(&response);
-                                    debug!("Poll received: {}", response_str);
-
                                     // Count "ok" responses for buffer management
                                     let ok_count = response_str.matches("ok").count() + response_str.matches("OK").count();
                                     if ok_count > 0 {
@@ -892,8 +884,6 @@ fn main() -> anyhow::Result<()> {
                                         for _ in 0..ok_count {
                                             if let Some(len) = gstate.line_lengths.pop_front() {
                                                 gstate.pending_bytes = gstate.pending_bytes.saturating_sub(len);
-                                                debug!("Got ok, freed {} bytes, pending now: {} bytes, {} acks waiting",
-                                                    len, gstate.pending_bytes, gstate.line_lengths.len());
                                             }
                                         }
                                         drop(gstate);
@@ -935,8 +925,6 @@ fn main() -> anyhow::Result<()> {
 
                                     // Process status responses
                                     if response_str.contains("<") && response_str.contains(">") {
-                                        debug!("Status response: {}", response_str);
-
                                         // Parse full status from response
                                         use gcodekit4::firmware::grbl::status_parser::StatusParser;
                                         let full_status = StatusParser::parse_full(&response_str);
@@ -1018,9 +1006,6 @@ fn main() -> anyhow::Result<()> {
                                                 gstate.total_sent += 1;
                                                 lines_sent_this_cycle += 1;
 
-                                                debug!("Sent line {}/{}: {} [buffer: {}/{} bytes, {} pending acks]",
-                                                    gstate.total_sent, gstate.total_lines, trimmed,
-                                                    gstate.pending_bytes, GRBL_RX_BUFFER_SIZE, gstate.line_lengths.len());
 
                                                 if gstate.total_sent % 10 == 0 || gstate.lines.is_empty() {
                                                     let sent = gstate.total_sent;
@@ -1071,7 +1056,6 @@ fn main() -> anyhow::Result<()> {
                                             }
                                         }
                                     } else {
-                                        debug!("Buffer full, waiting for acks. Pending: {} bytes", gstate.pending_bytes);
                                         break; // Buffer full, stop sending this cycle
                                     }
                                 }
@@ -1232,8 +1216,6 @@ fn main() -> anyhow::Result<()> {
             // Clear the editor content and reset filename
             window.set_gcode_filename(slint::SharedString::from("unknown.gcode"));
             window.invoke_clear_editor();
-
-            debug!("Editor cleared, new file created");
         }
     });
 
@@ -1812,7 +1794,6 @@ fn main() -> anyhow::Result<()> {
     let window_weak = main_window.as_weak();
     let editor_bridge_scroll = editor_bridge.clone();
     main_window.on_scroll_changed(move |line| {
-        tracing::debug!("scroll_changed callback: line={}", line);
         editor_bridge_scroll.scroll_to_line(line as usize);
         if let Some(window) = window_weak.upgrade() {
             update_visible_lines(&window, &editor_bridge_scroll);
@@ -1937,31 +1918,37 @@ fn main() -> anyhow::Result<()> {
     let window_weak = main_window.as_weak();
     let editor_bridge_cursor = editor_bridge.clone();
     main_window.on_cursor_moved(move |line, col| {
-        eprintln!(">>> on_cursor_moved CALLED: line={}, col={}", line, col);
-        tracing::debug!("on_cursor_moved: line={}, col={}", line, col);
+        // Handle line wrapping for arrow keys
+        let mut line_0based = (line - 1).max(0) as usize;
+        let mut col_0based = col - 1;
         
-        // Update cursor in editor bridge - convert to 0-based indexing
-        let line_0based = (line - 1).max(0) as usize;
-        let col_0based = (col - 1).max(0) as usize;
+        // If col is 0 or negative and there's a line above, move to end of previous line
+        if col_0based < 0 && line_0based > 0 {
+            line_0based -= 1;
+            // Get the previous line's length
+            if let Some(prev_line) = editor_bridge_cursor.get_line_at(line_0based) {
+                col_0based = (prev_line.len() - 1).max(0) as i32;
+            }
+        }
+        // If col is beyond line length and there's a line below, move to start of next line
+        else if line_0based < editor_bridge_cursor.line_count() - 1 {
+            if let Some(curr_line) = editor_bridge_cursor.get_line_at(line_0based) {
+                if col_0based >= curr_line.len() as i32 {
+                    line_0based += 1;
+                    col_0based = 0;
+                }
+            }
+        }
+        
+        let col_0based = col_0based.max(0) as usize;
         editor_bridge_cursor.set_cursor(line_0based, col_0based);
         
         if let Some(window) = window_weak.upgrade() {
-            // Get actual cursor position from editor (0-based)
-            // The backend clamps column to the line's actual length
-            let (actual_line, actual_col) = editor_bridge_cursor.cursor_position();
-            // Convert back to 1-based for display
-            let display_line = (actual_line + 1) as i32;
-            let display_col = (actual_col + 1) as i32;
+            // Use the values we calculated (with wrapping), not the clamped ones
+            let display_line = (line_0based + 1) as i32;
+            let display_col = (col_0based + 1) as i32;
             window.set_cursor_line(display_line);
             window.set_cursor_column(display_col);
-            
-            // Log if column was clamped
-            if (col as usize) != actual_col + 1 {
-                eprintln!(">>> CLAMPED: requested col={}, actual col={}", col, actual_col + 1);
-                tracing::debug!("cursor clamped: requested col={}, actual col={}", col, actual_col + 1);
-            }
-            eprintln!(">>> cursor updated to: line={}, col={}", display_line, display_col);
-            tracing::debug!("cursor updated to: line={}, col={}", display_line, display_col);
             
             // Update viewport to keep cursor visible
             let (start_line, _end_line) = editor_bridge_cursor.viewport_range();
@@ -2009,7 +1996,6 @@ fn main() -> anyhow::Result<()> {
     let window_weak = main_window.as_weak();
     let editor_bridge_ctrl_home = editor_bridge.clone();
     main_window.on_ctrl_home_pressed(move || {
-        eprintln!(">>> CTRL+HOME PRESSED: Jump to beginning");
         // Move to first line, first column
         editor_bridge_ctrl_home.set_cursor(0, 0);
         
@@ -2031,7 +2017,6 @@ fn main() -> anyhow::Result<()> {
     let window_weak = main_window.as_weak();
     let editor_bridge_ctrl_end = editor_bridge.clone();
     main_window.on_ctrl_end_pressed(move || {
-        eprintln!(">>> CTRL+END PRESSED: Jump to end");
         // Get total lines and last line
         let line_count = editor_bridge_ctrl_end.line_count();
         let last_line = if line_count > 0 { line_count - 1 } else { 0 };
@@ -2071,18 +2056,16 @@ fn main() -> anyhow::Result<()> {
 
     // Find callback
     let window_weak = main_window.as_weak();
-    main_window.on_find_requested(move |search| {
+    main_window.on_find_requested(move |_search| {
         if let Some(_window) = window_weak.upgrade() {
-            tracing::debug!("Find requested: {}", search);
             // TODO: Implement find functionality in EditorBridge
         }
     });
 
     // Find and replace callback
     let window_weak = main_window.as_weak();
-    main_window.on_replace_requested(move |search, replace| {
+    main_window.on_replace_requested(move |_search, _replace| {
         if let Some(_window) = window_weak.upgrade() {
-            tracing::debug!("Replace requested: {} -> {}", search, replace);
             // TODO: Implement find/replace functionality in EditorBridge
         }
     });
@@ -2316,8 +2299,7 @@ fn main() -> anyhow::Result<()> {
     });
     
     // Debug callback for key-pressed events from editor
-    main_window.on_key_pressed_event(move |msg| {
-        eprintln!("=== KEY_PRESSED_EVENT: {}", msg);
+    main_window.on_key_pressed_event(move |_msg| {
     });
 
     // Set up menu-view-machine callback
@@ -3157,18 +3139,11 @@ fn main() -> anyhow::Result<()> {
             // Get filter text and category
             let filter_text = window.get_config_filter_text();
             let category = window.get_config_selected_category();
-
-            debug!(
-                "Filter changed - text: '{}', category: '{}'",
-                filter_text, category
-            );
-
             let settings_model = window.get_config_settings();
             let mut filtered = Vec::new();
 
             let filter_lower = filter_text.to_lowercase();
 
-            debug!("Total settings: {}", settings_model.row_count());
 
             for i in 0..settings_model.row_count() {
                 if let Some(setting) = settings_model.row_data(i) {
@@ -3192,7 +3167,6 @@ fn main() -> anyhow::Result<()> {
             }
 
             // Update filtered settings
-            debug!("Filtered settings count: {}", filtered.len());
             let filtered_model = Rc::new(VecModel::from(filtered));
             window.set_config_filtered_settings(slint::ModelRc::from(filtered_model));
 
@@ -5812,11 +5786,6 @@ fn main() -> anyhow::Result<()> {
     main_window.on_refresh_visualization(move |canvas_width, canvas_height| {
         // Skip if canvas dimensions are invalid (not yet laid out)
         if canvas_width < 100.0 || canvas_height < 100.0 {
-            tracing::debug!(
-                "Skipping visualization refresh: canvas too small ({}x{})",
-                canvas_width,
-                canvas_height
-            );
             return;
         }
 
@@ -6273,13 +6242,6 @@ fn render_gcode_visualization_background_channel(
     let grid_data = render_grid_to_path(&visualizer, 1600, 1200);
     let origin_data = render_origin_to_path(&visualizer, 1600, 1200);
 
-    debug!(
-        "Rendering complete: path={}, rapid={}, grid={}, origin={}",
-        path_data.len(),
-        rapid_moves_data.len(),
-        grid_data.len(),
-        origin_data.len()
-    );
 
     if !path_data.is_empty() || !rapid_moves_data.is_empty() || !grid_data.is_empty() {
         let _ = tx.send((
