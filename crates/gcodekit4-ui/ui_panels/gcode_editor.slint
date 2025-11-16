@@ -16,6 +16,11 @@ export component GcodeEditorPanel inherits VerticalBox {
     horizontal-stretch: 1.0;
     vertical-stretch: 1.0;
     
+    init => {
+        debug("🎯 [GCODE-EDITOR-PANEL] init - calling editor-focus.focus()");
+        editor-focus.focus();
+    }
+    
     in-out property <string> gcode-content: "";
     in-out property <string> gcode-filename: "untitled.gcode";
     in-out property <int> focus-trigger: 0;  // Incrementing this triggers focus on editor
