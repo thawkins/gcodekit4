@@ -85,6 +85,7 @@ export component CustomTextEdit inherits Rectangle {
     
     // Watch focus-trigger property changes
     changed focus-trigger => {
+        fs.focus();
     }
     
     background: root.background-color;
@@ -262,15 +263,6 @@ export component CustomTextEdit inherits Rectangle {
         }
     }
     
-    // Watch for focus trigger changes and call focus
-    if root.focus-trigger > 0 : Rectangle {
-        width: 0;
-        height: 0;
-        
-        init => {
-            fs.focus();
-        }
-    }
     
     fs := FocusScope {
         key-pressed(event) => {
