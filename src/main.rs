@@ -1282,6 +1282,8 @@ fn main() -> anyhow::Result<()> {
 
                     // IMPORTANT: Switch to gcode-editor view to show the content
                     window.set_current_view(slint::SharedString::from("gcode-editor"));
+                    window.set_gcode_focus_trigger(window.get_gcode_focus_trigger() + 1);
+                    window.set_gcode_focus_trigger(window.get_gcode_focus_trigger() + 1);
 
                     console_manager_clone.add_message(
                         DeviceMessageType::Output,
@@ -4242,6 +4244,7 @@ fn main() -> anyhow::Result<()> {
             if let Some(window) = window_weak_inner.upgrade() {
                 window.set_gcode_content(slint::SharedString::from(gcode));
                 window.set_current_view(slint::SharedString::from("gcode-editor"));
+                window.set_gcode_focus_trigger(window.get_gcode_focus_trigger() + 1);
                 window
                     .set_connection_status(slint::SharedString::from("G-code exported to editor"));
                 window.set_is_busy(false);
@@ -5452,6 +5455,7 @@ fn main() -> anyhow::Result<()> {
 
                                             // Switch to editor view
                                             win.set_current_view("gcode-editor".into());
+                                            win.set_gcode_focus_trigger(win.get_gcode_focus_trigger() + 1);
                                             win.set_connection_status(
                                                 "Laser engraving G-code generated successfully"
                                                     .into(),
@@ -5729,6 +5733,7 @@ fn main() -> anyhow::Result<()> {
 
                                             // Switch to editor view
                                             win.set_current_view("gcode-editor".into());
+                                            win.set_gcode_focus_trigger(win.get_gcode_focus_trigger() + 1);
                                             win.set_connection_status(
                                                 "Vector engraving G-code generated successfully"
                                                     .into(),

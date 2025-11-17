@@ -392,9 +392,11 @@ export component MainWindow inherits Window {
                 activated => {
                     if (current-view != "gcode-editor") {
                         current-view = "gcode-editor";
+                        root.gcode-focus-trigger += 1;
                         root.menu-view-gcode-editor();
                     } else {
                         root.menu-view-gcode-editor();
+                        root.gcode-focus-trigger += 1;
                     }
                 }
             }
@@ -521,6 +523,7 @@ export component MainWindow inherits Window {
                                 mouse-cursor: pointer;
                                 clicked => {
                                     current-view = "gcode-editor";
+                                    root.gcode-focus-trigger += 1;
                                     root.menu-view-gcode-editor();
                                 }
                             }
