@@ -6233,6 +6233,30 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
+    // Cursor blink callback - updates the property
+    let window_weak_callback = main_window.as_weak();
+    main_window.on_set_cursor_blink_visible(move |visible| {
+        if let Some(window) = window_weak_callback.upgrade() {
+            window.set_cursor_blink_visible(visible);
+        }
+    });
+
+    // Start cursor blink animation timer
+    let window_weak_blink = main_window.as_weak();
+    std::thread::spawn(move || {
+        let mut visible = true;
+        loop {
+            std::thread::sleep(std::time::Duration::from_millis(400));
+            visible = !visible;
+            let window_weak_invoke = window_weak_blink.clone();
+            slint::invoke_from_event_loop(move || {
+                if let Some(window) = window_weak_invoke.upgrade() {
+                    window.invoke_set_cursor_blink_visible(visible);
+                }
+            }).ok();
+        }
+    });
+
     main_window
         .show()
         .map_err(|e| anyhow::anyhow!("UI Show Error: {}", e))?;

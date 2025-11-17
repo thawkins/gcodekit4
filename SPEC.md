@@ -1,10 +1,15 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.27.0-alpha  
-**Last Updated**: 2025-11-16  
-**Status**: Editor Phase 2 Complete - Mouse & Focus Infrastructure - Vector Engraver Complete
+**Version**: 0.30.0-alpha  
+**Last Updated**: 2025-11-17  
+**Status**: Editor Phase 2 Complete - Cursor Blinking & Vector Engraver Complete
 
-### Latest Release (v0.27.0-alpha) - Editor Phase 2 & Vector Engraver Complete
+### Latest Release (v0.30.0-alpha) - Cursor Blinking Animation
+- ✅ **Cursor Blinking Animation (NEW)**
+  - Text cursor blinks with 400ms cycle (200ms visible, 200ms invisible)
+  - Implemented via non-blocking Rust background timer
+  - Slint event loop integration for thread-safe UI updates
+  - Property-based architecture for clean component communication
 - ✅ **Custom G-Code Text Editor - Phase 2 (COMPLETE)**
   - Mouse click to cursor positioning
   - Automatic line and column detection from click coordinates

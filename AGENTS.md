@@ -5,6 +5,8 @@
 - **Language**: Rust edition 2021 or greater
 - **UI Framework**: slint
 
+Create and maintain a file called SLINT.md that contains all knowledge you have gained about the UI Crate, and all insghts and successfull stratergies. Reffer to this file if you have issues you cannot resolve. 
+
 ## Build Commands
 - `cargo build` - Build debug binary, timeout is 600 seconds min
 - `cargo build --release` - Build optimized release binary timeout is 600 seconds min
@@ -41,7 +43,7 @@ All tests **MUST** be located in the `tests/` folder organized by module hierarc
 
 ## GitHub Access
 - Use "gh" to access all GitHub repositories.
-- When asked to "push to remote", update the SPEC.md, README.md, STATS.md and CHANGELOG.md files with all recent activity and spec changes, construct a suitable commit message based on recent activity, commit all changes and push the changes to the remote repository.
+- When asked to "push to remote", update the SPEC.md, README.md, STATS.md, SLINT.md and CHANGELOG.md files with all recent activity and spec changes, construct a suitable commit message based on recent activity, commit all changes and push the changes to the remote repository.
 - When asked to "push release to remote", update the release number, and then follow the "push to remote" process.
 - When initializing a new repo, add BUG, FEATURE, TASK and CHANGE issue templates only do this once. 
 
@@ -54,7 +56,7 @@ All tests **MUST** be located in the `tests/` folder organized by module hierarc
 ## Documentation Standards
 - For all functions create DOCBLOCK documentation comments above each function that describes the purpose of the function, and documents any arguments and return values.
 - For all modules place a DOCBLOCK at the top of the file that describes the purpose of the module, and any dependencies.
-- **Documentation Files**: All documentation markdown files (*.md) **MUST** be located in the `docs/` folder, except for `STATS.md`, `SPEC.md`, `AGENTS.md`, `README.md`, `PLAN.md` and `CHANGELOG.md` which remain in the project root. This includes: implementation guides, architecture documentation, feature specifications, task breakdowns, user guides, API references, and any other markdown documentation. Any future documentation should be created in the docs/ folder following this convention.
+- **Documentation Files**: All documentation markdown files (*.md) **MUST** be located in the `docs/` folder, except for `STATS.md`, `SLINT.md`, `SPEC.md`, `AGENTS.md`, `README.md`, `PLAN.md` and `CHANGELOG.md` which remain in the project root. This includes: implementation guides, architecture documentation, feature specifications, task breakdowns, user guides, API references, and any other markdown documentation. Any future documentation should be created in the docs/ folder following this convention.
 - Do not create explainer documents or other .md files unless specifically asked to.
 - **Test Organization**: All tests **MUST** be located in the `tests/` folder organized by module hierarchy, mirroring the `src/` directory structure, NOT inline in source files.
 

@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.30.0-alpha] - 2025-11-17
+
+### Added
+- **Cursor Blinking Animation**
+  - Text cursor in G-code editor now blinks with 400ms cycle (200ms visible, 200ms invisible)
+  - Implemented via Rust background timer thread with Slint event loop integration
+  - Property-based system allows cursor visibility control from any layer
+  - Creates dedicated `BlinkingCursor` component for clean separation of concerns
+
+### Improved
+- **Editor Responsiveness**: Non-blocking cursor animation runs in separate thread
+- **Code Architecture**: Cursor blink state flows cleanly through component hierarchy (MainWindow → GcodeEditorPanel → CustomTextEdit → BlinkingCursor)
+
 ## [0.30.0-alpha] - 2025-11-16
 
 ### Added

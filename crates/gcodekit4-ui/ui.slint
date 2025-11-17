@@ -98,6 +98,9 @@ export component MainWindow inherits Window {
     in-out property <[TextLine]> visible-lines: [];
     in-out property <int> total-lines: 0;
     in-out property <int> visible-start-line: 0;
+    in property <bool> cursor-blink-visible: true;
+    
+    callback set-cursor-blink-visible(bool);
     
     // Configuration settings properties
     in property <[ConfigSetting]> config-settings: [];
@@ -791,6 +794,7 @@ export component MainWindow inherits Window {
                     visible-lines <=> root.visible-lines;
                     total-lines <=> root.total-lines;
                     visible-start-line <=> root.visible-start-line;
+                    cursor-blink-visible: root.cursor-blink-visible;
                     menu-file-new => {
                         root.menu-file-new();
                     }

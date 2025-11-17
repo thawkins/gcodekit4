@@ -10,6 +10,22 @@ export struct TextLine {
     is_dirty: bool,
 }
 
+// Blinking cursor component
+component BlinkingCursor inherits Rectangle {
+    in property <length> pos-x: 0px;
+    in property <length> pos-y: 0px;
+    in property <length> cursor-width: 2px;
+    in property <length> cursor-height: 20px;
+    in property <bool> is-visible: true;
+    
+    x: pos-x;
+    y: pos-y;
+    width: cursor-width;
+    height: cursor-height;
+    background: #00ff00;
+    opacity: is-visible ? 1.0 : 0.0;
+}
+
 // Custom text editor with virtual scrolling and undo/redo
 export component CustomTextEdit inherits Rectangle {
     // Properties
@@ -56,11 +72,15 @@ export component CustomTextEdit inherits Rectangle {
     callback request-focus();  // Request focus on the text edit
     callback text-area-clicked();  // Debug: Track clicks on text area
     
+    // Cursor blink state controlled by Rust timer
+    in-out property <bool> cursor-blink-visible: true;
+    
     // Internal state
     property <length> line-height: 20px;
     property <length> line-number-width: 60px;
     property <length> sync-scroll-y: 0px;
     property <bool> focus-requested: false;
+    property <int> cursor-blink-trigger: 0;
     
     // When this property is set to true, request focus
     in-out property <int> focus-trigger: 0;
@@ -194,19 +214,12 @@ export component CustomTextEdit inherits Rectangle {
                     }
                     
                     // Render cursor if this is the cursor line
-                    if (line.line-number == root.cursor-line) : Rectangle {
-                        x: (root.cursor-column - 1) * root.char-width;
-                        y: 0px;
-                        width: 2px;
-                        height: root.line-height;
-                        background: #00ff00;
-                        opacity: 1;
-                        
-                        animate opacity {
-                            duration: 400ms;
-                            iteration-count: -1.0;
-                            direction: alternate;
-                        }
+                    if (line.line-number == root.cursor-line) : BlinkingCursor {
+                        pos-x: (root.cursor-column - 1) * root.char-width;
+                        pos-y: 0px;
+                        cursor-width: 2px;
+                        cursor-height: root.line-height;
+                        is-visible: root.cursor-blink-visible;
                     }
                 }
             }
@@ -389,6 +402,9 @@ export component CustomTextEdit inherits Rectangle {
     
     // Auto-scroll to keep cursor visible when cursor line changes
     changed cursor-line => {
+        // Restart cursor blink animation
+        root.cursor-blink-trigger = root.cursor-blink-trigger + 1;
+        
         // Scroll viewport if cursor is outside visible area
         // cursor-line is 1-based (1 = first line, 2 = second line, etc.)
         // visible-start-line is 0-based (0 = first line visible, 1 = second line visible, etc.)

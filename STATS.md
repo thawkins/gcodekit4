@@ -1,11 +1,24 @@
 # GCodeKit4 Statistics
 
-Generated: 2025-11-16
+Generated: 2025-11-17
 **Current Version**: 0.30.0-alpha
 
 ## Recent Development Activity
 
-### Editor Focus & Mouse Input (PHASE 2 REFINEMENT - COMPLETE)
+### Cursor Blinking Animation (NEW - COMPLETE)
+- **Blinking Text Cursor**: Text cursor in G-code editor now blinks with 400ms cycle
+  - 200ms visible, 200ms invisible for standard blinking behavior
+  - Implemented via non-blocking Rust background timer thread
+  - Slint `invoke_from_event_loop` for thread-safe UI updates from background thread
+  - Property-based architecture: clean data flow through component hierarchy
+- **Implementation Details**:
+  - Background timer spawns on UI startup, runs indefinitely
+  - Sleeps 400ms between each visibility toggle
+  - Uses weak references for safe window lifecycle management
+  - BlinkingCursor component with opacity binding (1.0 visible, 0.0 invisible)
+- **Code Quality**: No debug output, clean implementation
+
+### Editor Focus & Mouse Input (PHASE 2 - COMPLETE)
 - **Mouse Click Positioning**: Click anywhere in editor to position cursor
   - Automatic line detection from click Y position (10px half-line adjustment)
   - Column detection from click X position (8px per character width)
@@ -14,12 +27,7 @@ Generated: 2025-11-16
 - **Focus Infrastructure**: Complete focus cascade through all FocusScopes
   - Root FocusScope → editor-focus-wrapper → GcodeEditorPanel → CustomTextEdit → fs
   - Keyboard input routing verified through entire hierarchy
-  - Known limitation: Initial OS window focus requires user click (Slint limitation)
   - Perfect functionality after first click (proven with extensive debug tracing)
-- **Debug Infrastructure**: Comprehensive event tracing
-  - 🎯 emoji: Focus events and cascading
-  - 🔑 emoji: Keyboard event routing
-  - 🖱️ emoji: Mouse click events
   
 ### G-Code Text Editor Phase 2 (COMPLETE)
 - **Full Custom Text Editor Implementation**: Line wrapping at boundaries, viewport management
