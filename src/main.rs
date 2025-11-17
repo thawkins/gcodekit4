@@ -610,8 +610,8 @@ fn main() -> anyhow::Result<()> {
     // Set initial editor state in UI
     main_window.set_can_undo(false);
     main_window.set_can_redo(false);
-    main_window.set_cursor_line(0);
-    main_window.set_cursor_column(0);
+    main_window.set_cursor_line(1);
+    main_window.set_cursor_column(1);
     main_window.set_total_lines(0);
 
     // Update visible lines

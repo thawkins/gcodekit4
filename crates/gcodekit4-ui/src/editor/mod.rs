@@ -195,7 +195,13 @@ impl EditorState {
         // Use small overscan (5 lines) to reduce lag while maintaining smooth scrolling
         let range = self.viewport.overscan_range(5);
         let start_line = range.start;
-        let lines = self.buffer.lines_in_range(range);
+        let mut lines = self.buffer.lines_in_range(range);
+        
+        // If editor is empty, always provide at least one line with a space so cursor is visible
+        if lines.is_empty() {
+            lines.push(" ".to_string());
+        }
+        
         (start_line, lines)
     }
 

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.30.0-alpha] - 2025-11-17
 
+### Fixed
+- **Cursor Visibility on Empty Editor**
+  - Cursor now displays at position (1,1) when G-code editor is empty
+  - Fixed cursor initialization from (0,0) to (1,1) in main.rs
+  - Backend now provides at least one line with space character when buffer empty
+  - Ensures Slint has content to render cursor on
+  - Cursor blinking works normally when content is added
+
 ### Added
 - **Cursor Blinking Animation**
   - Text cursor in G-code editor now blinks with 400ms cycle (200ms visible, 200ms invisible)
@@ -17,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Improved
 - **Editor Responsiveness**: Non-blocking cursor animation runs in separate thread
 - **Code Architecture**: Cursor blink state flows cleanly through component hierarchy (MainWindow → GcodeEditorPanel → CustomTextEdit → BlinkingCursor)
+- **SLINT.md**: Documented cursor rendering solution and design decisions
 
 ## [0.30.0-alpha] - 2025-11-16
 

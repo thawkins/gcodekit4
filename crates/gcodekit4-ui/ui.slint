@@ -469,12 +469,10 @@ export component MainWindow inherits Window {
     // Does NOT handle keys - just passes them through
     startup-focus := FocusScope {
         init => {
-            debug("🎯 [STARTUP] Root FocusScope init - requesting focus");
             startup-focus.focus();
         }
         
         key-pressed(event) => {
-            debug("🔑 [ROOT-FOCUSSCOPE] key-pressed: " + event.text + " - forwarding");
             return reject;  // Forward all keys to children
         }
     
@@ -765,21 +763,18 @@ export component MainWindow inherits Window {
                         focus-timer := Timer {
                             interval: 50ms;
                             triggered => {
-                                debug("🎯 [TIMER] Focus timer triggered - calling focus");
                                 editor-focus-wrapper.focus();
                                 focus-timer.stop();
                             }
                         }
                         
                         init => {
-                            debug("🎯 [MAIN-WINDOW] editor-focus-wrapper init - starting focus timer");
                             focus-timer.restart();
                         }
                         
                         // Debug TouchArea for main view
                         main-editor-touch := TouchArea {
                             clicked => {
-                                debug("🖱️ [MAIN-WINDOW] Main editor view clicked!");
                             }
                         }
                         
@@ -865,7 +860,6 @@ export component MainWindow inherits Window {
                     }
                     
                     editor_clicked => {
-                        debug("🖱️ [UI] GcodeEditorPanel.editor_clicked received!");
                     }
                         }
                     }
