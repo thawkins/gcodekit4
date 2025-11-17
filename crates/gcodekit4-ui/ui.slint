@@ -770,7 +770,7 @@ export component MainWindow inherits Window {
                         focus-timer := Timer {
                             interval: 50ms;
                             triggered => {
-                                editor-focus-wrapper.focus();
+                                gcode-editor-panel.focus();
                                 focus-timer.stop();
                             }
                         }
