@@ -32,3 +32,23 @@
 - Space character is invisible but provides structure - when user types, space is replaced with content
 
 **Result**: ✅ Cursor now displays at (1,1) on empty editor and blinks normally when content is added
+
+### Focus Management Limitation
+
+**Issue**: Focus is set correctly when first switching to gcode-editor view, but doesn't re-focus when switching back from another view.
+
+**Root Cause**: Slint's `if current-view == "gcode-editor"` conditional shows/hides the Rectangle rather than recreating it. The `init` callback only runs once at creation.
+
+**Current Implementation**:
+- GcodeEditorPanel uses `forward-focus: editor-focus` to forward focus to the FocusScope
+- The timer in the Rectangle's `init` callback ensures focus is set on first view
+- Works correctly on initial app startup and first view switch
+
+**Limitation**: When switching back to gcode-editor from another view, the `init` callback doesn't re-run because the Rectangle already exists (just hidden).
+
+**Workaround for users**: Click once in the editor to focus it, then keyboard works normally.
+
+**Future Fix**: Would require either:
+1. Using a custom component that wraps and recreates the view
+2. Upgrading Slint to support element recreation in conditionals
+3. Implementing from-Rust focus callbacks
