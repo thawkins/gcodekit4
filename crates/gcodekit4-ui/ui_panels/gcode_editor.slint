@@ -30,6 +30,11 @@ export component GcodeEditorPanel inherits VerticalBox {
     in-out property <int> visible-start-line: 0;
     in property <bool> cursor-blink-visible: true;
     
+    // Focus when focus-trigger changes
+    changed focus-trigger => {
+        editor-focus.focus();
+    }
+    
     callback menu-file-new();
     callback menu-file-open();
     callback menu-file-save();

@@ -1283,7 +1283,6 @@ fn main() -> anyhow::Result<()> {
                     // IMPORTANT: Switch to gcode-editor view to show the content
                     window.set_current_view(slint::SharedString::from("gcode-editor"));
                     window.set_gcode_focus_trigger(window.get_gcode_focus_trigger() + 1);
-                    window.set_gcode_focus_trigger(window.get_gcode_focus_trigger() + 1);
 
                     console_manager_clone.add_message(
                         DeviceMessageType::Output,
