@@ -758,6 +758,10 @@ export component MainWindow inherits Window {
                     vertical-stretch: 1;
                     horizontal-stretch: 1;
                     
+                    init => {
+                        focus-timer.restart();
+                    }
+                    
                     editor-focus-wrapper := FocusScope {
                         vertical-stretch: 1;
                         horizontal-stretch: 1;
@@ -769,10 +773,6 @@ export component MainWindow inherits Window {
                                 editor-focus-wrapper.focus();
                                 focus-timer.stop();
                             }
-                        }
-                        
-                        init => {
-                            focus-timer.restart();
                         }
                         
                         // Debug TouchArea for main view
