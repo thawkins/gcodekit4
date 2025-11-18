@@ -1,0 +1,24 @@
+[package]
+name = "gcodekit4-designer"
+version.workspace = true
+edition.workspace = true
+description = "Design and CAM layout tools for GCodeKit4 - Create complex toolpaths visually"
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+gcodekit4-core = { path = "../gcodekit4-core" }
+gcodekit4-camtools = { path = "../gcodekit4-camtools" }
+
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+image = "0.25"
+chrono = { version = "0.4", features = ["serde"] }
+anyhow = "1.0"
+tracing = "0.1"
+uuid = { version = "1.6", features = ["v4", "serde"] }
+svg = "0.18"
+dxf = "0.4"
+regex = "1.10"
+lazy_static = "1.4"

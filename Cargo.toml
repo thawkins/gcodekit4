@@ -3,12 +3,14 @@ members = [
     "crates/gcodekit4-core",
     "crates/gcodekit4-parser",
     "crates/gcodekit4-communication",
+    "crates/gcodekit4-camtools",
+    "crates/gcodekit4-designer",
     "crates/gcodekit4-ui",
 ]
 resolver = "2"
 
 [workspace.package]
-version = "0.30.0-alpha"
+version = "0.31.0-alpha"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 authors = ["GCodeKit Contributors"]
@@ -36,6 +38,8 @@ opt-level = 1
 gcodekit4-core = { path = "crates/gcodekit4-core" }
 gcodekit4-parser = { path = "crates/gcodekit4-parser" }
 gcodekit4-communication = { path = "crates/gcodekit4-communication" }
+gcodekit4-camtools = { path = "crates/gcodekit4-camtools" }
+gcodekit4-designer = { path = "crates/gcodekit4-designer" }
 gcodekit4-ui = { path = "crates/gcodekit4-ui" }
 
 slint = { version = "1.14.1", features = ["backend-winit", "image-default-formats"] }

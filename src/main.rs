@@ -6011,24 +6011,17 @@ fn main() -> anyhow::Result<()> {
 
                             // Set canvas path data if available
                             if let Some(path) = path_clone {
-                                tracing::info!("Setting visualization path data: {} chars", path.len());
                                 window.set_visualization_path_data(slint::SharedString::from(path));
                             }
                             if let Some(rapid_moves) = rapid_moves_clone {
-                                tracing::info!(
-                                    "Setting visualization rapid moves data: {} chars",
-                                    rapid_moves.len()
-                                );
                                 window.set_visualization_rapid_moves_data(
                                     slint::SharedString::from(rapid_moves),
                                 );
                             }
                             if let Some(grid) = grid_clone {
-                                tracing::info!("Setting visualization grid data: {} chars", grid.len());
                                 window.set_visualization_grid_data(slint::SharedString::from(grid));
                             }
                             if let Some(origin) = origin_clone {
-                                tracing::info!("Setting visualization origin data: {} chars", origin.len());
                                 window.set_visualization_origin_data(slint::SharedString::from(
                                     origin,
                                 ));

@@ -1967,13 +1967,15 @@ dependencies = [
 
 [[package]]
 name = "gcodekit4"
-version = "0.30.0-alpha"
+version = "0.31.0-alpha"
 dependencies = [
  "anyhow",
  "arboard",
  "chrono",
+ "gcodekit4-camtools",
  "gcodekit4-communication",
  "gcodekit4-core",
+ "gcodekit4-designer",
  "gcodekit4-parser",
  "gcodekit4-ui",
  "image 0.25.8",
@@ -1988,8 +1990,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "gcodekit4-camtools"
+version = "0.31.0-alpha"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "dxf",
+ "gcodekit4-core",
+ "image 0.25.8",
+ "lazy_static",
+ "pepecore",
+ "regex",
+ "serde",
+ "serde_json",
+ "svg",
+ "tracing",
+]
+
+[[package]]
 name = "gcodekit4-communication"
-version = "0.30.0-alpha"
+version = "0.31.0-alpha"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2005,7 +2025,7 @@ dependencies = [
 
 [[package]]
 name = "gcodekit4-core"
-version = "0.30.0-alpha"
+version = "0.31.0-alpha"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2021,8 +2041,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "gcodekit4-designer"
+version = "0.31.0-alpha"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "dxf",
+ "gcodekit4-camtools",
+ "gcodekit4-core",
+ "image 0.25.8",
+ "lazy_static",
+ "regex",
+ "serde",
+ "serde_json",
+ "svg",
+ "tracing",
+ "uuid 1.18.1",
+]
+
+[[package]]
 name = "gcodekit4-parser"
-version = "0.30.0-alpha"
+version = "0.31.0-alpha"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2042,14 +2081,16 @@ dependencies = [
 
 [[package]]
 name = "gcodekit4-ui"
-version = "0.30.0-alpha"
+version = "0.31.0-alpha"
 dependencies = [
  "anyhow",
  "chrono",
  "config",
  "dirs",
+ "gcodekit4-camtools",
  "gcodekit4-communication",
  "gcodekit4-core",
+ "gcodekit4-designer",
  "rfd",
  "ropey",
  "serde",

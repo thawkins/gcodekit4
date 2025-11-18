@@ -4,7 +4,7 @@ A modern, cross-platform G-Code sender and CNC machine controller written in Rus
 
 [![Build Status](https://github.com/thawkins/gcodekit4/workflows/CI/badge.svg)](https://github.com/thawkins/gcodekit4/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-0.30.0--alpha-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-0.31.0--alpha-brightgreen.svg)](CHANGELOG.md)
 
 ## Overview
 
@@ -12,19 +12,22 @@ GCodeKit4 is a Rust-based CNC machine controller providing a modern alternative 
 
 ## Architecture
 
-GCodeKit4 is organized as a Cargo workspace with multiple crates for modular compilation and better code organization:
+GCodeKit4 is organized as a Cargo workspace with 6 crates for modular compilation and better code organization:
 
 - **gcodekit4-core** - Core types, traits, state management, events, and data models
-- **gcodekit4-parser** - G-code parsing, preprocessing, designer tools, and utilities
-- **gcodekit4-communication** - Serial, TCP, WebSocket protocols and firmware implementations
+- **gcodekit4-camtools** - ✨ NEW - CAM tools and special G-code processing operations
+- **gcodekit4-designer** - ✨ NEW - Visual design tools and toolpath generation
+- **gcodekit4-parser** - G-code parsing and utilities (refactored for single responsibility)
+- **gcodekit4-communication** - Serial, TCP, WebSocket protocols and firmware implementations (5 firmware types)
 - **gcodekit4-ui** - Slint-based UI components, visualizer, settings, and editor
 - **gcodekit4** - Main binary that integrates all crates
 
 This modular structure enables:
 - Faster incremental builds (only recompile changed crates)
-- Better separation of concerns
+- Better separation of concerns with focused crate responsibilities
 - Easier testing of individual components
 - Potential for code reuse across different applications
+- Clean architecture suitable for future plugin systems
 
 ## Features
 
