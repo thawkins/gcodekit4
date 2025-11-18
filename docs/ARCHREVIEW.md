@@ -1,25 +1,26 @@
-# Architecture Review - GCodeKit4 (Updated)
+# Architecture Review - GCodeKit4 (Updated Post-Refactoring)
 
 **Date:** 2025-11-18  
-**Status:** Post-Refactoring Analysis  
+**Status:** Post-Refactoring Analysis (v0.32.0-alpha)  
 **Scope:** Comprehensive codebase analysis including structure, dependencies, dead code, and code quality observations.  
-**Total Lines of Code:** ~75,000+ (source + tests)
+**Total Lines of Code:** ~76,000+ (source + tests)
 
 ---
 
 ## Executive Summary
 
-GCodeKit4 is a well-architected Rust/Slint-based G-Code sender for CNC machines. Following a major refactoring, the project is now organized into **6 discrete crates** (previously 4) with enhanced separation of concerns and cleaner layering:
+GCodeKit4 is a well-architected Rust/Slint-based G-Code sender for CNC machines. Following comprehensive refactoring, the project is now organized into **7 discrete crates** (previously 4) with enhanced separation of concerns and cleaner layering:
 
 - **gcodekit4-core** (3.4K LOC): Foundation - data models, events, messages, materials, tools
 - **gcodekit4-parser** (14K LOC): G-Code parsing and utilities (reduced from 23.8K)
-- **gcodekit4-camtools** (5.5K LOC): ✨ NEW - CAM operations and special processing
-- **gcodekit4-designer** (11.6K LOC): ✨ NEW - Visual design and toolpath generation
+- **gcodekit4-camtools** (5.5K LOC): ✨ CAM operations and special processing
+- **gcodekit4-designer** (11.6K LOC): ✨ Visual design and toolpath generation
+- **gcodekit4-gcodeeditor** (1.2K LOC): ✨ NEW - Text editor and buffer management
 - **gcodekit4-communication** (12.6K LOC): Device communication protocols (5 firmware types)
-- **gcodekit4-ui** (18.3K LOC): Slint UI layer, editor, visualizer, file management
+- **gcodekit4-ui** (18.3K LOC): Slint UI layer, editor integration, file management
 - **Main App**: Orchestration and integration
 
-**Overall Health:** ✅ **EXCELLENT (A+)** - Well-designed modular architecture with no circular dependencies, clean layering, focused crates, and strategic organization. Recent refactoring has significantly improved code organization.
+**Overall Health:** ✅ **EXCELLENT (A+)** - Well-designed modular architecture with no circular dependencies, clean layering, focused crates, and strategic organization. Latest refactoring further improved modularity with dedicated editor crate.
 
 ---
 
@@ -29,17 +30,21 @@ GCodeKit4 is a well-architected Rust/Slint-based G-Code sender for CNC machines.
 
 ```
 gcodekit4 (main) ──────┬──> gcodekit4-ui
+                       ├──> gcodekit4-gcodeeditor
                        ├──> gcodekit4-designer
                        ├──> gcodekit4-camtools
                        ├──> gcodekit4-parser
                        ├──> gcodekit4-communication
                        └──> gcodekit4-core
 
-gcodekit4-ui ──────────┬──> gcodekit4-designer
+gcodekit4-ui ──────────┬──> gcodekit4-gcodeeditor
+                       ├──> gcodekit4-designer
                        ├──> gcodekit4-camtools
                        ├──> gcodekit4-parser
                        ├──> gcodekit4-communication
                        └──> gcodekit4-core
+
+gcodekit4-gcodeeditor─►gcodekit4-core
 
 gcodekit4-designer ────┬──> gcodekit4-camtools
                        └──> gcodekit4-core
@@ -55,7 +60,7 @@ gcodekit4-communication -> gcodekit4-core
 gcodekit4-core ────────> (external: serde, chrono, anyhow)
 ```
 
-**Assessment:** Excellent layering - No circular dependencies, clean dependency flow from foundation (core) through operations (camtools, designer, parser, communication) to UI. Post-refactoring structure is significantly improved.
+**Assessment:** Excellent layering - No circular dependencies, clean dependency flow from foundation (core) through operations (camtools, designer, parser, communication, gcodeeditor) to UI. Post-refactoring structure is exemplary.
 
 ---
 
@@ -208,6 +213,61 @@ gcodekit4-core ────────> (external: serde, chrono, anyhow)
 **Dependencies:** gcodekit4-core + gcodekit4-camtools (CAM operations)
 
 **Assessment:** ✅ **NEW OPERATIONS LAYER** - 11.6K LOC extracted from parser. Brings together all design and visualization functionality. Properly depends on camtools for CAM operations. Clean integration points with UI.
+
+---
+
+### 5. **gcodekit4-gcodeeditor** (1,237 LOC Rust + 1,041 LOC Slint / 8 components) ✨ NEW
+**Purpose:** G-Code text editor, visualizer, and panel with undo/redo, viewport management, and Slint UI integration
+
+**Structure (5 Rust modules + 3 Slint components):**
+
+**Core Editor (Rust - 1,237 LOC):**
+- `lib.rs` (418 LOC) - EditorState API with complete public interface
+- `text_buffer.rs` (217 LOC) - Rope-based efficient text storage
+- `undo_manager.rs` (243 LOC) - Undo/redo history with changeset tracking
+- `viewport.rs` (216 LOC) - Camera control and scroll management
+- `slint_bridge.rs` (258 LOC) - Slint UI bridge and renderer
+
+**UI Components (Slint - 1,041 LOC):**
+- `gcode_editor.slint` (105 LOC) - GcodeEditorPanel container component
+  * Main editor panel layout and organization
+  * Integrates custom text edit and visualizer
+  * Manages editor controls and options
+  * Responsive panel sizing
+
+- `custom_text_edit.slint` (621 LOC) - CustomTextEdit component with cursor blinking
+  * High-performance text rendering with virtual scrolling
+  * Real-time cursor animation and visibility management
+  * Line number display integration
+  * Text highlighting and selection
+  * Responsive layout for editor panel
+  
+- `gcode_visualizer.slint` (315 LOC) - GcodeVisualizer display component
+  * Toolpath visualization canvas
+  * Grid and origin marker rendering
+  * Path data display with color coding
+  * Real-time rapid moves visualization
+  * Coordinate system overlay
+
+**Key Features:**
+- Efficient text manipulation for large G-Code files (rope-based)
+- Full undo/redo support with cursor position tracking
+- Overscan mechanism for smooth scrolling performance
+- Custom text line model for Slint rendering
+- Cursor blinking animation integration
+- Integrated visualization for G-code preview
+- Complete editor panel with all UI components
+
+**Public API:**
+- `EditorState`: Complete editor state management
+- `TextBuffer`: Text storage and manipulation
+- `UndoManager`: History management
+- `Viewport`: Camera and scroll control
+- `EditorBridge`: Slint UI integration
+
+**Dependencies:** gcodekit4-core + slint (UI framework)
+
+**Assessment:** ✅ **COMPLETE EDITOR+VISUALIZER LAYER** - Fully extracted from UI crate with complete Rust backend and comprehensive Slint UI components co-located. Focused responsibility: text editing, visualization, and complete editor panel. Clean separation enables independent editor/visualizer testing and reuse. Production-ready with clear public API and complete feature set.
 
 ---
 

@@ -1,0 +1,19 @@
+[package]
+name = "gcodekit4-gcodeeditor"
+version.workspace = true
+edition.workspace = true
+description = "G-Code editor and text buffer control for GCodeKit4"
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+gcodekit4-core = { path = "../gcodekit4-core" }
+
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+anyhow = "1.0"
+tracing = "0.1"
+chrono = { version = "0.4", features = ["serde"] }
+ropey = "1.6"
+slint = { version = "1.14.1", features = ["backend-winit", "image-default-formats"] }

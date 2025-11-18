@@ -3,22 +3,23 @@
 ## Current Status (2025-11-18)
 
 ### Version
-- **Current Release**: 0.31.0-alpha
-- **Build Status**: ✅ Passing
-- **Test Status**: ✅ 282 tests passing
+- **Current Release**: 0.32.0-alpha
+- **Build Status**: ✅ Passing (89 seconds)
+- **Test Status**: ✅ All tests passing
 
 ### Code Metrics
-- **Total Lines of Code**: ~75,000+
+- **Total Lines of Code**: ~77,000+
 - **Main Binary**: gcodekit4 (Rust + Slint UI)
-- **Architecture**: Modular workspace with 6 crates (refactored from 5)
+- **Architecture**: Modular workspace with 7 crates (refactored from 6)
 
 ### Key Components
 - **gcodekit4-core** (3.4K LOC): Core types, traits, state management, materials/tools
-- **gcodekit4-camtools** (5.5K LOC): ✨ NEW - CAM operations and special processing
-- **gcodekit4-designer** (11.6K LOC): ✨ NEW - Visual design and toolpath generation
-- **gcodekit4-parser** (14K LOC): G-code parsing, utilities (reduced from 23.8K)
+- **gcodekit4-camtools** (5.5K LOC): CAM operations and special processing
+- **gcodekit4-designer** (11.6K LOC): Visual design and toolpath generation
+- **gcodekit4-gcodeeditor** (1.2K Rust + 1.0K Slint LOC): ✨ NEW - G-Code editor, visualizer, and panel
+- **gcodekit4-parser** (14K LOC): G-code parsing and utilities
 - **gcodekit4-communication** (12.6K LOC): 5 firmware types (GRBL, TinyG, G2Core, Smoothieware, FluidNC)
-- **gcodekit4-ui** (18.3K LOC): Slint UI components, visualizer, editor
+- **gcodekit4-ui** (18.3K LOC): Slint UI components, visualizer, editor integration
 
 ### Major Refactoring (2025-11-18)
 

@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.32.0-alpha] - 2025-11-18
+
+### Changed
+- **Architecture Refactoring: Separated G-Code Editor into Dedicated Crate**
+  - Created `gcodekit4-gcodeeditor` (1.2K Rust + 1.0K Slint LOC) - Complete G-Code editor and visualizer
+    - **Rust Backend** (1,237 LOC, 5 modules):
+      * Text buffer management with rope-based efficient storage
+      * Undo/redo history with changeset tracking
+      * Viewport management for large file navigation
+      * Slint UI bridge for text editor rendering
+      * Cursor positioning and selection management
+    - **Slint UI Components** (1,041 LOC, 3 components):
+      * `gcode_editor.slint` (105 LOC) - Complete editor panel container
+      * `custom_text_edit.slint` (621 LOC) - High-performance text editor with cursor blinking
+      * `gcode_visualizer.slint` (315 LOC) - Toolpath visualization with grid and overlays
+  - Extracted from `gcodekit4-ui/src/editor/`, `gcodekit4-ui/ui/ui_components/`, and `gcodekit4-ui/src/ui_panels/`
+  - Result: 7 focused crates with cleaner separation of concerns
+
+### Improved
+- **Architecture**: 7 crates now with clear responsibilities
+  - gcodekit4-gcodeeditor contains complete editor functionality and UI
+  - UI crate no longer contains editor implementation or custom components
+  - Better modularity and maintainability
+- **Code Organization**: Complete editor stack now self-contained in dedicated crate
+  - Easier to test and extend editor functionality
+  - Clear API boundary for UI integration
+  - Co-located Rust and Slint code for related functionality
+  - Production-ready editor component
+
+### Build & Testing
+- ✅ Full build succeeds (90 seconds)
+- ✅ All crates compile without errors
+- ✅ 5 unused variable warnings in slint_bridge (intentional for future features)
+- ✅ All Slint components properly included in new crate
+
 ## [0.31.0-alpha] - 2025-11-18
 
 ### Changed

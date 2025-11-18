@@ -4,7 +4,6 @@
 //! Provides UI panels, visualizer, settings, and editor components.
 
 pub mod config;
-pub mod editor;
 pub mod testing;
 pub mod ui;
 pub mod visualizer;
@@ -20,7 +19,7 @@ pub use config::{
     MachineSettings, SettingsManager, UiSettings,
 };
 
-pub use editor::{
+pub use gcodekit4_gcodeeditor::{
     EditorBridge, EditorState, SlintTextLine, TextBuffer, TextChange, TextLine, UndoManager,
     Viewport,
 };

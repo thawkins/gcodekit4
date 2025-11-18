@@ -1,0 +1,315 @@
+//! G-Code Visualizer Panel
+//! Displays a 3D visualization of the loaded G-Code toolpath
+//! Shows machine position, bounding box, and real-time tool movement
+
+import { ScrollView, VerticalBox, HorizontalBox, Button, GridBox, CheckBox } from "std-widgets.slint";
+
+export component GcodeVisualizerPanel inherits VerticalBox {
+    spacing: 0px;
+    horizontal-stretch: 1.0;
+    vertical-stretch: 1.0;
+
+    in property <string> gcode-filename: "untitled.gcode";
+    in property <string> gcode-content: "";
+    in property <string> visualization-path-data: "";
+    in property <string> visualization-rapid-moves-data: "";
+    in property <string> visualization-grid-data: "";
+    in property <string> visualization-origin-data: "";
+    in property <string> machine-x: "0.000";
+    in property <string> machine-y: "0.000";
+    in property <string> machine-z: "0.000";
+    in property <string> work-x: "0.000";
+    in property <string> work-y: "0.000";
+    in property <string> work-z: "0.000";
+    in property <float> progress: 0.0;
+    in property <string> visualizer-status: "Ready";
+    in property <float> x-offset: 0.0;
+    in property <float> y-offset: 0.0;
+    in property <float> zoom-scale: 1.0;
+    in-out property <bool> show-grid: true;
+    in-out property <bool> show-rapid-moves: true;
+    out property <float> canvas-width: canvas-rect.width / 1px;
+    out property <float> canvas-height: canvas-rect.height / 1px;
+    
+    callback refresh-visualization(/* canvas_width */ float, /* canvas_height */ float);
+    callback zoom-in(/* canvas_width */ float, /* canvas_height */ float);
+    callback zoom-out(/* canvas_width */ float, /* canvas_height */ float);
+    callback fit-to-view(/* canvas_width */ float, /* canvas_height */ float);
+    callback reset-view(/* canvas_width */ float, /* canvas_height */ float);
+    callback toggle-grid();
+    callback pan-by-mouse(/* dx */ float, /* dy */ float);
+
+    VerticalBox {
+        spacing: 2px;
+        padding: 2px;
+
+        // Toolbar - all controls on one line
+        HorizontalBox {
+            min-height: 50px;
+            spacing: 8px;
+            vertical-stretch: 0;
+
+            // Left side - main controls
+            HorizontalBox {
+                spacing: 8px;
+                alignment: start;
+                vertical-stretch: 0;
+
+                Text {
+                    text: "Visualization Controls:";
+                    font-weight: 700;
+                    font-size: 12px;
+                    color: #2c3e50;
+                    vertical-alignment: center;
+                }
+
+                Button {
+                    text: "🔄 Refresh";
+                    width: 100px;
+                    clicked => {
+                        root.refresh-visualization(root.canvas-width, root.canvas-height);
+                    }
+                }
+
+                Button {
+                    text: "🔍+ Zoom In";
+                    width: 100px;
+                    clicked => {
+                        root.zoom-in(root.canvas-width, root.canvas-height);
+                    }
+                }
+
+                Button {
+                    text: "🔍- Zoom Out";
+                    width: 100px;
+                    clicked => {
+                        root.zoom-out(root.canvas-width, root.canvas-height);
+                    }
+                }
+
+                Button {
+                    text: "⊡ Fit";
+                    width: 80px;
+                    clicked => {
+                        root.fit-to-view(root.canvas-width, root.canvas-height);
+                    }
+                }
+
+                Button {
+                    text: "↺ Reset";
+                    width: 80px;
+                    clicked => {
+                        root.reset-view(root.canvas-width, root.canvas-height);
+                    }
+                }
+            }
+
+            // Spacer to push checkboxes to the right
+            Rectangle {
+                horizontal-stretch: 1.0;
+            }
+
+            // Right side - toggle checkboxes
+            HorizontalBox {
+                spacing: 12px;
+                alignment: end;
+                vertical-stretch: 0;
+
+                CheckBox {
+                    text: "Show Moves";
+                    checked <=> root.show-rapid-moves;
+                }
+
+                CheckBox {
+                    text: "Show Grid";
+                    checked <=> root.show-grid;
+                    toggled => {
+                        root.toggle-grid();
+                    }
+                }
+            }
+        }
+
+        // Status display - single line (outside ScrollView)
+        HorizontalBox {
+            spacing: 12px;
+            padding-left: 5px;
+            padding-right: 5px;
+            padding-top: 2px;
+            padding-bottom: 2px;
+            alignment: start;
+            min-height: 30px;
+            vertical-stretch: 0;
+
+            // Zoom Scale
+            HorizontalBox {
+                spacing: 6px;
+                
+                Text {
+                    text: "Zoom:";
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: #2e7d32;
+                }
+
+                Text {
+                    text: Math.round(root.zoom-scale * 1000.0) / 10.0 + "%";
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: #1b5e20;
+                }
+
+                Text {
+                    text: "(" + Math.round(root.zoom-scale * 100.0) / 100.0 + "x)";
+                    font-size: 10px;
+                    color: #2e7d32;
+                }
+            }
+
+            Text {
+                text: "|";
+                font-size: 11px;
+                color: #ccc;
+            }
+
+            // X Offset
+            HorizontalBox {
+                spacing: 6px;
+
+                Text {
+                    text: "X Offset:";
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: #1565c0;
+                }
+
+                Text {
+                    text: Math.round(root.x-offset * 10.0) / 10.0 + " mm";
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: #0d47a1;
+                }
+            }
+
+            Text {
+                text: "|";
+                font-size: 11px;
+                color: #ccc;
+            }
+
+            // Y Offset
+            HorizontalBox {
+                spacing: 6px;
+
+                Text {
+                    text: "Y Offset:";
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: #6a1b9a;
+                }
+
+                Text {
+                    text: Math.round(root.y-offset * 10.0) / 10.0 + " mm";
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: #4a148c;
+                }
+            }
+
+
+        }
+
+        // Main visualization area - 2D Visualizer
+        canvas-rect := Rectangle {
+            horizontal-stretch: 1;
+            vertical-stretch: 1;
+            background: black;
+            border-width: 0px;
+            clip: true;
+                        
+                        // Grid layer
+                        if root.show-grid && root.visualization-grid-data != "" : Path {
+                            viewbox-x: 0;
+                            viewbox-y: 0;
+                            viewbox-width: canvas-rect.width / 1px;
+                            viewbox-height: canvas-rect.height / 1px;
+                            width: 100%;
+                            height: 100%;
+                            fill: transparent;
+                            stroke: #808080;
+                            stroke-width: 1px;
+                            commands: root.visualization-grid-data;
+                        }
+                        
+                        // Origin marker layer (yellow cross at 0,0)
+                        if root.visualization-origin-data != "" : Path {
+                            viewbox-x: 0;
+                            viewbox-y: 0;
+                            viewbox-width: canvas-rect.width / 1px;
+                            viewbox-height: canvas-rect.height / 1px;
+                            width: 100%;
+                            height: 100%;
+                            fill: transparent;
+                            stroke: yellow;
+                            stroke-width: 3px;
+                            commands: root.visualization-origin-data;
+                        }
+                        
+                        // Rapid moves layer (G0) - light blue, 20% opacity
+                        if root.show-rapid-moves && root.visualization-rapid-moves-data != "" : Path {
+                            viewbox-x: 0;
+                            viewbox-y: 0;
+                            viewbox-width: canvas-rect.width / 1px;
+                            viewbox-height: canvas-rect.height / 1px;
+                            width: 100%;
+                            height: 100%;
+                            fill: transparent;
+                            stroke: #ADD8E633;  // Light blue with 20% opacity
+                            stroke-width: 1px;
+                            commands: root.visualization-rapid-moves-data;
+                        }
+                        
+                        // Toolpath layer (G1) - blue
+                        if root.visualization-path-data != "" : Path {
+                            viewbox-x: 0;
+                            viewbox-y: 0;
+                            viewbox-width: canvas-rect.width / 1px;
+                            viewbox-height: canvas-rect.height / 1px;
+                            width: 100%;
+                            height: 100%;
+                            fill: transparent;
+                            stroke: #ff0000;  // Bright red for testing
+                            stroke-width: 5px;  // Thicker for visibility
+                            commands: root.visualization-path-data;
+                        }
+                        
+            // Mouse drag support for panning
+            TouchArea {
+                width: 100%;
+                height: 100%;
+                mouse-cursor: self.pressed ? grabbing : grab;
+                
+                property <length> drag-start-x;
+                property <length> drag-start-y;
+                
+                moved => {
+                    if (self.pressed) {
+                        root.pan-by-mouse(
+                            (self.mouse-x - self.drag-start-x) / 1px,
+                            (self.mouse-y - self.drag-start-y) / 1px
+                        );
+                        self.drag-start-x = self.mouse-x;
+                        self.drag-start-y = self.mouse-y;
+                    }
+                }
+                
+                pointer-event(event) => {
+                    if (event.kind == PointerEventKind.down) {
+                        self.drag-start-x = self.mouse-x;
+                        self.drag-start-y = self.mouse-y;
+                    }
+                }
+            }
+        }
+    }
+}
