@@ -53,7 +53,7 @@ impl EditorBridge {
     pub fn load_text(&self, text: &str) {
         let mut editor = self.editor.borrow_mut();
         editor.load_text(text);
-        let line_count = editor.line_count();
+        let _line_count = editor.line_count();
         drop(editor);
         self.update_visible_lines();
     }
@@ -122,10 +122,10 @@ impl EditorBridge {
     /// Scroll viewport to specific line
     pub fn scroll_to_line(&self, line: usize) {
         let mut editor = self.editor.borrow_mut();
-        let total_lines = editor.line_count();
+        let _total_lines = editor.line_count();
         // Use scroll_to_line for absolute positioning (not scroll_by which is relative)
         editor.scroll_to_line(line);
-        let viewport = editor.viewport();
+        let _viewport = editor.viewport();
         drop(editor);
         self.update_visible_lines();
     }
@@ -183,8 +183,8 @@ impl EditorBridge {
     fn update_visible_lines(&self) {
         let editor = self.editor.borrow();
         let (first_line_idx, lines) = editor.get_visible_lines();
-        let viewport = editor.viewport();
-        let total_lines = editor.line_count();
+        let _viewport = editor.viewport();
+        let _total_lines = editor.line_count();
 
         // Clear and rebuild visible lines
         let mut new_lines = Vec::new();

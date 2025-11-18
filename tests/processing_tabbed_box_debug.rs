@@ -34,6 +34,8 @@ fn test_various_configurations() {
             laser_passes: 1,
             laser_power: 1000,
             feed_rate: 500.0,
+            offset_x: 0.0,
+            offset_y: 0.0,
         };
 
         let mut maker = TabbedBoxMaker::new(params).expect("Failed to create TabbedBoxMaker");

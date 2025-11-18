@@ -256,7 +256,7 @@ fn update_device_info_panel(
     use slint::{ModelRc, VecModel};
 
     // Update capability manager with detected firmware
-    capability_manager.update_firmware(firmware_type.clone(), version.clone());
+    capability_manager.update_firmware(firmware_type, version);
 
     // Set firmware type and version
     window.set_device_firmware_type(slint::SharedString::from(format!("{:?}", firmware_type)));
@@ -450,8 +450,7 @@ fn update_visible_lines(window: &MainWindow, bridge: &EditorBridge) {
         })
         .collect();
 
-    if !lines.is_empty() {
-    }
+    !lines.is_empty();
 
     window.set_visible_lines(slint::ModelRc::new(VecModel::from(lines)));
 }
@@ -681,7 +680,7 @@ fn main() -> anyhow::Result<()> {
     // Load firmware settings
     {
         let mut fw_integration = firmware_integration.borrow_mut();
-        if let Err(_) = fw_integration.load_grbl_defaults() {
+        if fw_integration.load_grbl_defaults().is_err() {
         } else {
             // Populate dialog with firmware parameters
             let mut dialog = settings_dialog.borrow_mut();
@@ -717,11 +716,8 @@ fn main() -> anyhow::Result<()> {
         };
 
         if config_path.exists() {
-            match SettingsPersistence::load_from_file(&config_path) {
-                Ok(loaded_persistence) => {
-                    *persistence = loaded_persistence;
-                }
-                Err(_) => {}
+            if let Ok(loaded_persistence) = SettingsPersistence::load_from_file(&config_path) {
+                *persistence = loaded_persistence;
             }
         }
 
@@ -813,13 +809,12 @@ fn main() -> anyhow::Result<()> {
                             if let Some(window) = window_weak_timer.upgrade() {
                                 tracing::info!("Timer: Updating Device Info with detected firmware: {} {}",
                                     detection.firmware_type, detection.version);
-                                update_device_info_panel(&window, detection.firmware_type.clone(), detection.version.clone(), &capability_manager_timer);
+                                update_device_info_panel(&window, detection.firmware_type, detection.version, &capability_manager_timer);
                                 window.set_device_version(slint::SharedString::from(
                                     format!("{} {}", detection.firmware_type, detection.version)
                                 ));
                             }
                             // Stop timer after updating once
-                            return;
                         }
                     });
                 }
@@ -1009,7 +1004,7 @@ fn main() -> anyhow::Result<()> {
                                                 lines_sent_this_cycle += 1;
 
 
-                                                if gstate.total_sent % 10 == 0 || gstate.lines.is_empty() {
+                                                if gstate.total_sent.is_multiple_of(10) || gstate.lines.is_empty() {
                                                     let sent = gstate.total_sent;
                                                     let total = gstate.total_lines;
                                                     let progress = if total > 0 { (sent as f32 / total as f32) * 100.0 } else { 0.0 };
@@ -1088,7 +1083,7 @@ fn main() -> anyhow::Result<()> {
                             static mut CYCLE: u32 = 0;
                             unsafe {
                                 CYCLE += 1;
-                                if CYCLE % 4 == 0 {
+                                if CYCLE.is_multiple_of(4) {
                                     // Real-time command - acquire lock briefly for send only
                                     let mut comm = communicator_poll.lock().unwrap();
                                     comm.send(b"?").ok();
@@ -1207,7 +1202,7 @@ fn main() -> anyhow::Result<()> {
     main_window.on_menu_file_exit(move || {
         // Disconnect if connected before exiting
         let mut comm = communicator_clone.lock().unwrap();
-        if let Err(_) = comm.disconnect() {}
+        if comm.disconnect().is_err() {}
         std::process::exit(0);
     });
 
@@ -3288,7 +3283,7 @@ fn main() -> anyhow::Result<()> {
 
             // Convert UI material to backend material
             if let Some(category) = gcodekit4::ui::materials_manager_backend::string_to_category(
-                &material_data.category.to_string(),
+                material_data.category.as_ref(),
             ) {
                 let mut material = gcodekit4::data::materials::Material::new(
                     gcodekit4::data::materials::MaterialId(material_data.id.to_string()),
@@ -3311,27 +3306,27 @@ fn main() -> anyhow::Result<()> {
                     None
                 };
                 material.chip_type = gcodekit4::ui::materials_manager_backend::string_to_chip_type(
-                    &material_data.chip_type.to_string(),
+                    material_data.chip_type.as_ref(),
                 );
                 material.heat_sensitivity =
                     gcodekit4::ui::materials_manager_backend::string_to_heat_sensitivity(
-                        &material_data.heat_sensitivity.to_string(),
+                        material_data.heat_sensitivity.as_ref(),
                     );
                 material.abrasiveness =
                     gcodekit4::ui::materials_manager_backend::string_to_abrasiveness(
-                        &material_data.abrasiveness.to_string(),
+                        material_data.abrasiveness.as_ref(),
                     );
                 material.surface_finish =
                     gcodekit4::ui::materials_manager_backend::string_to_surface_finish(
-                        &material_data.surface_finish.to_string(),
+                        material_data.surface_finish.as_ref(),
                     );
                 material.dust_hazard =
                     gcodekit4::ui::materials_manager_backend::string_to_hazard_level(
-                        &material_data.dust_hazard.to_string(),
+                        material_data.dust_hazard.as_ref(),
                     );
                 material.fume_hazard =
                     gcodekit4::ui::materials_manager_backend::string_to_hazard_level(
-                        &material_data.fume_hazard.to_string(),
+                        material_data.fume_hazard.as_ref(),
                     );
                 material.coolant_required = material_data.coolant_required;
                 material.custom = true;
@@ -3377,7 +3372,7 @@ fn main() -> anyhow::Result<()> {
             let mut backend = materials_backend_clone.borrow_mut();
 
             if let Some(category) = gcodekit4::ui::materials_manager_backend::string_to_category(
-                &material_data.category.to_string(),
+                material_data.category.as_ref(),
             ) {
                 let mut material = gcodekit4::data::materials::Material::new(
                     gcodekit4::data::materials::MaterialId(material_data.id.to_string()),
@@ -3400,27 +3395,27 @@ fn main() -> anyhow::Result<()> {
                     None
                 };
                 material.chip_type = gcodekit4::ui::materials_manager_backend::string_to_chip_type(
-                    &material_data.chip_type.to_string(),
+                    material_data.chip_type.as_ref(),
                 );
                 material.heat_sensitivity =
                     gcodekit4::ui::materials_manager_backend::string_to_heat_sensitivity(
-                        &material_data.heat_sensitivity.to_string(),
+                        material_data.heat_sensitivity.as_ref(),
                     );
                 material.abrasiveness =
                     gcodekit4::ui::materials_manager_backend::string_to_abrasiveness(
-                        &material_data.abrasiveness.to_string(),
+                        material_data.abrasiveness.as_ref(),
                     );
                 material.surface_finish =
                     gcodekit4::ui::materials_manager_backend::string_to_surface_finish(
-                        &material_data.surface_finish.to_string(),
+                        material_data.surface_finish.as_ref(),
                     );
                 material.dust_hazard =
                     gcodekit4::ui::materials_manager_backend::string_to_hazard_level(
-                        &material_data.dust_hazard.to_string(),
+                        material_data.dust_hazard.as_ref(),
                     );
                 material.fume_hazard =
                     gcodekit4::ui::materials_manager_backend::string_to_hazard_level(
-                        &material_data.fume_hazard.to_string(),
+                        material_data.fume_hazard.as_ref(),
                     );
                 material.coolant_required = material_data.coolant_required;
                 material.custom = material_data.custom;
@@ -3499,7 +3494,7 @@ fn main() -> anyhow::Result<()> {
     main_window.on_search_materials(move |query| {
         if let Some(window) = window_weak.upgrade() {
             let backend = materials_backend_clone.borrow();
-            let materials = backend.search_materials(&query.to_string());
+            let materials = backend.search_materials(query.as_ref());
             let materials_ui: Vec<MaterialData> = materials
                 .iter()
                 .map(|m| MaterialData {
@@ -3533,7 +3528,7 @@ fn main() -> anyhow::Result<()> {
         if let Some(window) = window_weak.upgrade() {
             let backend = materials_backend_clone.borrow();
             if let Some(mat_category) =
-                gcodekit4::ui::materials_manager_backend::string_to_category(&category.to_string())
+                gcodekit4::ui::materials_manager_backend::string_to_category(category.as_ref())
             {
                 let materials = backend.filter_by_category(mat_category);
                 let materials_ui: Vec<MaterialData> = materials
@@ -3615,7 +3610,7 @@ fn main() -> anyhow::Result<()> {
             let mut backend = tools_backend_clone.borrow_mut();
 
             if let Some(tool_type) = gcodekit4::ui::tools_manager_backend::string_to_tool_type(
-                &tool_data.tool_type.to_string(),
+                tool_data.tool_type.as_ref(),
             ) {
                 let tool_id =
                     gcodekit4::data::tools::ToolId(format!("custom_{}", tool_data.number));
@@ -3635,7 +3630,7 @@ fn main() -> anyhow::Result<()> {
 
                 if let Some(material) =
                     gcodekit4::ui::tools_manager_backend::string_to_tool_material(
-                        &tool_data.material.to_string(),
+                        tool_data.material.as_ref(),
                     )
                 {
                     tool.material = material;
@@ -3689,7 +3684,7 @@ fn main() -> anyhow::Result<()> {
             let mut backend = tools_backend_clone.borrow_mut();
 
             if let Some(tool_type) = gcodekit4::ui::tools_manager_backend::string_to_tool_type(
-                &tool_data.tool_type.to_string(),
+                tool_data.tool_type.as_ref(),
             ) {
                 let tool_id = gcodekit4::data::tools::ToolId(tool_data.id.to_string());
 
@@ -3708,7 +3703,7 @@ fn main() -> anyhow::Result<()> {
 
                 if let Some(material) =
                     gcodekit4::ui::tools_manager_backend::string_to_tool_material(
-                        &tool_data.material.to_string(),
+                        tool_data.material.as_ref(),
                     )
                 {
                     tool.material = material;
@@ -3799,7 +3794,7 @@ fn main() -> anyhow::Result<()> {
     main_window.on_search_tools(move |query| {
         if let Some(window) = window_weak.upgrade() {
             let backend = tools_backend_clone.borrow();
-            let tools = backend.search_tools(&query.to_string());
+            let tools = backend.search_tools(query.as_ref());
             let tools_ui: Vec<ToolData> = tools
                 .iter()
                 .map(|t| ToolData {
@@ -3836,7 +3831,7 @@ fn main() -> anyhow::Result<()> {
         if let Some(window) = window_weak.upgrade() {
             let backend = tools_backend_clone.borrow();
             if let Some(tt) =
-                gcodekit4::ui::tools_manager_backend::string_to_tool_type(&tool_type.to_string())
+                gcodekit4::ui::tools_manager_backend::string_to_tool_type(tool_type.as_ref())
             {
                 let tools = backend.filter_by_type(tt);
                 let tools_ui: Vec<ToolData> = tools
@@ -4418,16 +4413,14 @@ fn main() -> anyhow::Result<()> {
         // If no current file, prompt for filename
         let path = if let Some(existing_path) = &state.current_file_path {
             existing_path.clone()
+        } else if let Some(new_path) = rfd::FileDialog::new()
+            .add_filter("GCodeKit4 Design", &["gck4"])
+            .set_file_name("design.gck4")
+            .save_file()
+        {
+            new_path
         } else {
-            if let Some(new_path) = rfd::FileDialog::new()
-                .add_filter("GCodeKit4 Design", &["gck4"])
-                .set_file_name("design.gck4")
-                .save_file()
-            {
-                new_path
-            } else {
-                return; // User cancelled
-            }
+            return; // User cancelled
         };
 
         match state.save_to_file(&path) {

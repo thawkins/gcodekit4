@@ -18,6 +18,8 @@ fn test_user_reported_bug_thickness_1_5mm() {
         laser_passes: 1,
         laser_power: 1000,
         feed_rate: 500.0,
+        offset_x: 0.0,
+        offset_y: 0.0,
     };
 
     let mut maker = TabbedBoxMaker::new(params).expect("Failed to create TabbedBoxMaker");

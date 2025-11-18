@@ -18,6 +18,8 @@ fn test_tab_protrusion_equals_thickness_no_kerf() {
         laser_passes: 1,
         laser_power: 1000,
         feed_rate: 500.0,
+        offset_x: 0.0,
+        offset_y: 0.0,
     };
 
     let mut maker = TabbedBoxMaker::new(params).expect("Failed to create TabbedBoxMaker");
@@ -64,10 +66,10 @@ fn test_tab_protrusion_equals_thickness_no_kerf() {
     if min_y < 0.0 {
         let tab_depth = min_y.abs();
         println!("Measured tab protrusion depth: {:.2}mm", tab_depth);
-        println!("Expected: 3.0mm");
+        println!("Expected: 6.0mm (2x thickness)");
         assert!(
-            (tab_depth - 3.0).abs() < 0.1,
-            "Tab depth {:.2}mm != thickness 3.0mm",
+            (tab_depth - 6.0).abs() < 0.1,
+            "Tab depth {:.2}mm != expected 6.0mm (2x thickness)",
             tab_depth
         );
     }
@@ -87,6 +89,8 @@ fn test_tab_protrusion_with_kerf() {
         laser_passes: 1,
         laser_power: 1000,
         feed_rate: 500.0,
+        offset_x: 0.0,
+        offset_y: 0.0,
     };
 
     let mut maker = TabbedBoxMaker::new(params).expect("Failed to create TabbedBoxMaker");

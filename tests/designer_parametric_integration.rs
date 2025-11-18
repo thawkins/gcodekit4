@@ -397,7 +397,7 @@ fn test_parameter_set_clear() {
 fn test_template_library_update() {
     let mut library = TemplateLibrary::new("templates".to_string());
 
-    let mut template = ParametricTemplate::new(
+    let template = ParametricTemplate::new(
         "box".to_string(),
         "Box v1".to_string(),
         "Original box".to_string(),

@@ -111,7 +111,7 @@ fn test_safety_features_motion_check() {
 
 #[test]
 fn test_plugin_registry_operations() {
-    let mut registry = PluginRegistry::new();
+    let registry = PluginRegistry::new();
 
     assert_eq!(registry.list_plugins().len(), 0);
 
@@ -435,7 +435,7 @@ fn test_export_and_diagnostics() {
 #[test]
 fn test_comprehensive_system_state() {
     // Create a complete system state with all Phase 7 components
-    let mut safety = SafetyFeaturesManager::new();
+    let safety = SafetyFeaturesManager::new();
     let mut diag = CommunicationDiagnostics::default();
     let mut calibration = CalibrationWizard::new(CalibrationStepType::StepCalibration);
 

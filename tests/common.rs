@@ -1,6 +1,6 @@
 //! Common test utilities
 
-use gcodekit4::communication::CommunicatorListener;
+use gcodekit4_communication::CommunicatorListener;
 use std::sync::Mutex;
 
 /// Test listener for testing event callbacks

@@ -1,6 +1,6 @@
 #[test]
 fn test_tigershead_svg_conversion() {
-    use gcodekit4::processing::{VectorEngraver, VectorEngravingParameters};
+    use gcodekit4_camtools::{VectorEngraver, VectorEngravingParameters};
     
     let params = VectorEngravingParameters::default();
     let engraver = VectorEngraver::from_file("assets/svg/tigershead.svg", params)

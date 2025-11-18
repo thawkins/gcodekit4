@@ -52,16 +52,17 @@ fn test_designer_canvas_pan_zoom() {
     canvas.set_zoom(0.5);
     assert_eq!(canvas.zoom(), 0.5);
 
-    // Test pan
+    // Test pan - pan accumulates
     canvas.pan(10.0, 20.0);
     let (pan_x, pan_y) = canvas.pan_offset();
     assert_eq!(pan_x, 10.0);
     assert_eq!(pan_y, 20.0);
 
-    canvas.pan(5.0, -5.0);
+    canvas.pan(20.0, 10.0);
     let (pan_x, pan_y) = canvas.pan_offset();
-    assert_eq!(pan_x, 15.0);
-    assert_eq!(pan_y, 15.0);
+    // Pan accumulates
+    assert_eq!(pan_x, 30.0);
+    assert_eq!(pan_y, 30.0);
 }
 
 #[test]

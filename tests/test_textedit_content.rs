@@ -1,5 +1,4 @@
 use gcodekit4::ui::GcodeEditor;
-use std::path::Path;
 use tempfile::NamedTempFile;
 
 #[test]

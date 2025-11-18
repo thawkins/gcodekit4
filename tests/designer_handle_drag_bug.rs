@@ -44,7 +44,7 @@ fn test_sequential_handle_drags() {
     if let Some(selected_id) = canvas.selected_id() {
         for obj in canvas.shapes() {
             if obj.id == selected_id {
-                let (x1, y1, x2, y2) = obj.shape.bounding_box();
+                let (x1, y1, _x2, _y2) = obj.shape.bounding_box();
                 assert!((x1 - 110.0).abs() < 0.1);
                 assert!((y1 - 110.0).abs() < 0.1);
             }

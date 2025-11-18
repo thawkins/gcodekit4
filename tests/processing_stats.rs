@@ -1,6 +1,6 @@
 //! Tests for processing::stats
 
-use gcodekit4::processing::stats::*;
+use gcodekit4_parser::processing::stats::*;
 
 #[test]
 fn test_stats_calculation() {
