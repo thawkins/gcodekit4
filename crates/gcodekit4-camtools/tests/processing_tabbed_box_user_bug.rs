@@ -1,6 +1,6 @@
 //! Test to reproduce user-reported bug: thickness=1.5mm produces 6.7mm tabs
 
-use gcodekit4_parser::processing::tabbed_box::{
+use gcodekit4_camtools::tabbed_box::{
     BoxParameters, BoxType, FingerJointSettings, TabbedBoxMaker,
 };
 

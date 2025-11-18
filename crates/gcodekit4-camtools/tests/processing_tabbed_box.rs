@@ -1,6 +1,6 @@
 //! Test for verifying tabbed box tab protrusion dimensions
 
-use gcodekit4_parser::processing::tabbed_box::{
+use gcodekit4_camtools::tabbed_box::{
     BoxParameters, BoxType, FingerJointSettings, TabbedBoxMaker,
 };
 

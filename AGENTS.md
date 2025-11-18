@@ -25,7 +25,7 @@ Builds can take a long time so allow up to 600 seconds for a rebuild
   - Use `cargo test --test-threads=1` for sequential execution if needed
 
 ### Test Organization
-All tests **MUST** be located in the `tests/` folder organized by module hierarchy, NOT inline in source files:
+All tests **MUST** be located in the `tests/` inside each crate, if the test is at root level then it should be at the root tests/folder, NOT inline in source files:
 - Use `#[test]` for sync tests and `#[tokio::test]` for async tests
 - Import from the public `gcodekit4` crate (e.g., `use gcodekiti4::communication::GrblController;`)
 - Be organized with related tests grouped together
@@ -58,7 +58,6 @@ All tests **MUST** be located in the `tests/` folder organized by module hierarc
 - For all modules place a DOCBLOCK at the top of the file that describes the purpose of the module, and any dependencies.
 - **Documentation Files**: All documentation markdown files (*.md) **MUST** be located in the `docs/` folder, except for `STATS.md`, `SLINT.md`, `SPEC.md`, `AGENTS.md`, `README.md`, `PLAN.md` and `CHANGELOG.md` which remain in the project root. This includes: implementation guides, architecture documentation, feature specifications, task breakdowns, user guides, API references, and any other markdown documentation. Any future documentation should be created in the docs/ folder following this convention.
 - Do not create explainer documents or other .md files unless specifically asked to.
-- **Test Organization**: All tests **MUST** be located in the `tests/` folder organized by module hierarchy, mirroring the `src/` directory structure, NOT inline in source files.
 
 ## Code Style Guidelines
 - **Formatting**: 4 spaces, max 100 width, reorder_imports=true, Unix newlines

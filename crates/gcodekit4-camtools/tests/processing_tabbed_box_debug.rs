@@ -1,6 +1,6 @@
 //! Debug test to find when tabs become larger than thickness
 
-use gcodekit4_parser::processing::tabbed_box::{
+use gcodekit4_camtools::tabbed_box::{
     BoxParameters, BoxType, FingerJointSettings, TabbedBoxMaker,
 };
 

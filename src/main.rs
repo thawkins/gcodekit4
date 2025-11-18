@@ -450,7 +450,7 @@ fn update_visible_lines(window: &MainWindow, bridge: &EditorBridge) {
         })
         .collect();
 
-    !lines.is_empty();
+    let _ = !lines.is_empty();
 
     window.set_visible_lines(slint::ModelRc::new(VecModel::from(lines)));
 }

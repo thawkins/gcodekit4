@@ -3,7 +3,14 @@ fn test_tigershead_svg_conversion() {
     use gcodekit4_camtools::{VectorEngraver, VectorEngravingParameters};
     
     let params = VectorEngravingParameters::default();
-    let engraver = VectorEngraver::from_file("assets/svg/tigershead.svg", params)
+    // Use the correct path from project root
+    let asset_path = if std::path::Path::new("assets/svg/tigershead.svg").exists() {
+        "assets/svg/tigershead.svg"
+    } else {
+        "../../assets/svg/tigershead.svg"
+    };
+    
+    let engraver = VectorEngraver::from_file(asset_path, params)
         .expect("Failed to create engraver");
     
     let gcode = engraver.generate_gcode()
