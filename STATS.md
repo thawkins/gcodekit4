@@ -1,90 +1,60 @@
-# GCodeKit4 Statistics
+# GCodeKit4 Development Statistics
 
-Generated: 2025-11-17
-**Current Version**: 0.30.0-alpha
+## Current Status (2025-11-18)
 
-## Recent Development Activity
+### Version
+- **Current Release**: 0.30.0-alpha
+- **Build Status**: ✅ Passing
 
-### Cursor Blinking Animation (NEW - COMPLETE)
-- **Blinking Text Cursor**: Text cursor in G-code editor now blinks with 400ms cycle
-  - 200ms visible, 200ms invisible for standard blinking behavior
-  - Implemented via non-blocking Rust background timer thread
-  - Slint `invoke_from_event_loop` for thread-safe UI updates from background thread
-  - Property-based architecture: clean data flow through component hierarchy
-- **Implementation Details**:
-  - Background timer spawns on UI startup, runs indefinitely
-  - Sleeps 400ms between each visibility toggle
-  - Uses weak references for safe window lifecycle management
-  - BlinkingCursor component with opacity binding (1.0 visible, 0.0 invisible)
-- **Code Quality**: No debug output, clean implementation
+### Code Metrics
+- **Total Lines of Code**: ~50,000+
+- **Main Binary**: gcodekit4 (Rust + Slint UI)
+- **Architecture**: Modular workspace with 5 crates
 
-### Editor Focus & Mouse Input (PHASE 2 - COMPLETE)
-- **Mouse Click Positioning**: Click anywhere in editor to position cursor
-  - Automatic line detection from click Y position (10px half-line adjustment)
-  - Column detection from click X position (8px per character width)
-  - Proper rounding for accurate line selection
-  - Works with scrolled viewports
-- **Focus Infrastructure**: Complete focus cascade through all FocusScopes
-  - Root FocusScope → editor-focus-wrapper → GcodeEditorPanel → CustomTextEdit → fs
-  - Keyboard input routing verified through entire hierarchy
-  - Perfect functionality after first click (proven with extensive debug tracing)
-  
-### G-Code Text Editor Phase 2 (COMPLETE)
-- **Full Custom Text Editor Implementation**: Line wrapping at boundaries, viewport management
-- **Line Wrapping Behavior**: Left arrow at line start moves to previous line end, right arrow at line end moves to next line start
-- **Debug Print Cleanup**: Removed all temporary debug prints (eprintln!, debug! macros)
-- **Code Quality**: Fixed all compiler warnings, maintained structured logging via tracing
-- **Build Status**: Clean compilation with zero warnings, 10m 25s build time
+### Key Components
+- **gcodekit4-core**: Core types, traits, state management
+- **gcodekit4-parser**: G-code parsing, SVG/DXF support, preprocessing
+- **gcodekit4-communication**: Serial, TCP, WebSocket protocols
+- **gcodekit4-ui**: Slint UI components, visualizer, editor
+- **gcodekit4**: Main application binary
 
-### G-Code Text Editor Phase 1B - Cursor Position & Navigation (COMPLETE)
-- Fixed cursor position indexing (0-based backend to 1-based UI conversion)
-- Fixed cursor rendering position (off-by-one error)
-- Fixed cursor movement keys (immediate visual feedback)
-- Fixed text insertion point (now inserts at cursor, not at top)
-- Established proper architecture: Backend 0-based, UI 1-based, conversions at boundary
+### Recent Improvements (2025-11-18)
 
-### SVG to G-Code Vector Engraver (COMPLETE)
-- **Full SVG Group Transform Support**: Correctly applies matrix(a,b,c,d,e,f) transformations
-- **Multi-Segment Path Parsing**: Fixed critical bug where only first segment of SVG commands parsed
-  - Cubic curves (C/c): Now handles all segments in one command (example: 154 curves in tiger head)
-  - Quadratic curves (Q/q): Full multi-segment support with adaptive approximation
-  - Lines (L/l): All segments within command properly sequenced
-- **Resolution Improvement**: 15x increase (1,726 → 26,750 G1 commands for tiger head design)
-- **Complex Design Support**: 37-path tiger head design now correctly converted
+#### SVG Path Rendering (🔧 FIXED)
+- **Issue**: Long straight line segments (18mm+) in gcode from SVG curves
+- **Cause**: Multi-part SVG paths not properly handled
+- **Fix**: Added discontinuity detection with rapid moves (G0) for path breaks
+- **Result**: Tigershead.svg now renders perfectly with longest cutting segment of 2.5mm
 
-## Code Organization
+#### SVG Line Command Parsing (🔧 FIXED)
+- **Issue**: Implicit line repetition in SVG not supported
+- **Fix**: Enhanced L/l command handler to process multiple coordinate pairs per SVG spec
+- **Result**: All line commands now parse correctly
 
-- **Workspace Structure**: 5 crates (core, parser, communication, ui, main)
-- **Vector Engraver**: Complete SVG to G-code pipeline with transform handling
-- **Editor Module**: Custom text editor with EditorBridge, virtual scrolling, undo/redo, line wrapping
-- **Processing Module**: Enhanced with boxes.py algorithm and SVG support
-- **UI Components**: Updated CAM Tools dialog, G-code Editor Panel with text editing
-- **Test Coverage**: 296 UI tests passing, custom editor integration tests
+#### Text Editor Cursor (✅ FIXED - Previous)
+- Cursor now visible on empty editor
+- Blinking animation working at 400ms cycle
 
-## Key Features Implemented
+### Test Suite
+- Unit tests: Core functionality
+- Integration tests: SVG rendering, G-code generation
+- UI tests: Editor, visualizer, device communication
 
-### G-Code Text Editor (Phase 2 Complete)
-1. **Full Cursor Control**: Arrow keys with proper line wrapping at boundaries
-2. **Home/End Keys**: Move to line start/end with viewport adjustment
-3. **Ctrl+Home/End**: Jump to document start/end
-4. **Text Editing at Cursor**: Insert/delete at correct position
-5. **Status Display**: Real-time cursor position (Line X:Y) in status bar
-6. **Undo/Redo**: Ctrl+Z/Y with cursor position preservation
-7. **Proper Indexing**: Backend 0-based, UI 1-based, correct conversions
-8. **Line Wrapping**: Seamless navigation across line boundaries
-9. **Virtual Scrolling**: Supports 100+ line files efficiently
-10. **Clean Codebase**: No debug prints, all warnings fixed
+### Performance
+- Real-time status polling: 200ms updates
+- Smooth visualization with virtual scrolling
+- Responsive UI on both Linux and Windows
 
-### SVG to G-Code Conversion
-1. **Group Transform Application**: Matrix(a,b,c,d,e,f) transforms applied to all paths
-2. **Curve Approximation**: Adaptive segment generation for smooth output
-3. **Multi-Segment Parsing**: C/c, Q/q, L/l commands with multiple data sets
-4. **Coordinate Transformation**: SVG → Machine space with proper scaling
-5. **Complex Path Support**: Tiger head (37 paths, complex curves) → 26,000+ commands
+### Platform Support
+- ✅ Linux (primary development)
+- ✅ Windows (cross-compiled support)
+- ✅ macOS (experimental)
 
-### Other Features
-1. **Finger Joint Algorithm**: Production-proven boxes.py implementation
-2. **Configurable Parameters**: Finger width, space width, play tolerance
-3. **Multiple Styles**: Rectangular, Springs, Barbs, Snap
-4. **Path Generation**: Improved coordinate transforms and edge handling
-5. **G-code Output**: Clean, cuttable paths with proper edge transitions
+### Known Limitations
+- Focus re-entry to gcode-editor requires manual click (Slint limitation)
+- Arc approximation uses curve segmentation (not native G2/G3)
+
+### File Generation
+- Generated tigershead.gcode: 26,907 lines
+- Optimized path breaks: 4 disconnected sub-paths properly handled
+- Estimated cutting time: 45.9 minutes

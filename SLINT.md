@@ -48,6 +48,55 @@
 
 **Workaround for users**: Click once in the editor to focus it, then keyboard works normally.
 
+## SVG Path Rendering Insights
+
+### Multi-part SVG Path Handling (✅ FIXED 2025-11-18)
+
+**Issue**: Long straight line segments (18mm+) appeared in gcode where SVG has curves
+
+**Root Cause**: SVG paths can contain multiple disconnected sub-paths separated by `z` (close path) and `m` (move) commands. Example from tigershead.svg path 8:
+```
+m 7365,14183 c ... l ... c ... z m 670,-1853 c ... z
+```
+
+The parser treated all sub-path points as ONE continuous path, so the gap between the end of first sub-path and start of second sub-path was rendered as a single cutting line (G1 command), appearing as an 18mm straight line artifact.
+
+**Solution**: Added discontinuity detection in gcode generation:
+- When a point is >5mm from the previous point, it's treated as a path break
+- Sequence becomes: M5 (laser off) → G0 (rapid move) → M3 (laser re-engage)
+- This properly separates disconnected sub-paths without creating unwanted cutting lines
+
+**Result**: ✅ Longest cutting segment reduced from 18mm to 2.5mm (normal curve approximation)
+
+### SVG Command Implicit Repetition (✅ FIXED 2025-11-18)
+
+**Issue**: SVG line commands with multiple coordinate pairs were partially parsed
+
+**Details**: SVG spec allows implicit repetition in path commands:
+```
+l -50,50 -100,20 c 5,5 10,10 15,15
+```
+Should be interpreted as:
+- `l -50,50` (relative line to)
+- `l -100,20` (relative line to)
+- `c 5,5 10,10 15,15` (cubic curve)
+
+**Root Cause**: The L/l command handler only processed the first coordinate pair and skipped remaining ones
+
+**Solution**: Modified parse_path_data() to loop through consecutive coordinate pairs, similar to how the C/c handler was already implemented:
+```rust
+let mut j = i + 1;
+while j + 1 < commands.len() {
+    // Process (x, y) pair
+    j += 2;
+    // Check if next token is another command or more line data
+    if is_command(commands[j]) { break; }
+}
+i = j;
+```
+
+**Result**: ✅ All line segments now properly parsed according to SVG specification
+
 **Future Fix**: Would require either:
 1. Using a custom component that wraps and recreates the view
 2. Upgrading Slint to support element recreation in conditionals

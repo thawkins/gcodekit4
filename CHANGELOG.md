@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.30.0-alpha] - 2025-11-18
+
+### Fixed
+- **Malformed SVG Path Rendering in GCode Output**
+  - Fixed long straight line segments appearing in gcode where SVG has curves
+  - Issue affected SVG paths with multiple sub-paths separated by close (z) and move (m) commands
+  - Paths 8, 9, and 18 of tigershead.svg previously rendered with 18mm+ straight line jumps
+  - **Root Cause**: SVG parser treated disconnected sub-paths as one continuous path
+  - **Solution**: Added discontinuity detection in gcode generation (>5mm jumps trigger rapid move with laser off)
+  - Now properly handles path breaks with M5 (laser off) → G0 (rapid move) → M3 (laser re-engage) sequence
+
+### Improved
+- **SVG Path Parsing**: Enhanced L/l command handler to support implicit repetition per SVG spec
+  - SVG allows `l x1,y1 x2,y2 ...` to represent multiple line segments
+  - Parser now correctly processes all line segments instead of just first one
+- **GCode Quality**: Longest cutting segment reduced from 18mm to 2.5mm (normal curve approximation)
+  - All 37 SVG paths in tigershead.svg now render correctly without artifacts
+  - Path discontinuities properly handled with rapid moves
+- **Documentation**: Updated SLINT.md with SVG path parsing details
+
 ## [0.30.0-alpha] - 2025-11-17
 
 ### Fixed

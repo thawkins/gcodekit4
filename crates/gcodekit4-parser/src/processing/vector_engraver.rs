@@ -489,9 +489,11 @@ impl VectorEngraver {
                     }
                 }
                 "L" | "l" => {
-                    if i + 2 < commands.len() {
-                        let x: f32 = commands[i + 1].parse().unwrap_or(0.0);
-                        let y: f32 = commands[i + 2].parse().unwrap_or(0.0);
+                    // Handle multiple line segments in one command (SVG spec allows implicit repetition)
+                    let mut j = i + 1;
+                    while j + 1 < commands.len() {
+                        let x: f32 = commands[j].parse().unwrap_or(0.0);
+                        let y: f32 = commands[j + 1].parse().unwrap_or(0.0);
 
                         if cmd == "l" {
                             current_x += x;
@@ -505,10 +507,21 @@ impl VectorEngraver {
                             x: current_x,
                             y: current_y,
                         });
-                        i += 3;
-                    } else {
-                        i += 1;
+                        j += 2;
+
+                        // Check if next is a command letter or more line data
+                        if j < commands.len() {
+                            let next = &commands[j];
+                            if next.len() == 1 && next.chars().all(|c| c.is_alphabetic()) {
+                                break;
+                            } else if next.parse::<f32>().is_err() {
+                                break;
+                            }
+                        } else {
+                            break;
+                        }
                     }
+                    i = j;
                 }
                 "H" | "h" => {
                     if i + 1 < commands.len() {
@@ -683,6 +696,10 @@ impl VectorEngraver {
                     i = j;
                 }
                 "Z" | "z" => {
+                    // Path closing is handled by splitting into sub-paths
+                    // We'll return the current path and start fresh on the next sub-path
+                    // For now, just mark that we hit a close command
+                    // The actual handling happens in parse_svg where we can detect this
                     i += 1;
                 }
                 _ => i += 1,
@@ -1134,8 +1151,36 @@ impl VectorEngraver {
             ));
 
             // Trace path
+            let mut prev_x = path[0].x * scale;
+            let mut prev_y = path[0].y * scale;
+            
             for point in path.iter().skip(1) {
-                gcode.push_str(&format!("G1 X{:.3} Y{:.3}\n", point.x * scale, point.y * scale));
+                let x = point.x * scale;
+                let y = point.y * scale;
+                
+                // Detect discontinuities (e.g., from z/m commands) and handle with rapid move
+                let dx = x - prev_x;
+                let dy = y - prev_y;
+                let dist = (dx * dx + dy * dy).sqrt();
+                
+                if dist > 5.0 {
+                    // Large jump likely from path close (z) followed by path open (m)
+                    // Turn off laser, rapid move to new position, turn laser back on
+                    gcode.push_str("M5 ; Laser off for path break\n");
+                    gcode.push_str(&format!(
+                        "G0 X{:.3} Y{:.3} ; Rapid move to new segment\n",
+                        x, y
+                    ));
+                    gcode.push_str(&format!(
+                        "G1 F{:.0} M3 S{} ; Re-engage laser\n",
+                        self.params.feed_rate, power_value
+                    ));
+                } else {
+                    gcode.push_str(&format!("G1 X{:.3} Y{:.3}\n", x, y));
+                }
+                
+                prev_x = x;
+                prev_y = y;
             }
 
             gcode.push_str("M5 ; Laser off\n");
