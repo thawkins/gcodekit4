@@ -21,6 +21,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Includes SVG and DXF file import with layering support
   - Result: Cleaner 7-crate modular architecture with clear separation of concerns
 
+### Fixed
+- **Vector Engraver Multi-Pass Bug**
+  - Fixed issue where vector engraver only performed 1 pass regardless of `num_passes` setting
+  - Implemented proper multi-pass loop with Z-axis depth adjustment
+  - Each pass decrements Z by `z_increment` for proper depth control
+  - Added pass comments and progress tracking for multi-pass operations
+- **Laser Dot at Path End Bug**
+  - Fixed issue where laser remained enabled during travel between paths
+  - Changed initial move to path from cutting (G1) to rapid (G0) before laser engagement
+  - Ensured laser is explicitly disabled (M5) before any travel between paths
+  - Prevents burn marks/dots at path endpoints
+
 ### Improved
 - **Architecture**: 7 focused crates with well-defined responsibilities
   - gcodekit4-core: Firmware and hardware abstraction
@@ -34,18 +46,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Removed ~70 redundant INFO logs for visualization updates
   - Fixed unused variable warnings across test suite
   - Applied clippy fixes for code idioms
-- **Testing**: All integration tests passing (except 1 known pan/zoom edge case)
-  - 127 tests passing across 7 test suites
-  - Removed broken/orphaned tests from refactoring
-  - Clean error-free compilation
+- **Testing**: Reorganized tests into crate-specific folders
+  - Moved designer tests to gcodekit4-designer/tests/
+  - Moved CAM tools tests to gcodekit4-camtools/tests/
+  - Moved editor tests to gcodekit4-gcodeeditor/tests/
+  - Moved UI tests to gcodekit4-ui/tests/
+  - Added comprehensive multi-pass test suite (3 new tests)
 
 ### Build & Testing
 - ✅ Release build succeeds (600+ seconds on full rebuild)
 - ✅ All crates compile without errors
-- ✅ 127 integration tests passing
+- ✅ 130 integration tests passing (3 new multi-pass tests)
 - ✅ All clippy warnings fixed
 - ✅ Binary builds to target/release/gcodekit4
-- ✅ All Slint components properly included in new crate
+- ✅ All Slint components properly included in new crates
 
 ## [0.31.0-alpha] - 2025-11-18
 
