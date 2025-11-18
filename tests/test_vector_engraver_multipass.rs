@@ -1,4 +1,4 @@
-use gcodekit4_parser::processing::vector_engraver::VectorEngravingParameters;
+use gcodekit4_camtools::{VectorEngraver, VectorEngravingParameters};
 use std::fs;
 
 #[test]
@@ -19,7 +19,7 @@ fn test_multipass_generation() {
     params.num_passes = 3;
     params.z_increment = 0.5;
     
-    let engraver = gcodekit4_parser::processing::vector_engraver::VectorEngraver::from_file(
+    let engraver = VectorEngraver::from_file(
         &svg_path,
         params,
     ).unwrap();
@@ -57,7 +57,7 @@ fn test_single_pass_no_multipass() {
     
     let params = VectorEngravingParameters::default();
     
-    let engraver = gcodekit4_parser::processing::vector_engraver::VectorEngraver::from_file(
+    let engraver = VectorEngraver::from_file(
         &svg_path,
         params,
     ).unwrap();
@@ -91,7 +91,7 @@ fn test_laser_disabled_at_path_end() {
     
     let params = VectorEngravingParameters::default();
     
-    let engraver = gcodekit4_parser::processing::vector_engraver::VectorEngraver::from_file(
+    let engraver = VectorEngraver::from_file(
         &svg_path,
         params,
     ).unwrap();

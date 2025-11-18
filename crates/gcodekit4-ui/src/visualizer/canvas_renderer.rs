@@ -58,11 +58,6 @@ pub fn render_toolpath_to_path(visualizer: &Visualizer2D, width: u32, height: u3
         return String::new();
     }
 
-    tracing::info!(
-        "Rendering toolpath: {} total commands",
-        visualizer.commands.len()
-    );
-
     let scale = calculate_scale(visualizer, width, height);
     let transform = CoordTransform::new(
         visualizer.min_x,

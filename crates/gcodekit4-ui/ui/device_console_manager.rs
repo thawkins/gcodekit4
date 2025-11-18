@@ -284,11 +284,9 @@ impl CommunicatorListener for ConsoleListener {
             
             // Check for startup message (single line, immediate detection)
             if (trimmed.contains("Grbl") || trimmed.contains("grbl")) && trimmed.contains("help") {
-                tracing::info!("Detected GRBL startup message: '{}'", trimmed);
                 use crate::FirmwareDetector;
                 match FirmwareDetector::parse_grbl_startup(trimmed) {
                     Ok(detection) => {
-                        tracing::info!("Successfully detected from startup: {} {}", detection.firmware_type, detection.version_string);
                         
                         // Store in shared state if available
                         if let Some(ref fw_state) = self.detected_firmware {
@@ -312,11 +310,9 @@ impl CommunicatorListener for ConsoleListener {
             // Format: [VER:...]\n[OPT:...]\nok
             if trimmed.contains("[VER:") && trimmed.contains("[OPT:") && trimmed.contains("ok") {
                 // Complete $I response in one chunk
-                tracing::info!("Got complete $I response in one chunk");
                 use crate::FirmwareDetector;
                 match FirmwareDetector::parse_grbl_version_info(trimmed) {
                     Ok(detection) => {
-                        tracing::info!("Successfully detected from $I: {} {}", detection.firmware_type, detection.version_string);
                         
                         // Store in shared state if available
                         if let Some(ref fw_state) = self.detected_firmware {

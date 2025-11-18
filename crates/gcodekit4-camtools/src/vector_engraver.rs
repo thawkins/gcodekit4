@@ -142,11 +142,6 @@ impl VectorEngraver {
             }
         }
 
-        tracing::info!(
-            "SVG viewBox: width={:.2}, height={:.2}",
-            viewbox_width, viewbox_height
-        );
-
         // Extract group transform matrix
         let mut group_transform = None;
         if let Some(g_start) = content.find("<g") {
@@ -205,12 +200,6 @@ impl VectorEngraver {
         } else {
             0.1
         };
-
-        tracing::info!(
-            "Extracted {} paths, scale factor: {:.6}",
-            all_paths.len(),
-            scale_factor
-        );
 
         Ok((all_paths, scale_factor))
     }
@@ -1145,8 +1134,18 @@ impl VectorEngraver {
                 0.0
             };
 
-            if self.params.multi_pass && pass > 0 {
+            if pass == 0 && self.params.multi_pass {
+                gcode.push_str(&format!(
+                    "G0 Z{:.2} ; Move to first pass depth\n",
+                    z_depth
+                ));
+            } else if self.params.multi_pass && pass > 0 {
                 gcode.push_str(&format!("\n; Pass {} of {}\n", pass + 1, num_passes));
+                gcode.push_str(&format!(
+                    "G0 Z{:.2} F{:.0} ; Move to safe height\n",
+                    5.0, self.params.travel_rate
+                ));
+                gcode.push_str("; Lower Z for next pass\n");
                 gcode.push_str(&format!(
                     "G0 Z{:.2} ; Move to pass depth\n",
                     z_depth
@@ -1158,50 +1157,54 @@ impl VectorEngraver {
                     continue;
                 }
 
-                // Travel to first point of path
+                // Travel to first point of path (rapid, laser off)
                 gcode.push_str(&format!(
                     "G0 X{:.3} Y{:.3} ; Move to path start\n",
                     path[0].x * scale, path[0].y * scale
                 ));
 
-                // Engage laser and cut path
-                gcode.push_str(&format!(
-                    "G1 F{:.0} M3 S{} ; Enable laser at power level\n",
-                    self.params.feed_rate, power_value
-                ));
+                if path.len() > 1 {
+                    // Engage laser and move to second point to start cutting
+                    gcode.push_str(&format!(
+                        "G1 X{:.3} Y{:.3} F{:.0} M3 S{} ; Enable laser and cut to next point\n",
+                        path[1].x * scale, path[1].y * scale,
+                        self.params.feed_rate, power_value
+                    ));
 
-                // Trace path
-                let mut prev_x = path[0].x * scale;
-                let mut prev_y = path[0].y * scale;
+                    // Trace rest of path
+                    let mut prev_x = path[1].x * scale;
+                    let mut prev_y = path[1].y * scale;
 
-                for (_point_idx, point) in path.iter().skip(1).enumerate() {
-                    let x = point.x * scale;
-                    let y = point.y * scale;
+                    for (_point_idx, point) in path.iter().skip(2).enumerate() {
+                        let x = point.x * scale;
+                        let y = point.y * scale;
 
-                    // Detect discontinuities (e.g., from z/m commands) and handle with rapid move
-                    let dx = x - prev_x;
-                    let dy = y - prev_y;
-                    let dist = (dx * dx + dy * dy).sqrt();
+                        // Detect discontinuities (e.g., from z/m commands) and handle with rapid move
+                        let dx = x - prev_x;
+                        let dy = y - prev_y;
+                        let dist = (dx * dx + dy * dy).sqrt();
 
-                    if dist > 5.0 {
-                        // Large jump likely from path close (z) followed by path open (m)
-                        // Turn off laser, rapid move to new position, turn laser back on
-                        gcode.push_str("M5 ; Laser off for path break\n");
-                        gcode.push_str("G4 P0.1 ; Dwell to ensure laser off\n");
-                        gcode.push_str(&format!(
-                            "G0 X{:.3} Y{:.3} ; Rapid move to new segment\n",
-                            x, y
-                        ));
-                        gcode.push_str(&format!(
-                            "G1 F{:.0} M3 S{} ; Re-engage laser\n",
-                            self.params.feed_rate, power_value
-                        ));
-                    } else {
-                        gcode.push_str(&format!("G1 X{:.3} Y{:.3}\n", x, y));
+                        if dist > 5.0 {
+                            // Large jump likely from path close (z) followed by path open (m)
+                            // Turn off laser, rapid move to new position, turn laser back on
+                            gcode.push_str("M5 ; Laser off for path break\n");
+                            gcode.push_str("G4 P0.1 ; Dwell to ensure laser off\n");
+                            gcode.push_str(&format!(
+                                "G0 X{:.3} Y{:.3} ; Rapid move to new segment\n",
+                                x, y
+                            ));
+                            gcode.push_str(&format!(
+                                "G1 X{:.3} Y{:.3} F{:.0} M3 S{} ; Re-engage laser\n",
+                                x, y,
+                                self.params.feed_rate, power_value
+                            ));
+                        } else {
+                            gcode.push_str(&format!("G1 X{:.3} Y{:.3}\n", x, y));
+                        }
+
+                        prev_x = x;
+                        prev_y = y;
                     }
-
-                    prev_x = x;
-                    prev_y = y;
                 }
 
                 // Turn laser off before moving away

@@ -290,15 +290,6 @@ impl Visualizer2D {
         (self.min_x, self.max_x, self.min_y, self.max_y) =
             bounds.finalize_with_padding(BOUNDS_PADDING_FACTOR);
         self.current_pos = current_pos;
-
-        tracing::info!(
-            "Parsed G-code: G0={}, G1={}, G2={}, G3={}, total commands={}",
-            g0_count,
-            g1_count,
-            g2_count,
-            g3_count,
-            self.commands.len()
-        );
     }
 
     fn parse_linear_move(

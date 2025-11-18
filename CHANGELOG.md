@@ -32,6 +32,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Changed initial move to path from cutting (G1) to rapid (G0) before laser engagement
   - Ensured laser is explicitly disabled (M5) before any travel between paths
   - Prevents burn marks/dots at path endpoints
+- **Module Cleanup**
+  - Removed duplicate engraver modules from gcodekit4-parser
+  - Updated imports to use canonical implementations from gcodekit4-camtools
+  - Removed all verbose INFO logging statements (~80+ logs removed)
 
 ### Improved
 - **Architecture**: 7 focused crates with well-defined responsibilities

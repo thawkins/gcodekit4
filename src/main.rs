@@ -459,7 +459,6 @@ fn main() -> anyhow::Result<()> {
     // Initialize logging
     init_logging()?;
 
-    tracing::info!("=== GCodeKit4 Starting - Logging Enabled ===");
 
     let main_window = MainWindow::new().map_err(|e| anyhow::anyhow!("UI Error: {}", e))?;
 
@@ -807,8 +806,6 @@ fn main() -> anyhow::Result<()> {
                     timer.start(slint::TimerMode::Repeated, std::time::Duration::from_millis(500), move || {
                         if let Some(detection) = detected_firmware_timer.lock().unwrap().as_ref().cloned() {
                             if let Some(window) = window_weak_timer.upgrade() {
-                                tracing::info!("Timer: Updating Device Info with detected firmware: {} {}",
-                                    detection.firmware_type, detection.version);
                                 update_device_info_panel(&window, detection.firmware_type, detection.version, &capability_manager_timer);
                                 window.set_device_version(slint::SharedString::from(
                                     format!("{} {}", detection.firmware_type, detection.version)
@@ -842,7 +839,6 @@ fn main() -> anyhow::Result<()> {
                         if let Err(e) = comm.send_command("$I") {
                             tracing::warn!("Failed to send $I for firmware detection: {}", e);
                         } else {
-                            tracing::info!("Sent $I to query firmware version");
                         }
                     }
 
@@ -1291,7 +1287,6 @@ fn main() -> anyhow::Result<()> {
 
                     // Update custom editor state
                     let line_count = editor_bridge_open.line_count();
-                    tracing::info!("File loaded: {} lines", line_count);
                     window.set_can_undo(editor_bridge_open.can_undo());
                     window.set_can_redo(editor_bridge_open.can_redo());
                     window.set_total_lines(line_count as i32);
@@ -2304,7 +2299,6 @@ fn main() -> anyhow::Result<()> {
     
     // Debug callback for editor clicked events
     main_window.on_editor_clicked(move || {
-        tracing::info!("🖱️ [RUST] Editor clicked callback received!");
     });
 
     // Set up menu-view-machine callback
@@ -3207,11 +3201,6 @@ fn main() -> anyhow::Result<()> {
                 if let Some(window) = window_weak_timer.upgrade() {
                     let canvas_width = window.get_visualizer_canvas_width();
                     let canvas_height = window.get_visualizer_canvas_height();
-                    tracing::info!(
-                        "Deferred visualizer refresh with canvas {}x{}",
-                        canvas_width,
-                        canvas_height
-                    );
                     if canvas_width < 100.0 || canvas_height < 100.0 {
                         tracing::warn!("Canvas too small, retrying refresh in 200ms");
                         // Retry one more time
@@ -3220,7 +3209,6 @@ fn main() -> anyhow::Result<()> {
                             if let Some(window) = window_weak_retry.upgrade() {
                                 let canvas_width = window.get_visualizer_canvas_width();
                                 let canvas_height = window.get_visualizer_canvas_height();
-                                tracing::info!("Retry visualizer refresh with canvas {}x{}", canvas_width, canvas_height);
                                 window.invoke_refresh_visualization(canvas_width, canvas_height);
                             }
                         });
@@ -3900,12 +3888,6 @@ fn main() -> anyhow::Result<()> {
 
                 match result {
                     Ok(import_result) => {
-                        tracing::info!(
-                            "GTC Import: {} of {} tools imported, {} skipped",
-                            import_result.imported_tools.len(),
-                            import_result.total_tools,
-                            import_result.skipped_tools
-                        );
 
                         if !import_result.errors.is_empty() {
                             tracing::warn!("Import errors:");
@@ -3945,10 +3927,6 @@ fn main() -> anyhow::Result<()> {
                         window.set_cnc_tools(slint::ModelRc::new(VecModel::from(tools_ui)));
 
                         // Show success message
-                        tracing::info!(
-                            "Successfully imported {} tools from GTC catalog",
-                            import_result.imported_tools.len()
-                        );
                     }
                     Err(e) => {
                         tracing::error!("Failed to import GTC catalog: {}", e);
@@ -5321,7 +5299,7 @@ fn main() -> anyhow::Result<()> {
                         }
 
                         // Create engraving parameters - collect all data before spawning thread
-                        use gcodekit4_parser::processing::{
+                        use gcodekit4_camtools::{
                             EngravingParameters, ImageTransformations, BitmapImageEngraver, ScanDirection,
                             RotationAngle, HalftoneMethod,
                         };
@@ -5359,7 +5337,6 @@ fn main() -> anyhow::Result<()> {
                         let window_weak_thread = window.as_weak();
                         let image_path_clone = image_path.clone();
                         std::thread::spawn(move || {
-                            tracing::info!("Background thread: Starting G-code generation");
 
                             let params = EngravingParameters {
                                 width_mm,
@@ -5422,19 +5399,12 @@ fn main() -> anyhow::Result<()> {
                                     Ok(gcode)
                                 });
 
-                            tracing::info!(
-                                "Background thread: G-code generation complete, updating UI"
-                            );
 
                             // Update UI from the main thread using slint::invoke_from_event_loop
                             let _ = slint::invoke_from_event_loop(move || {
                                 if let Some(win) = window_weak_thread.upgrade() {
                                     match result {
                                         Ok(gcode) => {
-                                            tracing::info!(
-                                                "Setting G-code content ({} bytes)",
-                                                gcode.len()
-                                            );
                                             win.set_progress_value(95.0); // Show progress before UI update
                                             win.set_connection_status(
                                                 "Loading G-code into editor...".into(),
@@ -5635,7 +5605,7 @@ fn main() -> anyhow::Result<()> {
                         }
 
                         // Create vector engraving parameters
-                        use gcodekit4_parser::processing::{
+                        use gcodekit4_camtools::{
                             VectorEngraver, VectorEngravingParameters,
                         };
 
@@ -5663,7 +5633,6 @@ fn main() -> anyhow::Result<()> {
                         let window_weak_thread = window.as_weak();
                         let vector_path_clone = vector_path.clone();
                         std::thread::spawn(move || {
-                            tracing::info!("Background thread: Starting vector G-code generation");
 
                             let params = VectorEngravingParameters {
                                 feed_rate,
@@ -5700,19 +5669,12 @@ fn main() -> anyhow::Result<()> {
                                     Ok(gcode)
                                 });
 
-                            tracing::info!(
-                                "Background thread: Vector G-code generation complete, updating UI"
-                            );
 
                             // Update UI from the main thread using slint::invoke_from_event_loop
                             let _ = slint::invoke_from_event_loop(move || {
                                 if let Some(win) = window_weak_thread.upgrade() {
                                     match result {
                                         Ok(gcode) => {
-                                            tracing::info!(
-                                                "Setting G-code content ({} bytes)",
-                                                gcode.len()
-                                            );
                                             win.set_progress_value(95.0); // Show progress before UI update
                                             win.set_connection_status(
                                                 "Loading G-code into editor...".into(),
@@ -5845,7 +5807,6 @@ fn main() -> anyhow::Result<()> {
             let content = window.get_gcode_content();
             let current_view = window.get_current_view();
 
-            tracing::info!("Refresh visualization: current_view={}, content length = {}", current_view, content.len());
 
             // Reset progress
             window.set_visualizer_progress(0.0);
@@ -5906,15 +5867,12 @@ fn main() -> anyhow::Result<()> {
                     render_toolpath_to_path, Visualizer2D,
                 };
 
-                tracing::info!("Render thread started");
                 let _ = tx.send((0.1, "Parsing G-code...".to_string(), None, None, None, None));
 
                 let mut visualizer = Visualizer2D::new();
                 visualizer.show_grid = show_grid;
 
-                tracing::info!("Parsing G-code, content length: {}", content_owned.len());
                 visualizer.parse_gcode(&content_owned);
-                tracing::info!("G-code parsing complete");
 
                 // Set default view to position origin at bottom-left
                 visualizer.set_default_view(canvas_width, canvas_height);
@@ -5948,16 +5906,8 @@ fn main() -> anyhow::Result<()> {
                 let origin_data =
                     render_origin_to_path(&visualizer, canvas_width as u32, canvas_height as u32);
 
-                tracing::info!(
-                    "Refresh render complete: path={}, rapid={}, grid={}, origin={}",
-                    path_data.len(),
-                    rapid_moves_data.len(),
-                    grid_data.len(),
-                    origin_data.len()
-                );
 
                 if !path_data.is_empty() || !rapid_moves_data.is_empty() || !grid_data.is_empty() {
-                    tracing::info!("Sending render data to UI");
                     let _ = tx.send((
                         1.0,
                         "Complete".to_string(),
