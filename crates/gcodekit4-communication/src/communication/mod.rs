@@ -352,7 +352,6 @@ impl Communicator for NoOpCommunicator {
         if !self.connected {
             return Err(gcodekit4_core::Error::other("Not connected"));
         }
-        tracing::trace!("NoOp send: {} bytes", data.len());
         Ok(data.len())
     }
 
@@ -508,11 +507,9 @@ impl Communicator for SerialCommunicator {
                     if e.kind() == std::io::ErrorKind::WouldBlock
                         || e.kind() == std::io::ErrorKind::TimedOut
                     {
-                        tracing::trace!("Serial receive timeout (no data)");
                         Ok(vec![])
                     } else if e.kind() == std::io::ErrorKind::BrokenPipe {
                         // BrokenPipe during receive often happens during cleanup or disconnect
-                        tracing::debug!("Receive operation completed with BrokenPipe (connection may have been closed)");
                         Ok(vec![])
                     } else {
                         let msg = format!("Receive error: {}", e);
@@ -529,12 +526,10 @@ impl Communicator for SerialCommunicator {
 
     fn add_listener(&mut self, listener: CommunicatorListenerHandle) {
         self.listeners.push(listener);
-        tracing::debug!("Added listener, total: {}", self.listeners.len());
     }
 
     fn remove_listener(&mut self, listener: &CommunicatorListenerHandle) {
         self.listeners.retain(|l| !Arc::ptr_eq(l, listener));
-        tracing::debug!("Removed listener, total: {}", self.listeners.len());
     }
 
     fn connection_params(&self) -> Option<&ConnectionParams> {
@@ -651,7 +646,6 @@ impl Communicator for TcpCommunicator {
                 Err(e) => {
                     // Handle BrokenPipe more gracefully - it often occurs during cleanup
                     if e.kind() == std::io::ErrorKind::BrokenPipe {
-                        tracing::debug!("Send operation completed with BrokenPipe (connection may have been closed)");
                         // Return success for BrokenPipe if data was likely sent
                         Ok(0)
                     } else {
@@ -686,11 +680,9 @@ impl Communicator for TcpCommunicator {
                     if e.kind() == std::io::ErrorKind::WouldBlock
                         || e.kind() == std::io::ErrorKind::TimedOut
                     {
-                        tracing::trace!("TCP receive timeout (no data)");
                         Ok(vec![])
                     } else if e.kind() == std::io::ErrorKind::BrokenPipe {
                         // BrokenPipe during receive often happens during cleanup or disconnect
-                        tracing::debug!("Receive operation completed with BrokenPipe (connection may have been closed)");
                         Ok(vec![])
                     } else {
                         let msg = format!("Receive error: {}", e);
@@ -707,12 +699,10 @@ impl Communicator for TcpCommunicator {
 
     fn add_listener(&mut self, listener: CommunicatorListenerHandle) {
         self.listeners.push(listener);
-        tracing::debug!("Added listener, total: {}", self.listeners.len());
     }
 
     fn remove_listener(&mut self, listener: &CommunicatorListenerHandle) {
         self.listeners.retain(|l| !Arc::ptr_eq(l, listener));
-        tracing::debug!("Removed listener, total: {}", self.listeners.len());
     }
 
     fn connection_params(&self) -> Option<&ConnectionParams> {

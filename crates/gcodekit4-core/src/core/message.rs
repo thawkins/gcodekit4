@@ -128,7 +128,9 @@ impl MessageDispatcher {
         let min_level = *self.min_level.read();
         if message.level >= min_level {
             match message.level {
-                MessageLevel::Verbose => tracing::trace!("{}", message.format_console()),
+                MessageLevel::Verbose => {
+                    // Skip verbose logging
+                }
                 MessageLevel::Info => {
                     // Skip logging info messages to reduce noise
                 }

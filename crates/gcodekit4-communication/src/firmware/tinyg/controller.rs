@@ -11,7 +11,6 @@ use parking_lot::RwLock;
 use std::sync::Arc;
 use tokio::task::JoinHandle;
 use tokio::time::{interval, Duration};
-use tracing::debug;
 
 /// TinyG Controller state management
 #[derive(Debug, Clone)]
@@ -89,7 +88,6 @@ impl TinyGController {
 
     /// Perform initialization as task
     async fn initialize_async(&self) -> anyhow::Result<()> {
-        debug!("Initializing TinyG controller (async)");
 
         // Query firmware version
 

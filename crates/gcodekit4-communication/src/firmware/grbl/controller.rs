@@ -12,7 +12,6 @@ use parking_lot::RwLock;
 use std::sync::Arc;
 use tokio::task::JoinHandle;
 use tokio::time::{interval, Duration};
-use tracing::debug;
 
 /// GRBL Controller state management
 #[derive(Debug, Clone)]
@@ -202,11 +201,6 @@ impl ControllerTrait for GrblController {
         // Check if ready to send (character counting)
         let command_size = command.len() + 1; // +1 for newline
         if !self.communicator.is_ready_to_send(command_size) {
-            debug!(
-                "Waiting for buffer space. Pending: {}, Available: {}",
-                self.communicator.get_pending_chars(),
-                self.communicator.get_available_buffer()
-            );
         }
 
         // Send command

@@ -277,8 +277,6 @@ impl CommunicatorListener for ConsoleListener {
         if let Ok(text) = std::str::from_utf8(data) {
             let trimmed = text.trim();
 
-            tracing::debug!("ConsoleListener received: '{}'", trimmed);
-
             // Suppress status polling responses (starts with '<')
             // Also suppress if it only contains status and 'ok' responses
             if trimmed.starts_with('<')

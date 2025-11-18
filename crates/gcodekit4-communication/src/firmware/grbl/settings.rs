@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
-use tracing::{debug, warn};
+use tracing::warn;
 
 /// GRBL firmware setting
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -53,10 +53,6 @@ impl SettingsManager {
 
     /// Add or update a setting
     pub fn set_setting(&mut self, setting: Setting) {
-        debug!(
-            "Adding/updating setting {} ({}): {}",
-            setting.number, setting.name, setting.value
-        );
         self.dirty = true;
         self.settings.insert(setting.number, setting);
     }

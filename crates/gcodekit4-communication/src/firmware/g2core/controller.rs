@@ -12,7 +12,6 @@ use parking_lot::RwLock;
 use std::sync::Arc;
 use tokio::task::JoinHandle;
 use tokio::time::{interval, Duration};
-use tracing::debug;
 
 /// g2core Controller state management
 #[derive(Debug, Clone)]
@@ -98,7 +97,6 @@ impl G2CoreController {
 
     /// Perform initialization as task
     async fn initialize_async(&self) -> anyhow::Result<()> {
-        debug!("Initializing g2core controller (async)");
 
         // Query firmware version and capabilities
 

@@ -7,7 +7,6 @@
 use crate::communication::{Communicator, ConnectionParams};
 use parking_lot::RwLock;
 use std::sync::Arc;
-use tracing::trace;
 
 /// GRBL communicator configuration
 #[derive(Debug, Clone)]
@@ -87,7 +86,6 @@ impl GrblCommunicator {
 
     /// Send raw bytes to GRBL device
     pub fn send_bytes(&self, data: &[u8]) -> anyhow::Result<()> {
-        trace!("Sending {} bytes to GRBL", data.len());
         let mut comm = self.communicator.write();
         comm.send(data)
             .map_err(|e| anyhow::anyhow!("Send failed: {}", e))?;
@@ -119,7 +117,6 @@ impl GrblCommunicator {
         let response = comm
             .receive()
             .map_err(|e| anyhow::anyhow!("Receive failed: {}", e))?;
-        trace!("Received {} bytes from GRBL", response.len());
         Ok(response)
     }
 

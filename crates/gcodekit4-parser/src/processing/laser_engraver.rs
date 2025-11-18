@@ -159,37 +159,28 @@ impl BitmapImageEngraver {
         let height = gray.height() as usize;
         let width = gray.width() as usize;
 
-        tracing::debug!("Creating SVec from image: {}x{}", width, height);
-
         // Create SVec in grayscale format using ImgData::U8
         // Grayscale images must specify 1 channel explicitly for pepecore compatibility
         let shape = Shape::new(height, width, Some(1));
         let mut svec = SVec::new(shape, ImgData::U8(gray.into_raw()));
 
-        tracing::debug!("SVec created: {:?}", svec.shape());
-
         // Apply transformations: mirroring -> rotation -> inversion -> halftoning
         if params.transformations.mirror_x {
-            tracing::debug!("Applying mirror_x");
             Self::mirror_x_svec(&mut svec)?;
         }
         if params.transformations.mirror_y {
-            tracing::debug!("Applying mirror_y");
             Self::mirror_y_svec(&mut svec)?;
         }
 
         if params.transformations.rotation != RotationAngle::Degrees0 {
-            tracing::debug!("Applying rotation: {:?}", params.transformations.rotation);
             svec = Self::apply_rotation_svec(svec, params.transformations.rotation)?;
         }
 
         if params.transformations.invert {
-            tracing::debug!("Applying invert");
             Self::invert_svec(&mut svec)?;
         }
 
         if params.transformations.halftone != HalftoneMethod::None {
-            tracing::debug!("Applying halftone: {:?}", params.transformations.halftone);
             Self::apply_halftoning_svec(&mut svec, params.transformations.halftone, params.transformations.halftone_dot_size)?;
         }
 
@@ -421,16 +412,6 @@ impl BitmapImageEngraver {
             HalftoneMethod::InvertedLine => DotType::INVLINE,
             HalftoneMethod::None => return Ok(()),
         };
-
-        let (height, width, channels) = svec.shape();
-        tracing::debug!(
-            "Applying halftone: method={:?}, dot_size={}, image={}x{}, channels={:?}",
-            method,
-            dot_size,
-            width,
-            height,
-            channels
-        );
 
         pepecore::halftone(svec, &[dot_size], &[dot_type])
             .context("Failed to apply halftone effect")

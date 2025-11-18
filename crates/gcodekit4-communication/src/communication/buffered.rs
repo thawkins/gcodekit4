@@ -253,11 +253,6 @@ impl BufferedCommunicatorWrapper {
 
             self.sent_buffer_size = self.sent_buffer_size.saturating_sub(command_size);
             active.remove(0);
-
-            tracing::debug!(
-                "Command acknowledged, buffer size now: {}",
-                self.sent_buffer_size
-            );
         }
 
         Ok(())

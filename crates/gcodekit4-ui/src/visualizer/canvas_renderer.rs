@@ -73,21 +73,8 @@ pub fn render_toolpath_to_path(visualizer: &Visualizer2D, width: u32, height: u3
         visualizer.y_offset,
     );
 
-    tracing::debug!(
-        "Scale: {}, bounds: ({},{}) to ({},{}), offsets: ({},{})",
-        scale,
-        visualizer.min_x,
-        visualizer.min_y,
-        visualizer.max_x,
-        visualizer.max_y,
-        visualizer.x_offset,
-        visualizer.y_offset
-    );
-
     let mut path = String::new();
     let mut last_draw_pos: Option<(f32, f32)> = None;
-    let mut cutting_count = 0;
-    let mut rapid_count = 0;
 
     for (idx, cmd) in visualizer.commands.iter().enumerate() {
         match cmd {
@@ -96,27 +83,12 @@ pub fn render_toolpath_to_path(visualizer: &Visualizer2D, width: u32, height: u3
                 let (x2, y2) = transform.point_to_screen(*to);
 
                 if *rapid {
-                    rapid_count += 1;
                     // Rapid moves break path continuity (rendered separately)
                     last_draw_pos = None;
                     continue;
                 }
 
-                cutting_count += 1;
-
                 if idx < 5 {
-                    tracing::debug!(
-                        "Cutting move #{}: ({},{}) -> ({},{}) screen: ({},{}) -> ({},{})",
-                        cutting_count,
-                        from.x,
-                        from.y,
-                        to.x,
-                        to.y,
-                        x1,
-                        y1,
-                        x2,
-                        y2
-                    );
                 }
 
                 // For cutting moves, ensure we start with a move command if needed
@@ -200,17 +172,9 @@ pub fn render_toolpath_to_path(visualizer: &Visualizer2D, width: u32, height: u3
                 }
 
                 last_draw_pos = Some((x2, y2));
-                cutting_count += 1;
             }
         }
     }
-
-    tracing::debug!(
-        "Rendered toolpath: {} cutting moves, {} rapid moves, path length: {}",
-        cutting_count,
-        rapid_count,
-        path.len()
-    );
 
     path
 }

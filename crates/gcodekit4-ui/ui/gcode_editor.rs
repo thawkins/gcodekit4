@@ -15,7 +15,6 @@
 
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
-use tracing::debug;
 
 /// Token types for G-Code syntax highlighting
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -187,7 +186,6 @@ impl GcodeFile {
         for (idx, line) in content.lines().enumerate() {
             self.lines.push(GcodeLine::new(idx + 1, line.to_string()));
         }
-        debug!("Loaded {} lines of G-Code", self.lines.len());
     }
 
     /// Get all lines

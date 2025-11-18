@@ -317,14 +317,6 @@ impl Visualizer2D {
         // Only create a command if at least one axis changed
         if new_x != current_pos.x || new_y != current_pos.y {
             let to = Point2D::new(new_x, new_y);
-            tracing::debug!(
-                "Adding {} move: ({},{}) -> ({},{})",
-                if is_rapid { "rapid" } else { "feed" },
-                current_pos.x,
-                current_pos.y,
-                new_x,
-                new_y
-            );
             self.commands.push(GCodeCommand::Move {
                 from: *current_pos,
                 to,
