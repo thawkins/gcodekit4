@@ -848,6 +848,7 @@ fn main() -> anyhow::Result<()> {
 
                     // GRBL buffer is 128 bytes, but we use 127 for safety
                     const GRBL_RX_BUFFER_SIZE: usize = 127;
+                    let mut response_buffer = String::new();
 
                     // Main polling loop runs at 35ms intervals
                     // - Reads responses continuously (ok, error, status reports)
@@ -869,99 +870,106 @@ fn main() -> anyhow::Result<()> {
                             // Step 1: Process responses (without holding lock)
                             if let Some(response) = response_data {
                                 if !response.is_empty() {
-                                    let response_str = String::from_utf8_lossy(&response);
-                                    // Count "ok" responses for buffer management
-                                    let ok_count = response_str.matches("ok").count() + response_str.matches("OK").count();
-                                    if ok_count > 0 {
-                                        let mut gstate = gcode_state_poll.lock().unwrap();
-                                        for _ in 0..ok_count {
+                                    response_buffer.push_str(&String::from_utf8_lossy(&response));
+                                    
+                                    // Process complete lines
+                                    while let Some(idx) = response_buffer.find('\n') {
+                                        let line = response_buffer[..idx].trim().to_string();
+                                        response_buffer.drain(..idx + 1);
+                                        
+                                        if line.is_empty() { continue; }
+
+                                        // Count "ok" and "error" responses for buffer management
+                                        let is_ok = line.contains("ok") || line.contains("OK");
+                                        let is_error = line.contains("error:");
+                                        
+                                        if is_ok || is_error {
+                                            let mut gstate = gcode_state_poll.lock().unwrap();
                                             if let Some(len) = gstate.line_lengths.pop_front() {
                                                 gstate.pending_bytes = gstate.pending_bytes.saturating_sub(len);
                                             }
+                                            drop(gstate);
                                         }
-                                        drop(gstate);
-                                    }
 
-                                    // Check for errors and handle them
-                                    if response_str.contains("error:") {
-                                        warn!("GRBL error in response: {}", response_str);
-                                        // Still free the buffer space since the command was processed
-                                        // The ok count above already handles this, but log it explicitly
-                                        let error_msg = format!("GRBL error: {}", response_str.trim());
-                                        console_manager_poll.add_message(
-                                            DeviceMessageType::Error,
-                                            error_msg.clone()
-                                        );
+                                        // Check for errors and handle them
+                                        if is_error {
+                                            warn!("GRBL error in response: {}", line);
+                                            let error_msg = format!("GRBL error: {}", line);
+                                            console_manager_poll.add_message(
+                                                DeviceMessageType::Error,
+                                                error_msg.clone()
+                                            );
 
-                                        // Show error dialog
-                                        let wh = window_weak_poll.clone();
-                                        let em = error_msg.clone();
-                                        slint::invoke_from_event_loop(move || {
-                                            if let Some(_w) = wh.upgrade() {
-                                                let error_dialog = ErrorDialog::new().unwrap();
-                                                error_dialog.set_error_message(slint::SharedString::from(format!(
-                                                    "GRBL Error\n\nThe device reported an error.\n\n{}",
-                                                    em
-                                                )));
+                                            // Show error dialog
+                                            let wh = window_weak_poll.clone();
+                                            let em = error_msg.clone();
+                                            slint::invoke_from_event_loop(move || {
+                                                if let Some(_w) = wh.upgrade() {
+                                                    let error_dialog = ErrorDialog::new().unwrap();
+                                                    error_dialog.set_error_message(slint::SharedString::from(format!(
+                                                        "GRBL Error\n\nThe device reported an error.\n\n{}",
+                                                        em
+                                                    )));
 
-                                                let error_dialog_weak = error_dialog.as_weak();
-                                                error_dialog.on_close_dialog(move || {
-                                                    if let Some(dlg) = error_dialog_weak.upgrade() {
-                                                        dlg.hide().ok();
+                                                    let error_dialog_weak = error_dialog.as_weak();
+                                                    error_dialog.on_close_dialog(move || {
+                                                        if let Some(dlg) = error_dialog_weak.upgrade() {
+                                                            dlg.hide().ok();
+                                                        }
+                                                    });
+
+                                                    error_dialog.show().ok();
+                                                }
+                                            }).ok();
+                                        }
+
+                                        // Process status responses
+                                        if line.contains("<") && line.contains(">") {
+                                            // Parse full status from response
+                                            use gcodekit4::firmware::grbl::status_parser::StatusParser;
+                                            let full_status = StatusParser::parse_full(&line);
+
+                                            let window_handle = window_weak_poll.clone();
+                                            let raw_response = line.clone();
+                                            slint::invoke_from_event_loop(move || {
+                                                if let Some(window) = window_handle.upgrade() {
+                                                    // Update raw status response
+                                                    window.set_raw_status_response(slint::SharedString::from(raw_response.trim()));
+
+                                                    // Update machine position
+                                                    if let Some(mpos) = full_status.mpos {
+                                                        window.set_position_x(mpos.x as f32);
+                                                        window.set_position_y(mpos.y as f32);
+                                                        window.set_position_z(mpos.z as f32);
+                                                        if let Some(a) = mpos.a {
+                                                            window.set_position_a(a as f32);
+                                                        }
+                                                        if let Some(b) = mpos.b {
+                                                            window.set_position_b(b as f32);
+                                                        }
+                                                        if let Some(c) = mpos.c {
+                                                            window.set_position_c(c as f32);
+                                                        }
                                                     }
-                                                });
 
-                                                error_dialog.show().ok();
-                                            }
-                                        }).ok();
-                                    }
-
-                                    // Process status responses
-                                    if response_str.contains("<") && response_str.contains(">") {
-                                        // Parse full status from response
-                                        use gcodekit4::firmware::grbl::status_parser::StatusParser;
-                                        let full_status = StatusParser::parse_full(&response_str);
-
-                                        let window_handle = window_weak_poll.clone();
-                                        let raw_response = response_str.to_string();
-                                        slint::invoke_from_event_loop(move || {
-                                            if let Some(window) = window_handle.upgrade() {
-                                                // Update raw status response
-                                                window.set_raw_status_response(slint::SharedString::from(raw_response.trim()));
-
-                                                // Update machine position
-                                                if let Some(mpos) = full_status.mpos {
-                                                    window.set_position_x(mpos.x as f32);
-                                                    window.set_position_y(mpos.y as f32);
-                                                    window.set_position_z(mpos.z as f32);
-                                                    if let Some(a) = mpos.a {
-                                                        window.set_position_a(a as f32);
+                                                    // Update machine state
+                                                    if let Some(state) = full_status.machine_state {
+                                                        window.set_machine_state(slint::SharedString::from(state));
                                                     }
-                                                    if let Some(b) = mpos.b {
-                                                        window.set_position_b(b as f32);
+
+                                                    // Update feed rate
+                                                    if let Some(feed) = full_status.feed_rate {
+                                                        window.set_feed_rate(feed as f32);
                                                     }
-                                                    if let Some(c) = mpos.c {
-                                                        window.set_position_c(c as f32);
+
+                                                    // Update spindle speed
+                                                    if let Some(spindle) = full_status.spindle_speed {
+                                                        window.set_spindle_speed(spindle as f32);
                                                     }
                                                 }
-
-                                                // Update machine state
-                                                if let Some(state) = full_status.machine_state {
-                                                    window.set_machine_state(slint::SharedString::from(state));
-                                                }
-
-                                                // Update feed rate
-                                                if let Some(feed) = full_status.feed_rate {
-                                                    window.set_feed_rate(feed as f32);
-                                                }
-
-                                                // Update spindle speed
-                                                if let Some(spindle) = full_status.spindle_speed {
-                                                    window.set_spindle_speed(spindle as f32);
-                                                }
-                                            }
-                                        })
-                                        .ok();
+                                            })
+                                            .ok();
+                                        }
                                     }
                                 }
                             }

@@ -21,9 +21,13 @@
 - **gcodekit4-communication** (12.6K LOC): 5 firmware types (GRBL, TinyG, G2Core, Smoothieware, FluidNC)
 - **gcodekit4-ui** (18.3K LOC): Slint UI components and orchestration
 
-### Latest Development Session (2025-11-18 - v0.33.0-alpha)
+### Latest Development Session (2025-11-19 - v0.33.0-alpha)
 
 #### Bug Fixes
+- ✅ **G-Code Streaming Reliability**: Fixed streaming stalls
+  - Implemented line-based buffering for serial responses
+  - Fixed handling of split "ok" messages
+  - Added proper error response handling
 - ✅ **Vector Engraver Multi-Pass**: Fixed missing multi-pass loop implementation
   - Now correctly performs N passes with proper Z-axis depth adjustment
   - Z decremented by `z_increment * pass_number` for each pass
