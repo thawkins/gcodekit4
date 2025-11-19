@@ -763,46 +763,58 @@ impl VectorEngraver {
             (self.params.cut_power * self.params.power_scale / 100.0) as u32
         };
 
-        // Generate hatch paths if enabled
-        let mut hatch_paths = Vec::new();
-        if self.params.enable_hatch {
-            for path in &self.paths {
+        // Calculate scale factor for spacing adjustment
+        let scale = self.calculate_actual_scale();
+        
+        // Adjust hatch spacing to match SVG coordinate space
+        // If we want 1mm spacing in output, and scale is 0.1 (10mm -> 1mm),
+        // we need 10 units in SVG space. So spacing / scale.
+        let effective_spacing = if scale > 0.00001 {
+            self.params.hatch_spacing / scale
+        } else {
+            self.params.hatch_spacing
+        };
+
+        // Pre-process paths: associate hatches with their outlines
+        struct ProcessedPath<'a> {
+            outline: &'a Path,
+            hatches: Vec<Path>,
+        }
+
+        let mut processed_paths = Vec::new();
+
+        for path in &self.paths {
+            let mut hatches = Vec::new();
+            
+            if self.params.enable_hatch {
                 // First pass
-                let hatches = crate::hatch_generator::generate_hatch(
+                let h = crate::hatch_generator::generate_hatch(
                     path,
                     self.params.hatch_angle,
-                    self.params.hatch_spacing,
+                    effective_spacing,
                     self.params.hatch_tolerance,
                 );
-                hatch_paths.extend(hatches);
+                hatches.extend(h);
                 
                 // Second pass (Cross Hatch)
                 if self.params.cross_hatch {
-                    let cross_hatches = crate::hatch_generator::generate_hatch(
+                    let ch = crate::hatch_generator::generate_hatch(
                         path,
                         self.params.hatch_angle + 90.0,
-                        self.params.hatch_spacing,
+                        effective_spacing,
                         self.params.hatch_tolerance,
                     );
-                    hatch_paths.extend(cross_hatches);
+                    hatches.extend(ch);
                 }
             }
+            
+            processed_paths.push(ProcessedPath {
+                outline: path,
+                hatches,
+            });
         }
 
-        let mut paths_to_process: Vec<&Path> = Vec::new();
-        
-        // Add hatch paths first
-        for path in &hatch_paths {
-            paths_to_process.push(path);
-        }
-        
-        // Add outline paths second
-        for path in &self.paths {
-            paths_to_process.push(path);
-        }
-
-        let total_paths = paths_to_process.len() as f32;
-        let scale = self.calculate_actual_scale();
+        let total_items = processed_paths.len() as f32;
         let num_passes = if self.params.multi_pass {
             self.params.num_passes as usize
         } else {
@@ -835,13 +847,46 @@ impl VectorEngraver {
                 ));
             }
 
-            for (path_idx, path) in paths_to_process.iter().enumerate() {
+            for (idx, item) in processed_paths.iter().enumerate() {
+                // 1. Render Hatches for this path
+                for hatch_path in &item.hatches {
+                    let mut start_point = point(0.0, 0.0);
+                    for event in hatch_path.iter().flattened(0.1) {
+                        match event {
+                            lyon::path::Event::Begin { at } => {
+                                gcode.push_str("M5 ; Laser off\n");
+                                gcode.push_str(&format!(
+                                    "G0 X{:.3} Y{:.3} ; Move to hatch start\n",
+                                    at.x * scale, at.y * scale
+                                ));
+                                start_point = at;
+                            }
+                            lyon::path::Event::Line { to, .. } => {
+                                gcode.push_str(&format!(
+                                    "G1 X{:.3} Y{:.3} F{:.0} M3 S{}\n",
+                                    to.x * scale, to.y * scale,
+                                    self.params.feed_rate, power_value
+                                ));
+                            }
+                            lyon::path::Event::End { close, .. } => {
+                                if close {
+                                    gcode.push_str(&format!(
+                                        "G1 X{:.3} Y{:.3} F{:.0} M3 S{} ; Close hatch\n",
+                                        start_point.x * scale, start_point.y * scale,
+                                        self.params.feed_rate, power_value
+                                    ));
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+
+                // 2. Render Outline for this path
                 let mut start_point = point(0.0, 0.0);
-                
-                for event in path.iter().flattened(0.1) {
+                for event in item.outline.iter().flattened(0.1) {
                     match event {
                         lyon::path::Event::Begin { at } => {
-                            // Turn laser off before moving to new start
                             gcode.push_str("M5 ; Laser off\n");
                             gcode.push_str(&format!(
                                 "G0 X{:.3} Y{:.3} ; Move to path start\n",
@@ -850,7 +895,6 @@ impl VectorEngraver {
                             start_point = at;
                         }
                         lyon::path::Event::Line { to, .. } => {
-                            // Cut to next point
                             gcode.push_str(&format!(
                                 "G1 X{:.3} Y{:.3} F{:.0} M3 S{}\n",
                                 to.x * scale, to.y * scale,
@@ -859,7 +903,6 @@ impl VectorEngraver {
                         }
                         lyon::path::Event::End { close, .. } => {
                             if close {
-                                // Close path by cutting back to start
                                 gcode.push_str(&format!(
                                     "G1 X{:.3} Y{:.3} F{:.0} M3 S{} ; Close path\n",
                                     start_point.x * scale, start_point.y * scale,
@@ -871,7 +914,7 @@ impl VectorEngraver {
                     }
                 }
 
-                // Turn laser off before moving away (end of path)
+                // Turn laser off after finishing this object (hatches + outline)
                 gcode.push_str("M5 ; Laser off\n");
                 if self.params.enable_dwell {
                     gcode.push_str(&format!(
@@ -880,8 +923,8 @@ impl VectorEngraver {
                     ));
                 }
 
-                let progress = 0.1 + ((pass as f32 * total_paths + path_idx as f32) 
-                    / (num_passes as f32 * total_paths)) * 0.8;
+                let progress = 0.1 + ((pass as f32 * total_items + idx as f32) 
+                    / (num_passes as f32 * total_items)) * 0.8;
                 progress_callback(progress);
             }
         }
