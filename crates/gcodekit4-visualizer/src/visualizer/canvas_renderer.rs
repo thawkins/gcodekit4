@@ -303,27 +303,18 @@ pub fn render_origin_to_path(visualizer: &Visualizer2D, width: u32, height: u32)
     let (origin_x, origin_y) = transform.world_to_screen(0.0, 0.0);
 
     let mut path = String::new();
-    let cross_size = 15.0;
 
-    // Thicker lines for visibility - draw cross with 2px width by drawing twice
-    for offset in [0.0, 1.0, 2.0] {
-        // Vertical line of cross
-        path.push_str(&format!(
-            "M {} {} L {} {} ",
-            origin_x + offset,
-            origin_y - cross_size,
-            origin_x + offset,
-            origin_y + cross_size
-        ));
-        // Horizontal line of cross
-        path.push_str(&format!(
-            "M {} {} L {} {} ",
-            origin_x - cross_size,
-            origin_y + offset,
-            origin_x + cross_size,
-            origin_y + offset
-        ));
-    }
+    // Vertical line (full height)
+    path.push_str(&format!(
+        "M {} 0 L {} {} ",
+        origin_x, origin_x, height
+    ));
+
+    // Horizontal line (full width)
+    path.push_str(&format!(
+        "M 0 {} L {} {} ",
+        origin_y, width, origin_y
+    ));
 
     path
 }

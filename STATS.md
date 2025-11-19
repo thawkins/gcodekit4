@@ -32,6 +32,11 @@
   - Added grid size indicator to status bar
 - ✅ **Toolpath Rendering**: Improved line quality
   - Changed stroke width to 1px for crisp lines at any zoom level
+- ✅ **Visualizer Origin**: Enhanced origin indicator
+  - Extended to full canvas width/height (crosshair)
+  - Updated stroke width to 2px
+- ✅ **Code Cleanup**: Removed duplicate UI files
+  - Consolidated `gcode_visualizer.slint` into single source of truth
 - ✅ **G-Code Streaming Reliability**: Fixed streaming stalls
   - Implemented line-based buffering for serial responses
   - Fixed handling of split "ok" messages

@@ -145,6 +145,4 @@ Rectangle {
 
 **Files Updated**:
 - `crates/gcodekit4-visualizer/ui/gcode_visualizer.slint`
-- `crates/gcodekit4-gcodeeditor/ui/gcode_visualizer.slint`
-- `crates/gcodekit4-ui/src/ui_panels/gcode_visualizer.slint`
-- `crates/gcodekit4-ui/ui_panels/gcode_visualizer.slint`
+- (Duplicate files removed in cleanup)

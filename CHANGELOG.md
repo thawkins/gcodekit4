@@ -19,6 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Ensures crisp, single-pixel wide lines for toolpaths regardless of zoom level
   - Improves visibility of fine details in complex toolpaths
   - Consistent rendering across G-code visualizer and editor panels
+- **Visualizer Origin Indicator**
+  - Extended origin indicator to full width/height of canvas (crosshair style)
+  - Changed stroke width to 2px for better visibility
+- **Code Cleanup**
+  - Removed duplicate `gcode_visualizer.slint` files from UI and Editor crates
+  - Consolidated visualizer UI logic into `gcodekit4-visualizer` crate
 
 ## [0.33.0-alpha] - 2025-11-19
 
