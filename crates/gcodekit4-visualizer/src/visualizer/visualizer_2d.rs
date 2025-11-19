@@ -526,9 +526,9 @@ impl Visualizer2D {
         let center_x = (canvas_width - padded_width * scale) / 2.0;
         let center_y = (canvas_height - padded_height * scale) / 2.0;
 
-        self.zoom_scale = scale;
+        self.zoom_scale = scale / self.scale_factor;
         self.x_offset = center_x - (bbox_min_x_padded - self.min_x) * scale - CANVAS_PADDING;
-        self.y_offset = center_y - (bbox_min_y_padded - self.min_y) * scale + CANVAS_PADDING;
+        self.y_offset = (bbox_min_y_padded - self.min_y) * scale + CANVAS_PADDING - center_y;
     }
 
     /// Get the start point of the toolpath (for debugging/testing)
@@ -545,6 +545,8 @@ impl Default for Visualizer2D {
         Self::new()
     }
 }
+
+/// Safely convert a float to i32, clamping to valid range
 
 /// Safely convert a float to i32, clamping to valid range
 #[allow(dead_code)]
