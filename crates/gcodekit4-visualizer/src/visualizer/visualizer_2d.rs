@@ -547,8 +547,6 @@ impl Default for Visualizer2D {
 }
 
 /// Safely convert a float to i32, clamping to valid range
-
-/// Safely convert a float to i32, clamping to valid range
 #[allow(dead_code)]
 fn safe_to_i32(value: f32) -> i32 {
     if !value.is_finite() {
