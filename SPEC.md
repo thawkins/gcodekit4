@@ -14,6 +14,9 @@
   - Fixed laser dot artifacts at path ends (laser off before rapid moves)
   - Added configurable laser dwell option
   - Improved SVG parsing robustness
+- ✅ **UI Improvements**
+  - Updated G-code editor control buttons to VCR-style icons (Play, Pause, Stop)
+  - Added custom tooltips for icon-only buttons
 - ✅ **Architecture Refactoring**
   - Separated domain-specific functionality into dedicated crates (camtools, designer, gcodeeditor)
   - Cleaner 7-crate modular architecture

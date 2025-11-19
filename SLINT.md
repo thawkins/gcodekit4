@@ -101,3 +101,33 @@ i = j;
 1. Using a custom component that wraps and recreates the view
 2. Upgrading Slint to support element recreation in conditionals
 3. Implementing from-Rust focus callbacks
+
+### Tooltip Implementation
+
+**Issue**: Slint does not have a native Tooltip component yet.
+
+**Solution**: Implemented custom tooltips using `TouchArea` and conditional rendering.
+
+**Implementation Details**:
+- Wrap the target element in a `TouchArea` (or use an existing one).
+- Add a `Rectangle` that is conditionally rendered: `if (touch-area.has-hover) : Rectangle { ... }`.
+- Position the tooltip rectangle relative to the parent (e.g., `y: parent.height + 2px`).
+- Set `z: 100` to ensure it renders on top of other elements.
+- Style with a background color, border, and text.
+
+**Example**:
+```slint
+Rectangle {
+    // Button content...
+    touch-area := TouchArea { ... }
+    
+    if (touch-area.has-hover) : Rectangle {
+        y: parent.height + 2px;
+        z: 100;
+        // Tooltip styling...
+        Text { text: "Tooltip Text"; }
+    }
+}
+```
+
+**Usage**: Used for the VCR-style "Send", "Pause", and "Stop" buttons in the G-code editor panel to show text labels on hover.

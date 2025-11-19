@@ -6,7 +6,7 @@ use std::collections::HashMap;
 const CANVAS_PADDING: f32 = 20.0;
 const _CANVAS_PADDING_2X: f32 = 40.0;
 const MIN_ZOOM: f32 = 0.1;
-const MAX_ZOOM: f32 = 10.0;
+const MAX_ZOOM: f32 = 50.0;
 const ZOOM_STEP: f32 = 1.1;
 const PAN_PERCENTAGE: f32 = 0.1;
 const BOUNDS_PADDING_FACTOR: f32 = 0.1;
@@ -252,10 +252,10 @@ impl Visualizer2D {
         self.commands.clear();
         let mut current_pos = Point2D::new(0.0, 0.0);
         let mut bounds = Bounds::new();
-        let mut g0_count = 0;
-        let mut g1_count = 0;
-        let mut g2_count = 0;
-        let mut g3_count = 0;
+        let mut _g0_count = 0;
+        let mut _g1_count = 0;
+        let mut _g2_count = 0;
+        let mut _g3_count = 0;
 
         for line in gcode.lines() {
             let line = line.trim();
@@ -267,19 +267,19 @@ impl Visualizer2D {
             if let Some(gcode_num) = Self::extract_gcode_num(line) {
                 match gcode_num {
                     0 => {
-                        g0_count += 1;
+                        _g0_count += 1;
                         self.parse_linear_move(line, &mut current_pos, &mut bounds, true);
                     }
                     1 => {
-                        g1_count += 1;
+                        _g1_count += 1;
                         self.parse_linear_move(line, &mut current_pos, &mut bounds, false);
                     }
                     2 => {
-                        g2_count += 1;
+                        _g2_count += 1;
                         self.parse_arc_move(line, &mut current_pos, &mut bounds, true);
                     }
                     3 => {
-                        g3_count += 1;
+                        _g3_count += 1;
                         self.parse_arc_move(line, &mut current_pos, &mut bounds, false);
                     }
                     _ => {}

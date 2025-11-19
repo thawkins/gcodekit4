@@ -156,23 +156,124 @@ export component GcodeEditorPanel inherits VerticalBox {
             Rectangle { width: 10px; }
             
             // Transmission buttons
-            Button {
-                text: "Send";
-                enabled: root.gcode-content != "";
-                clicked => {
-                    root.menu-send-to-device();
+            Rectangle {
+                width: 40px;
+                height: 30px;
+                border-radius: 3px;
+                border-width: 1px;
+                border-color: #555555;
+                background: send-area.pressed ? #222222 : (send-area.has-hover ? #3e3e42 : #333337);
+                
+                send-area := TouchArea {
+                    enabled: root.gcode-content != "";
+                    clicked => { root.menu-send-to-device(); }
+                }
+                
+                Text {
+                    text: "▶";
+                    color: root.gcode-content != "" ? #ffffff : #666666;
+                    font-size: 16px;
+                    vertical-alignment: center;
+                    horizontal-alignment: center;
+                }
+                
+                if (send-area.has-hover) : Rectangle {
+                    y: parent.height + 2px;
+                    x: (parent.width - self.width) / 2;
+                    width: 40px;
+                    height: 20px;
+                    background: #222222;
+                    border-radius: 3px;
+                    border-width: 1px;
+                    border-color: #555555;
+                    z: 100;
+                    Text {
+                        text: "Send";
+                        color: white;
+                        font-size: 10px;
+                        vertical-alignment: center;
+                        horizontal-alignment: center;
+                    }
                 }
             }
-            Button {
-                text: "Stop";
-                clicked => {
-                    root.menu-stop-transmission();
+
+            Rectangle {
+                width: 40px;
+                height: 30px;
+                border-radius: 3px;
+                border-width: 1px;
+                border-color: #555555;
+                background: stop-area.pressed ? #222222 : (stop-area.has-hover ? #3e3e42 : #333337);
+                
+                stop-area := TouchArea {
+                    clicked => { root.menu-stop-transmission(); }
+                }
+                
+                Text {
+                    text: "⏹";
+                    color: #ffffff;
+                    font-size: 16px;
+                    vertical-alignment: center;
+                    horizontal-alignment: center;
+                }
+                
+                if (stop-area.has-hover) : Rectangle {
+                    y: parent.height + 2px;
+                    x: (parent.width - self.width) / 2;
+                    width: 40px;
+                    height: 20px;
+                    background: #222222;
+                    border-radius: 3px;
+                    border-width: 1px;
+                    border-color: #555555;
+                    z: 100;
+                    Text {
+                        text: "Stop";
+                        color: white;
+                        font-size: 10px;
+                        vertical-alignment: center;
+                        horizontal-alignment: center;
+                    }
                 }
             }
-            Button {
-                text: "Pause";
-                clicked => {
-                    root.menu-pause-transmission();
+
+            Rectangle {
+                width: 40px;
+                height: 30px;
+                border-radius: 3px;
+                border-width: 1px;
+                border-color: #555555;
+                background: pause-area.pressed ? #222222 : (pause-area.has-hover ? #3e3e42 : #333337);
+                
+                pause-area := TouchArea {
+                    clicked => { root.menu-pause-transmission(); }
+                }
+                
+                Text {
+                    text: "⏸";
+                    color: #ffffff;
+                    font-size: 16px;
+                    vertical-alignment: center;
+                    horizontal-alignment: center;
+                }
+                
+                if (pause-area.has-hover) : Rectangle {
+                    y: parent.height + 2px;
+                    x: (parent.width - self.width) / 2;
+                    width: 40px;
+                    height: 20px;
+                    background: #222222;
+                    border-radius: 3px;
+                    border-width: 1px;
+                    border-color: #555555;
+                    z: 100;
+                    Text {
+                        text: "Pause";
+                        color: white;
+                        font-size: 10px;
+                        vertical-alignment: center;
+                        horizontal-alignment: center;
+                    }
                 }
             }
             Button {

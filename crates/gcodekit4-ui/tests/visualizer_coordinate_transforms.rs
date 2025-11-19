@@ -1,6 +1,6 @@
 //! Comprehensive tests for visualizer coordinate transformations
 
-use gcodekit4::visualizer::visualizer_2d::Visualizer2D;
+use gcodekit4_ui::visualizer::visualizer_2d::Visualizer2D;
 
 #[test]
 fn test_set_default_view_with_scale() {
