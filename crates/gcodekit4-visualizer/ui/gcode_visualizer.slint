@@ -255,7 +255,7 @@ export component GcodeVisualizerPanel inherits VerticalBox {
                             commands: root.visualization-origin-data;
                         }
                         
-                        // Rapid moves layer (G0) - light blue, 20% opacity
+                        // Rapid moves layer (G0) - Cyan, 50% opacity
                         if root.show-rapid-moves && root.visualization-rapid-moves-data != "" : Path {
                             viewbox-x: 0;
                             viewbox-y: 0;
@@ -264,8 +264,8 @@ export component GcodeVisualizerPanel inherits VerticalBox {
                             width: 100%;
                             height: 100%;
                             fill: transparent;
-                            stroke: #ADD8E633;  // Light blue with 20% opacity
-                            stroke-width: 1px;
+                            stroke: #00FFFF80;  // Cyan with 50% opacity
+                            stroke-width: 1.5px;
                             commands: root.visualization-rapid-moves-data;
                         }
                         
