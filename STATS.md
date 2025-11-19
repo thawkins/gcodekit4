@@ -28,6 +28,9 @@
   - Implemented line-based buffering for serial responses
   - Fixed handling of split "ok" messages
   - Added proper error response handling
+- ✅ **Visualizer Grid**: Fixed grid disappearing at low zoom
+  - Implemented adaptive grid spacing
+  - Ensures full viewport coverage at all scales
 - ✅ **Vector Engraver Multi-Pass**: Fixed missing multi-pass loop implementation
   - Now correctly performs N passes with proper Z-axis depth adjustment
   - Z decremented by `z_increment * pass_number` for each pass

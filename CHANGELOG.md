@@ -28,6 +28,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Fixed handling of split "ok" messages across serial chunks
   - Added proper handling of "error:" responses to prevent queue stalling
   - Ensures `pending_bytes` tracking remains accurate even with communication errors
+- **Visualizer Grid**
+  - Fixed grid disappearing at low zoom levels
+  - Implemented adaptive grid spacing (10mm -> 100mm -> 1000mm) based on zoom
+  - Grid now covers the entire viewport at all scale factors
 - **Vector Engraving Panic**
   - Fixed panic in vector engraving when processing closed paths with lyon
   - Fixed hatch generator producing no output for closed shapes

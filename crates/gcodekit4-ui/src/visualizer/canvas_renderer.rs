@@ -212,10 +212,6 @@ pub fn render_rapid_moves_to_path(visualizer: &Visualizer2D, width: u32, height:
 
 /// Render grid as SVG path commands
 pub fn render_grid_to_path(visualizer: &Visualizer2D, width: u32, height: u32) -> String {
-    if visualizer.zoom_scale < GRID_MAJOR_VISIBILITY_SCALE {
-        return String::new();
-    }
-
     let scale = calculate_scale(visualizer, width, height);
     let transform = CoordTransform::new(
         visualizer.min_x,
@@ -227,44 +223,54 @@ pub fn render_grid_to_path(visualizer: &Visualizer2D, width: u32, height: u32) -
     );
 
     let mut path = String::new();
-    const MAX_ITERATIONS: usize = 2000;
+    const MAX_ITERATIONS: usize = 10000;
 
     // Calculate the world coordinate range needed to fill entire viewport
     // Add extra margin to ensure full coverage
-    let margin_mm = 100.0;
-    let (world_left, world_top) = transform.screen_to_world(-margin_mm, -margin_mm);
+    let margin_pixels = 100.0;
+    let (world_left, world_top) = transform.screen_to_world(-margin_pixels, -margin_pixels);
     let (world_right, world_bottom) =
-        transform.screen_to_world(width as f32 + margin_mm, height as f32 + margin_mm);
-
-    // Round to nearest grid line, ensuring we cover the full range
-    let start_x = (world_left / GRID_MAJOR_STEP_MM).floor() * GRID_MAJOR_STEP_MM;
-    let end_x = (world_right / GRID_MAJOR_STEP_MM).ceil() * GRID_MAJOR_STEP_MM;
+        transform.screen_to_world(width as f32 + margin_pixels, height as f32 + margin_pixels);
 
     // Y is flipped, so world_top > world_bottom. Use min/max to get correct range
     let min_y = world_bottom.min(world_top);
     let max_y = world_bottom.max(world_top);
-    let start_y = (min_y / GRID_MAJOR_STEP_MM).floor() * GRID_MAJOR_STEP_MM;
-    let end_y = (max_y / GRID_MAJOR_STEP_MM).ceil() * GRID_MAJOR_STEP_MM;
+    let world_width = world_right - world_left;
+    let world_height = max_y - min_y;
 
-    // Draw vertical grid lines at 10mm spacing
+    // Adaptive grid spacing
+    // Start with 10mm, increase by 10x if too dense
+    let mut step = GRID_MAJOR_STEP_MM;
+    while (world_width / step) > 100.0 || (world_height / step) > 100.0 {
+        step *= 10.0;
+    }
+
+    // Round to nearest grid line, ensuring we cover the full range
+    let start_x = (world_left / step).floor() * step;
+    let end_x = (world_right / step).ceil() * step;
+
+    let start_y = (min_y / step).floor() * step;
+    let end_y = (max_y / step).ceil() * step;
+
+    // Draw vertical grid lines
     let mut x = start_x;
     let mut iterations = 0;
     while x <= end_x && iterations < MAX_ITERATIONS {
         let (screen_x, _) = transform.world_to_screen(x, 0.0);
         // Draw line across full height, no need to clip
         path.push_str(&format!("M {} 0 L {} {} ", screen_x, screen_x, height));
-        x += GRID_MAJOR_STEP_MM;
+        x += step;
         iterations += 1;
     }
 
-    // Draw horizontal grid lines at 10mm spacing
+    // Draw horizontal grid lines
     let mut y = start_y;
     iterations = 0;
     while y <= end_y && iterations < MAX_ITERATIONS {
         let (_, screen_y) = transform.world_to_screen(0.0, y);
         // Draw line across full width, no need to clip
         path.push_str(&format!("M 0 {} L {} {} ", screen_y, width, screen_y));
-        y += GRID_MAJOR_STEP_MM;
+        y += step;
         iterations += 1;
     }
 
@@ -343,11 +349,12 @@ mod tests {
     #[test]
     fn test_grid_visibility() {
         let mut visualizer = Visualizer2D::new();
-        visualizer.zoom_scale = 0.2; // Below threshold
+        visualizer.zoom_scale = 0.2; // Low zoom
         let path = render_grid_to_path(&visualizer, 800, 600);
-        assert_eq!(path, "");
+        // Grid should still be visible with adaptive spacing
+        assert!(!path.is_empty());
 
-        visualizer.zoom_scale = 0.5; // Above threshold
+        visualizer.zoom_scale = 0.5; // Higher zoom
         let path = render_grid_to_path(&visualizer, 800, 600);
         assert!(!path.is_empty());
     }
