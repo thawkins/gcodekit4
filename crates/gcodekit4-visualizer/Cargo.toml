@@ -1,11 +1,11 @@
 [package]
-name = "gcodekit4-parser"
+name = "gcodekit4-visualizer"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 authors.workspace = true
 repository.workspace = true
-description = "G-code parsing and processing for GCodeKit4"
+description = "G-code visualization and parsing for GCodeKit4"
 
 [dependencies]
 gcodekit4-core = { path = "../gcodekit4-core" }
@@ -22,5 +22,6 @@ chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1.6", features = ["v4", "serde"] }
 image = "0.25"
 pepecore = "0.1.3"
+slint = { version = "1.14.1", features = ["backend-winit", "image-default-formats"] }
 
 [dev-dependencies]

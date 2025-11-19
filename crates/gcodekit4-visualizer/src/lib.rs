@@ -1,15 +1,16 @@
-//! # GCodeKit4 Parser
+//! # GCodeKit4 Visualizer
 //!
-//! G-code parsing, processing, and generation for GCodeKit4.
-//! Includes parser, preprocessors, stream readers, and designer tools.
+//! G-code visualization, parsing, and processing for GCodeKit4.
+//! Includes parser, preprocessors, stream readers, and visualizer components.
 
-pub mod designer;
-pub mod designer_editor_integration;
-pub mod designer_state;
-pub mod designer_visualizer_integration;
+pub mod visualizer;
 pub mod gcode;
-pub mod processing;
 pub mod utils;
+
+pub use visualizer::{
+    Visualizer, Visualizer2D, VisualizerControls, Scene, Camera, Renderer,
+    render_grid_to_path, render_origin_to_path, render_rapid_moves_to_path, render_toolpath_to_path,
+};
 
 pub use gcode::{
     stream::{FileStreamReader, GcodeStreamReader, PausableStream, StringStreamReader},
@@ -18,18 +19,6 @@ pub use gcode::{
     DecimalProcessor, EmptyLineRemoverProcessor, GcodeCommand, GcodeParser, GcodeState, ModalState,
     ProcessorConfig, ProcessorHandle, ProcessorPipeline, ProcessorRegistry, WhitespaceProcessor,
 };
-
-pub use processing::{
-    BoxParameters, BoxType, FingerJointSettings, FingerStyle, JigsawPuzzleMaker, PuzzleParameters,
-    TabbedBoxMaker,
-};
-
-pub use designer::{
-    Canvas, CanvasPoint, Circle, DrawingMode, Line, Point, Rectangle, Shape, ShapeType, Toolpath,
-    ToolpathGenerator, ToolpathSegment, ToolpathSegmentType, ToolpathToGcode,
-};
-
-pub use designer_state::DesignerState;
 
 pub use utils::{
     AdvancedProber, Alarm, AlarmManager, AlarmType, AutoConnectConfig, BackupEntry, BackupManager,

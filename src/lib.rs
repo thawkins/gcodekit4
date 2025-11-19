@@ -31,8 +31,9 @@
 // Re-export modules for main.rs
 pub use gcodekit4_communication::firmware;
 pub use gcodekit4_core::data;
-pub use gcodekit4_parser::designer;
-pub use gcodekit4_ui::{config, ui, visualizer};
+pub use gcodekit4_designer as designer;
+pub use gcodekit4_ui::{config, ui};
+pub use gcodekit4_visualizer::visualizer;
 
 pub use gcodekit4_core::{
     CNCPoint, CommunicatorState, ConnectionError, ControllerError, ControllerEvent,
@@ -42,25 +43,32 @@ pub use gcodekit4_core::{
     PartialPosition, Position, Result, SimpleController, Units,
 };
 
-pub use gcodekit4_parser::{
+pub use gcodekit4_visualizer::{
     AdvancedProber, Alarm, AlarmManager, AlarmType, AutoConnectConfig, BackupEntry, BackupManager,
-    BasicProber, Bookmark, BookmarkManager, BoxParameters, BoxType, Canvas, CanvasPoint, Circle,
-    CommandHistory, CommandId, CommandLengthProcessor, CommandListener, CommandListenerHandle,
-    CommandNumberGenerator, CommandProcessor, CommandResponse, CommandState, CommentProcessor,
-    CustomAction, CustomMacro, DataLogger, DecimalProcessor, DesignerState, DrawingMode, DropEvent,
-    DropFileType, DropIndicatorState, DropTarget, DropZone, EmptyLineRemoverProcessor,
-    ExportOptions, FeedRateStats, FileComparison, FileEncoding, FileExporter, FileFormat,
-    FileProcessingPipeline, FileReadStats, FileStatistics, FileStreamReader, FileValidation,
-    FingerJointSettings, FingerStyle, GcodeCommand, GcodeFileReader, GcodeParser, GcodeState,
-    GcodeStreamReader, GcodeTemplate, HeightPoint, HistoryEntry, JigsawPuzzleMaker, Line, LogEntry,
-    ModalState, NetworkConfig, PausableStream, PendantButton, PendantConfig, PerformanceMetrics,
-    Point, ProbeMesh, ProbePoint, ProcessedFile, ProcessorConfig, ProcessorHandle,
-    ProcessorPipeline, ProcessorRegistry, ProgramState, PuzzleParameters, RecentFileEntry,
-    RecentFilesManager, Rectangle, Shape, ShapeType, SimulationPosition, Simulator, SoftLimits,
-    SpindleStats, Stepper, StringStreamReader, TabbedBoxMaker, TemplateLibrary, TemplateVariable,
-    ToolInfo, ToolLibrary, ToolOffset, ToolOffsetManager, Toolpath, ToolpathGenerator,
-    ToolpathSegment, ToolpathSegmentType, ToolpathToGcode, ValidationIssue, ValidationResult,
-    ValidationSeverity, WhitespaceProcessor, WorkCoordinateSystem, WorkOffset,
+    BasicProber, Bookmark, BookmarkManager, CommandHistory, CommandId, CommandLengthProcessor,
+    CommandListener, CommandListenerHandle, CommandNumberGenerator, CommandProcessor,
+    CommandResponse, CommandState, CommentProcessor, CustomAction, CustomMacro, DataLogger,
+    DecimalProcessor, DropEvent, DropFileType, DropIndicatorState, DropTarget, DropZone,
+    EmptyLineRemoverProcessor, ExportOptions, FeedRateStats, FileComparison, FileEncoding,
+    FileExporter, FileFormat, FileProcessingPipeline, FileReadStats, FileStatistics,
+    FileStreamReader, FileValidation, GcodeCommand, GcodeFileReader, GcodeParser, GcodeState,
+    GcodeStreamReader, GcodeTemplate, HeightPoint, HistoryEntry, LogEntry, ModalState,
+    NetworkConfig, PausableStream, PendantButton, PendantConfig, PerformanceMetrics, ProbeMesh,
+    ProbePoint, ProcessedFile, ProcessorConfig, ProcessorHandle, ProcessorPipeline,
+    ProcessorRegistry, ProgramState, RecentFileEntry, RecentFilesManager, SimulationPosition,
+    Simulator, SoftLimits, SpindleStats, Stepper, StringStreamReader, TemplateLibrary,
+    TemplateVariable, ToolInfo, ToolLibrary, ToolOffset, ToolOffsetManager, ValidationIssue,
+    ValidationResult, ValidationSeverity, WhitespaceProcessor, WorkCoordinateSystem, WorkOffset,
+};
+
+pub use gcodekit4_designer::{
+    Canvas, CanvasPoint, Circle, DesignerState, DrawingMode, Line, Point, Rectangle, Shape,
+    ShapeType, Toolpath, ToolpathGenerator, ToolpathSegment, ToolpathSegmentType, ToolpathToGcode,
+};
+
+pub use gcodekit4_camtools::{
+    BoxParameters, BoxType, FingerJointSettings, FingerStyle, JigsawPuzzleMaker, PuzzleParameters,
+    TabbedBoxMaker,
 };
 
 pub use gcodekit4_communication::{

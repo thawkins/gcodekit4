@@ -51,12 +51,18 @@ impl CoordTransform {
     }
 }
 
+use std::fmt::Write;
+
 /// Render toolpath as SVG path commands (cutting moves only)
 pub fn render_toolpath_to_path(visualizer: &Visualizer2D, width: u32, height: u32) -> String {
     if visualizer.commands.is_empty() {
         tracing::warn!("No commands to render - visualizer.commands is empty!");
         return String::new();
     }
+
+    // Estimate capacity: ~25 bytes per command (e.g. "L 123.45 678.90 ")
+    let estimated_capacity = visualizer.commands.len() * 25;
+    let mut path = String::with_capacity(estimated_capacity);
 
     let scale = calculate_scale(visualizer, width, height);
     let transform = CoordTransform::new(
@@ -68,7 +74,6 @@ pub fn render_toolpath_to_path(visualizer: &Visualizer2D, width: u32, height: u3
         visualizer.y_offset,
     );
 
-    let mut path = String::new();
     let mut last_draw_pos: Option<(f32, f32)> = None;
 
     for (idx, cmd) in visualizer.commands.iter().enumerate() {
@@ -88,11 +93,11 @@ pub fn render_toolpath_to_path(visualizer: &Visualizer2D, width: u32, height: u3
 
                 // For cutting moves, ensure we start with a move command if needed
                 if last_draw_pos.is_none() {
-                    path.push_str(&format!("M {} {} ", x1, y1));
+                    let _ = write!(path, "M {:.1} {:.1} ", x1, y1);
                 }
 
                 // Add the line to the destination
-                path.push_str(&format!("L {} {} ", x2, y2));
+                let _ = write!(path, "L {:.1} {:.1} ", x2, y2);
                 last_draw_pos = Some((x2, y2));
             }
             GCodeCommand::Arc {
@@ -114,7 +119,7 @@ pub fn render_toolpath_to_path(visualizer: &Visualizer2D, width: u32, height: u3
 
                 // Ensure we have a starting position
                 if last_draw_pos.is_none() {
-                    path.push_str(&format!("M {} {} ", x1, y1));
+                    let _ = write!(path, "M {:.1} {:.1} ", x1, y1);
                 }
 
                 // Check if this is a full circle (from == to)
@@ -132,16 +137,18 @@ pub fn render_toolpath_to_path(visualizer: &Visualizer2D, width: u32, height: u3
                     let sweep = if *clockwise { 1 } else { 0 };
 
                     // First semicircle: from start to midpoint
-                    path.push_str(&format!(
-                        "A {} {} 0 0 {} {} {} ",
+                    let _ = write!(
+                        path,
+                        "A {:.1} {:.1} 0 0 {} {:.1} {:.1} ",
                         screen_radius, screen_radius, sweep, mid_x, mid_y
-                    ));
+                    );
 
                     // Second semicircle: from midpoint back to start
-                    path.push_str(&format!(
-                        "A {} {} 0 0 {} {} {} ",
+                    let _ = write!(
+                        path,
+                        "A {:.1} {:.1} 0 0 {} {:.1} {:.1} ",
                         screen_radius, screen_radius, sweep, x2, y2
-                    ));
+                    );
                 } else {
                     // Regular arc - determine if it's a large arc (>180 degrees)
                     let start_angle = ((from.y - center.y).atan2(from.x - center.x)).to_degrees();
@@ -160,10 +167,11 @@ pub fn render_toolpath_to_path(visualizer: &Visualizer2D, width: u32, height: u3
                     let large_arc = if arc_angle > 180.0 { 1 } else { 0 };
                     let sweep = if *clockwise { 1 } else { 0 };
 
-                    path.push_str(&format!(
-                        "A {} {} 0 {} {} {} {} ",
+                    let _ = write!(
+                        path,
+                        "A {:.1} {:.1} 0 {} {} {:.1} {:.1} ",
                         screen_radius, screen_radius, large_arc, sweep, x2, y2
-                    ));
+                    );
                 }
 
                 last_draw_pos = Some((x2, y2));
@@ -180,6 +188,10 @@ pub fn render_rapid_moves_to_path(visualizer: &Visualizer2D, width: u32, height:
         return String::new();
     }
 
+    // Estimate capacity: ~30 bytes per rapid move
+    let estimated_capacity = visualizer.commands.len() * 10; // Assuming 1/3 are rapids
+    let mut path = String::with_capacity(estimated_capacity);
+
     let scale = calculate_scale(visualizer, width, height);
     let transform = CoordTransform::new(
         visualizer.min_x,
@@ -190,15 +202,13 @@ pub fn render_rapid_moves_to_path(visualizer: &Visualizer2D, width: u32, height:
         visualizer.y_offset,
     );
 
-    let mut path = String::new();
-
     for cmd in &visualizer.commands {
         match cmd {
             GCodeCommand::Move { from, to, rapid } => {
                 if *rapid {
                     let (x1, y1) = transform.point_to_screen(*from);
                     let (x2, y2) = transform.point_to_screen(*to);
-                    path.push_str(&format!("M {} {} L {} {} ", x1, y1, x2, y2));
+                    let _ = write!(path, "M {:.1} {:.1} L {:.1} {:.1} ", x1, y1, x2, y2);
                 }
             }
             GCodeCommand::Arc { .. } => {

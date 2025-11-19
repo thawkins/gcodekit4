@@ -385,6 +385,7 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
                 gcodekit4::ShapeType::Ellipse => 3,
                 gcodekit4::ShapeType::Polygon => 4,
                 gcodekit4::ShapeType::RoundRectangle => 5,
+                gcodekit4::ShapeType::Path => 6,
             };
             crate::DesignerShape {
                 id: obj.id as i32,

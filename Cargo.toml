@@ -1,11 +1,11 @@
 [workspace]
 members = [
     "crates/gcodekit4-core",
-    "crates/gcodekit4-parser",
     "crates/gcodekit4-communication",
     "crates/gcodekit4-camtools",
     "crates/gcodekit4-designer",
     "crates/gcodekit4-gcodeeditor",
+    "crates/gcodekit4-visualizer",
     "crates/gcodekit4-ui",
 ]
 resolver = "2"
@@ -37,11 +37,11 @@ opt-level = 1
 
 [dependencies]
 gcodekit4-core = { path = "crates/gcodekit4-core" }
-gcodekit4-parser = { path = "crates/gcodekit4-parser" }
 gcodekit4-communication = { path = "crates/gcodekit4-communication" }
 gcodekit4-camtools = { path = "crates/gcodekit4-camtools" }
 gcodekit4-designer = { path = "crates/gcodekit4-designer" }
 gcodekit4-gcodeeditor = { path = "crates/gcodekit4-gcodeeditor" }
+gcodekit4-visualizer = { path = "crates/gcodekit4-visualizer" }
 gcodekit4-ui = { path = "crates/gcodekit4-ui" }
 
 slint = { version = "1.14.1", features = ["backend-winit", "image-default-formats"] }

@@ -94,7 +94,7 @@ pub mod designer_visualizer_integration;
 // Re-export all public types from submodules
 pub use adaptive::{AdaptiveClearing, AdaptiveAlgorithm, MaterialProperties, MaterialType, LoadMonitor, DynamicStepover};
 pub use arrays::{ArrayType, ArrayGenerator, ArrayOperation, LinearArrayParams, CircularArrayParams, GridArrayParams};
-pub use canvas::{Canvas, DrawingMode};
+pub use canvas::{Canvas, CanvasPoint, DrawingMode};
 pub use drilling_patterns::*;
 pub use dxf_parser::{DxfParser, DxfFile, DxfEntity, DxfHeader};
 pub use gcode_gen::ToolpathToGcode;
@@ -104,7 +104,7 @@ pub use multipass::{DepthStrategy, MultiPassConfig, MultiPassToolpathGenerator};
 pub use parametric::ParametricGenerator;
 pub use pocket_operations::{Island, PocketGenerator, PocketOperation};
 pub use render_optimizer::{RenderOptimizer, RenderStats};
-pub use shapes::{Point, Circle, Rectangle, Line, Polygon, Ellipse, RoundRectangle, ShapeType};
+pub use shapes::{Point, Circle, Rectangle, Line, Polygon, Ellipse, RoundRectangle, Shape, ShapeType};
 pub use spatial_index::{Bounds, SpatialIndex, SpatialIndexStats};
 pub use templates::*;
 pub use tool_library::{CoolantType, MaterialProfile, Tool, ToolLibrary, ToolType};

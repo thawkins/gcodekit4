@@ -9,7 +9,7 @@ description = "Communication protocols (Serial, TCP, WebSocket) for GCodeKit4"
 
 [dependencies]
 gcodekit4-core = { path = "../gcodekit4-core" }
-gcodekit4-parser = { path = "../gcodekit4-parser" }
+gcodekit4-visualizer = { path = "../gcodekit4-visualizer" }
 tokio = { version = "1.35", features = ["full"] }
 async-trait = "0.1"
 serialport = "4.3"

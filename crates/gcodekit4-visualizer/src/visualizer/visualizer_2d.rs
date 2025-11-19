@@ -243,8 +243,16 @@ impl Visualizer2D {
             return None;
         }
         let after_g = &line[1..];
-        let num_str: String = after_g.chars().take_while(|c| c.is_ascii_digit()).collect();
-        num_str.parse::<u32>().ok()
+        // Find end of number
+        let end_idx = after_g
+            .find(|c: char| !c.is_ascii_digit())
+            .unwrap_or(after_g.len());
+        
+        if end_idx == 0 {
+            return None;
+        }
+        
+        after_g[..end_idx].parse::<u32>().ok()
     }
 
     /// Parse G-Code and extract movement commands
@@ -299,14 +307,36 @@ impl Visualizer2D {
         bounds: &mut Bounds,
         is_rapid: bool,
     ) {
-        let params = Self::extract_params(line, &['X', 'Y']);
+        // Extract X and Y directly without HashMap allocation
+        let mut new_x = current_pos.x;
+        let mut new_y = current_pos.y;
+        let mut x_found = false;
+        let mut y_found = false;
 
-        // Get new position, using current position if X or Y not specified
-        let new_x = params.get(&'X').copied().unwrap_or(current_pos.x);
-        let new_y = params.get(&'Y').copied().unwrap_or(current_pos.y);
+        for part in line.split_whitespace() {
+            if part.len() < 2 {
+                continue;
+            }
+            let first_char = part.chars().next().unwrap();
+            match first_char {
+                'X' => {
+                    if let Ok(val) = part[1..].parse::<f32>() {
+                        new_x = val;
+                        x_found = true;
+                    }
+                }
+                'Y' => {
+                    if let Ok(val) = part[1..].parse::<f32>() {
+                        new_y = val;
+                        y_found = true;
+                    }
+                }
+                _ => {}
+            }
+        }
 
         // Only create a command if at least one axis changed
-        if new_x != current_pos.x || new_y != current_pos.y {
+        if x_found || y_found {
             let to = Point2D::new(new_x, new_y);
             self.commands.push(GCodeCommand::Move {
                 from: *current_pos,
@@ -327,16 +357,44 @@ impl Visualizer2D {
         bounds: &mut Bounds,
         clockwise: bool,
     ) {
-        let params = Self::extract_params(line, &['X', 'Y', 'I', 'J']);
+        let mut new_x = None;
+        let mut new_y = None;
+        let mut offset_i = None;
+        let mut offset_j = None;
 
-        if let (Some(&new_x), Some(&new_y), Some(&offset_x), Some(&offset_y)) = (
-            params.get(&'X'),
-            params.get(&'Y'),
-            params.get(&'I'),
-            params.get(&'J'),
-        ) {
-            let to = Point2D::new(new_x, new_y);
-            let center = Point2D::new(current_pos.x + offset_x, current_pos.y + offset_y);
+        for part in line.split_whitespace() {
+            if part.len() < 2 {
+                continue;
+            }
+            let first_char = part.chars().next().unwrap();
+            match first_char {
+                'X' => {
+                    if let Ok(val) = part[1..].parse::<f32>() {
+                        new_x = Some(val);
+                    }
+                }
+                'Y' => {
+                    if let Ok(val) = part[1..].parse::<f32>() {
+                        new_y = Some(val);
+                    }
+                }
+                'I' => {
+                    if let Ok(val) = part[1..].parse::<f32>() {
+                        offset_i = Some(val);
+                    }
+                }
+                'J' => {
+                    if let Ok(val) = part[1..].parse::<f32>() {
+                        offset_j = Some(val);
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        if let (Some(x), Some(y), Some(i), Some(j)) = (new_x, new_y, offset_i, offset_j) {
+            let to = Point2D::new(x, y);
+            let center = Point2D::new(current_pos.x + i, current_pos.y + j);
 
             self.commands.push(GCodeCommand::Arc {
                 from: *current_pos,
@@ -346,12 +404,14 @@ impl Visualizer2D {
             });
 
             bounds.update(current_pos.x, current_pos.y);
-            bounds.update(new_x, new_y);
+            bounds.update(x, y);
             *current_pos = to;
         }
     }
 
     /// Extract multiple parameters from G-Code line
+    // Deprecated: Use direct parsing in parse_linear_move/parse_arc_move instead
+    #[allow(dead_code)]
     fn extract_params(line: &str, param_names: &[char]) -> HashMap<char, f32> {
         let mut params = HashMap::new();
 

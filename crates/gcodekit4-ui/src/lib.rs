@@ -6,7 +6,6 @@
 pub mod config;
 pub mod testing;
 pub mod ui;
-pub mod visualizer;
 
 pub use ui::{
     ConsoleListener, DeviceConsoleManager, DeviceMessageType, FirmwareSettingsIntegration,

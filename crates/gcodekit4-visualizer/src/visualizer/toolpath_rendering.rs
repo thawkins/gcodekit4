@@ -123,6 +123,29 @@ impl ArcSegment {
         self
     }
 
+    /// Calculate arc length
+    pub fn length(&self) -> f32 {
+        let start_dir = (self.start - self.center).normalize();
+        let end_dir = (self.end - self.center).normalize();
+
+        let angle_start = start_dir.y.atan2(start_dir.x);
+        let angle_end = end_dir.y.atan2(end_dir.x);
+
+        let mut angle_diff = angle_end - angle_start;
+        if self.clockwise && angle_diff > 0.0 {
+            angle_diff -= std::f32::consts::TAU;
+        } else if !self.clockwise && angle_diff < 0.0 {
+            angle_diff += std::f32::consts::TAU;
+        }
+
+        // Arc length = radius * angle (in radians)
+        // Also account for helical movement (Z change)
+        let arc_len = self.radius * angle_diff.abs();
+        let z_diff = (self.end.z - self.start.z).abs();
+        
+        (arc_len.powi(2) + z_diff.powi(2)).sqrt()
+    }
+
     /// Convert arc to line segments
     pub fn to_line_segments(&self) -> Vec<LineSegment> {
         let mut segments = Vec::new();
@@ -217,10 +240,7 @@ impl Toolpath {
 
     /// Add arc segment
     pub fn add_arc_segment(&mut self, segment: ArcSegment) {
-        let line_segs = segment.to_line_segments();
-        for line_seg in &line_segs {
-            self.total_length += line_seg.length();
-        }
+        self.total_length += segment.length();
         self.current_position = segment.end;
         self.arc_segments.push(segment);
     }
