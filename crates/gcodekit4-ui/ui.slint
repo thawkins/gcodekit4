@@ -18,7 +18,7 @@ import { CAMToolsPanel } from "ui_panels/cam_tools.slint";
 import { MaterialsManager, MaterialData } from "ui_panels/materials_manager.slint";
 import { ToolsManager, ToolData } from "ui_panels/tools_manager.slint";
 import { MainMenu } from "ui/ui_components/mainmenu.slint";
-import { SettingsDialog, SettingItem } from "ui/ui_components/settings_dialog.slint";
+import { SettingsDialog, SettingItem } from "../gcodekit4-settings/ui/settings_dialog.slint";
 import { TabbedBoxDialog } from "ui_panels/tabbed_box_dialog.slint";
 
 export struct PortInfo {
@@ -70,7 +70,7 @@ export component MainWindow inherits Window {
     in property <bool> cap-supports-overrides: false;
     in property <int> cap-max-axes: 3;
     in property <int> cap-coordinate-systems: 1;
-    in property <[SettingItem]> all-settings: [];
+    in property <[SettingItem]> current-settings: [];
     in property <float> position-x: 0.0;
     in property <float> position-y: 0.0;
     in property <float> position-z: 0.0;
@@ -241,6 +241,7 @@ export component MainWindow inherits Window {
     callback menu-settings-save();
     callback menu-settings-cancel();
     callback menu-settings-restore-defaults();
+    callback settings-category-selected(string);
     callback menu-view-fullscreen();
     callback menu-view-gcode-editor();
     callback menu-view-machine();
@@ -352,7 +353,7 @@ export component MainWindow inherits Window {
     // Private properties for dialogs
     private property <bool> about-dialog-visible: false;
     private property <bool> settings-dialog-visible: false;
-    private property <string> settings-category: "controller";
+    in-out property <string> settings-category: "controller";
     // Native menu bar with dark theme support
     MenuBar {
         Menu {
@@ -1551,11 +1552,12 @@ export component MainWindow inherits Window {
         visible: settings-dialog-visible;
         dialog-visible: settings-dialog-visible;
         settings-category: settings-category;
-        all-settings: all-settings;
+        current-settings: current-settings;
         menu-settings-save => { root.menu-settings-save(); }
         menu-settings-cancel => { root.menu-settings-cancel(); }
         menu-settings-restore-defaults => { root.menu-settings-restore-defaults(); }
         update-setting(id, value) => { root.update-setting(id, value); }
+        category-selected(category) => { root.settings-category-selected(category); }
     }
     }  // Close root FocusScope (startup-focus)
 }

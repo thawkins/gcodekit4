@@ -2,8 +2,8 @@ use gcodekit4::{
     init_logging, list_ports, BoxParameters, BoxType, CapabilityManager, Communicator,
     ConnectionDriver, ConnectionParams, ConsoleListener, DeviceConsoleManager, DeviceMessageType,
     FingerJointSettings, FingerStyle, FirmwareSettingsIntegration, GcodeEditor, JigsawPuzzleMaker,
-    PuzzleParameters, SerialCommunicator, SerialParity, SettingValue, SettingsDialog,
-    SettingsPersistence, TabbedBoxMaker, BUILD_DATE, VERSION,
+    PuzzleParameters, SerialCommunicator, SerialParity, SettingsCategory, SettingsController,
+    SettingsDialog, SettingsManager, SettingsPersistence, TabbedBoxMaker, BUILD_DATE, VERSION,
 };
 use gcodekit4_ui::EditorBridge;
 use slint::{Model, VecModel};
@@ -710,7 +710,7 @@ fn main() -> anyhow::Result<()> {
     // Load settings from config file if it exists
     {
         let mut persistence = settings_persistence.borrow_mut();
-        let config_path = match gcodekit4::config::SettingsManager::config_file_path() {
+        let config_path = match SettingsManager::config_file_path() {
             Ok(path) => path,
             Err(_) => std::path::PathBuf::new(),
         };
@@ -2078,143 +2078,89 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
+    // Initialize settings controller
+    let settings_controller = Rc::new(SettingsController::new(
+        settings_dialog.clone(),
+        settings_persistence.clone(),
+    ));
+
     // Set up menu-edit-preferences callback
     let window_weak = main_window.as_weak();
-    let settings_dialog_clone = settings_dialog.clone();
+    let controller_clone = settings_controller.clone();
     main_window.on_menu_edit_preferences(move || {
-        // Get reference to settings dialog
-        let dialog = settings_dialog_clone.borrow();
-
-        // Build settings array for UI display - using generated SettingItem type
+        let ui_settings = controller_clone.get_settings_for_ui(Some(SettingsCategory::Controller));
+        
         let mut settings_items = Vec::new();
-        for setting in dialog.settings.values() {
-            let value_type = match &setting.value {
-                SettingValue::Boolean(_) => "Boolean",
-                SettingValue::Integer(_) => "Integer",
-                SettingValue::Float(_) => "Float",
-                _ => "String",
-            };
-
-            let category = format!("{}", setting.category);
-
-            // Build options list for enum-type settings
-            let options: Vec<slint::SharedString> = if value_type == "String" {
-                // For now, no options for string settings
-                Vec::new()
-            } else {
-                Vec::new()
-            };
-
-            // Find the current index in the options list
-            let current_index = options
-                .iter()
-                .position(|o| *o == setting.value.as_str())
-                .unwrap_or(0) as i32;
-
+        for item in ui_settings {
+            let options: Vec<slint::SharedString> = item.options.iter().map(|s| s.into()).collect();
+            
             settings_items.push(slint_generatedMainWindow::SettingItem {
-                id: setting.id.clone().into(),
-                name: setting.name.clone().into(),
-                value: setting.value.as_str().into(),
-                value_type: value_type.into(),
-                category: category.into(),
-                description: setting
-                    .description
-                    .clone()
-                    .map(|s| s.into())
-                    .unwrap_or_default(),
+                id: item.id.into(),
+                name: item.name.into(),
+                value: item.value.into(),
+                value_type: item.value_type.into(),
+                category: item.category.into(),
+                description: item.description.into(),
                 options: slint::ModelRc::from(Rc::new(slint::VecModel::from(options))),
-                current_index,
+                current_index: item.current_index,
             });
         }
 
         if let Some(window) = window_weak.upgrade() {
             let model = std::rc::Rc::new(slint::VecModel::from(settings_items));
-            window.set_all_settings(slint::ModelRc::new(model));
+            window.set_current_settings(slint::ModelRc::new(model));
+            window.set_settings_category("controller".into());
             window.set_connection_status(slint::SharedString::from("Preferences dialog opened"));
+        }
+    });
+
+    // Set up settings-category-selected callback
+    let window_weak = main_window.as_weak();
+    let controller_clone = settings_controller.clone();
+    main_window.on_settings_category_selected(move |category_str| {
+        let category = SettingsController::get_category_from_string(category_str.as_str());
+        let ui_settings = controller_clone.get_settings_for_ui(Some(category));
+        
+        let mut settings_items = Vec::new();
+        for item in ui_settings {
+            let options: Vec<slint::SharedString> = item.options.iter().map(|s| s.into()).collect();
+            
+            settings_items.push(slint_generatedMainWindow::SettingItem {
+                id: item.id.into(),
+                name: item.name.into(),
+                value: item.value.into(),
+                value_type: item.value_type.into(),
+                category: item.category.into(),
+                description: item.description.into(),
+                options: slint::ModelRc::from(Rc::new(slint::VecModel::from(options))),
+                current_index: item.current_index,
+            });
+        }
+
+        if let Some(window) = window_weak.upgrade() {
+            let model = std::rc::Rc::new(slint::VecModel::from(settings_items));
+            window.set_current_settings(slint::ModelRc::new(model));
         }
     });
 
     // Set up menu-settings-save callback
     let window_weak = main_window.as_weak();
-    let settings_dialog_clone = settings_dialog.clone();
-    let settings_persistence_clone = settings_persistence.clone();
+    let controller_clone = settings_controller.clone();
     main_window.on_menu_settings_save(move || {
-        let dialog = settings_dialog_clone.borrow();
-
-        // Check for unsaved changes
-        if dialog.has_changes() {
-            // Log all changed settings
-            for setting in dialog.settings.values() {
-                if setting.is_changed() {
-                    // Setting changed, will be saved
+        match controller_clone.save() {
+            Ok(_) => {
+                if let Some(window) = window_weak.upgrade() {
+                    window.set_connection_status(slint::SharedString::from("Settings saved"));
                 }
             }
-
-            // Save to disk
-            {
-                let mut persistence = settings_persistence_clone.borrow_mut();
-
-                // Load settings from dialog into config
-                if let Err(e) = persistence.load_from_dialog(&dialog) {
-                    if let Some(window) = window_weak.upgrade() {
-                        window.set_connection_status(slint::SharedString::from(format!(
-                            "Error saving settings: {}",
-                            e
-                        )));
-                    }
-                    return;
-                }
-
-                // Save to file
-                let config_path = match gcodekit4::config::SettingsManager::config_file_path() {
-                    Ok(path) => path,
-                    Err(e) => {
-                        if let Some(window) = window_weak.upgrade() {
-                            window.set_connection_status(slint::SharedString::from(format!(
-                                "Error: Could not determine config path: {}",
-                                e
-                            )));
-                        }
-                        return;
-                    }
-                };
-
-                // Ensure config directory exists
-                if let Err(e) = gcodekit4::config::SettingsManager::ensure_config_dir() {
-                    if let Some(window) = window_weak.upgrade() {
-                        window.set_connection_status(slint::SharedString::from(format!(
-                            "Error: Failed to create config directory: {}",
-                            e
-                        )));
-                    }
-                    return;
-                }
-
-                if let Err(e) = persistence.save_to_file(&config_path) {
-                    if let Some(window) = window_weak.upgrade() {
-                        window.set_connection_status(slint::SharedString::from(format!(
-                            "Error saving settings: {}",
-                            e
-                        )));
-                    }
-                } else {
-                    if let Some(window) = window_weak.upgrade() {
-                        window.set_connection_status(slint::SharedString::from(
-                            "Settings saved successfully",
-                        ));
-                    }
-
-                    // Reset the unsaved changes flag and sync defaults
-                    drop(dialog); // Release the borrow
-                    let mut dialog_mut = settings_dialog_clone.borrow_mut();
-                    for setting in dialog_mut.settings.values_mut() {
-                        setting.default = setting.value.clone();
-                    }
-                    dialog_mut.has_unsaved_changes = false;
+            Err(e) => {
+                if let Some(window) = window_weak.upgrade() {
+                    window.set_connection_status(slint::SharedString::from(format!(
+                        "Error saving settings: {}",
+                        e
+                    )));
                 }
             }
-        } else if let Some(window) = window_weak.upgrade() {
-            window.set_connection_status(slint::SharedString::from("No changes to save"));
         }
     });
 
@@ -2228,10 +2174,9 @@ fn main() -> anyhow::Result<()> {
 
     // Set up menu-settings-restore-defaults callback
     let window_weak = main_window.as_weak();
-    let settings_dialog_clone = settings_dialog.clone();
+    let controller_clone = settings_controller.clone();
     main_window.on_menu_settings_restore_defaults(move || {
-        let mut dialog = settings_dialog_clone.borrow_mut();
-        dialog.reset_all_to_defaults();
+        controller_clone.restore_defaults();
 
         if let Some(window) = window_weak.upgrade() {
             window
@@ -2240,51 +2185,10 @@ fn main() -> anyhow::Result<()> {
     });
 
     // Set up update-setting callback
-    let settings_dialog_clone = settings_dialog.clone();
+    let controller_clone = settings_controller.clone();
     main_window.on_update_setting(
         move |setting_id: slint::SharedString, value: slint::SharedString| {
-            let mut dialog = settings_dialog_clone.borrow_mut();
-            let setting_id_str = setting_id.to_string();
-            let value_str = value.to_string();
-
-            if let Some(setting) = dialog.get_setting_mut(&setting_id_str) {
-                let new_value = match &setting.value {
-                    gcodekit4::ui::settings_dialog::SettingValue::String(_) => {
-                        gcodekit4::ui::settings_dialog::SettingValue::String(value_str)
-                    }
-                    gcodekit4::ui::settings_dialog::SettingValue::Integer(_) => {
-                        if let Ok(i) = value_str.parse::<i32>() {
-                            gcodekit4::ui::settings_dialog::SettingValue::Integer(i)
-                        } else {
-                            return;
-                        }
-                    }
-                    gcodekit4::ui::settings_dialog::SettingValue::Float(_) => {
-                        if let Ok(f) = value_str.parse::<f64>() {
-                            gcodekit4::ui::settings_dialog::SettingValue::Float(f)
-                        } else {
-                            return;
-                        }
-                    }
-                    gcodekit4::ui::settings_dialog::SettingValue::Boolean(_) => {
-                        let b = matches!(value_str.to_lowercase().as_str(), "true" | "1" | "yes");
-                        gcodekit4::ui::settings_dialog::SettingValue::Boolean(b)
-                    }
-                    gcodekit4::ui::settings_dialog::SettingValue::Enum(_, ref options) => {
-                        if options.contains(&value_str) {
-                            gcodekit4::ui::settings_dialog::SettingValue::Enum(
-                                value_str,
-                                options.clone(),
-                            )
-                        } else {
-                            return;
-                        }
-                    }
-                };
-
-                setting.value = new_value;
-                dialog.has_unsaved_changes = true;
-            }
+            controller_clone.update_setting(setting_id.as_str(), value.as_str());
         },
     );
 

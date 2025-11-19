@@ -1,4 +1,4 @@
-//! Settings/Preferences Dialog - Task 78
+//! Settings Dialog Logic
 //!
 //! Application settings with categories for controller settings, UI preferences,
 //! file processing options, and keyboard shortcuts configuration

@@ -1,13 +1,13 @@
-//! Settings Persistence - Task 78 Phase 2
+//! Settings Persistence
 //!
 //! Handles loading and saving application settings from/to configuration files.
 //! Bridges SettingsDialog (UI) with Config (persistence layer).
 //! Provides validation, migration, and synchronization of settings.
 
-use super::settings_dialog::{
+use crate::config::{Config, ConnectionType};
+use crate::view_model::{
     KeyboardShortcut, Setting, SettingValue, SettingsCategory, SettingsDialog,
 };
-use crate::config::{Config, ConnectionType};
 use gcodekit4_core::Result;
 use std::path::Path;
 
