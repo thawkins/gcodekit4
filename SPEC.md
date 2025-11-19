@@ -1,15 +1,22 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.30.0-alpha  
-**Last Updated**: 2025-11-17  
-**Status**: Editor Phase 2 Complete - Cursor Blinking & Vector Engraver Complete
+**Version**: 0.33.0-alpha  
+**Last Updated**: 2025-11-19  
+**Status**: Vector Hatching & Lyon Integration Complete
 
-### Latest Release (v0.30.0-alpha) - Cursor Blinking Animation
-- ✅ **Cursor Blinking Animation (NEW)**
-  - Text cursor blinks with 400ms cycle (200ms visible, 200ms invisible)
-  - Implemented via non-blocking Rust background timer
-  - Slint event loop integration for thread-safe UI updates
-  - Property-based architecture for clean component communication
+### Latest Release (v0.33.0-alpha) - Vector Hatching & Lyon Integration
+- ✅ **Vector Hatching Support**
+  - Implemented vector hatching with configurable angle, spacing, and tolerance
+  - Added cross-hatch support (second pass at 90 degrees offset)
+  - Integrated `lyon` crate for robust path processing and tessellation
+- ✅ **Vector Engraver Improvements**
+  - Fixed multi-pass engraving bug (now correctly performs N passes with Z decrement)
+  - Fixed laser dot artifacts at path ends (laser off before rapid moves)
+  - Added configurable laser dwell option
+  - Improved SVG parsing robustness
+- ✅ **Architecture Refactoring**
+  - Separated domain-specific functionality into dedicated crates (camtools, designer, gcodeeditor)
+  - Cleaner 7-crate modular architecture
 - ✅ **Custom G-Code Text Editor - Phase 2 (COMPLETE)**
   - Mouse click to cursor positioning
   - Automatic line and column detection from click coordinates
