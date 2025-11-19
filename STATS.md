@@ -8,7 +8,7 @@
 - **Test Status**: ✅ 130 tests passing (3 new multi-pass tests)
 
 ### Code Metrics
-- **Total Lines of Code**: ~54,739 (core crates)
+- **Total Lines of Code**: ~54,800 (core crates)
 - **Main Binary**: gcodekit4 (Rust + Slint UI)
 - **Architecture**: Modular workspace with 7 crates
 
@@ -20,17 +20,22 @@
 - **gcodekit4-parser** (14K LOC): G-code parsing and utilities
 - **gcodekit4-communication** (12.6K LOC): 5 firmware types (GRBL, TinyG, G2Core, Smoothieware, FluidNC)
 - **gcodekit4-ui** (18.3K LOC): Slint UI components and orchestration
+- **gcodekit4-visualizer** (1.2K LOC): 2D visualization engine
 
 ### Latest Development Session (2025-11-19 - v0.33.0-alpha)
 
 #### Bug Fixes
+- ✅ **Visualizer Grid**: Fixed grid disappearing at low zoom and incomplete coverage
+  - Implemented adaptive grid spacing (10mm/100mm/etc.)
+  - Ensures full viewport coverage at all scales
+  - Added dynamic canvas sizing to backend rendering
+  - Added grid size indicator to status bar
+- ✅ **Toolpath Rendering**: Improved line quality
+  - Changed stroke width to 1px for crisp lines at any zoom level
 - ✅ **G-Code Streaming Reliability**: Fixed streaming stalls
   - Implemented line-based buffering for serial responses
   - Fixed handling of split "ok" messages
   - Added proper error response handling
-- ✅ **Visualizer Grid**: Fixed grid disappearing at low zoom
-  - Implemented adaptive grid spacing
-  - Ensures full viewport coverage at all scales
 - ✅ **Vector Engraver Multi-Pass**: Fixed missing multi-pass loop implementation
   - Now correctly performs N passes with proper Z-axis depth adjustment
   - Z decremented by `z_increment * pass_number` for each pass

@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.33.1-alpha] - 2025-11-20
+
+### Fixed
+- **Visualizer Grid**
+  - Fixed grid disappearing at low zoom levels
+  - Implemented adaptive grid spacing (10mm -> 100mm -> 1000mm) based on zoom
+  - Grid now covers the entire viewport at all scale factors
+  - Added dynamic canvas sizing to backend rendering
+  - Added grid size indicator to status bar
+- **Toolpath Rendering Stroke Width**
+  - Changed toolpath rendering stroke width from 5px to 1px in all visualizer components
+  - Ensures crisp, single-pixel wide lines for toolpaths regardless of zoom level
+  - Improves visibility of fine details in complex toolpaths
+  - Consistent rendering across G-code visualizer and editor panels
+
 ## [0.33.0-alpha] - 2025-11-19
 
 ### Changed

@@ -26,6 +26,7 @@ export component GcodeVisualizerPanel inherits VerticalBox {
     in property <float> x-offset: 0.0;
     in property <float> y-offset: 0.0;
     in property <float> zoom-scale: 1.0;
+    in property <string> grid-size: "10mm";
     in-out property <bool> show-grid: true;
     in-out property <bool> show-rapid-moves: true;
     out property <float> canvas-width: canvas-rect.width / 1px;
@@ -216,6 +217,31 @@ export component GcodeVisualizerPanel inherits VerticalBox {
                 }
             }
 
+            Text {
+                text: "|";
+                font-size: 11px;
+                color: #ccc;
+            }
+
+            // Grid Size
+            HorizontalBox {
+                spacing: 6px;
+
+                Text {
+                    text: "Grid:";
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: #e65100;
+                }
+
+                Text {
+                    text: root.grid-size;
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: #ef6c00;
+                }
+            }
+
 
         }
 
@@ -279,7 +305,7 @@ export component GcodeVisualizerPanel inherits VerticalBox {
                             height: 100%;
                             fill: transparent;
                             stroke: #ff0000;  // Bright red for testing
-                            stroke-width: 5px;  // Thicker for visibility
+                            stroke-width: 1px;  // Single pixel wide
                             commands: root.visualization-path-data;
                         }
                         

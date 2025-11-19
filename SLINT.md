@@ -131,3 +131,20 @@ Rectangle {
 ```
 
 **Usage**: Used for the VCR-style "Send", "Pause", and "Stop" buttons in the G-code editor panel to show text labels on hover.
+
+### Toolpath Rendering Stroke Width (✅ FIXED 2025-11-20)
+
+**Issue**: Toolpaths were rendered with a thick line (5px) that looked too heavy, especially when zoomed out or on high-DPI displays.
+
+**Requirement**: Render toolpaths with a single-pixel wide line regardless of the scale factor.
+
+**Solution**:
+- Updated `stroke-width` property in Slint `Path` elements for the toolpath layer.
+- Changed from `5px` to `1px`.
+- Since the backend generates path coordinates in screen pixels (pre-scaled) and the Slint `Path` viewbox is set to 1:1 with the canvas pixels, `stroke-width: 1px` results in a crisp 1-pixel wide line on screen, independent of the zoom level applied in the backend.
+
+**Files Updated**:
+- `crates/gcodekit4-visualizer/ui/gcode_visualizer.slint`
+- `crates/gcodekit4-gcodeeditor/ui/gcode_visualizer.slint`
+- `crates/gcodekit4-ui/src/ui_panels/gcode_visualizer.slint`
+- `crates/gcodekit4-ui/ui_panels/gcode_visualizer.slint`

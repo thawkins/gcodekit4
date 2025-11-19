@@ -123,6 +123,17 @@ This modular structure enables:
 - **Context Menu**: Right-click for Delete and Properties
 - **Toolpath Generation**: Convert designs to executable G-code
 
+### 👁️ 2D Visualizer
+- **Real-time Rendering**: Instant visualization of G-code toolpaths
+- **Adaptive Grid System**:
+  - Dynamic grid spacing (e.g., 10mm, 100mm) based on zoom level
+  - Infinite grid coverage across the entire viewport
+  - Grid size indicator in status bar
+- **Dynamic Canvas Sizing**: Automatically adjusts to window resize events
+- **Interactive Controls**: Zoom, pan, and fit-to-view with mouse interaction
+- **Color-Coded Paths**: Distinct colors for Rapid (G0) and Feed (G1/G2/G3) moves
+- **Performance**: Optimized rendering for large files
+
 ### 💬 Smart Device Console
 - **Command History**: Scrollable record of all device communications
 - **Color-Coded Messages**:

@@ -1320,12 +1320,14 @@ fn main() -> anyhow::Result<()> {
                     // Render visualization in background thread to avoid blocking UI
                     let window_weak = window.as_weak();
                     let content_clone = content.clone();
+                    let width = window.get_visualizer_canvas_width();
+                    let height = window.get_visualizer_canvas_height();
 
                     // Use a channel to communicate progress from background thread
                     let (tx, rx) = std::sync::mpsc::channel();
 
                     std::thread::spawn(move || {
-                        render_gcode_visualization_background_channel(content_clone, tx);
+                        render_gcode_visualization_background_channel(content_clone, width as u32, height as u32, tx);
                     });
 
                     // Use Slint's invoke_from_event_loop to safely update UI from background thread
@@ -1337,6 +1339,7 @@ fn main() -> anyhow::Result<()> {
                             rapid_moves_data,
                             grid_data,
                             origin_data,
+                            grid_size,
                         )) = rx.recv()
                         {
                             let window_handle = window_weak.clone();
@@ -1373,6 +1376,9 @@ fn main() -> anyhow::Result<()> {
                                         window.set_visualization_origin_data(
                                             slint::SharedString::from(origin),
                                         );
+                                    }
+                                    if let Some(size) = grid_size {
+                                        window.set_visualizer_grid_size(slint::SharedString::from(format!("{}mm", size)));
                                     }
                                 }
                             })
@@ -5848,14 +5854,15 @@ fn main() -> anyhow::Result<()> {
                 let mut visualizer = Visualizer2D::new();
                 visualizer.set_default_view(canvas_width, canvas_height);
                 let show_grid = window.get_visualizer_show_grid();
-                let grid_data = if show_grid {
+                let (grid_data, grid_size) = if show_grid {
                     render_grid_to_path(&visualizer, canvas_width as u32, canvas_height as u32)
                 } else {
-                    String::new()
+                    (String::new(), 0.0)
                 };
                 let origin_data =
                     render_origin_to_path(&visualizer, canvas_width as u32, canvas_height as u32);
                 window.set_visualization_grid_data(slint::SharedString::from(grid_data));
+                window.set_visualizer_grid_size(slint::SharedString::from(format!("{}mm", grid_size)));
                 window.set_visualization_origin_data(slint::SharedString::from(origin_data));
                 return;
             }
@@ -5865,7 +5872,7 @@ fn main() -> anyhow::Result<()> {
             // Spawn rendering thread
             let content_owned = content.to_string();
 
-            // Message format: (progress, status, path_data, rapid_moves_data, grid_data, origin_data)
+            // Message format: (progress, status, path_data, rapid_moves_data, grid_data, origin_data, grid_size)
             let (tx, rx) = std::sync::mpsc::channel::<(
                 f32,
                 String,
@@ -5873,6 +5880,7 @@ fn main() -> anyhow::Result<()> {
                 Option<String>,
                 Option<String>,
                 Option<String>,
+                Option<f32>,
             )>();
             let window_weak_render = window_weak.clone();
             let zoom_scale_render = zoom_for_refresh.clone();
@@ -5890,7 +5898,7 @@ fn main() -> anyhow::Result<()> {
                     render_toolpath_to_path, Visualizer2D,
                 };
 
-                let _ = tx.send((0.1, "Parsing G-code...".to_string(), None, None, None, None));
+                let _ = tx.send((0.1, "Parsing G-code...".to_string(), None, None, None, None, None));
 
                 let mut visualizer = Visualizer2D::new();
                 visualizer.show_grid = show_grid;
@@ -5911,7 +5919,7 @@ fn main() -> anyhow::Result<()> {
                     visualizer.y_offset = offsets.1;
                 }
 
-                let _ = tx.send((0.3, "Rendering...".to_string(), None, None, None, None));
+                let _ = tx.send((0.3, "Rendering...".to_string(), None, None, None, None, None));
 
                 // Generate canvas path data
                 let path_data =
@@ -5921,10 +5929,10 @@ fn main() -> anyhow::Result<()> {
                     canvas_width as u32,
                     canvas_height as u32,
                 );
-                let grid_data = if show_grid {
+                let (grid_data, grid_size) = if show_grid {
                     render_grid_to_path(&visualizer, canvas_width as u32, canvas_height as u32)
                 } else {
-                    String::new()
+                    (String::new(), 0.0)
                 };
                 let origin_data =
                     render_origin_to_path(&visualizer, canvas_width as u32, canvas_height as u32);
@@ -5938,10 +5946,11 @@ fn main() -> anyhow::Result<()> {
                         Some(rapid_moves_data),
                         Some(grid_data),
                         Some(origin_data),
+                        Some(grid_size),
                     ));
                 } else {
                     tracing::error!("ERROR: no render data generated!");
-                    let _ = tx.send((1.0, "Error: no data".to_string(), None, None, None, None));
+                    let _ = tx.send((1.0, "Error: no data".to_string(), None, None, None, None, None));
                 }
                 })) {
                     tracing::error!("Render thread panicked: {:?}", e);
@@ -5957,6 +5966,7 @@ fn main() -> anyhow::Result<()> {
                     rapid_moves_data,
                     grid_data,
                     origin_data,
+                    grid_size,
                 )) = rx.recv()
                 {
                     let window_handle = window_weak_render.clone();
@@ -5991,6 +6001,9 @@ fn main() -> anyhow::Result<()> {
                                 window.set_visualization_origin_data(slint::SharedString::from(
                                     origin,
                                 ));
+                            }
+                            if let Some(size) = grid_size {
+                                window.set_visualizer_grid_size(slint::SharedString::from(format!("{}mm", size)));
                             }
 
                             // Update indicator properties
@@ -6253,6 +6266,8 @@ fn get_available_ports() -> anyhow::Result<Vec<slint::SharedString>> {
 /// Render G-code visualization in background thread using message passing
 fn render_gcode_visualization_background_channel(
     gcode_content: String,
+    width: u32,
+    height: u32,
     tx: std::sync::mpsc::Sender<(
         f32,
         String,
@@ -6260,6 +6275,7 @@ fn render_gcode_visualization_background_channel(
         Option<String>,
         Option<String>,
         Option<String>,
+        Option<f32>,
     )>,
 ) {
     use gcodekit4::visualizer::{
@@ -6267,22 +6283,22 @@ fn render_gcode_visualization_background_channel(
         render_toolpath_to_path, Visualizer2D,
     };
 
-    let _ = tx.send((0.1, "Parsing G-code...".to_string(), None, None, None, None));
+    let _ = tx.send((0.1, "Parsing G-code...".to_string(), None, None, None, None, None));
 
     // Parse G-code
     let mut visualizer = Visualizer2D::new();
     visualizer.parse_gcode(&gcode_content);
 
     // Set default view to position origin at bottom-left
-    visualizer.set_default_view(1600.0, 1200.0);
+    visualizer.set_default_view(width as f32, height as f32);
 
-    let _ = tx.send((0.3, "Rendering...".to_string(), None, None, None, None));
+    let _ = tx.send((0.3, "Rendering...".to_string(), None, None, None, None, None));
 
     // Generate canvas path data
-    let path_data = render_toolpath_to_path(&visualizer, 1600, 1200);
-    let rapid_moves_data = render_rapid_moves_to_path(&visualizer, 1600, 1200);
-    let grid_data = render_grid_to_path(&visualizer, 1600, 1200);
-    let origin_data = render_origin_to_path(&visualizer, 1600, 1200);
+    let path_data = render_toolpath_to_path(&visualizer, width, height);
+    let rapid_moves_data = render_rapid_moves_to_path(&visualizer, width, height);
+    let (grid_data, grid_size) = render_grid_to_path(&visualizer, width, height);
+    let origin_data = render_origin_to_path(&visualizer, width, height);
 
 
     if !path_data.is_empty() || !rapid_moves_data.is_empty() || !grid_data.is_empty() {
@@ -6293,8 +6309,9 @@ fn render_gcode_visualization_background_channel(
             Some(rapid_moves_data),
             Some(grid_data),
             Some(origin_data),
+            Some(grid_size),
         ));
     } else {
-        let _ = tx.send((1.0, "Error: no data".to_string(), None, None, None, None));
+        let _ = tx.send((1.0, "Error: no data".to_string(), None, None, None, None, None));
     }
 }

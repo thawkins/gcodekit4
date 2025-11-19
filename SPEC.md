@@ -1082,7 +1082,13 @@ G54                ; Back to work coordinates
   - Blue: Arc movements (G2/G3)
   - Yellow: Current position
 - Coordinate axes display (XYZ tri-axial)
-- Grid overlay (configurable)
+- **Adaptive Grid System**:
+  - Dynamic grid spacing based on zoom level (e.g., 10mm, 100mm)
+  - Infinite grid coverage across the entire viewport
+  - Grid size indicator in status bar
+- **Dynamic Canvas Sizing**:
+  - Automatically adjusts to window resize events
+  - Synchronized with UI layout for pixel-perfect rendering
 
 **Controls**:
 - Mouse drag: Rotate view

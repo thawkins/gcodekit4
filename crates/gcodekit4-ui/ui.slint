@@ -130,6 +130,7 @@ export component MainWindow inherits Window {
     in property <float> visualizer-x-offset: 0.0;
     in property <float> visualizer-y-offset: 0.0;
     in property <float> visualizer-zoom-scale: 1.0;
+    in property <string> visualizer-grid-size: "10mm";
     in-out property <bool> visualizer-show-grid: true;
     in-out property <bool> visualizer-show-rapid-moves: true;
     in-out property <int> gcode-focus-trigger: 0;  // Incrementing this triggers editor focus
@@ -1006,63 +1007,85 @@ export component MainWindow inherits Window {
                 }
 
                 // GCode Visualizer View
-                if current-view == "gcode-visualizer" : visualizer-panel := GcodeVisualizerPanel {
-                    gcode-filename <=> root.gcode-filename;
-                    gcode-content <=> root.gcode-content;
-                    visualization-path-data: root.visualization-path-data;
-                    visualization-rapid-moves-data: root.visualization-rapid-moves-data;
-                    visualization-grid-data: root.visualization-grid-data;
-                    visualization-origin-data: root.visualization-origin-data;
-                    machine-x: Math.round(root.position-x * 1000) / 1000 + "";
-                    machine-y: Math.round(root.position-y * 1000) / 1000 + "";
-                    machine-z: Math.round(root.position-z * 1000) / 1000 + "";
-                    work-x: Math.round(root.position-a * 1000) / 1000 + "";
-                    work-y: Math.round(root.position-b * 1000) / 1000 + "";
-                    work-z: Math.round(root.position-c * 1000) / 1000 + "";
-                    progress: root.visualizer-progress;
-                    visualizer-status: root.visualizer-status;
-                    x-offset: root.visualizer-x-offset;
-                    y-offset: root.visualizer-y-offset;
-                    zoom-scale: root.visualizer-zoom-scale;
-                    show-grid <=> root.visualizer-show-grid;
-                    show-rapid-moves <=> root.visualizer-show-rapid-moves;
-                    
-                    refresh-visualization(canvas-width, canvas-height) => {
-                        root.visualizer-canvas-width = canvas-width;
-                        root.visualizer-canvas-height = canvas-height;
-                        root.refresh-visualization(canvas-width, canvas-height);
+                if current-view == "gcode-visualizer" : Rectangle {
+                    vertical-stretch: 1;
+                    horizontal-stretch: 1;
+                    background: transparent;
+
+                    visualizer-panel := GcodeVisualizerPanel {
+                        width: 100%;
+                        height: 100%;
+                        gcode-filename <=> root.gcode-filename;
+                        gcode-content <=> root.gcode-content;
+                        visualization-path-data: root.visualization-path-data;
+                        visualization-rapid-moves-data: root.visualization-rapid-moves-data;
+                        visualization-grid-data: root.visualization-grid-data;
+                        visualization-origin-data: root.visualization-origin-data;
+                        machine-x: Math.round(root.position-x * 1000) / 1000 + "";
+                        machine-y: Math.round(root.position-y * 1000) / 1000 + "";
+                        machine-z: Math.round(root.position-z * 1000) / 1000 + "";
+                        work-x: Math.round(root.position-a * 1000) / 1000 + "";
+                        work-y: Math.round(root.position-b * 1000) / 1000 + "";
+                        work-z: Math.round(root.position-c * 1000) / 1000 + "";
+                        progress: root.visualizer-progress;
+                        visualizer-status: root.visualizer-status;
+                        x-offset: root.visualizer-x-offset;
+                        y-offset: root.visualizer-y-offset;
+                        zoom-scale: root.visualizer-zoom-scale;
+                        grid-size: root.visualizer-grid-size;
+                        show-grid <=> root.visualizer-show-grid;
+                        show-rapid-moves <=> root.visualizer-show-rapid-moves;
+                        
+                        refresh-visualization(canvas-width, canvas-height) => {
+                            root.visualizer-canvas-width = canvas-width;
+                            root.visualizer-canvas-height = canvas-height;
+                            root.refresh-visualization(canvas-width, canvas-height);
+                        }
+                        
+                        zoom-in(canvas-width, canvas-height) => {
+                            root.visualizer-canvas-width = canvas-width;
+                            root.visualizer-canvas-height = canvas-height;
+                            root.zoom-in(canvas-width, canvas-height);
+                        }
+                        
+                        zoom-out(canvas-width, canvas-height) => {
+                            root.visualizer-canvas-width = canvas-width;
+                            root.visualizer-canvas-height = canvas-height;
+                            root.zoom-out(canvas-width, canvas-height);
+                        }
+                        
+                        reset-view(canvas-width, canvas-height) => {
+                            root.visualizer-canvas-width = canvas-width;
+                            root.visualizer-canvas-height = canvas-height;
+                            root.reset-view(canvas-width, canvas-height);
+                        }
+                        
+                        fit-to-view(canvas-width, canvas-height) => {
+                            root.visualizer-canvas-width = canvas-width;
+                            root.visualizer-canvas-height = canvas-height;
+                            root.fit-to-view(canvas-width, canvas-height);
+                        }
+                        
+                        toggle-grid => {
+                            root.toggle-grid();
+                        }
+                        
+                        pan-by-mouse(dx, dy) => {
+                            root.pan-by-mouse(dx, dy);
+                        }
                     }
-                    
-                    zoom-in(canvas-width, canvas-height) => {
-                        root.visualizer-canvas-width = canvas-width;
-                        root.visualizer-canvas-height = canvas-height;
-                        root.zoom-in(canvas-width, canvas-height);
-                    }
-                    
-                    zoom-out(canvas-width, canvas-height) => {
-                        root.visualizer-canvas-width = canvas-width;
-                        root.visualizer-canvas-height = canvas-height;
-                        root.zoom-out(canvas-width, canvas-height);
-                    }
-                    
-                    reset-view(canvas-width, canvas-height) => {
-                        root.visualizer-canvas-width = canvas-width;
-                        root.visualizer-canvas-height = canvas-height;
-                        root.reset-view(canvas-width, canvas-height);
-                    }
-                    
-                    fit-to-view(canvas-width, canvas-height) => {
-                        root.visualizer-canvas-width = canvas-width;
-                        root.visualizer-canvas-height = canvas-height;
-                        root.fit-to-view(canvas-width, canvas-height);
-                    }
-                    
-                    toggle-grid => {
-                        root.toggle-grid();
-                    }
-                    
-                    pan-by-mouse(dx, dy) => {
-                        root.pan-by-mouse(dx, dy);
+
+                    // Timer to sync canvas size to root properties
+                    // This ensures Rust gets the correct size when calling get_visualizer_canvas_width()
+                    Timer {
+                        interval: 50ms;
+                        running: true;
+                        triggered => {
+                            if (root.visualizer-canvas-width != visualizer-panel.canvas-width || root.visualizer-canvas-height != visualizer-panel.canvas-height) {
+                                root.visualizer-canvas-width = visualizer-panel.canvas-width;
+                                root.visualizer-canvas-height = visualizer-panel.canvas-height;
+                            }
+                        }
                     }
                 }
 

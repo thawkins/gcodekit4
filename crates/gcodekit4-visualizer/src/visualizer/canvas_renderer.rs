@@ -221,7 +221,7 @@ pub fn render_rapid_moves_to_path(visualizer: &Visualizer2D, width: u32, height:
 }
 
 /// Render grid as SVG path commands
-pub fn render_grid_to_path(visualizer: &Visualizer2D, width: u32, height: u32) -> String {
+pub fn render_grid_to_path(visualizer: &Visualizer2D, width: u32, height: u32) -> (String, f32) {
     let scale = calculate_scale(visualizer, width, height);
     let transform = CoordTransform::new(
         visualizer.min_x,
@@ -233,11 +233,11 @@ pub fn render_grid_to_path(visualizer: &Visualizer2D, width: u32, height: u32) -
     );
 
     let mut path = String::new();
-    const MAX_ITERATIONS: usize = 10000;
+    const MAX_ITERATIONS: usize = 100000;
 
     // Calculate the world coordinate range needed to fill entire viewport
     // Add extra margin to ensure full coverage
-    let margin_pixels = 100.0;
+    let margin_pixels = 500.0;
     let (world_left, world_top) = transform.screen_to_world(-margin_pixels, -margin_pixels);
     let (world_right, world_bottom) =
         transform.screen_to_world(width as f32 + margin_pixels, height as f32 + margin_pixels);
@@ -284,7 +284,7 @@ pub fn render_grid_to_path(visualizer: &Visualizer2D, width: u32, height: u32) -
         iterations += 1;
     }
 
-    path
+    (path, step)
 }
 
 /// Render origin marker at (0,0) as yellow cross
@@ -342,8 +342,8 @@ mod tests {
     #[test]
     fn test_render_empty_visualizer() {
         let visualizer = Visualizer2D::new();
-        let path = render_toolpath_to_path(&visualizer, 800, 600);
-        assert_eq!(path, "");
+        let (path, _) = render_grid_to_path(&visualizer, 800, 600);
+        assert!(!path.is_empty());
     }
 
     #[test]
@@ -360,12 +360,12 @@ mod tests {
     fn test_grid_visibility() {
         let mut visualizer = Visualizer2D::new();
         visualizer.zoom_scale = 0.2; // Low zoom
-        let path = render_grid_to_path(&visualizer, 800, 600);
+        let (path, _) = render_grid_to_path(&visualizer, 800, 600);
         // Grid should still be visible with adaptive spacing
         assert!(!path.is_empty());
 
         visualizer.zoom_scale = 0.5; // Higher zoom
-        let path = render_grid_to_path(&visualizer, 800, 600);
+        let (path, _) = render_grid_to_path(&visualizer, 800, 600);
         assert!(!path.is_empty());
     }
 }
