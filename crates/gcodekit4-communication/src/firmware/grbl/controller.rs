@@ -5,13 +5,17 @@
 
 use crate::communication::{ConnectionParams, NoOpCommunicator};
 use crate::firmware::grbl::{GrblCommunicator, GrblCommunicatorConfig};
+use crate::firmware::grbl::status_parser::StatusParser;
 use async_trait::async_trait;
 use gcodekit4_core::{ControllerState, ControllerStatus, PartialPosition};
 use gcodekit4_core::{ControllerTrait, OverrideState};
 use parking_lot::RwLock;
+use std::collections::VecDeque;
 use std::sync::Arc;
+use std::time::Instant;
+use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
-use tokio::time::{interval, Duration};
+use tokio::time::Duration;
 
 /// GRBL Controller state management
 #[derive(Debug, Clone)]
@@ -57,10 +61,12 @@ pub struct GrblController {
     communicator: Arc<GrblCommunicator>,
     /// Controller state
     state: Arc<RwLock<GrblControllerState>>,
-    /// Status polling handle
-    poll_task: Arc<RwLock<Option<JoinHandle<()>>>>,
+    /// IO task handle
+    io_task: Arc<RwLock<Option<JoinHandle<()>>>>,
+    /// Command sender channel
+    command_tx: Arc<RwLock<Option<mpsc::Sender<String>>>>,
     /// Shutdown signal
-    shutdown_signal: Arc<RwLock<Option<std::sync::Arc<tokio::sync::Notify>>>>,
+    shutdown_signal: Arc<RwLock<Option<mpsc::Sender<()>>>>,
     /// Connection parameters
     connection_params: ConnectionParams,
 }
@@ -77,74 +83,168 @@ impl GrblController {
             name: name.unwrap_or_else(|| "GRBL".to_string()),
             communicator,
             state: Arc::new(RwLock::new(GrblControllerState::default())),
-            poll_task: Arc::new(RwLock::new(None)),
+            io_task: Arc::new(RwLock::new(None)),
+            command_tx: Arc::new(RwLock::new(None)),
             shutdown_signal: Arc::new(RwLock::new(None)),
             connection_params,
         })
     }
 
     /// Initialize the controller and query its capabilities
-    fn initialize(&self) -> anyhow::Result<()> {
-        // Send soft reset
-        self.communicator.send_command("$RST=*")?;
-        std::thread::sleep(Duration::from_millis(75));
+    // fn initialize(&self) -> anyhow::Result<()> { ... } - Removed as we use async send_command in connect
 
-        // Query firmware version
-        self.communicator.send_command("$I")?;
 
-        // Request current settings
-        self.communicator.send_command("$")?;
+    /// Start the IO loop task
+    fn start_io_loop(&mut self) -> anyhow::Result<()> {
+        let (cmd_tx, mut cmd_rx) = mpsc::channel::<String>(100);
+        let (shutdown_tx, mut shutdown_rx) = mpsc::channel::<()>(1);
 
-        // Query parser state
-        self.communicator.send_command("$G")?;
-
-        Ok(())
-    }
-
-    /// Start the status polling task
-    fn start_polling(&mut self) -> anyhow::Result<()> {
-        let notify = Arc::new(tokio::sync::Notify::new());
-        *self.shutdown_signal.write() = Some(notify.clone());
+        *self.command_tx.write() = Some(cmd_tx);
+        *self.shutdown_signal.write() = Some(shutdown_tx);
 
         let communicator = self.communicator.clone();
         let state = self.state.clone();
-        let poll_rate = state.read().poll_rate_ms;
 
         let handle = tokio::spawn(async move {
-            let mut interval = interval(Duration::from_millis(poll_rate));
+            let mut buffer = String::new();
+            let mut sent_queue: VecDeque<usize> = VecDeque::new();
+            let mut local_cmd_queue: VecDeque<String> = VecDeque::new();
+            let mut last_poll = Instant::now();
+            
+            // We use a short sleep to prevent busy looping when no data
+            let loop_delay = Duration::from_millis(10);
 
             loop {
-                tokio::select! {
-                    _ = interval.tick() => {
-                        // Send status query
-                        if let Err(_e) = communicator.send_realtime_byte(b'?') {
-                            continue;
-                        }
+                // Check for shutdown
+                if shutdown_rx.try_recv().is_ok() {
+                    break;
+                }
 
-                        // Read response - brief delay
-                        tokio::time::sleep(Duration::from_millis(10)).await;
-                        if let Ok(_response) = communicator.read_response() {
-                            // Parse status response
+                // 1. READ PHASE: Read from serial port
+                // We use a short timeout in the communicator configuration or rely on non-blocking behavior
+                // Since we can't easily change the trait to async, we assume read_response returns quickly
+                // or times out quickly (we set timeout to 50ms in connect)
+                match communicator.read_response() {
+                    Ok(data) if !data.is_empty() => {
+                        let s = String::from_utf8_lossy(&data);
+                        buffer.push_str(&s);
+
+                        // Process complete lines
+                        while let Some(pos) = buffer.find('\n') {
+                            let line = buffer[..pos].trim().to_string();
+                            buffer.drain(..=pos + 1); // +1 to remove \n
+
+                            if !line.is_empty() {
+                                // Check for status report
+                                if line.starts_with('<') {
+                                    // Update full status
+                                    let full_status = StatusParser::parse_full(&line);
+                                    let mut state_guard = state.write();
+                                    
+                                    if let Some(mpos) = full_status.mpos {
+                                        state_guard.machine_position.x = mpos.x as f32;
+                                        state_guard.machine_position.y = mpos.y as f32;
+                                        state_guard.machine_position.z = mpos.z as f32;
+                                        // Update other axes...
+                                    }
+                                    
+                                    if let Some(wpos) = full_status.wpos {
+                                        state_guard.work_position.x = wpos.x as f32;
+                                        state_guard.work_position.y = wpos.y as f32;
+                                        state_guard.work_position.z = wpos.z as f32;
+                                    }
+                                    
+                                    if let Some(machine_state) = full_status.machine_state {
+                                        let s = machine_state.as_str();
+                                        
+                                        // Update ControllerState (detailed)
+                                        state_guard.state = match s {
+                                            s if s.starts_with("Idle") => ControllerState::Idle,
+                                            s if s.starts_with("Run") => ControllerState::Run,
+                                            s if s.starts_with("Hold") => ControllerState::Hold,
+                                            s if s.starts_with("Alarm") => ControllerState::Alarm,
+                                            s if s.starts_with("Home") => ControllerState::Home,
+                                            s if s.starts_with("Jog") => ControllerState::Jog,
+                                            s if s.starts_with("Door") => ControllerState::Door,
+                                            s if s.starts_with("Check") => ControllerState::Check,
+                                            s if s.starts_with("Sleep") => ControllerState::Sleep,
+                                            _ => ControllerState::Idle,
+                                        };
+
+                                        // Update ControllerStatus (simplified)
+                                        state_guard.status = match s {
+                                            s if s.starts_with("Idle") => ControllerStatus::Idle,
+                                            s if s.starts_with("Run") => ControllerStatus::Run,
+                                            s if s.starts_with("Hold") => ControllerStatus::Hold,
+                                            s if s.starts_with("Alarm") => ControllerStatus::Alarm,
+                                            s if s.starts_with("Home") => ControllerStatus::Run,
+                                            s if s.starts_with("Jog") => ControllerStatus::Run,
+                                            _ => ControllerStatus::Idle,
+                                        };
+                                    }
+                                } else if line == "ok" {
+                                    // Acknowledge command
+                                    if let Some(len) = sent_queue.pop_front() {
+                                        communicator.acknowledge_chars(len);
+                                    }
+                                } else if line.starts_with("error:") {
+                                    // Handle error (also consumes a command slot)
+                                    tracing::error!("GRBL Error: {}", line);
+                                    if let Some(len) = sent_queue.pop_front() {
+                                        communicator.acknowledge_chars(len);
+                                    }
+                                } else {
+                                    // Other messages (welcome, settings, etc)
+                                    tracing::debug!("GRBL Message: {}", line);
+                                }
+                            }
                         }
                     }
-                    _ = notify.notified() => {
-                        break;
+                    _ => {} // No data or error
+                }
+
+                // 2. COMMAND FETCH PHASE: Get commands from channel
+                while let Ok(cmd) = cmd_rx.try_recv() {
+                    local_cmd_queue.push_back(cmd);
+                }
+
+                // 3. WRITE PHASE: Send commands if buffer allows
+                // We peek at the next command
+                if let Some(cmd) = local_cmd_queue.front() {
+                    let cmd_len = cmd.len() + 1; // +1 for newline
+                    if communicator.is_ready_to_send(cmd_len) {
+                        // Send it
+                        if let Ok(_) = communicator.send_command(cmd) {
+                            // Move to sent queue
+                            sent_queue.push_back(cmd_len);
+                            local_cmd_queue.pop_front();
+                        }
                     }
                 }
+
+                // 4. POLL PHASE: Send status query if needed
+                let poll_rate = state.read().poll_rate_ms;
+                if last_poll.elapsed() >= Duration::from_millis(poll_rate) {
+                    let _ = communicator.send_realtime_byte(b'?');
+                    last_poll = Instant::now();
+                }
+
+                // Yield to let other tasks run and prevent CPU hogging
+                tokio::time::sleep(loop_delay).await;
             }
         });
 
-        *self.poll_task.write() = Some(handle);
+        *self.io_task.write() = Some(handle);
         Ok(())
     }
 
-    /// Stop the status polling task
-    fn stop_polling(&mut self) -> anyhow::Result<()> {
-        if let Some(notify) = self.shutdown_signal.write().take() {
-            notify.notify_one();
+    /// Stop the IO loop task
+    fn stop_io_loop(&mut self) -> anyhow::Result<()> {
+        if let Some(tx) = self.shutdown_signal.write().take() {
+            let _ = tx.try_send(());
         }
 
-        if let Some(handle) = self.poll_task.write().take() {
+        if let Some(handle) = self.io_task.write().take() {
             handle.abort();
         }
 
@@ -171,11 +271,23 @@ impl ControllerTrait for GrblController {
     }
 
     async fn connect(&mut self) -> anyhow::Result<()> {
-        self.communicator.connect(&self.connection_params)?;
+        // Set a short timeout for the serial port to allow the IO loop to spin
+        let mut params = self.connection_params.clone();
+        params.timeout_ms = 50; // 50ms read timeout
+        
+        self.communicator.connect(&params)?;
         *self.state.write() = GrblControllerState::default();
 
-        self.initialize()?;
-        self.start_polling()?;
+        // Start the IO loop BEFORE initializing to handle responses
+        self.start_io_loop()?;
+
+        // Initialize (this might need to be async or handled via queue now)
+        // For now, we'll just queue the initialization commands
+        self.send_command("$RST=*").await?;
+        tokio::time::sleep(Duration::from_millis(100)).await;
+        self.send_command("$I").await?;
+        self.send_command("$").await?;
+        self.send_command("$G").await?;
 
         {
             let mut state = self.state.write();
@@ -186,7 +298,7 @@ impl ControllerTrait for GrblController {
     }
 
     async fn disconnect(&mut self) -> anyhow::Result<()> {
-        self.stop_polling()?;
+        self.stop_io_loop()?;
         self.communicator.disconnect()?;
 
         {
@@ -198,19 +310,19 @@ impl ControllerTrait for GrblController {
     }
 
     async fn send_command(&mut self, command: &str) -> anyhow::Result<()> {
-        // Check if ready to send (character counting)
-        let command_size = command.len() + 1; // +1 for newline
-        if !self.communicator.is_ready_to_send(command_size) {
+        // Push to command channel
+        let tx = {
+            let guard = self.command_tx.read();
+            guard.clone()
+        };
+
+        if let Some(tx) = tx {
+            tx.send(command.to_string()).await
+                .map_err(|_| anyhow::anyhow!("Failed to send command to IO loop"))?;
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!("Controller not connected"))
         }
-
-        // Send command
-        self.communicator.send_command(command)?;
-
-        // Read OK response
-        let response = self.communicator.read_line()?;
-        let _ = !response.contains("ok");
-
-        Ok(())
     }
 
     async fn home(&mut self) -> anyhow::Result<()> {
@@ -221,6 +333,14 @@ impl ControllerTrait for GrblController {
     async fn reset(&mut self) -> anyhow::Result<()> {
         self.communicator.send_realtime_byte(0x18)?;
         tokio::time::sleep(Duration::from_millis(100)).await;
+        
+        // Reset communicator state
+        self.communicator.clear()?;
+        
+        // Restart IO loop to clear queues
+        self.stop_io_loop()?;
+        self.start_io_loop()?;
+        
         Ok(())
     }
 
