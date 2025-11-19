@@ -425,6 +425,7 @@ impl Canvas {
                         y2 - y1,
                         ((y2 - y1) * 0.20).max(1.0),
                     )),
+                    ShapeType::Path => shape.clone_shape(),
                 };
                 obj.shape = new_shape;
             }
@@ -572,6 +573,7 @@ impl Canvas {
                             radius,
                         ))
                     }
+                    ShapeType::Path => shape.clone_shape(),
                 };
                 obj.shape = new_shape;
             }
@@ -632,6 +634,7 @@ impl Canvas {
                             radius,
                         ))
                     }
+                    ShapeType::Path => shape.clone_shape(),
                 };
                 obj.shape = new_shape;
             }

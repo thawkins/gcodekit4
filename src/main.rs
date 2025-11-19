@@ -849,12 +849,12 @@ fn main() -> anyhow::Result<()> {
                     // GRBL buffer is 128 bytes, but we use 127 for safety
                     const GRBL_RX_BUFFER_SIZE: usize = 127;
 
-                    // Main polling loop runs at 50ms intervals (20Hz)
+                    // Main polling loop runs at 35ms intervals
                     // - Reads responses continuously (ok, error, status reports)
                     // - Sends G-code lines using character-counting protocol
-                    // - Sends ? status query every 200ms (real-time command)
+                    // - Sends ? status query every 35ms (real-time command)
                     while !polling_stop.load(std::sync::atomic::Ordering::Relaxed) {
-                        std::thread::sleep(std::time::Duration::from_millis(50));
+                        std::thread::sleep(std::time::Duration::from_millis(35));
 
                         // Use the shared communicator instead of creating a new connection
                         // CRITICAL: Hold the lock for minimal time to allow jog commands through
@@ -967,12 +967,12 @@ fn main() -> anyhow::Result<()> {
                             }
 
                             // Step 2: Send G-code lines if queued
-                            // Send up to 5 lines per cycle, respecting buffer limits
+                            // Send up to 10 lines per cycle, respecting buffer limits
                             {
                                 let mut gstate = gcode_state_poll.lock().unwrap();
                                 let mut lines_sent_this_cycle = 0;
 
-                                while !gstate.lines.is_empty() && lines_sent_this_cycle < 5 {
+                                while !gstate.lines.is_empty() && lines_sent_this_cycle < 10 {
                                     let line = gstate.lines.front().cloned().unwrap_or_default();
                                     let trimmed = line.trim();
 
@@ -5621,6 +5621,13 @@ fn main() -> anyhow::Result<()> {
                         let desired_width = dlg.get_desired_width();
                         let offset_x = dlg.get_offset_x().parse::<f32>().unwrap_or(10.0);
                         let offset_y = dlg.get_offset_y().parse::<f32>().unwrap_or(10.0);
+                        let enable_hatch = dlg.get_enable_hatch();
+                        let hatch_angle = dlg.get_hatch_angle();
+                        let hatch_spacing = dlg.get_hatch_spacing();
+                        let hatch_tolerance = dlg.get_hatch_tolerance();
+                        let cross_hatch = dlg.get_cross_hatch();
+                        let enable_dwell = dlg.get_enable_dwell();
+                        let dwell_time = dlg.get_dwell_time();
 
                         // Show status message and initial progress
                         window.set_connection_status("Generating vector engraving G-code...".into());
@@ -5647,6 +5654,13 @@ fn main() -> anyhow::Result<()> {
                                 desired_width,
                                 offset_x,
                                 offset_y,
+                                enable_hatch,
+                                hatch_angle,
+                                hatch_spacing,
+                                hatch_tolerance,
+                                cross_hatch,
+                                enable_dwell,
+                                dwell_time,
                             };
 
                             let result = VectorEngraver::from_file(&vector_path_clone, params)

@@ -157,6 +157,7 @@ impl DesignFile {
             ShapeType::Ellipse => "ellipse",
             ShapeType::Polygon => "polygon",
             ShapeType::RoundRectangle => "round_rectangle",
+            ShapeType::Path => "path",
         };
 
         ShapeData {

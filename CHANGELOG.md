@@ -22,6 +22,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Result: Cleaner 7-crate modular architecture with clear separation of concerns
 
 ### Fixed
+- **Vector Engraving Panic**
+  - Fixed panic in vector engraving when processing closed paths with lyon
+  - Fixed hatch generator producing no output for closed shapes
+  - Improved SVG parsing robustness using regex
+  - Fixed DXF parsing for closed polylines
+- **Vector Engraving Order**
+  - Changed operation order to perform hatching before outline paths
 - **Vector Engraver Multi-Pass Bug**
   - Fixed issue where vector engraver only performed 1 pass regardless of `num_passes` setting
   - Implemented proper multi-pass loop with Z-axis depth adjustment
@@ -155,6 +162,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.30.0-alpha] - 2025-11-16
 
 ### Added
+- **Vector Hatching**
+  - Vector hatching support with configurable angle, spacing, and tolerance
+  - Added cross-hatch support (second pass at 90 degrees offset)
+- **Vector Engraver Improvements**
+  - Added configurable laser dwell option (G4 P...) to ensure laser powers down fully
+  - Added UI controls for dwell enable and time
+- **UI Improvements**
+  - Added GRBL machine state display (Run, Idle, Alarm, Hold) to the status bar with color coding
 - **Version Bump**: Minor release cycle update to 0.30.0-alpha
 
 ### Improved

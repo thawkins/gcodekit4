@@ -129,6 +129,7 @@ impl DesignerState {
                     let rect = Rectangle::new(x1, y1, x2 - x1, y2 - y1);
                     self.toolpath_generator.generate_rectangle_contour(&rect)
                 }
+                crate::ShapeType::Path => self.toolpath_generator.empty_toolpath(),
             };
 
             // Generate G-code for this toolpath
@@ -305,6 +306,7 @@ impl DesignerState {
                         };
                         obj.shape = Box::new(RoundRectangle::new(x, y, w, h, current_radius));
                     }
+                    crate::ShapeType::Path => {}
                 }
             }
         }

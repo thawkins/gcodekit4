@@ -35,6 +35,7 @@ pub mod stats;
 pub mod tabbed_box;
 pub mod validator;
 pub mod vector_engraver;
+pub mod hatch_generator;
 
 // UI module
 pub mod advanced_features_panel;
