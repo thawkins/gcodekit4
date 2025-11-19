@@ -1,0 +1,287 @@
+//! Settings Dialog Component
+//! Preferences/settings dialog UI with category sidebar and dynamic settings rendering.
+
+import { Button, CheckBox, ComboBox, LineEdit, ScrollView, VerticalBox, HorizontalBox, ListView } from "std-widgets.slint";
+
+export struct SettingItem {
+    id: string,
+    name: string,
+    value: string,
+    value-type: string,
+    category: string,
+    description: string,
+    options: [string],
+    current-index: int,
+}
+
+component SettingRow inherits Rectangle {
+    in property <SettingItem> setting;
+    callback update-setting(string, string);
+    
+    height: 40px;
+    background: transparent;
+    
+    HorizontalBox {
+        alignment: start;
+        spacing: 10px;
+        padding-left: 10px;
+        padding-right: 10px;
+        
+        Text {
+            text: root.setting.name + ":";
+            font-size: 12px;
+            color: #34495e;
+            width: 140px;
+            vertical-alignment: center;
+        }
+        
+        if root.setting.value-type == "Boolean" : CheckBox {
+            checked: root.setting.value == "true" || root.setting.value == "1";
+            toggled => { root.update-setting(root.setting.id, self.checked ? "true" : "false"); }
+        }
+        
+        if root.setting.value-type == "Enum" : ComboBox {
+            model: root.setting.options;
+            current-index: root.setting.current-index;
+            width: 200px;
+            height: 30px;
+            selected => { root.update-setting(root.setting.id, self.current-value); }
+        }
+        
+        if root.setting.value-type != "Boolean" && root.setting.value-type != "Enum" : LineEdit {
+            text: root.setting.value;
+            width: 200px;
+            height: 30px;
+            edited => { root.update-setting(root.setting.id, self.text); }
+        }
+        
+        if root.setting.description != "" : Text {
+            text: root.setting.description;
+            font-size: 11px;
+            color: #7f8c8d;
+            vertical-alignment: center;
+            overflow: elide;
+            horizontal-stretch: 1;
+        }
+    }
+}
+
+component CategoryItem inherits Rectangle {
+    in property <string> id;
+    in property <string> name;
+    in property <bool> selected;
+    callback clicked();
+    
+    height: 40px;
+    background: root.selected ? #3d5470 : transparent;
+    
+    HorizontalBox {
+        padding-left: 15px;
+        alignment: start;
+        Text { 
+            text: root.name; 
+            color: white; 
+            font-size: 13px; 
+            font-weight: root.selected ? 700 : 400;
+            vertical-alignment: center;
+        }
+    }
+    
+    TouchArea { 
+        clicked => { root.clicked(); }
+    }
+}
+
+export component SettingsDialog inherits Rectangle {
+    in-out property<bool> dialog-visible;
+    in-out property<string> settings-category: "controller";
+    in property<[SettingItem]> current-settings;
+    
+    callback menu-settings-save();
+    callback menu-settings-cancel();
+    callback menu-settings-restore-defaults();
+    callback update-setting(string, string);
+    callback category-selected(string);
+    
+    x: 0;
+    y: 0;
+    width: 100%;
+    height: 100%;
+    background: root.dialog-visible ? rgba(0, 0, 0, 0.5) : transparent;
+    z: 2000;
+    
+    if root.dialog-visible : Rectangle {
+        x: (parent.width - 800px) / 2;
+        y: (parent.height - 600px) / 2;
+        width: 800px;
+        height: 600px;
+        background: #ecf0f1;
+        border-radius: 8px;
+        clip: true;
+        z: 2001;
+        
+        VerticalBox {
+            padding: 0px;
+            spacing: 0px;
+            
+            // Header
+            Rectangle {
+                height: 50px;
+                background: #2c3e50;
+                VerticalBox {
+                    padding-left: 20px;
+                    alignment: center;
+                    Text {
+                        text: "Preferences";
+                        font-size: 18px;
+                        font-weight: 700;
+                        color: white;
+                    }
+                }
+            }
+            
+            // Content
+            HorizontalBox {
+                spacing: 0px;
+                vertical-stretch: 1;
+                
+                // Sidebar
+                Rectangle {
+                    width: 180px;
+                    background: #34495e;
+                    VerticalBox {
+                        padding: 0px;
+                        spacing: 1px;
+                        alignment: start;
+                        padding-top: 10px;
+                        
+                        CategoryItem {
+                            id: "controller";
+                            name: "Controller";
+                            selected: root.settings-category == "controller";
+                            clicked => { 
+                                root.settings-category = "controller";
+                                root.category-selected("controller");
+                            }
+                        }
+                        
+                        CategoryItem {
+                            id: "ui";
+                            name: "User Interface";
+                            selected: root.settings-category == "ui";
+                            clicked => { 
+                                root.settings-category = "ui";
+                                root.category-selected("ui");
+                            }
+                        }
+                        
+                        CategoryItem {
+                            id: "file";
+                            name: "File Processing";
+                            selected: root.settings-category == "file";
+                            clicked => { 
+                                root.settings-category = "file";
+                                root.category-selected("file");
+                            }
+                        }
+                        
+                        CategoryItem {
+                            id: "shortcuts";
+                            name: "Keyboard Shortcuts";
+                            selected: root.settings-category == "shortcuts";
+                            clicked => { 
+                                root.settings-category = "shortcuts";
+                                root.category-selected("shortcuts");
+                            }
+                        }
+                        
+                        CategoryItem {
+                            id: "advanced";
+                            name: "Advanced";
+                            selected: root.settings-category == "advanced";
+                            clicked => { 
+                                root.settings-category = "advanced";
+                                root.category-selected("advanced");
+                            }
+                        }
+                    }
+                }
+                
+                // Settings Panel
+                Rectangle {
+                    background: #ecf0f1;
+                    VerticalBox {
+                        padding: 20px;
+                        spacing: 15px;
+                        
+                        Text {
+                            text: root.settings-category == "controller" ? "Controller Settings" :
+                                  root.settings-category == "ui" ? "User Interface" :
+                                  root.settings-category == "file" ? "File Processing" :
+                                  root.settings-category == "shortcuts" ? "Keyboard Shortcuts" :
+                                  "Advanced Settings";
+                            font-size: 16px;
+                            font-weight: 700;
+                            color: #2c3e50;
+                        }
+                        
+                        Rectangle {
+                            height: 1px;
+                            background: #bdc3c7;
+                        }
+                        
+                        ListView {
+                            for setting in root.current-settings : SettingRow {
+                                setting: setting;
+                                update-setting(id, val) => {
+                                    root.update-setting(id, val);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Buttons
+            Rectangle {
+                height: 60px;
+                background: #ecf0f1;
+                border-width: 1px;
+                border-color: #bdc3c7;
+                HorizontalBox {
+                    padding: 12px;
+                    spacing: 12px;
+                    alignment: end;
+                    
+                    Button {
+                        text: "Restore Defaults";
+                        width: 140px;
+                        height: 36px;
+                        clicked => { root.menu-settings-restore-defaults(); }
+                    }
+                    
+                    Button {
+                        text: "Cancel";
+                        width: 90px;
+                        height: 36px;
+                        clicked => {
+                            root.dialog-visible = false;
+                            root.menu-settings-cancel();
+                        }
+                    }
+                    
+                    Button {
+                        text: "OK";
+                        width: 90px;
+                        height: 36px;
+                        primary: true;
+                        clicked => {
+                            root.dialog-visible = false;
+                            root.menu-settings-save();
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

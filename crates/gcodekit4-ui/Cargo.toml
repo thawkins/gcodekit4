@@ -14,6 +14,7 @@ gcodekit4-camtools = { path = "../gcodekit4-camtools" }
 gcodekit4-designer = { path = "../gcodekit4-designer" }
 gcodekit4-gcodeeditor = { path = "../gcodekit4-gcodeeditor" }
 gcodekit4-visualizer = { path = "../gcodekit4-visualizer" }
+gcodekit4-settings = { path = "../gcodekit4-settings" }
 slint = { version = "1.14.1", features = ["backend-winit", "image-default-formats"] }
 rfd = "0.15.4"
 config = "0.15.18"

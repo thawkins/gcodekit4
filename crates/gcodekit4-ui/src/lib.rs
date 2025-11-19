@@ -3,17 +3,16 @@
 //! Slint-based user interface for GCodeKit4.
 //! Provides UI panels, visualizer, settings, and editor components.
 
-pub mod config;
 pub mod testing;
 pub mod ui;
 
 pub use ui::{
     ConsoleListener, DeviceConsoleManager, DeviceMessageType, FirmwareSettingsIntegration,
-    GcodeEditor, GcodeLine, KeyboardShortcut, Setting, SettingValue, SettingsCategory,
-    SettingsDialog, SettingsPersistence, Token, TokenType,
+    GcodeEditor, GcodeLine, KeyboardShortcut, Setting, SettingUiModel, SettingValue,
+    SettingsCategory, SettingsController, SettingsDialog, SettingsPersistence, Token, TokenType,
 };
 
-pub use config::{
+pub use gcodekit4_settings::{
     Config, ConnectionSettings, ConnectionType, FileProcessingSettings, FirmwareSettings,
     MachineSettings, SettingsManager, UiSettings,
 };

@@ -40,8 +40,6 @@ pub mod notifications;
 pub mod overrides_panel;
 pub mod progress_indicators;
 pub mod safety_diagnostics_panel;
-pub mod settings_dialog;
-pub mod settings_persistence;
 pub mod state;
 pub mod themes;
 pub mod tools_manager_backend;
@@ -81,10 +79,10 @@ pub use safety_diagnostics_panel::{
     BufferDiagnostics, CommunicationDiagnostics, DiagnosticEvent, EmergencyStopDisplay,
     FeedHoldState, MotionInterlockState, PerformanceDiagnostics, SafetyDiagnosticsPanel,
 };
-pub use settings_dialog::{
-    KeyboardShortcut, Setting, SettingValue, SettingsCategory, SettingsDialog,
+pub use gcodekit4_settings::{
+    KeyboardShortcut, Setting, SettingUiModel, SettingValue, SettingsCategory, SettingsController,
+    SettingsDialog, SettingsPersistence,
 };
-pub use settings_persistence::SettingsPersistence;
 pub use state::UiState;
 pub use themes::{Color, FontConfig, Theme, ThemeColors, ThemeId, ThemeManager};
 pub use tools_manager_backend::ToolsManagerBackend;

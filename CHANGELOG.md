@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.33.2-alpha] - 2025-11-20
+
+### Changed
+- **Settings System Refactoring**
+  - Extracted settings and preferences logic into dedicated `gcodekit4-settings` crate
+  - Implemented MVVM architecture for settings UI
+  - Replaced monolithic settings dialog with component-based design
+  - Improved performance using `ListView` for settings rendering
+  - Decoupled settings logic from main application controller
+  - Added dynamic category loading and filtering
+
 ## [0.33.1-alpha] - 2025-11-20
 
 ### Fixed

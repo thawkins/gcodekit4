@@ -6,6 +6,7 @@ members = [
     "crates/gcodekit4-designer",
     "crates/gcodekit4-gcodeeditor",
     "crates/gcodekit4-visualizer",
+    "crates/gcodekit4-settings",
     "crates/gcodekit4-ui",
 ]
 resolver = "2"

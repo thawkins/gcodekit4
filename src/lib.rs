@@ -32,7 +32,7 @@
 pub use gcodekit4_communication::firmware;
 pub use gcodekit4_core::data;
 pub use gcodekit4_designer as designer;
-pub use gcodekit4_ui::{config, ui};
+pub use gcodekit4_ui::ui;
 pub use gcodekit4_visualizer::visualizer;
 
 pub use gcodekit4_core::{
@@ -81,9 +81,9 @@ pub use gcodekit4_communication::{
 pub use gcodekit4_ui::{
     Config, ConnectionSettings, ConnectionType, ConsoleListener, DeviceConsoleManager,
     DeviceMessageType, FileProcessingSettings, FirmwareSettings, FirmwareSettingsIntegration,
-    GcodeEditor, GcodeLine, KeyboardShortcut, MachineSettings, Setting, SettingValue,
-    SettingsCategory, SettingsDialog, SettingsManager, SettingsPersistence, Token, TokenType,
-    UiSettings,
+    GcodeEditor, GcodeLine, KeyboardShortcut, MachineSettings, Setting, SettingUiModel,
+    SettingValue, SettingsCategory, SettingsController, SettingsDialog, SettingsManager,
+    SettingsPersistence, Token, TokenType, UiSettings,
 };
 
 /// Library version
