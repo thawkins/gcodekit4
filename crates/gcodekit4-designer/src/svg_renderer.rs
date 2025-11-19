@@ -194,7 +194,7 @@ fn render_shape_trait(
                 screen_rx, screen_ry, cx + screen_rx, cy
             )
         }
-        ShapeType::Polygon | ShapeType::RoundRectangle => {
+        ShapeType::Polygon | ShapeType::RoundRectangle | ShapeType::Path => {
             // For polygon and rounded rectangle, we'll use a simple bounding box for now
             // since we don't have access to the detailed shape data through the trait object
             let (sx1, sy1) = viewport.world_to_pixel(x1, y1);

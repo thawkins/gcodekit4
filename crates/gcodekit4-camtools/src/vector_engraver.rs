@@ -4,16 +4,11 @@
 //! Supports path stroking, fill patterns, and various vector formats.
 
 use anyhow::{Context, Result};
-use std::path::Path;
-
-/// Vector path element
-#[derive(Debug, Clone)]
-pub struct PathElement {
-    /// X coordinate
-    pub x: f32,
-    /// Y coordinate
-    pub y: f32,
-}
+use std::path::Path as StdPath;
+use lyon::path::Path;
+use lyon::math::point;
+use lyon::algorithms::path::iterator::PathIterator;
+use lyon::geom::Arc;
 
 /// Vector engraving parameters
 #[derive(Debug, Clone)]
@@ -42,6 +37,20 @@ pub struct VectorEngravingParameters {
     pub offset_x: f32,
     /// Y offset from machine origin
     pub offset_y: f32,
+    /// Enable hatching
+    pub enable_hatch: bool,
+    /// Hatch angle in degrees
+    pub hatch_angle: f32,
+    /// Hatch spacing in mm
+    pub hatch_spacing: f32,
+    /// Hatch tolerance (flattening)
+    pub hatch_tolerance: f32,
+    /// Enable laser dwell
+    pub enable_dwell: bool,
+    /// Dwell time in seconds
+    pub dwell_time: f32,
+    /// Enable cross hatching (second pass at 90 degrees offset)
+    pub cross_hatch: bool,
 }
 
 impl Default for VectorEngravingParameters {
@@ -59,6 +68,13 @@ impl Default for VectorEngravingParameters {
             desired_width: 100.0,
             offset_x: 10.0,
             offset_y: 10.0,
+            enable_hatch: false,
+            hatch_angle: 45.0,
+            hatch_spacing: 1.0,
+            hatch_tolerance: 0.1,
+            enable_dwell: false,
+            dwell_time: 0.1,
+            cross_hatch: false,
         }
     }
 }
@@ -68,7 +84,7 @@ impl Default for VectorEngravingParameters {
 pub struct VectorEngraver {
     file_path: String,
     params: VectorEngravingParameters,
-    paths: Vec<Vec<PathElement>>,
+    paths: Vec<Path>,
     /// Scale factor from SVG units to mm
     #[allow(dead_code)]
     scale_factor: f32,
@@ -76,21 +92,21 @@ pub struct VectorEngraver {
 
 impl VectorEngraver {
     /// Create a new vector engraver from a vector file
-    pub fn from_file<P: AsRef<Path>>(
+    pub fn from_file<P: AsRef<StdPath>>(
         path: P,
         params: VectorEngravingParameters,
     ) -> Result<Self> {
         let path_str = path.as_ref().to_string_lossy().to_string();
 
         // Validate file extension
-        let ext = Path::new(&path_str)
+        let ext = StdPath::new(&path_str)
             .extension()
             .and_then(|s| s.to_str())
             .map(|s| s.to_lowercase())
             .context("No file extension found")?;
 
         // Verify file exists
-        if !Path::new(&path_str).exists() {
+        if !StdPath::new(&path_str).exists() {
             anyhow::bail!("File not found: {}", path_str);
         }
 
@@ -112,8 +128,9 @@ impl VectorEngraver {
     }
 
     /// Parse SVG file and extract paths
-    fn parse_svg(file_path: &str) -> Result<(Vec<Vec<PathElement>>, f32)> {
+    fn parse_svg(file_path: &str) -> Result<(Vec<Path>, f32)> {
         use std::fs;
+        use regex::Regex;
 
         let path = std::path::Path::new(file_path);
         if !path.exists() {
@@ -128,70 +145,52 @@ impl VectorEngraver {
 
         let mut all_paths = Vec::new();
         let mut viewbox_width = 100.0f32;
-        let mut viewbox_height = 100.0f32;
+        let mut _viewbox_height = 100.0f32;
 
-        // Parse viewBox from SVG element
-        if let Some(viewbox_start) = content.find("viewBox=\"") {
-            if let Some(viewbox_end) = content[viewbox_start + 9..].find('"') {
-                let viewbox_str = &content[viewbox_start + 9..viewbox_start + 9 + viewbox_end];
-                let parts: Vec<&str> = viewbox_str.split_whitespace().collect();
-                if parts.len() >= 4 {
-                    viewbox_width = parts[2].parse().unwrap_or(100.0);
-                    viewbox_height = parts[3].parse().unwrap_or(100.0);
-                }
+        // Parse viewBox
+        let re_viewbox = Regex::new(r#"viewBox\s*=\s*["']([^"']+)["']"#).unwrap();
+        if let Some(caps) = re_viewbox.captures(&content) {
+            let viewbox_str = &caps[1];
+            let parts: Vec<&str> = viewbox_str.split_whitespace().collect();
+            if parts.len() >= 4 {
+                viewbox_width = parts[2].parse().unwrap_or(100.0);
+                _viewbox_height = parts[3].parse().unwrap_or(100.0);
             }
         }
 
-        // Extract group transform matrix
+        // Parse group transform (simplified, only first one found)
         let mut group_transform = None;
-        if let Some(g_start) = content.find("<g") {
-            if let Some(g_end) = content[g_start..].find('>') {
-                let g_tag = &content[g_start..g_start + g_end];
-                if let Some(transform_start) = g_tag.find("transform=\"") {
-                    if let Some(transform_end) = g_tag[transform_start + 11..].find('"') {
-                        let transform_str =
-                            &g_tag[transform_start + 11..transform_start + 11 + transform_end];
-                        group_transform = Self::parse_matrix_transform(transform_str);
-                    }
-                }
+        let re_g = Regex::new(r#"<g\s+([^>]+)>"#).unwrap();
+        if let Some(caps) = re_g.captures(&content) {
+            let attrs = &caps[1];
+            let re_transform = Regex::new(r#"transform\s*=\s*["']([^"']+)["']"#).unwrap();
+            if let Some(t_caps) = re_transform.captures(attrs) {
+                group_transform = Self::parse_matrix_transform(&t_caps[1]);
             }
         }
 
-        // Extract all <path d="..."/> elements
-        let mut search_pos = 0;
-        while let Some(path_start) = content[search_pos..].find("<path") {
-            let abs_path_start = search_pos + path_start;
-            if let Some(path_end) = content[abs_path_start..].find('>') {
-                let path_tag_end = abs_path_start + path_end;
+        // Parse paths
+        let re_path = Regex::new(r#"<path\s+([^>]+)>"#).unwrap();
+        let re_d = Regex::new(r#"d\s*=\s*["']([^"']+)["']"#).unwrap();
 
-                // Find d attribute
-                if let Some(d_start) = content[abs_path_start..path_tag_end].find("d=\"") {
-                    let abs_d_start = abs_path_start + d_start + 3;
-                    if let Some(d_end) = content[abs_d_start..path_tag_end].find('"') {
-                        let d_value = &content[abs_d_start..abs_d_start + d_end];
+        for cap in re_path.captures_iter(&content) {
+            let attrs = &cap[1];
+            if let Some(d_cap) = re_d.captures(attrs) {
+                let d_value = &d_cap[1];
+                
+                if let Ok(path) = Self::build_path_from_svg_data(d_value) {
+                    // Apply group transform if present
+                    let final_path = if let Some((a, b, c, d_coeff, e, f)) = group_transform {
+                        let transform = lyon::math::Transform::new(
+                            a, b, c, d_coeff, e, f
+                        );
+                        path.transformed(&transform)
+                    } else {
+                        path
+                    };
 
-                        // Parse SVG path data
-                        if let Ok(mut path_data) = Self::parse_path_data(d_value) {
-                            // Apply group transform if present
-                            if let Some((a, b, c, d_coeff, e, f)) = group_transform {
-                                for point in &mut path_data {
-                                    let new_x = a * point.x + c * point.y + e;
-                                    let new_y = b * point.x + d_coeff * point.y + f;
-                                    point.x = new_x;
-                                    point.y = new_y;
-                                }
-                            }
-
-                            if !path_data.is_empty() {
-                                all_paths.push(path_data);
-                            }
-                        }
-                    }
+                    all_paths.push(final_path);
                 }
-
-                search_pos = path_tag_end + 1;
-            } else {
-                break;
             }
         }
 
@@ -203,9 +202,6 @@ impl VectorEngraver {
 
         Ok((all_paths, scale_factor))
     }
-
-    /// Adaptive approximation tolerance for curves (in mm)
-    const CURVE_TOLERANCE: f32 = 0.5;
 
     /// Parse matrix transform from SVG matrix(a,b,c,d,e,f) format
     fn parse_matrix_transform(transform_str: &str) -> Option<(f32, f32, f32, f32, f32, f32)> {
@@ -228,225 +224,14 @@ impl VectorEngraver {
         None
     }
 
-    /// Parse SVG path commands from svg::node::element::path::Data
-    #[allow(dead_code)]
-    fn parse_svg_path_commands(
-        data: &svg::node::element::path::Data,
-    ) -> Result<Vec<PathElement>> {
-        let mut elements = Vec::new();
+    /// Build lyon Path from SVG path data string
+    fn build_path_from_svg_data(data_str: &str) -> Result<Path> {
+        let mut builder = Path::builder();
         let mut current_x = 0.0f32;
         let mut current_y = 0.0f32;
-
-        for command in data.iter() {
-            match command {
-                svg::node::element::path::Command::Move(pos, params) => {
-                    let mut param_iter = params.iter();
-                    if let (Some(&x), Some(&y)) = (param_iter.next(), param_iter.next()) {
-                        let x_f32 = x as f32;
-                        let y_f32 = y as f32;
-                        match pos {
-                            svg::node::element::path::Position::Absolute => {
-                                current_x = x_f32;
-                                current_y = y_f32;
-                            }
-                            svg::node::element::path::Position::Relative => {
-                                current_x += x_f32;
-                                current_y += y_f32;
-                            }
-                        }
-                        elements.push(PathElement { x: current_x, y: current_y });
-                    }
-                }
-                svg::node::element::path::Command::Line(pos, params) => {
-                    let mut param_iter = params.iter();
-                    while let Some(&x) = param_iter.next() {
-                        if let Some(&y) = param_iter.next() {
-                            let x_f32 = x as f32;
-                            let y_f32 = y as f32;
-                            match pos {
-                                svg::node::element::path::Position::Absolute => {
-                                    current_x = x_f32;
-                                    current_y = y_f32;
-                                }
-                                svg::node::element::path::Position::Relative => {
-                                    current_x += x_f32;
-                                    current_y += y_f32;
-                                }
-                            }
-                            elements.push(PathElement { x: current_x, y: current_y });
-                        }
-                    }
-                }
-                svg::node::element::path::Command::HorizontalLine(pos, params) => {
-                    for &x_val in params.iter() {
-                        let x_f32 = x_val as f32;
-                        match pos {
-                            svg::node::element::path::Position::Absolute => {
-                                current_x = x_f32;
-                            }
-                            svg::node::element::path::Position::Relative => {
-                                current_x += x_f32;
-                            }
-                        }
-                        elements.push(PathElement { x: current_x, y: current_y });
-                    }
-                }
-                svg::node::element::path::Command::VerticalLine(pos, params) => {
-                    for &y_val in params.iter() {
-                        let y_f32 = y_val as f32;
-                        match pos {
-                            svg::node::element::path::Position::Absolute => {
-                                current_y = y_f32;
-                            }
-                            svg::node::element::path::Position::Relative => {
-                                current_y += y_f32;
-                            }
-                        }
-                        elements.push(PathElement { x: current_x, y: current_y });
-                    }
-                }
-                svg::node::element::path::Command::Close => {
-                    // Close path
-                }
-                svg::node::element::path::Command::CubicCurve(pos, params) => {
-                    let param_vec: Vec<_> = params.iter().copied().collect();
-                    if param_vec.len() >= 6 {
-                        let mut x1 = param_vec[0] as f32;
-                        let mut y1 = param_vec[1] as f32;
-                        let mut x2 = param_vec[2] as f32;
-                        let mut y2 = param_vec[3] as f32;
-                        let mut x = param_vec[4] as f32;
-                        let mut y = param_vec[5] as f32;
-                        
-                        if matches!(pos, svg::node::element::path::Position::Relative) {
-                            x1 += current_x;
-                            y1 += current_y;
-                            x2 += current_x;
-                            y2 += current_y;
-                            x += current_x;
-                            y += current_y;
-                        }
-                        
-                        // Adaptive curve approximation
-                        let segments = Self::adaptive_cubic_segments(
-                            current_x, current_y,
-                            x1, y1,
-                            x2, y2,
-                            x, y,
-                            Self::CURVE_TOLERANCE,
-                        );
-                        
-                        for i in 1..=segments {
-                            let t = i as f32 / segments as f32;
-                            let t_inv = 1.0 - t;
-                            let t3 = t * t * t;
-                            let t3_inv = t_inv * t_inv * t_inv;
-                            let t2 = t * t;
-                            let t2_inv = t_inv * t_inv;
-                            
-                            let px = t3_inv * current_x + 3.0 * t * t2_inv * x1 + 3.0 * t2 * t_inv * x2 + t3 * x;
-                            let py = t3_inv * current_y + 3.0 * t * t2_inv * y1 + 3.0 * t2 * t_inv * y2 + t3 * y;
-                            
-                            current_x = px;
-                            current_y = py;
-                            elements.push(PathElement { x: current_x, y: current_y });
-                        }
-                    }
-                }
-                svg::node::element::path::Command::QuadraticCurve(pos, params) => {
-                    let param_vec: Vec<_> = params.iter().copied().collect();
-                    if param_vec.len() >= 4 {
-                        let mut x1 = param_vec[0] as f32;
-                        let mut y1 = param_vec[1] as f32;
-                        let mut x = param_vec[2] as f32;
-                        let mut y = param_vec[3] as f32;
-                        
-                        if matches!(pos, svg::node::element::path::Position::Relative) {
-                            x1 += current_x;
-                            y1 += current_y;
-                            x += current_x;
-                            y += current_y;
-                        }
-                        
-                        // Adaptive curve approximation
-                        let segments = Self::adaptive_quad_segments(
-                            current_x, current_y,
-                            x1, y1,
-                            x, y,
-                            Self::CURVE_TOLERANCE,
-                        );
-                        
-                        for i in 1..=segments {
-                            let t = i as f32 / segments as f32;
-                            let t_inv = 1.0 - t;
-                            
-                            let px = t_inv * t_inv * current_x + 2.0 * t * t_inv * x1 + t * t * x;
-                            let py = t_inv * t_inv * current_y + 2.0 * t * t_inv * y1 + t * t * y;
-                            
-                            current_x = px;
-                            current_y = py;
-                            elements.push(PathElement { x: current_x, y: current_y });
-                        }
-                    }
-                }
-                _ => {
-                    // Skip other commands
-                }
-            }
-        }
-
-        Ok(elements)
-    }
-
-    /// Calculate adaptive number of segments for cubic Bezier curve
-    #[allow(dead_code)]
-    fn adaptive_cubic_segments(x0: f32, y0: f32, x1: f32, y1: f32, x2: f32, y2: f32, x3: f32, y3: f32, tolerance: f32) -> u32 {
-        // Calculate chord length
-        let dx = x3 - x0;
-        let dy = y3 - y0;
-        let chord_len = (dx * dx + dy * dy).sqrt();
-        
-        // Calculate control point distances
-        let cp1_dist = ((x1 - x0).abs() + (y1 - y0).abs()).max((x1 - x3).abs() + (y1 - y3).abs());
-        let cp2_dist = ((x2 - x0).abs() + (y2 - y0).abs()).max((x2 - x3).abs() + (y2 - y3).abs());
-        let control_dist = cp1_dist.max(cp2_dist);
-        
-        // Estimate required segments based on curve complexity
-        let error_estimate = (control_dist - chord_len / 2.0).max(0.0);
-        let segments = (((error_estimate / tolerance).sqrt() * 2.0).ceil() as u32).max(2);
-        
-        segments.min(50) // Cap at 50 to prevent excessive segments
-    }
-
-    /// Calculate adaptive number of segments for quadratic Bezier curve
-    fn adaptive_quad_segments(x0: f32, y0: f32, x1: f32, y1: f32, x2: f32, y2: f32, tolerance: f32) -> u32 {
-        // Calculate chord length
-        let dx = x2 - x0;
-        let dy = y2 - y0;
-        let chord_len = (dx * dx + dy * dy).sqrt();
-        
-        // Distance from control point to the line between endpoints
-        let line_dist = if chord_len > 0.01 {
-            let t = ((x1 - x0) * dx + (y1 - y0) * dy) / (chord_len * chord_len);
-            let t = t.clamp(0.0, 1.0);
-            let closest_x = x0 + t * dx;
-            let closest_y = y0 + t * dy;
-            ((x1 - closest_x).powi(2) + (y1 - closest_y).powi(2)).sqrt()
-        } else {
-            ((x1 - x0).powi(2) + (y1 - y0).powi(2)).sqrt()
-        };
-        
-        // Estimate required segments
-        let segments = (((line_dist / tolerance).sqrt() * 2.0).ceil() as u32).max(1);
-        
-        segments.min(50) // Cap at 50 to prevent excessive segments
-    }
-
-    /// Parse SVG path data string into PathElement coordinates
-    fn parse_path_data(data_str: &str) -> Result<Vec<PathElement>> {
-        let mut elements = Vec::new();
-        let mut current_x = 0.0f32;
-        let mut current_y = 0.0f32;
+        let mut start_x = 0.0f32;
+        let mut start_y = 0.0f32;
+        let mut subpath_active = false;
 
         let commands = Self::tokenize_svg_path(data_str);
         let mut i = 0;
@@ -467,18 +252,25 @@ impl VectorEngraver {
                             current_x = x;
                             current_y = y;
                         }
-
-                        elements.push(PathElement {
-                            x: current_x,
-                            y: current_y,
-                        });
+                        
+                        if subpath_active {
+                            builder.end(false);
+                        }
+                        
+                        start_x = current_x;
+                        start_y = current_y;
+                        builder.begin(point(current_x, current_y));
+                        subpath_active = true;
                         i += 3;
                     } else {
                         i += 1;
                     }
                 }
                 "L" | "l" => {
-                    // Handle multiple line segments in one command (SVG spec allows implicit repetition)
+                    if !subpath_active {
+                        builder.begin(point(current_x, current_y));
+                        subpath_active = true;
+                    }
                     let mut j = i + 1;
                     while j + 1 < commands.len() {
                         let x: f32 = commands[j].parse().unwrap_or(0.0);
@@ -492,13 +284,9 @@ impl VectorEngraver {
                             current_y = y;
                         }
 
-                        elements.push(PathElement {
-                            x: current_x,
-                            y: current_y,
-                        });
+                        builder.line_to(point(current_x, current_y));
                         j += 2;
 
-                        // Check if next is a command letter or more line data
                         if j < commands.len() {
                             let next = &commands[j];
                             if next.len() == 1 && next.chars().all(|c| c.is_alphabetic()) {
@@ -513,6 +301,10 @@ impl VectorEngraver {
                     i = j;
                 }
                 "H" | "h" => {
+                    if !subpath_active {
+                        builder.begin(point(current_x, current_y));
+                        subpath_active = true;
+                    }
                     if i + 1 < commands.len() {
                         let x: f32 = commands[i + 1].parse().unwrap_or(0.0);
                         if cmd == "h" {
@@ -520,17 +312,17 @@ impl VectorEngraver {
                         } else {
                             current_x = x;
                         }
-
-                        elements.push(PathElement {
-                            x: current_x,
-                            y: current_y,
-                        });
+                        builder.line_to(point(current_x, current_y));
                         i += 2;
                     } else {
                         i += 1;
                     }
                 }
                 "V" | "v" => {
+                    if !subpath_active {
+                        builder.begin(point(current_x, current_y));
+                        subpath_active = true;
+                    }
                     if i + 1 < commands.len() {
                         let y: f32 = commands[i + 1].parse().unwrap_or(0.0);
                         if cmd == "v" {
@@ -538,18 +330,17 @@ impl VectorEngraver {
                         } else {
                             current_y = y;
                         }
-
-                        elements.push(PathElement {
-                            x: current_x,
-                            y: current_y,
-                        });
+                        builder.line_to(point(current_x, current_y));
                         i += 2;
                     } else {
                         i += 1;
                     }
                 }
                 "C" | "c" => {
-                    // Handle multiple cubic curve segments in one command
+                    if !subpath_active {
+                        builder.begin(point(current_x, current_y));
+                        subpath_active = true;
+                    }
                     let mut j = i + 1;
                     while j + 5 < commands.len() {
                         let x1: f32 = commands[j].parse().unwrap_or(0.0);
@@ -567,7 +358,6 @@ impl VectorEngraver {
                         let mut end_y = y;
 
                         if cmd == "c" {
-                            // Relative coordinates
                             cp1_x += current_x;
                             cp1_y += current_y;
                             cp2_x += current_x;
@@ -576,42 +366,18 @@ impl VectorEngraver {
                             end_y += current_y;
                         }
 
-                        // Approximate curve with line segments
-                        let segments = Self::calculate_curve_segments(
-                            current_x, current_y,
-                            cp1_x, cp1_y,
-                            cp2_x, cp2_y,
-                            end_x, end_y,
+                        builder.cubic_bezier_to(
+                            point(cp1_x, cp1_y),
+                            point(cp2_x, cp2_y),
+                            point(end_x, end_y)
                         );
-
-                        for seg in 1..=segments {
-                            let t = seg as f32 / segments as f32;
-                            let t_inv = 1.0 - t;
-                            let t3 = t * t * t;
-                            let t3_inv = t_inv * t_inv * t_inv;
-                            let t2 = t * t;
-                            let t2_inv = t_inv * t_inv;
-
-                            let px = t3_inv * current_x
-                                + 3.0 * t * t2_inv * cp1_x
-                                + 3.0 * t2 * t_inv * cp2_x
-                                + t3 * end_x;
-                            let py = t3_inv * current_y
-                                + 3.0 * t * t2_inv * cp1_y
-                                + 3.0 * t2 * t_inv * cp2_y
-                                + t3 * end_y;
-
-                            elements.push(PathElement { x: px, y: py });
-                        }
 
                         current_x = end_x;
                         current_y = end_y;
                         j += 6;
 
-                        // Check if next command is a digit (another curve segment) or a command letter
                         if j < commands.len() {
                             let next = &commands[j];
-                            // If it looks like a number, continue; if it's a command letter, break
                             if next.len() == 1 && next.chars().all(|c| c.is_alphabetic()) {
                                 break;
                             } else if next.parse::<f32>().is_err() {
@@ -624,7 +390,10 @@ impl VectorEngraver {
                     i = j;
                 }
                 "Q" | "q" => {
-                    // Handle multiple quadratic curve segments in one command
+                    if !subpath_active {
+                        builder.begin(point(current_x, current_y));
+                        subpath_active = true;
+                    }
                     let mut j = i + 1;
                     while j + 3 < commands.len() {
                         let x1: f32 = commands[j].parse().unwrap_or(0.0);
@@ -644,33 +413,15 @@ impl VectorEngraver {
                             end_y += current_y;
                         }
 
-                        // Approximate quadratic curve with line segments
-                        let segments = Self::adaptive_quad_segments(
-                            current_x, current_y,
-                            cp_x, cp_y,
-                            end_x, end_y,
-                            Self::CURVE_TOLERANCE,
+                        builder.quadratic_bezier_to(
+                            point(cp_x, cp_y),
+                            point(end_x, end_y)
                         );
-
-                        for seg in 1..=segments {
-                            let t = seg as f32 / segments as f32;
-                            let t_inv = 1.0 - t;
-
-                            let px = t_inv * t_inv * current_x
-                                + 2.0 * t * t_inv * cp_x
-                                + t * t * end_x;
-                            let py = t_inv * t_inv * current_y
-                                + 2.0 * t * t_inv * cp_y
-                                + t * t * end_y;
-
-                            elements.push(PathElement { x: px, y: py });
-                        }
 
                         current_x = end_x;
                         current_y = end_y;
                         j += 4;
 
-                        // Check if next is another segment or a new command
                         if j < commands.len() {
                             let next = &commands[j];
                             if next.len() == 1 && next.chars().all(|c| c.is_alphabetic()) {
@@ -685,138 +436,22 @@ impl VectorEngraver {
                     i = j;
                 }
                 "Z" | "z" => {
-                    // Path closing is handled by splitting into sub-paths
-                    // We'll return the current path and start fresh on the next sub-path
-                    // For now, just mark that we hit a close command
-                    // The actual handling happens in parse_svg where we can detect this
+                    if subpath_active {
+                        builder.close();
+                        subpath_active = false;
+                    }
+                    current_x = start_x;
+                    current_y = start_y;
                     i += 1;
                 }
                 _ => i += 1,
             }
         }
-
-        Ok(elements)
-    }
-
-    /// Calculate number of segments for curve
-    fn calculate_curve_segments(x0: f32, y0: f32, x1: f32, y1: f32, x2: f32, y2: f32, x3: f32, y3: f32) -> u32 {
-        let dx = x3 - x0;
-        let dy = y3 - y0;
-        let chord_len = (dx * dx + dy * dy).sqrt();
-
-        let cp1_dist = ((x1 - x0).abs() + (y1 - y0).abs()).max((x1 - x3).abs() + (y1 - y3).abs());
-        let cp2_dist = ((x2 - x0).abs() + (y2 - y0).abs()).max((x2 - x3).abs() + (y2 - y3).abs());
-        let control_dist = cp1_dist.max(cp2_dist);
-
-        let error_estimate = (control_dist - chord_len / 2.0).max(0.0);
-        let segments = (((error_estimate / Self::CURVE_TOLERANCE).sqrt() * 2.0).ceil() as u32).max(2);
-
-        segments.min(50)
-    }
-
-    /// Parse SVG path data (simplified M, L, Z commands)
-    #[allow(dead_code)]
-    fn parse_svg_path_data(path_data: &str) -> Result<Vec<PathElement>> {
-        let mut elements = Vec::new();
-        let mut current_x = 0.0f32;
-        let mut current_y = 0.0f32;
-
-        let commands = Self::tokenize_svg_path(path_data);
-        let mut i = 0;
-
-        while i < commands.len() {
-            let cmd = &commands[i];
-
-            match cmd.as_str() {
-                "M" | "m" => {
-                    if i + 2 < commands.len() {
-                        let x: f32 = commands[i + 1].parse().unwrap_or(0.0);
-                        let y: f32 = commands[i + 2].parse().unwrap_or(0.0);
-
-                        if cmd == "m" {
-                            current_x += x;
-                            current_y += y;
-                        } else {
-                            current_x = x;
-                            current_y = y;
-                        }
-
-                        elements.push(PathElement {
-                            x: current_x,
-                            y: current_y,
-                        });
-                        i += 3;
-                    } else {
-                        i += 1;
-                    }
-                }
-                "L" | "l" => {
-                    if i + 2 < commands.len() {
-                        let x: f32 = commands[i + 1].parse().unwrap_or(0.0);
-                        let y: f32 = commands[i + 2].parse().unwrap_or(0.0);
-
-                        if cmd == "l" {
-                            current_x += x;
-                            current_y += y;
-                        } else {
-                            current_x = x;
-                            current_y = y;
-                        }
-
-                        elements.push(PathElement {
-                            x: current_x,
-                            y: current_y,
-                        });
-                        i += 3;
-                    } else {
-                        i += 1;
-                    }
-                }
-                "H" | "h" => {
-                    if i + 1 < commands.len() {
-                        let x: f32 = commands[i + 1].parse().unwrap_or(0.0);
-                        if cmd == "h" {
-                            current_x += x;
-                        } else {
-                            current_x = x;
-                        }
-
-                        elements.push(PathElement {
-                            x: current_x,
-                            y: current_y,
-                        });
-                        i += 2;
-                    } else {
-                        i += 1;
-                    }
-                }
-                "V" | "v" => {
-                    if i + 1 < commands.len() {
-                        let y: f32 = commands[i + 1].parse().unwrap_or(0.0);
-                        if cmd == "v" {
-                            current_y += y;
-                        } else {
-                            current_y = y;
-                        }
-
-                        elements.push(PathElement {
-                            x: current_x,
-                            y: current_y,
-                        });
-                        i += 2;
-                    } else {
-                        i += 1;
-                    }
-                }
-                "Z" | "z" => {
-                    // Close path - already handled by returning to start
-                    i += 1;
-                }
-                _ => i += 1,
-            }
+        
+        if subpath_active {
+            builder.end(false);
         }
-
-        Ok(elements)
+        Ok(builder.build())
     }
 
     /// Tokenize SVG path data into commands and numbers
@@ -852,7 +487,7 @@ impl VectorEngraver {
     }
 
     /// Parse DXF file and extract entities
-    fn parse_dxf(file_path: &str) -> Result<(Vec<Vec<PathElement>>, f32)> {
+    fn parse_dxf(file_path: &str) -> Result<(Vec<Path>, f32)> {
         use dxf::entities::EntityType;
 
         let mut file = std::fs::File::open(file_path)
@@ -863,88 +498,86 @@ impl VectorEngraver {
 
         let mut all_paths = Vec::new();
 
-        // Helper function to convert entity to PathElement Option
-        fn entity_to_path(entity_type: &EntityType) -> Option<Vec<PathElement>> {
+        // Helper function to convert entity to Path Option
+        fn entity_to_path(entity_type: &EntityType) -> Option<Path> {
+            let mut builder = Path::builder();
             match entity_type {
                 EntityType::Line(line) => {
-                    Some(vec![
-                        PathElement {
-                            x: line.p1.x as f32,
-                            y: line.p1.y as f32,
-                        },
-                        PathElement {
-                            x: line.p2.x as f32,
-                            y: line.p2.y as f32,
-                        },
-                    ])
+                    builder.begin(point(line.p1.x as f32, line.p1.y as f32));
+                    builder.line_to(point(line.p2.x as f32, line.p2.y as f32));
+                    builder.end(false);
+                    Some(builder.build())
                 }
                 EntityType::Circle(circle) => {
-                    // Approximate circle with 32 line segments
+                    let center = point(circle.center.x as f32, circle.center.y as f32);
                     let radius = circle.radius as f32;
-                    let center_x = circle.center.x as f32;
-                    let center_y = circle.center.y as f32;
-                    let segments = 32;
-
-                    let mut circle_path = Vec::new();
-                    for i in 0..=segments {
-                        let angle = 2.0 * std::f32::consts::PI * i as f32 / segments as f32;
-                        let x = center_x + radius * angle.cos();
-                        let y = center_y + radius * angle.sin();
-                        circle_path.push(PathElement { x, y });
-                    }
-                    Some(circle_path)
+                    builder.add_ellipse(
+                        center,
+                        lyon::math::vector(radius, radius),
+                        lyon::math::Angle::radians(0.0),
+                        lyon::path::Winding::Positive,
+                    );
+                    Some(builder.build())
                 }
                 EntityType::Arc(arc) => {
-                    // Approximate arc with line segments
+                    let center = point(arc.center.x as f32, arc.center.y as f32);
                     let radius = arc.radius as f32;
-                    let center_x = arc.center.x as f32;
-                    let center_y = arc.center.y as f32;
-                    let start_angle = arc.start_angle as f32 * std::f32::consts::PI / 180.0;
-                    let end_angle = arc.end_angle as f32 * std::f32::consts::PI / 180.0;
-                    let segments = 16;
+                    let start_angle = lyon::math::Angle::degrees(arc.start_angle as f32);
+                    let end_angle = lyon::math::Angle::degrees(arc.end_angle as f32);
+                    let sweep_angle = end_angle - start_angle;
+                    
+                    let start_point = center + lyon::math::vector(
+                        radius * start_angle.radians.cos(), 
+                        radius * start_angle.radians.sin()
+                    );
 
-                    let mut arc_path = Vec::new();
-                    for i in 0..=segments {
-                        let angle = start_angle
-                            + (end_angle - start_angle) * i as f32 / segments as f32;
-                        let x = center_x + radius * angle.cos();
-                        let y = center_y + radius * angle.sin();
-                        arc_path.push(PathElement { x, y });
-                    }
-                    Some(arc_path)
+                    builder.begin(start_point);
+                    
+                    let arc = Arc {
+                        center,
+                        radii: lyon::math::vector(radius, radius),
+                        x_rotation: lyon::math::Angle::radians(0.0),
+                        start_angle,
+                        sweep_angle,
+                    };
+                    
+                    arc.for_each_cubic_bezier(&mut |ctrl| {
+                        builder.cubic_bezier_to(ctrl.ctrl1, ctrl.ctrl2, ctrl.to);
+                    });
+
+                    builder.end(false);
+                    Some(builder.build())
                 }
                 EntityType::LwPolyline(polyline) => {
-                    let poly_path: Vec<PathElement> = polyline
-                        .vertices
-                        .iter()
-                        .map(|v| PathElement {
-                            x: v.x as f32,
-                            y: v.y as f32,
-                        })
-                        .collect();
-
-                    if !poly_path.is_empty() {
-                        Some(poly_path)
-                    } else {
-                        None
+                    if polyline.vertices.is_empty() { return None; }
+                    let start = polyline.vertices[0];
+                    builder.begin(point(start.x as f32, start.y as f32));
+                    for v in polyline.vertices.iter().skip(1) {
+                        builder.line_to(point(v.x as f32, v.y as f32));
                     }
+                    // Bit 0 (value 1) indicates closed
+                    if polyline.flags & 1 != 0 {
+                        builder.close();
+                    } else {
+                        builder.end(false);
+                    }
+                    Some(builder.build())
                 }
                 EntityType::Polyline(polyline) => {
-                    // Regular polyline - vertices are stored separately
-                    let poly_path: Vec<PathElement> = polyline
-                        .vertices
-                        .iter()
-                        .map(|v| PathElement {
-                            x: v.location.x as f32,
-                            y: v.location.y as f32,
-                        })
-                        .collect();
-
-                    if !poly_path.is_empty() {
-                        Some(poly_path)
-                    } else {
-                        None
+                    if polyline.vertices.is_empty() { return None; }
+                    let start = &polyline.vertices[0].location;
+                    builder.begin(point(start.x as f32, start.y as f32));
+                    for v in polyline.vertices.iter().skip(1) {
+                        let loc = &v.location;
+                        builder.line_to(point(loc.x as f32, loc.y as f32));
                     }
+                    // Check flags for closed polyline (bit 1 set)
+                    if polyline.flags & 1 != 0 {
+                        builder.close();
+                    } else {
+                        builder.end(false);
+                    }
+                    Some(builder.build())
                 }
                 _ => None,
             }
@@ -975,7 +608,7 @@ impl VectorEngraver {
 
     /// Get file information
     pub fn file_info(&self) -> (String, String) {
-        let ext = Path::new(&self.file_path)
+        let ext = StdPath::new(&self.file_path)
             .extension()
             .and_then(|s| s.to_str())
             .unwrap_or("unknown");
@@ -989,13 +622,16 @@ impl VectorEngraver {
             .paths
             .iter()
             .map(|path| {
-                path.windows(2)
-                    .map(|w| {
-                        let dx = w[1].x - w[0].x;
-                        let dy = w[1].y - w[0].y;
-                        (dx * dx + dy * dy).sqrt()
-                    })
-                    .sum::<f32>()
+                let mut dist = 0.0;
+                for event in path.iter().flattened(0.1) {
+                    match event {
+                        lyon::path::Event::Line { from, to } => {
+                            dist += (to - from).length();
+                        }
+                        _ => {}
+                    }
+                }
+                dist
             })
             .sum();
 
@@ -1019,9 +655,18 @@ impl VectorEngraver {
         let mut max_x = f32::MIN;
 
         for path in &self.paths {
-            for point in path {
-                min_x = min_x.min(point.x);
-                max_x = max_x.max(point.x);
+            for event in path.iter().flattened(0.1) {
+                match event {
+                    lyon::path::Event::Begin { at } => {
+                        min_x = min_x.min(at.x);
+                        max_x = max_x.max(at.x);
+                    }
+                    lyon::path::Event::Line { from, to } => {
+                        min_x = min_x.min(from.x).min(to.x);
+                        max_x = max_x.max(from.x).max(to.x);
+                    }
+                    _ => {}
+                }
             }
         }
 
@@ -1118,7 +763,45 @@ impl VectorEngraver {
             (self.params.cut_power * self.params.power_scale / 100.0) as u32
         };
 
-        let total_paths = self.paths.len() as f32;
+        // Generate hatch paths if enabled
+        let mut hatch_paths = Vec::new();
+        if self.params.enable_hatch {
+            for path in &self.paths {
+                // First pass
+                let hatches = crate::hatch_generator::generate_hatch(
+                    path,
+                    self.params.hatch_angle,
+                    self.params.hatch_spacing,
+                    self.params.hatch_tolerance,
+                );
+                hatch_paths.extend(hatches);
+                
+                // Second pass (Cross Hatch)
+                if self.params.cross_hatch {
+                    let cross_hatches = crate::hatch_generator::generate_hatch(
+                        path,
+                        self.params.hatch_angle + 90.0,
+                        self.params.hatch_spacing,
+                        self.params.hatch_tolerance,
+                    );
+                    hatch_paths.extend(cross_hatches);
+                }
+            }
+        }
+
+        let mut paths_to_process: Vec<&Path> = Vec::new();
+        
+        // Add hatch paths first
+        for path in &hatch_paths {
+            paths_to_process.push(path);
+        }
+        
+        // Add outline paths second
+        for path in &self.paths {
+            paths_to_process.push(path);
+        }
+
+        let total_paths = paths_to_process.len() as f32;
         let scale = self.calculate_actual_scale();
         let num_passes = if self.params.multi_pass {
             self.params.num_passes as usize
@@ -1152,64 +835,50 @@ impl VectorEngraver {
                 ));
             }
 
-            for (path_idx, path) in self.paths.iter().enumerate() {
-                if path.is_empty() {
-                    continue;
-                }
-
-                // Travel to first point of path (rapid, laser off)
-                gcode.push_str(&format!(
-                    "G0 X{:.3} Y{:.3} ; Move to path start\n",
-                    path[0].x * scale, path[0].y * scale
-                ));
-
-                if path.len() > 1 {
-                    // Engage laser and move to second point to start cutting
-                    gcode.push_str(&format!(
-                        "G1 X{:.3} Y{:.3} F{:.0} M3 S{} ; Enable laser and cut to next point\n",
-                        path[1].x * scale, path[1].y * scale,
-                        self.params.feed_rate, power_value
-                    ));
-
-                    // Trace rest of path
-                    let mut prev_x = path[1].x * scale;
-                    let mut prev_y = path[1].y * scale;
-
-                    for (_point_idx, point) in path.iter().skip(2).enumerate() {
-                        let x = point.x * scale;
-                        let y = point.y * scale;
-
-                        // Detect discontinuities (e.g., from z/m commands) and handle with rapid move
-                        let dx = x - prev_x;
-                        let dy = y - prev_y;
-                        let dist = (dx * dx + dy * dy).sqrt();
-
-                        if dist > 5.0 {
-                            // Large jump likely from path close (z) followed by path open (m)
-                            // Turn off laser, rapid move to new position, turn laser back on
-                            gcode.push_str("M5 ; Laser off for path break\n");
-                            gcode.push_str("G4 P0.1 ; Dwell to ensure laser off\n");
+            for (path_idx, path) in paths_to_process.iter().enumerate() {
+                let mut start_point = point(0.0, 0.0);
+                
+                for event in path.iter().flattened(0.1) {
+                    match event {
+                        lyon::path::Event::Begin { at } => {
+                            // Turn laser off before moving to new start
+                            gcode.push_str("M5 ; Laser off\n");
                             gcode.push_str(&format!(
-                                "G0 X{:.3} Y{:.3} ; Rapid move to new segment\n",
-                                x, y
+                                "G0 X{:.3} Y{:.3} ; Move to path start\n",
+                                at.x * scale, at.y * scale
                             ));
+                            start_point = at;
+                        }
+                        lyon::path::Event::Line { to, .. } => {
+                            // Cut to next point
                             gcode.push_str(&format!(
-                                "G1 X{:.3} Y{:.3} F{:.0} M3 S{} ; Re-engage laser\n",
-                                x, y,
+                                "G1 X{:.3} Y{:.3} F{:.0} M3 S{}\n",
+                                to.x * scale, to.y * scale,
                                 self.params.feed_rate, power_value
                             ));
-                        } else {
-                            gcode.push_str(&format!("G1 X{:.3} Y{:.3}\n", x, y));
                         }
-
-                        prev_x = x;
-                        prev_y = y;
+                        lyon::path::Event::End { close, .. } => {
+                            if close {
+                                // Close path by cutting back to start
+                                gcode.push_str(&format!(
+                                    "G1 X{:.3} Y{:.3} F{:.0} M3 S{} ; Close path\n",
+                                    start_point.x * scale, start_point.y * scale,
+                                    self.params.feed_rate, power_value
+                                ));
+                            }
+                        }
+                        _ => {}
                     }
                 }
 
-                // Turn laser off before moving away
+                // Turn laser off before moving away (end of path)
                 gcode.push_str("M5 ; Laser off\n");
-                gcode.push_str("G4 P0.1 ; Dwell to ensure laser fully powers down\n");
+                if self.params.enable_dwell {
+                    gcode.push_str(&format!(
+                        "G4 P{:.1} ; Dwell to ensure laser fully powers down\n",
+                        self.params.dwell_time
+                    ));
+                }
 
                 let progress = 0.1 + ((pass as f32 * total_paths + path_idx as f32) 
                     / (num_passes as f32 * total_paths)) * 0.8;
@@ -1264,13 +933,16 @@ mod tests {
         let mut params = VectorEngravingParameters::default();
         params.feed_rate = 100.0;
 
+        let mut builder = Path::builder();
+        builder.begin(point(0.0, 0.0));
+        builder.line_to(point(100.0, 0.0));
+        builder.end(false);
+        let path = builder.build();
+
         let engraver = VectorEngraver {
             file_path: "test.svg".to_string(),
             params,
-            paths: vec![vec![
-                PathElement { x: 0.0, y: 0.0 },
-                PathElement { x: 100.0, y: 0.0 },
-            ]],
+            paths: vec![path],
             scale_factor: 1.0,
         };
 

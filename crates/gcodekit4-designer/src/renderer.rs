@@ -255,6 +255,9 @@ pub fn render_canvas(
                     draw_selection_box(&mut img, screen_x1, screen_y1, screen_x2, screen_y2);
                 }
             }
+            ShapeType::Path => {
+                // TODO: Render path
+            }
         }
     }
 

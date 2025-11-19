@@ -111,6 +111,11 @@ impl ToolpathGenerator {
         self.cut_depth = depth;
     }
 
+    /// Creates an empty toolpath with current settings.
+    pub fn empty_toolpath(&self) -> Toolpath {
+        Toolpath::new(self.tool_diameter, self.cut_depth)
+    }
+
     /// Generates a contour toolpath for a rectangle.
     pub fn generate_rectangle_contour(&self, rect: &Rectangle) -> Toolpath {
         let mut toolpath = Toolpath::new(self.tool_diameter, self.cut_depth);

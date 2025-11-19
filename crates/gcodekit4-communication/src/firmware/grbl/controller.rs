@@ -87,7 +87,7 @@ impl GrblController {
     fn initialize(&self) -> anyhow::Result<()> {
         // Send soft reset
         self.communicator.send_command("$RST=*")?;
-        std::thread::sleep(Duration::from_millis(100));
+        std::thread::sleep(Duration::from_millis(75));
 
         // Query firmware version
         self.communicator.send_command("$I")?;

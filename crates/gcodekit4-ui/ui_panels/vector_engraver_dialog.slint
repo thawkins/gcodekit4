@@ -14,6 +14,10 @@ export struct VectorEngravingParams {
     desired-width: float,
     offset-x: float,
     offset-y: float,
+    enable-hatch: bool,
+    hatch-angle: float,
+    hatch-spacing: float,
+    hatch-tolerance: float,
 }
 
 export component VectorEngraverDialog inherits Dialog {
@@ -36,6 +40,13 @@ export component VectorEngraverDialog inherits Dialog {
     in property <float> output-height: 0.0;
     in-out property <string> offset-x: "10.0";
     in-out property <string> offset-y: "10.0";
+    in-out property <bool> enable-hatch: false;
+    in-out property <float> hatch-angle: 45.0;
+    in-out property <float> hatch-spacing: 1.0;
+    in-out property <float> hatch-tolerance: 0.1;
+    in-out property <bool> cross-hatch: false;
+    in-out property <bool> enable-dwell: false;
+    in-out property <float> dwell-time: 0.1;
     
     callback load-vector-file();
     callback generate-gcode();
@@ -273,6 +284,24 @@ export component VectorEngraverDialog inherits Dialog {
                                 }
                             }
                         }
+
+                        HorizontalBox {
+                            CheckBox {
+                                text: "Enable Laser Dwell";
+                                checked <=> enable-dwell;
+                            }
+                        }
+
+                        if enable-dwell: HorizontalBox {
+                            Text { text: "Dwell Time (s):"; width: 140px; }
+                            LineEdit {
+                                text: dwell-time;
+                                horizontal-stretch: 1;
+                                edited => {
+                                    dwell-time = self.text.to-float();
+                                }
+                            }
+                        }
                     }
                 }
                 
@@ -298,6 +327,69 @@ export component VectorEngraverDialog inherits Dialog {
                                 text <=> offset-y;
                                 placeholder-text: "10.0";
                                 horizontal-stretch: 1;
+                            }
+                        }
+                    }
+                }
+
+                // Hatching (Fill)
+                GroupBox {
+                    title: "Hatching (Fill)";
+                    
+                    VerticalBox {
+                        spacing: 8px;
+                        
+                        HorizontalBox {
+                            CheckBox {
+                                text: "Enable Hatching";
+                                checked <=> enable-hatch;
+                                toggled => { update-preview(); }
+                            }
+                            
+                            if enable-hatch: CheckBox {
+                                text: "Cross Hatch (+90°)";
+                                checked <=> cross-hatch;
+                                toggled => { update-preview(); }
+                            }
+                        }
+                        
+                        if enable-hatch: VerticalBox {
+                            spacing: 8px;
+                            
+                            HorizontalBox {
+                                Text { text: "Angle (deg):"; width: 140px; }
+                                Slider {
+                                    minimum: 0;
+                                    maximum: 180;
+                                    value <=> hatch-angle;
+                                    horizontal-stretch: 1;
+                                    changed => { update-preview(); }
+                                }
+                                Text { text: round(hatch-angle); width: 40px; }
+                            }
+                            
+                            HorizontalBox {
+                                Text { text: "Spacing (mm):"; width: 140px; }
+                                LineEdit {
+                                    text: hatch-spacing;
+                                    horizontal-stretch: 1;
+                                    edited => {
+                                        hatch-spacing = self.text.to-float();
+                                        update-preview();
+                                    }
+                                }
+                            }
+                            
+                            HorizontalBox {
+                                Text { text: "Tolerance (mm):"; width: 140px; }
+                                LineEdit {
+                                    text: hatch-tolerance;
+                                    horizontal-stretch: 1;
+                                    edited => {
+                                        hatch-tolerance = self.text.to-float();
+                                        update-preview();
+                                    }
+                                }
                             }
                         }
                     }

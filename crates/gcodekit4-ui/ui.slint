@@ -1341,6 +1341,27 @@ export component MainWindow inherits Window {
                     font-size: 13.2px;
                     visible: root.connected;
                 }
+
+                // Machine State Display
+                Text {
+                    text: root.machine-state;
+                    color: root.machine-state == "ALARM" ? #e74c3c : 
+                           (root.machine-state == "Run" ? #2ecc71 : 
+                           (root.machine-state == "Hold" || root.machine-state == "Hold:0" || root.machine-state == "Hold:1" ? #e67e22 : 
+                           (root.machine-state == "Idle" || root.machine-state == "IDLE" ? #f1c40f : white)));
+                    font-size: 13.2px;
+                    font-weight: 700;
+                    font-family: "Monospace";
+                    visible: root.connected;
+                }
+
+                // Separator 3
+                Text {
+                    text: " \u{2003} | \u{2003} ";
+                    color: white;
+                    font-size: 13.2px;
+                    visible: root.connected;
+                }
                 
                 // Position Label
                 Text {

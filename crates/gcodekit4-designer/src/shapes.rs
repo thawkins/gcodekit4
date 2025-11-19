@@ -1,5 +1,11 @@
 //! Geometric shapes for the designer tool.
 
+use lyon::path::Path;
+use lyon::math::point;
+use lyon::algorithms::aabb::bounding_box;
+use lyon::algorithms::hit_test::hit_test_path;
+use lyon::path::FillRule;
+
 /// Represents a 2D point with X and Y coordinates.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Point {
@@ -28,6 +34,7 @@ pub enum ShapeType {
     Ellipse,
     Polygon,
     RoundRectangle,
+    Path,
 }
 
 /// Base trait for all drawable shapes.
@@ -405,6 +412,42 @@ impl Shape for RoundRectangle {
 
     fn clone_shape(&self) -> Box<dyn Shape> {
         Box::new(*self)
+    }
+}
+
+/// A generic path shape wrapping lyon::path::Path
+#[derive(Debug, Clone)]
+pub struct PathShape {
+    pub path: Path,
+}
+
+impl PathShape {
+    pub fn new(path: Path) -> Self {
+        Self { path }
+    }
+}
+
+impl Shape for PathShape {
+    fn shape_type(&self) -> ShapeType {
+        ShapeType::Path
+    }
+
+    fn bounding_box(&self) -> (f64, f64, f64, f64) {
+        let aabb = bounding_box(self.path.iter());
+        (aabb.min.x as f64, aabb.min.y as f64, aabb.max.x as f64, aabb.max.y as f64)
+    }
+
+    fn contains_point(&self, p: &Point) -> bool {
+        hit_test_path(
+            &point(p.x as f32, p.y as f32),
+            self.path.iter(),
+            FillRule::NonZero,
+            0.1
+        )
+    }
+
+    fn clone_shape(&self) -> Box<dyn Shape> {
+        Box::new(self.clone())
     }
 }
 
