@@ -5819,7 +5819,7 @@ fn main() -> anyhow::Result<()> {
         // Get the current G-code content
         if let Some(window) = window_weak.upgrade() {
             let content = window.get_gcode_content();
-            let current_view = window.get_current_view();
+            let _current_view = window.get_current_view();
 
 
             // Reset progress
@@ -6006,9 +6006,9 @@ fn main() -> anyhow::Result<()> {
     main_window.on_zoom_in(move |_canvas_width, _canvas_height| {
         if let Ok(mut scale) = zoom_scale_in.lock() {
             *scale *= 1.1;
-            // Clamp to reasonable values (10% to 500%)
-            if *scale > 5.0 {
-                *scale = 5.0;
+            // Clamp to reasonable values (10% to 5000%)
+            if *scale > 50.0 {
+                *scale = 50.0;
             }
 
             // Update UI immediately
@@ -6027,7 +6027,7 @@ fn main() -> anyhow::Result<()> {
     main_window.on_zoom_out(move |_canvas_width, _canvas_height| {
         if let Ok(mut scale) = zoom_scale_out.lock() {
             *scale /= 1.1;
-            // Clamp to reasonable values (10% to 500%)
+            // Clamp to reasonable values (10% to 5000%)
             if *scale < 0.1 {
                 *scale = 0.1;
             }
