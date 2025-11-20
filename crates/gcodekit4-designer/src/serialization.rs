@@ -62,6 +62,10 @@ pub struct ShapeData {
     #[serde(default)]
     pub pocket_depth: f64,
     #[serde(default)]
+    pub step_down: f32,
+    #[serde(default)]
+    pub step_in: f32,
+    #[serde(default)]
     pub text_content: String,
     #[serde(default)]
     pub font_size: f64,
@@ -186,6 +190,8 @@ impl DesignFile {
                 OperationType::Pocket => "pocket".to_string(),
             },
             pocket_depth: obj.pocket_depth,
+            step_down: obj.step_down,
+            step_in: obj.step_in,
             text_content,
             font_size,
         }
@@ -234,6 +240,8 @@ impl DesignFile {
             selected: data.selected,
             operation_type,
             pocket_depth: data.pocket_depth,
+            step_down: data.step_down,
+            step_in: data.step_in,
         })
     }
 }

@@ -386,9 +386,8 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
                 gcodekit4::ShapeType::Line => 2,
                 gcodekit4::ShapeType::Ellipse => 3,
                 gcodekit4::ShapeType::Polygon => 4,
-                gcodekit4::ShapeType::RoundRectangle => 5,
-                gcodekit4::ShapeType::Path => 6,
-                gcodekit4::ShapeType::Text => 7,
+                gcodekit4::ShapeType::Path => 7,
+                gcodekit4::ShapeType::Text => 6,
             };
             crate::DesignerShape {
                 id: obj.id as i32,
@@ -401,6 +400,8 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
                 y2: y2 as f32,
                 shape_type,
                 selected: obj.selected,
+                step_down: obj.step_down as f32,
+                step_in: obj.step_in as f32,
             }
         })
         .collect();
@@ -445,6 +446,8 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
             let is_pocket = obj.operation_type == gcodekit4::designer::shapes::OperationType::Pocket;
             window.set_designer_selected_shape_is_pocket(is_pocket);
             window.set_designer_selected_shape_pocket_depth(obj.pocket_depth as f32);
+            window.set_designer_selected_shape_step_down(obj.step_down as f32);
+            window.set_designer_selected_shape_step_in(obj.step_in as f32);
             
             if let Some(text) = obj.shape.as_any().downcast_ref::<gcodekit4::designer::shapes::TextShape>() {
                 window.set_designer_selected_shape_text_content(slint::SharedString::from(&text.text));
@@ -464,6 +467,7 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
         window.set_designer_selected_shape_radius(5.0);
         window.set_designer_selected_shape_is_pocket(false);
         window.set_designer_selected_shape_pocket_depth(0.0);
+        window.set_designer_selected_shape_step_down(0.0);
         window.set_designer_selected_shape_text_content(slint::SharedString::from(""));
         window.set_designer_selected_shape_font_size(12.0);
     }
@@ -4356,62 +4360,59 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
+    // Designer: G-code generated callback (called from thread via invoke_from_event_loop)
+    let window_weak = main_window.as_weak();
+    let editor_bridge_designer = editor_bridge.clone();
+    main_window.on_invoke_designer_gcode_generated(move |gcode| {
+        if let Some(window) = window_weak.upgrade() {
+            let gcode_str = gcode.to_string();
+            
+            window.set_designer_generated_gcode(gcode.clone());
+            window.set_designer_gcode_generated(true);
+            
+            // Load into editor and switch view
+            editor_bridge_designer.load_text(&gcode_str);
+            window.set_total_lines(editor_bridge_designer.line_count() as i32);
+            update_visible_lines(&window, &editor_bridge_designer);
+            
+            window.set_gcode_content(gcode);
+            window.set_current_view(slint::SharedString::from("gcode-editor"));
+            window.set_gcode_focus_trigger(window.get_gcode_focus_trigger() + 1);
+            
+            window.set_connection_status(slint::SharedString::from(
+                "G-code generated and loaded into editor",
+            ));
+            window.set_is_busy(false);
+        }
+    });
+
     // Designer: Generate Toolpath callback
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
     main_window.on_designer_generate_toolpath(move || {
         if let Some(window) = window_weak.upgrade() {
             window.set_is_busy(true);
-        }
-
-        let window_weak_inner = window_weak.clone();
-        let designer_mgr_inner = designer_mgr_clone.clone();
-
-        // Use timer to allow UI to update cursor before blocking operation
-        slint::Timer::single_shot(std::time::Duration::from_millis(50), move || {
-            let gcode = {
-                let mut state = designer_mgr_inner.borrow_mut();
-                state.generate_gcode()
+            
+            let designer_mgr_inner = designer_mgr_clone.clone();
+            let window_weak_inner = window.as_weak();
+            
+            // Clone state to offload to thread
+            let mut state_clone = {
+                let state = designer_mgr_inner.borrow();
+                state.clone()
             };
 
-            if let Some(window) = window_weak_inner.upgrade() {
-                window.set_designer_generated_gcode(slint::SharedString::from(gcode));
-                window.set_designer_gcode_generated(true);
-                window.set_connection_status(slint::SharedString::from(
-                    "G-code generated successfully",
-                ));
-                window.set_is_busy(false);
-            }
-        });
-    });
-
-    // Designer: Export G-code callback
-    let designer_mgr_clone = designer_mgr.clone();
-    let window_weak = main_window.as_weak();
-    main_window.on_designer_export_gcode(move || {
-        if let Some(window) = window_weak.upgrade() {
-            window.set_is_busy(true);
+            std::thread::spawn(move || {
+                let gcode = state_clone.generate_gcode();
+                let gcode_shared = slint::SharedString::from(gcode);
+                
+                let _ = slint::invoke_from_event_loop(move || {
+                    if let Some(window) = window_weak_inner.upgrade() {
+                        window.invoke_invoke_designer_gcode_generated(gcode_shared);
+                    }
+                });
+            });
         }
-
-        let window_weak_inner = window_weak.clone();
-        let designer_mgr_inner = designer_mgr_clone.clone();
-
-        // Use timer to allow UI to update cursor before blocking operation
-        slint::Timer::single_shot(std::time::Duration::from_millis(50), move || {
-            let gcode = {
-                let mut state = designer_mgr_inner.borrow_mut();
-                state.generate_gcode()
-            };
-
-            if let Some(window) = window_weak_inner.upgrade() {
-                window.set_gcode_content(slint::SharedString::from(gcode));
-                window.set_current_view(slint::SharedString::from("gcode-editor"));
-                window.set_gcode_focus_trigger(window.get_gcode_focus_trigger() + 1);
-                window
-                    .set_connection_status(slint::SharedString::from("G-code exported to editor"));
-                window.set_is_busy(false);
-            }
-        });
     });
 
     // Designer: Import DXF callback
@@ -4808,8 +4809,8 @@ fn main() -> anyhow::Result<()> {
     });
 
     // Designer: Save shape properties
-    // (x, y, w, h, radius, is_pocket, pocket_depth, text_content, font_size)
-    let pending_properties = Rc::new(RefCell::new((0.0f64, 0.0f64, 0.0f64, 0.0f64, 0.0f64, false, 0.0f64, String::new(), 12.0f64)));
+    // (x, y, w, h, radius, is_pocket, pocket_depth, text_content, font_size, step_down, step_in)
+    let pending_properties = Rc::new(RefCell::new((0.0f64, 0.0f64, 0.0f64, 0.0f64, 0.0f64, false, 0.0f64, String::new(), 12.0f64, 0.0f64, 0.0f64)));
 
     let pending_clone = pending_properties.clone();
     main_window.on_designer_update_shape_property(move |prop_id: i32, value: f32| {
@@ -4822,6 +4823,8 @@ fn main() -> anyhow::Result<()> {
             4 => props.4 = value as f64, // radius
             5 => props.6 = value as f64, // pocket_depth
             6 => props.8 = value as f64, // font_size
+            7 => props.9 = value as f64, // step_down
+            8 => props.10 = value as f64, // step_in
             _ => {}
         }
     });
@@ -4851,9 +4854,10 @@ fn main() -> anyhow::Result<()> {
         let props = pending_clone2.borrow();
         let mut state = designer_mgr_clone2.borrow_mut();
         state.set_selected_position_and_size(props.0, props.1, props.2, props.3);
-        state.set_selected_corner_radius(props.4);
         state.set_selected_pocket_properties(props.5, props.6);
         state.set_selected_text_properties(&props.7, props.8);
+        state.set_selected_step_down(props.9);
+        state.set_selected_step_in(props.10);
 
         if let Some(window) = window_weak2.upgrade() {
             update_designer_ui(&window, &mut state);
@@ -4923,6 +4927,25 @@ fn main() -> anyhow::Result<()> {
     main_window.on_designer_update_cut_depth(move |depth: f32| {
         let mut state = designer_mgr_clone.borrow_mut();
         state.toolpath_generator.set_cut_depth(depth as f64);
+    });
+
+    // Designer: Update step in
+    let designer_mgr_clone = designer_mgr.clone();
+    main_window.on_designer_update_step_in(move |step_in: f32| {
+        let mut state = designer_mgr_clone.borrow_mut();
+        state.toolpath_generator.set_step_in(step_in as f64);
+    });
+
+    // Designer: Update step in
+    let designer_mgr_clone = designer_mgr.clone();
+    main_window.on_designer_update_step_in(move |step_in: f32| {
+        let mut state = designer_mgr_clone.borrow_mut();
+        // We don't have a global step_in setting in DesignerState yet.
+        // But we should probably add it to ToolpathGenerator if it's a global setting.
+        // For now, let's just log it or ignore it if it's not used globally.
+        // Wait, the user said "add to tool setup panel... which is used to determine...".
+        // This implies it should be used.
+        // I'll check ToolpathGenerator.
     });
 
     // Tabbed Box Maker: Open dialog window

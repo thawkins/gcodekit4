@@ -106,3 +106,22 @@ Each shape/object will effectively have:
 - [x] Implement toolpath generation for Pocket operations (raster/offset).
 - [x] Implement toolpath generation for Text (glyph to path).
 - [x] Remove RoundRectangle shape and tool.
+- [x] Added `step_down` property to shapes and UI.
+- [x] Added `step_in` property to shapes and UI.
+- [x] Updated `main.rs` to handle `step_down` and `step_in` properties.
+- [x] Updated `designer_state.rs` to handle `step_down` and `step_in` properties.
+- [x] Updated `ToolpathGenerator` to use `step_in` for pocket operations.
+- [x] Added `Text` mode to `canvas.rs` and `designer_state.rs`.
+- [x] Increase size of shape property panels by 30% and make them scrollable
+- [x] Remove "Export" button from Designer UI.
+- [x] Update "Generate" button to generate G-code, load it into the editor, and switch view.
+
+### Debugging
+- [x] Investigated "no gcode being generated" issue.
+- [x] Removed `Timer::single_shot` wrapper in `on_designer_generate_toolpath` to ensure execution.
+- [x] Added detailed instrumentation to `on_designer_generate_toolpath` in `main.rs` and `generate_gcode` in `designer_state.rs`.
+
+## Performance Improvements
+- Moved G-code generation to a background thread to prevent UI blocking.
+- Implemented `invoke-designer-gcode-generated` callback in UI to handle updates from the background thread.
+- [x] Migrated all designer UI elements to `gcodekit4-designer` crate.

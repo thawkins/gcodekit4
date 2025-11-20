@@ -41,7 +41,7 @@ pub enum ShapeType {
 }
 
 /// Base trait for all drawable shapes.
-pub trait Shape: std::fmt::Debug {
+pub trait Shape: std::fmt::Debug + Send + Sync {
     /// Gets the type of this shape.
     fn shape_type(&self) -> ShapeType;
 

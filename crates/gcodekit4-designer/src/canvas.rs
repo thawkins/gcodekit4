@@ -39,6 +39,7 @@ pub enum DrawingMode {
     Line,
     Ellipse,
     Polygon,
+    Text,
 }
 
 /// Drawing object on the canvas that can be selected and manipulated.
@@ -49,6 +50,8 @@ pub struct DrawingObject {
     pub selected: bool,
     pub operation_type: OperationType,
     pub pocket_depth: f64,
+    pub step_down: f32,
+    pub step_in: f32,
 }
 
 impl DrawingObject {
@@ -60,6 +63,8 @@ impl DrawingObject {
             selected: false,
             operation_type: OperationType::default(),
             pocket_depth: 0.0,
+            step_down: 0.0,
+            step_in: 0.0,
         }
     }
 }
@@ -72,12 +77,14 @@ impl Clone for DrawingObject {
             selected: self.selected,
             operation_type: self.operation_type,
             pocket_depth: self.pocket_depth,
+            step_down: self.step_down,
+            step_in: self.step_in,
         }
     }
 }
 
 /// Canvas state managing shapes and drawing operations.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Canvas {
     shapes: Vec<DrawingObject>,
     next_id: u64,
@@ -169,6 +176,15 @@ impl Canvas {
         self.next_id += 1;
         let polygon = Polygon::new(vertices);
         self.shapes.push(DrawingObject::new(id, Box::new(polygon)));
+        id
+    }
+
+    /// Adds a text shape to the canvas.
+    pub fn add_text(&mut self, text: String, x: f64, y: f64, font_size: f64) -> u64 {
+        let id = self.next_id;
+        self.next_id += 1;
+        let shape = TextShape::new(text, x, y, font_size);
+        self.shapes.push(DrawingObject::new(id, Box::new(shape)));
         id
     }
 

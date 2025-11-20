@@ -76,11 +76,13 @@ impl Toolpath {
 }
 
 /// Generates toolpaths from design shapes.
+#[derive(Debug, Clone)]
 pub struct ToolpathGenerator {
     feed_rate: f64,
     spindle_speed: u32,
     tool_diameter: f64,
     cut_depth: f64,
+    step_in: f64,
 }
 
 impl ToolpathGenerator {
@@ -91,6 +93,7 @@ impl ToolpathGenerator {
             spindle_speed: 1000,
             tool_diameter: 3.175, // 1/8 inch
             cut_depth: -5.0,      // 5mm deep
+            step_in: 1.0,
         }
     }
 
@@ -112,6 +115,11 @@ impl ToolpathGenerator {
     /// Sets the cut depth in mm (negative for downward).
     pub fn set_cut_depth(&mut self, depth: f64) {
         self.cut_depth = depth;
+    }
+
+    /// Sets the step in (step over) in mm.
+    pub fn set_step_in(&mut self, step_in: f64) {
+        self.step_in = step_in;
     }
 
     /// Creates an empty toolpath with current settings.
@@ -255,7 +263,7 @@ impl ToolpathGenerator {
     pub fn generate_rectangle_pocket(&self, rect: &Rectangle, pocket_depth: f64) -> Toolpath {
         let op = PocketOperation::new("rect_pocket".to_string(), pocket_depth, self.tool_diameter);
         let mut gen = PocketGenerator::new(op);
-        gen.operation.set_parameters(self.tool_diameter / 2.0, self.feed_rate, self.spindle_speed);
+        gen.operation.set_parameters(self.step_in, self.feed_rate, self.spindle_speed);
         gen.generate_rectangular_pocket(rect)
     }
 
@@ -263,7 +271,7 @@ impl ToolpathGenerator {
     pub fn generate_circle_pocket(&self, circle: &Circle, pocket_depth: f64) -> Toolpath {
         let op = PocketOperation::new("circle_pocket".to_string(), pocket_depth, self.tool_diameter);
         let mut gen = PocketGenerator::new(op);
-        gen.operation.set_parameters(self.tool_diameter / 2.0, self.feed_rate, self.spindle_speed);
+        gen.operation.set_parameters(self.step_in, self.feed_rate, self.spindle_speed);
         gen.generate_circular_pocket(circle)
     }
 

@@ -8,6 +8,7 @@ use crate::{
 use gcodekit4_core::Units;
 
 /// Designer state for UI integration
+#[derive(Clone)]
 pub struct DesignerState {
     pub canvas: Canvas,
     pub toolpath_generator: ToolpathGenerator,
@@ -41,6 +42,7 @@ impl DesignerState {
             3 => DrawingMode::Line,
             4 => DrawingMode::Ellipse,
             5 => DrawingMode::Polygon,
+            6 => DrawingMode::Text,
             _ => DrawingMode::Select,
         };
         self.canvas.set_mode(drawing_mode);
@@ -217,6 +219,10 @@ impl DesignerState {
                 self.canvas
                     .add_polygon(Polygon::regular(Point::new(x, y), 30.0, 6).vertices);
             }
+            DrawingMode::Text => {
+                // Add default text
+                self.canvas.add_text("Text".to_string(), x, y, 20.0);
+            }
         }
     }
 
@@ -379,6 +385,22 @@ impl DesignerState {
             if let Some(obj) = self.canvas.shapes_mut().iter_mut().find(|o| o.id == id) {
                 obj.operation_type = if is_pocket { OperationType::Pocket } else { OperationType::Profile };
                 obj.pocket_depth = depth;
+            }
+        }
+    }
+
+    pub fn set_selected_step_down(&mut self, step_down: f64) {
+        if let Some(id) = self.canvas.selected_id() {
+            if let Some(obj) = self.canvas.shapes_mut().iter_mut().find(|o| o.id == id) {
+                obj.step_down = step_down as f32;
+            }
+        }
+    }
+
+    pub fn set_selected_step_in(&mut self, step_in: f64) {
+        if let Some(id) = self.canvas.selected_id() {
+            if let Some(obj) = self.canvas.shapes_mut().iter_mut().find(|o| o.id == id) {
+                obj.step_in = step_in as f32;
             }
         }
     }

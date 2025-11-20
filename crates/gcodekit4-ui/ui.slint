@@ -13,7 +13,7 @@ import { MachineControlPanel } from "ui_panels/machine_control.slint";
 import { ConfigSettingsPanel, ConfigSetting } from "ui_panels/config_settings.slint";
 import { DeviceInfoPanel, CapabilityItem } from "ui_panels/device_info.slint";
 import { GcodeVisualizerPanel } from "../gcodekit4-visualizer/ui/gcode_visualizer.slint";
-import { DesignerPanel } from "ui_panels/designer.slint";
+import { DesignerPanel } from "../gcodekit4-designer/ui/designer.slint";
 import { CAMToolsPanel } from "ui_panels/cam_tools.slint";
 import { MaterialsManager, MaterialData } from "ui_panels/materials_manager.slint";
 import { ToolsManager, ToolData } from "ui_panels/tools_manager.slint";
@@ -38,6 +38,8 @@ export struct DesignerShape {
     y2: float,
     shape_type: int,
     selected: bool,
+    step_down: float,
+    step_in: float,
 }
 
 export struct DesignerState {
@@ -171,6 +173,8 @@ export component MainWindow inherits Window {
     in property <float> designer-selected-shape-radius: 5.0;
     in property <bool> designer-selected-shape-is-pocket: false;
     in property <float> designer-selected-shape-pocket-depth: 0.0;
+    in property <float> designer-selected-shape-step-down: 0.0;
+    in property <float> designer-selected-shape-step-in: 0.0;
     in property <string> designer-selected-shape-text-content: "";
     in property <float> designer-selected-shape-font-size: 12.0;
     
@@ -327,7 +331,6 @@ export component MainWindow inherits Window {
     callback designer-delete-selected();
     callback designer-clear-canvas();
     callback designer-generate-toolpath();
-    callback designer-export-gcode();
     callback designer-import-dxf();
     callback designer-import-svg();
     callback designer-export-design();
@@ -346,10 +349,12 @@ export component MainWindow inherits Window {
     callback designer-update-spindle-speed(float);
     callback designer-update-tool-diameter(float);
     callback designer-update-cut-depth(float);
+    callback designer-update-step-in(float);
     callback designer-file-new();
     callback designer-file-open();
     callback designer-file-save();
     callback designer-file-save-as();
+    callback invoke-designer-gcode-generated(string);
     
      // CAM Tool callbacks
     callback generate-tabbed-box();
@@ -1200,6 +1205,8 @@ export component MainWindow inherits Window {
                     selected_shape_radius: root.designer-selected-shape-radius;
                     selected_shape_is_pocket: root.designer-selected-shape-is-pocket;
                     selected_shape_pocket_depth: root.designer-selected-shape-pocket-depth;
+                    selected_shape_step_down: root.designer-selected-shape-step-down;
+                    selected_shape_step_in: root.designer-selected-shape-step-in;
                     selected_shape_text_content: root.designer-selected-shape-text-content;
                     selected_shape_font_size: root.designer-selected-shape-font-size;
                     
@@ -1233,10 +1240,6 @@ export component MainWindow inherits Window {
                     
                     generate_toolpath => {
                         root.designer-generate-toolpath();
-                    }
-                    
-                    export_gcode => {
-                        root.designer-export-gcode();
                     }
                     
                     import_dxf => {
@@ -1307,6 +1310,10 @@ export component MainWindow inherits Window {
                     
                     update_cut_depth(depth) => {
                         root.designer-update-cut-depth(depth);
+                    }
+                    
+                    update_step_in(val) => {
+                        root.designer-update-step-in(val);
                     }
                     
                     file_new => {
