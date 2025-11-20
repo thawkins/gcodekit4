@@ -157,7 +157,7 @@ export component SettingsDialog inherits Rectangle {
                         
                         CategoryItem {
                             id: "controller";
-                            name: "Controller";
+                            name: "General";
                             selected: root.settings-category == "controller";
                             clicked => { 
                                 root.settings-category = "controller";
@@ -215,7 +215,7 @@ export component SettingsDialog inherits Rectangle {
                         spacing: 15px;
                         
                         Text {
-                            text: root.settings-category == "controller" ? "Controller Settings" :
+                            text: root.settings-category == "controller" ? "General Settings" :
                                   root.settings-category == "ui" ? "User Interface" :
                                   root.settings-category == "file" ? "File Processing" :
                                   root.settings-category == "shortcuts" ? "Keyboard Shortcuts" :
@@ -230,6 +230,14 @@ export component SettingsDialog inherits Rectangle {
                             background: #bdc3c7;
                         }
                         
+                        if root.settings-category == "controller" : Text {
+                            text: "Connection settings have been moved to Device Manager.";
+                            color: #7f8c8d;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                            height: 100px;
+                        }
+
                         ListView {
                             for setting in root.current-settings : SettingRow {
                                 setting: setting;

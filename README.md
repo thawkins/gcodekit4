@@ -534,9 +534,15 @@ You may choose either license for your use of this software.
 
 ## Project Status
 
-**Current Version**: 0.33.0-alpha  
-**Status**: Active Development  
+**Current Version**: 0.33.6-alpha
+**Status**: Active Development
 **Stability**: Alpha (breaking changes may occur)
+
+### Recent Updates (v0.33)
+- **Device Database**: Dedicated management for CNC/Laser/Printer profiles.
+- **Settings Refactor**: Centralized settings management with improved UI.
+- **Tabbed Box Generator**: Enhanced with dividers, keying, dimples, and layout optimization.
+- **Visualizer**: Single-pixel rendering, dynamic grid, and bounding box info.
 
 This project is in active development. New features are being added regularly, and breaking changes may occur between versions. While the core functionality is stable, use in production environments is at your own risk.
 

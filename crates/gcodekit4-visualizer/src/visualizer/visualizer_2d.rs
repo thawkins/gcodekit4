@@ -531,6 +531,33 @@ impl Visualizer2D {
         self.y_offset = (bbox_min_y_padded - self.min_y) * scale + CANVAS_PADDING - center_y;
     }
 
+    /// Get bounds of cutting moves only (excluding rapid moves)
+    pub fn get_cutting_bounds(&self) -> Option<(f32, f32, f32, f32)> {
+        let mut bounds = Bounds::new();
+        let mut has_cutting_moves = false;
+
+        for cmd in &self.commands {
+            match cmd {
+                GCodeCommand::Move { to, rapid, .. } => {
+                    if !*rapid {
+                        bounds.update(to.x, to.y);
+                        has_cutting_moves = true;
+                    }
+                }
+                GCodeCommand::Arc { to, .. } => {
+                    bounds.update(to.x, to.y);
+                    has_cutting_moves = true;
+                }
+            }
+        }
+
+        if has_cutting_moves && bounds.is_valid() {
+            Some((bounds.min_x, bounds.max_x, bounds.min_y, bounds.max_y))
+        } else {
+            None
+        }
+    }
+
     /// Get the start point of the toolpath (for debugging/testing)
     pub fn get_start_point(&self) -> Option<Point2D> {
         self.commands.first().map(|cmd| match cmd {

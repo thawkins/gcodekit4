@@ -4,7 +4,7 @@
 //! Bridges SettingsDialog (UI) with Config (persistence layer).
 //! Provides validation, migration, and synchronization of settings.
 
-use crate::config::{Config, ConnectionType};
+use crate::config::Config;
 use crate::view_model::{
     KeyboardShortcut, Setting, SettingValue, SettingsCategory, SettingsDialog,
 };
@@ -39,8 +39,8 @@ impl SettingsPersistence {
 
     /// Populate SettingsDialog from config
     pub fn populate_dialog(&self, dialog: &mut SettingsDialog) {
-        // Connection Settings
-        self.add_connection_settings(dialog);
+        // Connection Settings - Moved to DeviceDB
+        // self.add_connection_settings(dialog);
 
         // UI Settings
         self.add_ui_settings(dialog);
@@ -54,8 +54,8 @@ impl SettingsPersistence {
 
     /// Load settings from dialog into config
     pub fn load_from_dialog(&mut self, dialog: &SettingsDialog) -> Result<()> {
-        // Update connection settings
-        self.update_connection_settings(dialog)?;
+        // Update connection settings - Moved to DeviceDB
+        // self.update_connection_settings(dialog)?;
 
         // Update UI settings
         self.update_ui_settings(dialog)?;
@@ -82,88 +82,6 @@ impl SettingsPersistence {
     /// Validate settings
     pub fn validate(&self) -> Result<()> {
         self.config.validate()
-    }
-
-    /// Add connection settings to dialog
-    fn add_connection_settings(&self, dialog: &mut SettingsDialog) {
-        let conn = &self.config.connection;
-
-        // Connection Type
-        let conn_types = vec![
-            "Serial".to_string(),
-            "TCP/IP".to_string(),
-            "WebSocket".to_string(),
-        ];
-        let current_type = match conn.connection_type {
-            ConnectionType::Serial => "Serial".to_string(),
-            ConnectionType::Tcp => "TCP/IP".to_string(),
-            ConnectionType::WebSocket => "WebSocket".to_string(),
-        };
-
-        dialog.add_setting(
-            Setting::new(
-                "connection_type",
-                "Connection Type",
-                SettingValue::Enum(current_type, conn_types),
-            )
-            .with_description("Select the connection protocol")
-            .with_category(SettingsCategory::Controller),
-        );
-
-        // Baud Rate
-        let baud_rates = vec!["9600", "19200", "38400", "115200"]
-            .into_iter()
-            .map(|s| s.to_string())
-            .collect();
-        dialog.add_setting(
-            Setting::new(
-                "baud_rate",
-                "Baud Rate",
-                SettingValue::Enum(conn.baud_rate.to_string(), baud_rates),
-            )
-            .with_description("Serial connection speed")
-            .with_category(SettingsCategory::Controller),
-        );
-
-        // Port
-        dialog.add_setting(
-            Setting::new("port", "Port", SettingValue::String(conn.port.clone()))
-                .with_description("Serial port or hostname")
-                .with_category(SettingsCategory::Controller),
-        );
-
-        // TCP Port
-        dialog.add_setting(
-            Setting::new(
-                "tcp_port",
-                "TCP Port",
-                SettingValue::Integer(conn.tcp_port as i32),
-            )
-            .with_description("TCP/IP port number (1-65535)")
-            .with_category(SettingsCategory::Controller),
-        );
-
-        // Connection Timeout
-        dialog.add_setting(
-            Setting::new(
-                "timeout_ms",
-                "Connection Timeout (ms)",
-                SettingValue::Integer(conn.timeout_ms as i32),
-            )
-            .with_description("Timeout for connection operations")
-            .with_category(SettingsCategory::Controller),
-        );
-
-        // Auto Reconnect
-        dialog.add_setting(
-            Setting::new(
-                "auto_reconnect",
-                "Auto Reconnect",
-                SettingValue::Boolean(conn.auto_reconnect),
-            )
-            .with_description("Automatically reconnect on connection loss")
-            .with_category(SettingsCategory::Controller),
-        );
     }
 
     /// Add UI settings to dialog
@@ -294,48 +212,6 @@ impl SettingsPersistence {
         }
     }
 
-    /// Update connection settings in config from dialog
-    fn update_connection_settings(&mut self, dialog: &SettingsDialog) -> Result<()> {
-        if let Some(setting) = dialog.get_setting("connection_type") {
-            let conn_type = match setting.value.as_str().as_str() {
-                "TCP/IP" => ConnectionType::Tcp,
-                "WebSocket" => ConnectionType::WebSocket,
-                _ => ConnectionType::Serial,
-            };
-            self.config.connection.connection_type = conn_type;
-        }
-
-        if let Some(setting) = dialog.get_setting("baud_rate") {
-            if let Ok(rate) = setting.value.as_str().parse::<u32>() {
-                self.config.connection.baud_rate = rate;
-            }
-        }
-
-        if let Some(setting) = dialog.get_setting("port") {
-            self.config.connection.port = setting.value.as_str();
-        }
-
-        if let Some(setting) = dialog.get_setting("tcp_port") {
-            if let Ok(port) = setting.value.as_str().parse::<u16>() {
-                self.config.connection.tcp_port = port;
-            }
-        }
-
-        if let Some(setting) = dialog.get_setting("timeout_ms") {
-            if let Ok(timeout) = setting.value.as_str().parse::<u64>() {
-                self.config.connection.timeout_ms = timeout;
-            }
-        }
-
-        if let Some(setting) = dialog.get_setting("auto_reconnect") {
-            if let Ok(value) = setting.value.as_str().parse::<bool>() {
-                self.config.connection.auto_reconnect = value;
-            }
-        }
-
-        Ok(())
-    }
-
     /// Update UI settings in config from dialog
     fn update_ui_settings(&mut self, dialog: &SettingsDialog) -> Result<()> {
         if let Some(setting) = dialog.get_setting("theme") {
@@ -422,7 +298,7 @@ mod tests {
         persistence.populate_dialog(&mut dialog);
 
         assert!(!dialog.settings.is_empty());
-        assert!(dialog.get_setting("connection_type").is_some());
+        // assert!(dialog.get_setting("connection_type").is_some()); // Moved to DeviceDB
         assert!(dialog.get_setting("theme").is_some());
         assert!(!dialog.shortcuts.is_empty());
     }
@@ -434,8 +310,8 @@ mod tests {
         persistence.populate_dialog(&mut dialog);
 
         // Modify a setting
-        if let Some(setting) = dialog.get_setting_mut("baud_rate") {
-            setting.value = SettingValue::Enum("9600".to_string(), vec!["9600".to_string()]);
+        if let Some(setting) = dialog.get_setting_mut("theme") {
+            setting.value = SettingValue::Enum("Light".to_string(), vec!["Light".to_string()]);
         }
 
         assert!(persistence.load_from_dialog(&dialog).is_ok());
@@ -451,7 +327,7 @@ mod tests {
 
         // Check categories are populated
         let categories = dialog.get_categories();
-        assert!(categories.contains(&SettingsCategory::Controller));
+        // assert!(categories.contains(&SettingsCategory::Controller)); // Moved to DeviceDB
         assert!(categories.contains(&SettingsCategory::UserInterface));
         assert!(categories.contains(&SettingsCategory::FileProcessing));
     }

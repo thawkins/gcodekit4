@@ -27,6 +27,7 @@ export component GcodeVisualizerPanel inherits VerticalBox {
     in property <float> y-offset: 0.0;
     in property <float> zoom-scale: 1.0;
     in property <string> grid-size: "10mm";
+    in property <string> bounding-box-info: "";
     in-out property <bool> show-grid: true;
     in-out property <bool> show-rapid-moves: true;
     out property <float> canvas-width: canvas-rect.width / 1px;
@@ -239,6 +240,31 @@ export component GcodeVisualizerPanel inherits VerticalBox {
                     font-size: 11px;
                     font-weight: 700;
                     color: #ef6c00;
+                }
+            }
+
+            if root.bounding-box-info != "": Text {
+                text: "|";
+                font-size: 11px;
+                color: #ccc;
+            }
+
+            // Bounding Box
+            if root.bounding-box-info != "": HorizontalBox {
+                spacing: 6px;
+
+                Text {
+                    text: "Bounds:";
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: #c2185b;
+                }
+
+                Text {
+                    text: root.bounding-box-info;
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: #d81b60;
                 }
             }
 

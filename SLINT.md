@@ -146,3 +146,17 @@ Rectangle {
 **Files Updated**:
 - `crates/gcodekit4-visualizer/ui/gcode_visualizer.slint`
 - (Duplicate files removed in cleanup)
+
+## UI Patterns (November 2025)
+
+### Scrollable Tabs
+- Use `Flickable` to wrap content within a `TabWidget` tab to ensure content is accessible on smaller screens.
+- Example: `Tab { title: "General"; Flickable { ... } }`
+
+### Data Models
+- Use `struct` definitions in Slint to map complex Rust data structures (e.g., `DeviceProfileUiModel`).
+- Pass these structures via callbacks or properties to keep the UI declarative.
+
+### Dynamic Layouts
+- Use `if` conditions to show/hide UI elements based on selected options (e.g., showing "Dimple Diameter" only when "Dimple" is enabled).
+- Use `ComboBox` for enumerated types (e.g., `KeyDividerType`, `BoxType`).

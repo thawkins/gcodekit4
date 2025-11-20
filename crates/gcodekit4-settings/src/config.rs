@@ -58,7 +58,7 @@ impl Default for ConnectionSettings {
     fn default() -> Self {
         Self {
             connection_type: ConnectionType::Serial,
-            port: "/dev/ttyUSB0".to_string(),
+            port: "Auto".to_string(),
             baud_rate: 115200,
             tcp_port: 8888,
             timeout_ms: 5000,

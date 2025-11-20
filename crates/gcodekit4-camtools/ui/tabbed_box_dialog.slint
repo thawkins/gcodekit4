@@ -17,6 +17,9 @@ export component TabbedBoxDialog inherits Window {
     in-out property <string> space-width: "2.0";
     in-out property <string> surrounding-spaces: "2.0";
     in-out property <string> play: "0.0";
+    in-out property <string> extra-length: "0.0";
+    in-out property <string> dimple-height: "0.0";
+    in-out property <string> dimple-length: "0.0";
     in-out property <int> finger-style: 0;
     in-out property <int> box-type: 0;
     in-out property <bool> outside-dimensions: false;
@@ -25,6 +28,10 @@ export component TabbedBoxDialog inherits Window {
     in-out property <string> feed-rate: "500";
     in-out property <string> offset-x: "10.0";
     in-out property <string> offset-y: "10.0";
+    in-out property <string> dividers-x: "0";
+    in-out property <string> dividers-y: "0";
+    in-out property <bool> optimize-layout: false;
+    in-out property <int> key-divider-type: 0;
     
     callback generate-box();
     callback cancel-dialog();
@@ -98,7 +105,7 @@ export component TabbedBoxDialog inherits Window {
                         }
                         
                         Row {
-                            Text { text: "Burn (kerf):"; }
+                            Text { text: "Burn / Tool Dia:"; }
                             LineEdit { 
                                 text <=> burn;
                                 placeholder-text: "0.1";
@@ -147,9 +154,33 @@ export component TabbedBoxDialog inherits Window {
                         }
                         
                         Row {
+                            Text { text: "Extra Length:"; }
+                            LineEdit { 
+                                text <=> extra-length;
+                                placeholder-text: "0.0";
+                            }
+                        }
+
+                        Row {
+                            Text { text: "Dimple Height:"; }
+                            LineEdit { 
+                                text <=> dimple-height;
+                                placeholder-text: "0.0";
+                            }
+                        }
+
+                        Row {
+                            Text { text: "Dimple Length:"; }
+                            LineEdit { 
+                                text <=> dimple-length;
+                                placeholder-text: "0.0";
+                            }
+                        }
+
+                        Row {
                             Text { text: "Finger Style:"; }
                             ComboBox {
-                                model: ["Rectangular", "Springs", "Barbs", "Snap"];
+                                model: ["Rectangular", "Springs", "Barbs", "Snap", "Dogbone"];
                                 current-index <=> finger-style;
                             }
                         }
@@ -166,8 +197,41 @@ export component TabbedBoxDialog inherits Window {
                         Row {
                             Text { text: "Box Type:"; }
                             ComboBox {
-                                model: ["Full Box", "No Top"];
+                                model: ["Full Box", "No Top", "No Bottom", "No Sides", "No Front/Back", "No Left/Right"];
                                 current-index <=> box-type;
+                            }
+                        }
+
+                        Row {
+                            Text { text: "Dividers X:"; }
+                            LineEdit { 
+                                text <=> dividers-x;
+                                placeholder-text: "0";
+                                input-type: number;
+                            }
+                        }
+
+                        Row {
+                            Text { text: "Dividers Y:"; }
+                            LineEdit { 
+                                text <=> dividers-y;
+                                placeholder-text: "0";
+                                input-type: number;
+                            }
+                        }
+
+                        Row {
+                            Text { text: "Divider Keying:"; }
+                            ComboBox {
+                                model: ["Walls & Floor", "Walls Only", "Floor Only", "None"];
+                                current-index <=> key-divider-type;
+                            }
+                        }
+
+                        Row {
+                            Text { text: "Optimize Layout:"; }
+                            CheckBox { 
+                                checked <=> optimize-layout;
                             }
                         }
                     }

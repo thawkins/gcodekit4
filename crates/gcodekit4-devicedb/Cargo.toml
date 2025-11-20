@@ -1,0 +1,20 @@
+[package]
+name = "gcodekit4-devicedb"
+version = "0.1.0"
+edition = "2021"
+description = "Device profile management for GCodeKit4"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+uuid = { version = "1.0", features = ["v4", "serde"] }
+slint = "1.8"
+thiserror = "1.0"
+anyhow = "1.0"
+tracing = "0.1"
+
+[dev-dependencies]
+tempfile = "3.8"
+
+[lib]
+path = "src/lib.rs"

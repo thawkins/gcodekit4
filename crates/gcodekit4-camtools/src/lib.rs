@@ -54,6 +54,6 @@ pub use laser_engraver::{
 };
 pub use optimizer::GCodeOptimizer;
 pub use stats::StatsCalculator;
-pub use tabbed_box::{BoxParameters, BoxType, FingerJointSettings, FingerStyle, TabbedBoxMaker};
+pub use tabbed_box::{BoxParameters, BoxType, FingerJointSettings, FingerStyle, TabbedBoxMaker, KeyDividerType};
 pub use validator::GCodeValidator;
 pub use vector_engraver::{VectorEngraver, VectorEngravingParameters};

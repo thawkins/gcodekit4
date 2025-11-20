@@ -48,6 +48,26 @@ impl From<i32> for FingerStyle {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum KeyDividerType {
+    WallsAndFloor = 0,
+    WallsOnly = 1,
+    FloorOnly = 2,
+    None = 3,
+}
+
+impl From<i32> for KeyDividerType {
+    fn from(value: i32) -> Self {
+        match value {
+            0 => KeyDividerType::WallsAndFloor,
+            1 => KeyDividerType::WallsOnly,
+            2 => KeyDividerType::FloorOnly,
+            3 => KeyDividerType::None,
+            _ => KeyDividerType::WallsAndFloor,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct FingerJointSettings {
     /// Width of fingers in multiples of thickness
@@ -101,6 +121,7 @@ pub struct BoxParameters {
     pub dividers_x: u32,
     pub dividers_y: u32,
     pub optimize_layout: bool,
+    pub key_divider_type: KeyDividerType,
 }
 
 impl Default for BoxParameters {
@@ -122,6 +143,7 @@ impl Default for BoxParameters {
             dividers_x: 0,
             dividers_y: 0,
             optimize_layout: false,
+            key_divider_type: KeyDividerType::WallsAndFloor,
         }
     }
 }
@@ -591,6 +613,277 @@ impl TabbedBoxMaker {
         }
     }
 
+    fn apply_slots_to_path(&self, path: Vec<Point>, slots: &[f32], depth: f32, slot_width: f32) -> Vec<Point> {
+        let mut new_path = Vec::new();
+        let mut path_iter = path.into_iter();
+        let mut current_slot_idx = 0;
+        let mut sorted_slots = slots.to_vec();
+        sorted_slots.sort_by(|a, b| a.partial_cmp(b).unwrap());
+
+        if let Some(start) = path_iter.next() {
+            new_path.push(start.clone());
+            let mut last_pt = start;
+
+            for pt in path_iter {
+                // Process segment last_pt -> pt
+                loop {
+                    if current_slot_idx >= sorted_slots.len() {
+                        new_path.push(pt.clone());
+                        last_pt = pt;
+                        break;
+                    }
+
+                    let s_center = sorted_slots[current_slot_idx];
+                    let s_start = s_center - slot_width / 2.0;
+                    let s_end = s_center + slot_width / 2.0;
+
+                    // If we are already past this slot, move to next slot
+                    if last_pt.x >= s_end {
+                        current_slot_idx += 1;
+                        continue;
+                    }
+
+                    // If segment ends before this slot starts, just draw segment
+                    if pt.x <= s_start {
+                        new_path.push(pt.clone());
+                        last_pt = pt;
+                        break;
+                    }
+
+                    // Intersection with slot
+                    // We are at last_pt (which is < s_end).
+                    // pt is > s_start.
+                    
+                    // If we are before the slot, draw to start of slot
+                    if last_pt.x < s_start {
+                        let t = if (pt.x - last_pt.x).abs() > 0.001 {
+                            (s_start - last_pt.x) / (pt.x - last_pt.x)
+                        } else {
+                            0.0
+                        };
+                        let y_at_start = last_pt.y + t * (pt.y - last_pt.y);
+                        
+                        new_path.push(Point::new(s_start, y_at_start));
+                        new_path.push(Point::new(s_start, y_at_start + depth));
+                        new_path.push(Point::new(s_end, y_at_start + depth));
+                        new_path.push(Point::new(s_end, y_at_start));
+                        
+                        last_pt = Point::new(s_end, y_at_start);
+                        current_slot_idx += 1;
+                        
+                        // Continue loop to check for more slots in the rest of the segment (s_end -> pt)
+                    } else {
+                        // We are inside the slot (last_pt.x >= s_start)
+                        // Skip points until we exit
+                        if pt.x <= s_end {
+                            // Still inside, skip pt
+                            last_pt = pt;
+                            break; // Get next pt from iterator
+                        } else {
+                            // Exiting slot
+                            // We should have drawn the slot already.
+                            // Just update last_pt to s_end and continue
+                            // But we need y at s_end
+                            let t = if (pt.x - last_pt.x).abs() > 0.001 {
+                                (s_end - last_pt.x) / (pt.x - last_pt.x)
+                            } else {
+                                0.0
+                            };
+                            let y_at_end = last_pt.y + t * (pt.y - last_pt.y);
+                            
+                            last_pt = Point::new(s_end, y_at_end);
+                            // We don't increment slot idx here because we might have just finished the slot we were inside?
+                            // No, if we were inside, we must have entered it.
+                            // If we entered it, we incremented idx.
+                            // Wait, if we entered it in previous segment, we incremented idx.
+                            // So current_slot_idx points to NEXT slot.
+                            // So s_center is NEXT slot.
+                            // So last_pt.x >= s_end check at top handles it?
+                            // No, s_end is NEXT slot's end.
+                            // If we are inside a slot, we need to know WHICH slot.
+                            // But we only track current_slot_idx.
+                            
+                            // If we are inside a slot, it means we processed the entry in a previous segment.
+                            // So current_slot_idx was incremented.
+                            // So `sorted_slots[current_slot_idx]` is the *next* slot.
+                            // So `s_start` is the *next* slot's start.
+                            // So `last_pt.x` should be < `s_start` (unless slots overlap or are very close).
+                            // So we shouldn't be "inside" the *current* slot (which is the next one).
+                            
+                            // So the `else` block (last_pt.x >= s_start) implies we are inside the *next* slot?
+                            // Yes.
+                            // This means we started inside the next slot without drawing the entry?
+                            // This happens if the path starts inside a slot.
+                            // In that case, we should probably just skip until we exit.
+                            
+                            if pt.x <= s_end {
+                                last_pt = pt;
+                                break;
+                            } else {
+                                // Exiting the slot we started inside
+                                // We can't draw the slot properly because we missed the start.
+                                // Just connect to exit?
+                                let t = if (pt.x - last_pt.x).abs() > 0.001 {
+                                    (s_end - last_pt.x) / (pt.x - last_pt.x)
+                                } else {
+                                    0.0
+                                };
+                                let y_at_end = last_pt.y + t * (pt.y - last_pt.y);
+                                last_pt = Point::new(s_end, y_at_end);
+                                current_slot_idx += 1;
+                                continue;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        new_path
+    }
+
+    fn draw_divider(
+        &self,
+        width: f32,
+        height: f32,
+        edges: &str,
+        start_x: f32,
+        start_y: f32,
+        slots: &[f32],
+        slot_from_top: bool,
+    ) -> Vec<Point> {
+        let mut path: Vec<Point> = Vec::new();
+        let edge_chars: Vec<char> = edges.chars().collect();
+        let kerf = self.params.burn;
+        let half_kerf = kerf / 2.0;
+        let slot_depth = height / 2.0;
+        let slot_width = self.t - kerf; // Slot is a hole, so subtract kerf? No, hole needs to be wider?
+        // If we want a hole of size T, we cut T-kerf? No.
+        // If we cut a line, the kerf makes the hole wider.
+        // So if we want hole T, we draw T-kerf.
+        // Yes.
+
+        // Helper to add point with offset check
+        fn add_point_to(path: &mut Vec<Point>, p: Point) {
+             if let Some(last) = path.last() {
+                if (p.x - last.x).abs() < 0.01 && (p.y - last.y).abs() < 0.01 {
+                    return;
+                }
+            }
+            path.push(p);
+        }
+
+        // Bottom edge (0)
+        if let Some(&c) = edge_chars.get(0) {
+            let mut base_path = if c == 'f' || c == 'F' {
+                self.draw_finger_edge(width, c == 'f')
+            } else {
+                vec![Point::new(0.0, -half_kerf), Point::new(width, -half_kerf)]
+            };
+            
+            if !slot_from_top && !slots.is_empty() {
+                base_path = self.apply_slots_to_path(base_path, slots, slot_depth, slot_width);
+            }
+            
+            for p in &base_path {
+                add_point_to(&mut path, Point::new(start_x + p.x, start_y + p.y));
+            }
+        }
+        add_point_to(&mut path, Point::new(start_x + width + half_kerf, start_y - half_kerf));
+
+        // Right edge (1)
+        if let Some(&c) = edge_chars.get(1) {
+            let base_path = if c == 'f' || c == 'F' {
+                self.draw_finger_edge(height, c == 'f')
+            } else {
+                vec![Point::new(0.0, -half_kerf), Point::new(height, -half_kerf)]
+            };
+            for p in &base_path {
+                add_point_to(&mut path, Point::new(start_x + width - p.y, start_y + p.x));
+            }
+        }
+        add_point_to(&mut path, Point::new(start_x + width + half_kerf, start_y + height + half_kerf));
+
+        // Top edge (2)
+        if let Some(&c) = edge_chars.get(2) {
+            let mut base_path = if c == 'F' || c == 'f' {
+                self.draw_finger_edge(width, c == 'f')
+            } else {
+                vec![Point::new(0.0, -half_kerf), Point::new(width, -half_kerf)]
+            };
+            
+            if slot_from_top && !slots.is_empty() {
+                // Slots go "into" the panel.
+                // For Top edge (rotated), "into" is +Y in local frame.
+                base_path = self.apply_slots_to_path(base_path, slots, slot_depth, slot_width);
+            }
+
+            for p in &base_path {
+                add_point_to(&mut path, Point::new(start_x + width - p.x, start_y + height - p.y));
+            }
+        }
+        add_point_to(&mut path, Point::new(start_x - half_kerf, start_y + height + half_kerf));
+
+        // Left edge (3)
+        if let Some(&c) = edge_chars.get(3) {
+            let base_path = if c == 'f' || c == 'F' {
+                self.draw_finger_edge(height, c == 'f')
+            } else {
+                vec![Point::new(0.0, -half_kerf), Point::new(height, -half_kerf)]
+            };
+            for p in &base_path {
+                add_point_to(&mut path, Point::new(start_x + p.y, start_y + height - p.x));
+            }
+        }
+        add_point_to(&mut path, Point::new(start_x - half_kerf, start_y - half_kerf));
+
+        if let Some(first) = path.first().cloned() {
+            add_point_to(&mut path, first);
+        }
+
+        path
+    }
+
+    fn draw_divider_slots(&mut self, start_x: f32, start_y: f32, length: f32, thickness: f32, vertical: bool) {
+        let settings = &self.params.finger_joint;
+        
+        let (fingers, mut leftover) = self.calc_fingers(length);
+        
+        let mut space = settings.space * self.t;
+        let mut finger = settings.finger * self.t;
+        let play = settings.play * self.t;
+        let kerf = self.params.burn;
+        
+        // Adjust for play (we are making holes, so they should be larger)
+        finger += play;
+        space -= play;
+        leftover -= play;
+        
+        // Hole dimension = Desired - Kerf
+        let slot_w = finger - kerf;
+        let slot_h = thickness - kerf;
+        
+        let mut pos = leftover / 2.0;
+        
+        for _ in 0..fingers {
+            let (x, y, w, h) = if vertical {
+                (start_x - slot_h / 2.0, start_y + pos, slot_h, slot_w)
+            } else {
+                (start_x + pos, start_y - slot_h / 2.0, slot_w, slot_h)
+            };
+            
+            let mut path = Vec::new();
+            path.push(Point::new(x, y));
+            path.push(Point::new(x + w, y));
+            path.push(Point::new(x + w, y + h));
+            path.push(Point::new(x, y + h));
+            path.push(Point::new(x, y));
+            
+            self.paths.push(path);
+            
+            pos += slot_w + kerf + space + kerf;
+        }
+    }
+
     pub fn generate(&mut self) -> Result<(), String> {
         self.paths.clear();
 
@@ -629,10 +922,21 @@ impl TabbedBoxMaker {
             format!("{}{}{}{}", c(b, 'f'), c(r, 'f'), c(t, 'f'), c(l, 'f'))
         };
 
+        let key_walls = self.params.key_divider_type == KeyDividerType::WallsAndFloor || self.params.key_divider_type == KeyDividerType::WallsOnly;
+        let key_floor = self.params.key_divider_type == KeyDividerType::WallsAndFloor || self.params.key_divider_type == KeyDividerType::FloorOnly;
+
         // Wall 1: Front (x × h)
         if has_front {
             let e = edges(has_bottom, has_right, has_top, has_left);
             self.paths.push(self.draw_rectangular_wall(x, h, &e, x_offset, y_offset));
+            
+            if self.params.dividers_x > 0 && key_walls {
+                let spacing_x = x / (self.params.dividers_x as f32 + 1.0);
+                for i in 1..=self.params.dividers_x {
+                    self.draw_divider_slots(x_offset + i as f32 * spacing_x, y_offset, h, self.t, true);
+                }
+            }
+            
             x_offset += x + spacing;
         }
 
@@ -640,6 +944,14 @@ impl TabbedBoxMaker {
         if has_right {
             let e = edges_side(has_bottom, has_back, has_top, has_front);
             self.paths.push(self.draw_rectangular_wall(y, h, &e, x_offset, y_offset));
+            
+            if self.params.dividers_y > 0 && key_walls {
+                let spacing_y = y / (self.params.dividers_y as f32 + 1.0);
+                for i in 1..=self.params.dividers_y {
+                    self.draw_divider_slots(x_offset + i as f32 * spacing_y, y_offset, h, self.t, true);
+                }
+            }
+
             y_offset += h + spacing;
             x_offset = 0.0;
         }
@@ -648,6 +960,14 @@ impl TabbedBoxMaker {
         if has_left {
             let e = edges_side(has_bottom, has_front, has_top, has_back);
             self.paths.push(self.draw_rectangular_wall(y, h, &e, x_offset, y_offset));
+            
+            if self.params.dividers_y > 0 && key_walls {
+                let spacing_y = y / (self.params.dividers_y as f32 + 1.0);
+                for i in 1..=self.params.dividers_y {
+                    self.draw_divider_slots(x_offset + i as f32 * spacing_y, y_offset, h, self.t, true);
+                }
+            }
+
             x_offset += y + spacing;
         }
 
@@ -655,6 +975,14 @@ impl TabbedBoxMaker {
         if has_back {
             let e = edges(has_bottom, has_left, has_top, has_right);
             self.paths.push(self.draw_rectangular_wall(x, h, &e, x_offset, y_offset));
+            
+            if self.params.dividers_x > 0 && key_walls {
+                let spacing_x = x / (self.params.dividers_x as f32 + 1.0);
+                for i in 1..=self.params.dividers_x {
+                    self.draw_divider_slots(x_offset + i as f32 * spacing_x, y_offset, h, self.t, true);
+                }
+            }
+
             x_offset += x + spacing;
         }
 
@@ -669,33 +997,79 @@ impl TabbedBoxMaker {
         if has_bottom {
             let e = edges_tb(has_front, has_right, has_back, has_left);
             self.paths.push(self.draw_rectangular_wall(x, y, &e, x_offset, y_offset));
+            
+            if key_floor {
+                if self.params.dividers_x > 0 {
+                    let spacing_x = x / (self.params.dividers_x as f32 + 1.0);
+                    for i in 1..=self.params.dividers_x {
+                        self.draw_divider_slots(x_offset + i as f32 * spacing_x, y_offset, y, self.t, true);
+                    }
+                }
+                if self.params.dividers_y > 0 {
+                    let spacing_y = y / (self.params.dividers_y as f32 + 1.0);
+                    for i in 1..=self.params.dividers_y {
+                        self.draw_divider_slots(x_offset, y_offset + i as f32 * spacing_y, x, self.t, false);
+                    }
+                }
+            }
+            x_offset += x + spacing;
         }
 
-        // Dividers (Placeholder for now, just generating panels if requested)
+        // Dividers
+        let div_edges_x = match self.params.key_divider_type {
+            KeyDividerType::WallsAndFloor => "ffef", // Bottom=f(Tab), Right=f(Tab), Top=e(Plain), Left=f(Tab)
+            KeyDividerType::WallsOnly => "efef",     // Bottom=e(Plain), Right=f(Tab), Top=e(Plain), Left=f(Tab)
+            KeyDividerType::FloorOnly => "feee",     // Bottom=f(Tab), Right=e(Plain), Top=e(Plain), Left=e(Plain)
+            KeyDividerType::None => "eeee",
+        };
+
+        // Calculate slot positions
+        let mut slots_x = Vec::new(); // For Y-dividers (spanning X)
         if self.params.dividers_x > 0 {
-            // Dividers along X axis (spanning Y)
-            // Dimensions: y x h
-            // Edges: f e f e (fingers on ends, plain top/bottom? No, usually fingers on bottom too)
-            // Let's assume fingers on Left/Right/Bottom. Top plain.
-            let div_edges = "FfeF"; // Bottom=F, Right=f, Top=e, Left=F
+             let spacing_x = x / (self.params.dividers_x as f32 + 1.0);
+             for i in 1..=self.params.dividers_x {
+                 slots_x.push(i as f32 * spacing_x);
+             }
+        }
+
+        let mut slots_y = Vec::new(); // For X-dividers (spanning Y)
+        if self.params.dividers_y > 0 {
+             let spacing_y = y / (self.params.dividers_y as f32 + 1.0);
+             for i in 1..=self.params.dividers_y {
+                 slots_y.push(i as f32 * spacing_y);
+             }
+        }
+
+        if self.params.dividers_x > 0 {
             for _ in 0..self.params.dividers_x {
+                 // X-divider (Width=Y). Slots at Y-positions (slots_y).
+                 // Slots from Top (Plain edge).
+                 self.paths.push(self.draw_divider(y, h, div_edges_x, x_offset, y_offset, &slots_y, true));
                  x_offset += y + spacing;
-                 self.paths.push(self.draw_rectangular_wall(y, h, div_edges, x_offset, y_offset));
             }
         }
 
         if self.params.dividers_y > 0 {
-            // Dividers along Y axis (spanning X)
-            // Dimensions: x x h
-            let div_edges = "FfeF";
             for _ in 0..self.params.dividers_y {
+                 // Y-divider (Width=X). Slots at X-positions (slots_x).
+                 // Slots from Bottom (Connecting edge).
+                 self.paths.push(self.draw_divider(x, h, div_edges_x, x_offset, y_offset, &slots_x, false));
                  x_offset += x + spacing;
-                 self.paths.push(self.draw_rectangular_wall(x, h, div_edges, x_offset, y_offset));
             }
         }
 
         if self.params.optimize_layout {
             self.pack_paths();
+        }
+
+        // Apply global offset to all paths
+        if self.params.offset_x != 0.0 || self.params.offset_y != 0.0 {
+            for path in &mut self.paths {
+                for point in path {
+                    point.x += self.params.offset_x;
+                    point.y += self.params.offset_y;
+                }
+            }
         }
 
         Ok(())
@@ -746,11 +1120,6 @@ impl TabbedBoxMaker {
         gcode.push_str("$H ; Home all axes\n");
         gcode.push_str("G10 L2 P1 X0 Y0 Z0 ; Clear G54 offset\n");
         gcode.push_str("G54 ; Select work coordinate system 1\n");
-        gcode.push_str(&format!(
-            "G0 X{:.1} Y{:.1} ; Move to work origin\n",
-            self.params.offset_x, self.params.offset_y
-        ));
-        gcode.push_str("G10 L20 P1 X0 Y0 Z0 ; Set current position as work zero\n");
         gcode.push_str(&format!(
             "G0 Z{:.2} F{:.0} ; Move to safe height\n\n",
             5.0, self.params.feed_rate

@@ -2,24 +2,26 @@ use gcodekit4::{
     init_logging, list_ports, BoxParameters, BoxType, CapabilityManager, Communicator,
     ConnectionDriver, ConnectionParams, ConsoleListener, DeviceConsoleManager, DeviceMessageType,
     FingerJointSettings, FingerStyle, FirmwareSettingsIntegration, GcodeEditor, JigsawPuzzleMaker,
-    PuzzleParameters, SerialCommunicator, SerialParity, SettingsCategory, SettingsController,
+    KeyDividerType, PuzzleParameters, SerialCommunicator, SerialParity, SettingsCategory, SettingsController,
     SettingsDialog, SettingsManager, SettingsPersistence, TabbedBoxMaker, BUILD_DATE, VERSION,
 };
+use gcodekit4_devicedb::{DeviceManager, DeviceUiController, DeviceProfileUiModel as DbDeviceProfile};
 use gcodekit4_ui::EditorBridge;
 use slint::{Model, VecModel};
 use std::cell::RefCell;
 #[allow(unused_imports)]
 use std::error::Error;
+use std::path::PathBuf;
 use std::rc::Rc;
 use tracing::warn;
 
 slint::include_modules!();
 
 slint::slint! {
-    export { TabbedBoxDialog } from "crates/gcodekit4-ui/ui_panels/tabbed_box_dialog.slint";
-    export { JigsawPuzzleDialog } from "crates/gcodekit4-ui/ui_panels/jigsaw_puzzle_dialog.slint";
-    export { LaserEngraverDialog } from "crates/gcodekit4-ui/ui_panels/laser_engraver_dialog.slint";
-    export { VectorEngraverDialog } from "crates/gcodekit4-ui/ui_panels/vector_engraver_dialog.slint";
+    export { TabbedBoxDialog } from "crates/gcodekit4-camtools/ui/tabbed_box_dialog.slint";
+    export { JigsawPuzzleDialog } from "crates/gcodekit4-camtools/ui/jigsaw_puzzle_dialog.slint";
+    export { LaserEngraverDialog } from "crates/gcodekit4-camtools/ui/laser_engraver_dialog.slint";
+    export { VectorEngraverDialog } from "crates/gcodekit4-camtools/ui/vector_engraver_dialog.slint";
     export { ErrorDialog } from "crates/gcodekit4-ui/ui_panels/error_dialog.slint";
 }
 
@@ -725,6 +727,237 @@ fn main() -> anyhow::Result<()> {
         let mut dialog = settings_dialog.borrow_mut();
         persistence.populate_dialog(&mut dialog);
         drop(dialog);
+    }
+
+    // Initialize Settings Controller
+    let settings_controller = Rc::new(SettingsController::new(
+        settings_dialog.clone(),
+        settings_persistence.clone(),
+    ));
+
+    // Initialize Device Manager
+    let device_manager = std::sync::Arc::new(DeviceManager::new(PathBuf::from("devices.json")));
+    if let Err(e) = device_manager.load() {
+        warn!("Failed to load device profiles: {}", e);
+    }
+    let device_ui_controller = Rc::new(DeviceUiController::new(
+        device_manager.clone(),
+    ));
+
+    // Bind Device Manager callbacks
+    {
+        let controller = device_ui_controller.clone();
+        let window_weak = main_window.as_weak();
+        main_window.on_load_device_profiles(move || {
+            let profiles = controller.get_ui_profiles();
+            let slint_profiles: Vec<DeviceProfileUiModel> = profiles.iter().map(|p| {
+                DeviceProfileUiModel {
+                    id: p.id.clone().into(),
+                    name: p.name.clone().into(),
+                    description: p.description.clone().into(),
+                    device_type: p.device_type.clone().into(),
+                    controller_type: p.controller_type.clone().into(),
+                    x_min: p.x_min.clone().into(),
+                    x_max: p.x_max.clone().into(),
+                    y_min: p.y_min.clone().into(),
+                    y_max: p.y_max.clone().into(),
+                    z_min: p.z_min.clone().into(),
+                    z_max: p.z_max.clone().into(),
+                    has_spindle: p.has_spindle,
+                    has_laser: p.has_laser,
+                    has_coolant: p.has_coolant,
+                    cnc_spindle_watts: p.cnc_spindle_watts.clone().into(),
+                    laser_watts: p.laser_watts.clone().into(),
+                    connection_type: p.connection_type.clone().into(),
+                    baud_rate: p.baud_rate.clone().into(),
+                    port: p.port.clone().into(),
+                    tcp_port: p.tcp_port.clone().into(),
+                    timeout_ms: p.timeout_ms.clone().into(),
+                    auto_reconnect: p.auto_reconnect,
+                    is_active: p.is_active,
+                }
+            }).collect();
+            
+            if let Some(window) = window_weak.upgrade() {
+                window.set_device_profiles(slint::ModelRc::new(VecModel::from(slint_profiles)));
+            }
+        });
+    }
+    
+    {
+        let controller = device_ui_controller.clone();
+        let window_weak = main_window.as_weak();
+        main_window.on_add_device_profile(move || {
+            match controller.create_new_profile() {
+                Ok(new_id) => {
+                    if let Some(window) = window_weak.upgrade() {
+                        window.invoke_load_device_profiles();
+                        
+                        // Find the index of the new profile
+                        let profiles = controller.get_ui_profiles();
+                        if let Some(index) = profiles.iter().position(|p| p.id == new_id) {
+                            window.set_selected_device_index(-1);
+                            let window_weak_2 = window_weak.clone();
+                            let _ = slint::invoke_from_event_loop(move || {
+                                if let Some(window) = window_weak_2.upgrade() {
+                                    window.set_selected_device_index(index as i32);
+                                }
+                            });
+                        }
+                    }
+                }
+                Err(e) => {
+                    warn!("Failed to create new profile: {}", e);
+                    if let Some(window) = window_weak.upgrade() {
+                        window.invoke_load_device_profiles();
+                    }
+                }
+            }
+        });
+    }
+
+    {
+        let controller = device_ui_controller.clone();
+        let window_weak = main_window.as_weak();
+        main_window.on_save_device_profile(move |profile| {
+            let db_profile = DbDeviceProfile {
+                id: profile.id.into(),
+                name: profile.name.into(),
+                description: profile.description.into(),
+                device_type: profile.device_type.into(),
+                controller_type: profile.controller_type.into(),
+                x_min: profile.x_min.into(),
+                x_max: profile.x_max.into(),
+                y_min: profile.y_min.into(),
+                y_max: profile.y_max.into(),
+                z_min: profile.z_min.into(),
+                z_max: profile.z_max.into(),
+                has_spindle: profile.has_spindle,
+                has_laser: profile.has_laser,
+                has_coolant: profile.has_coolant,
+                cnc_spindle_watts: profile.cnc_spindle_watts.into(),
+                laser_watts: profile.laser_watts.into(),
+                connection_type: profile.connection_type.into(),
+                baud_rate: profile.baud_rate.into(),
+                port: profile.port.into(),
+                tcp_port: profile.tcp_port.into(),
+                timeout_ms: profile.timeout_ms.into(),
+                auto_reconnect: profile.auto_reconnect,
+                is_active: profile.is_active,
+            };
+            
+            if let Err(e) = controller.update_profile_from_ui(db_profile) {
+                warn!("Failed to save profile: {}", e);
+            }
+            
+            // Reload profiles to update UI
+            if let Some(window) = window_weak.upgrade() {
+                window.invoke_load_device_profiles();
+            }
+        });
+    }
+
+    {
+        let controller = device_ui_controller.clone();
+        let window_weak = main_window.as_weak();
+        main_window.on_delete_device_profile(move |id| {
+            if let Err(e) = controller.delete_profile(&id) {
+                warn!("Failed to delete profile: {}", e);
+            }
+            if let Some(window) = window_weak.upgrade() {
+                window.invoke_load_device_profiles();
+            }
+        });
+    }
+
+    {
+        let controller = device_ui_controller.clone();
+        let window_weak = main_window.as_weak();
+        main_window.on_set_active_device_profile(move |id| {
+            if let Err(e) = controller.set_active_profile(&id) {
+                warn!("Failed to set active profile: {}", e);
+            }
+            if let Some(window) = window_weak.upgrade() {
+                window.invoke_load_device_profiles();
+            }
+        });
+    }
+
+    // Bind Settings Controller callbacks
+    {
+        let controller = settings_controller.clone();
+        let window_weak = main_window.as_weak();
+        main_window.on_config_retrieve_settings(move || {
+            if let Some(window) = window_weak.upgrade() {
+                let category_str = window.get_settings_category();
+                let category = if category_str == "All" {
+                    None
+                } else {
+                    Some(SettingsController::get_category_from_string(&category_str))
+                };
+                
+                let settings = controller.get_settings_for_ui(category);
+                
+                let slint_settings: Vec<SettingItem> = settings.iter().map(|s| {
+                    SettingItem {
+                        id: s.id.clone().into(),
+                        name: s.name.clone().into(),
+                        value: s.value.clone().into(),
+                        value_type: s.value_type.clone().into(),
+                        category: s.category.clone().into(),
+                        description: s.description.clone().into(),
+                        options: slint::ModelRc::new(VecModel::from(
+                            s.options.iter().map(|o| o.clone().into()).collect::<Vec<slint::SharedString>>()
+                        )),
+                        current_index: s.current_index,
+                    }
+                }).collect();
+                
+                window.set_current_settings(slint::ModelRc::new(VecModel::from(slint_settings)));
+            }
+        });
+    }
+    
+    {
+        let controller = settings_controller.clone();
+        main_window.on_menu_settings_save(move || {
+            match controller.save() {
+                Ok(_) => warn!("Settings saved to file"),
+                Err(e) => warn!("Failed to save settings: {}", e),
+            }
+        });
+    }
+    
+    {
+        let controller = settings_controller.clone();
+        let window_weak = main_window.as_weak();
+        main_window.on_menu_settings_restore_defaults(move || {
+             controller.restore_defaults();
+             if let Some(window) = window_weak.upgrade() {
+                 window.invoke_config_retrieve_settings();
+             }
+        });
+    }
+    
+    {
+        let controller = settings_controller.clone();
+        let window_weak = main_window.as_weak();
+        main_window.on_update_setting(move |id, value| {
+            controller.update_setting(&id, &value);
+            // Refresh UI
+            if let Some(window) = window_weak.upgrade() {
+                 window.invoke_config_retrieve_settings();
+            }
+        });
+    }
+    
+    {
+        let window_weak = main_window.as_weak();
+        main_window.on_settings_category_selected(move |_category| {
+            if let Some(window) = window_weak.upgrade() {
+                 window.invoke_config_retrieve_settings();
+            }
+        });
     }
 
     // Set up refresh-ports callback
@@ -4651,12 +4884,21 @@ fn main() -> anyhow::Result<()> {
             dialog.set_space_width(main_win.get_tbox_space_width());
             dialog.set_surrounding_spaces(main_win.get_tbox_surrounding_spaces());
             dialog.set_play(main_win.get_tbox_play());
+            dialog.set_extra_length(main_win.get_tbox_extra_length());
+            dialog.set_dimple_height(main_win.get_tbox_dimple_height());
+            dialog.set_dimple_length(main_win.get_tbox_dimple_length());
             dialog.set_finger_style(main_win.get_tbox_finger_style());
             dialog.set_box_type(main_win.get_tbox_box_type());
             dialog.set_outside_dimensions(main_win.get_tbox_outside_dims());
             dialog.set_laser_passes(main_win.get_tbox_laser_passes());
             dialog.set_laser_power(main_win.get_tbox_laser_power());
             dialog.set_feed_rate(main_win.get_tbox_feed_rate());
+            dialog.set_offset_x(main_win.get_tbox_offset_x());
+            dialog.set_offset_y(main_win.get_tbox_offset_y());
+            dialog.set_dividers_x(main_win.get_tbox_dividers_x());
+            dialog.set_dividers_y(main_win.get_tbox_dividers_y());
+            dialog.set_optimize_layout(main_win.get_tbox_optimize_layout());
+            dialog.set_key_divider_type(main_win.get_tbox_key_divider_type());
 
             // Cancel button callback
             let dialog_weak_cancel = dialog.as_weak();
@@ -4683,6 +4925,9 @@ fn main() -> anyhow::Result<()> {
                         let surrounding_spaces =
                             dlg.get_surrounding_spaces().parse::<f32>().unwrap_or(2.0);
                         let play = dlg.get_play().parse::<f32>().unwrap_or(0.0);
+                        let extra_length = dlg.get_extra_length().parse::<f32>().unwrap_or(0.0);
+                        let dimple_height = dlg.get_dimple_height().parse::<f32>().unwrap_or(0.0);
+                        let dimple_length = dlg.get_dimple_length().parse::<f32>().unwrap_or(0.0);
                         let finger_style = FingerStyle::from(dlg.get_finger_style());
                         let box_type = BoxType::from(dlg.get_box_type());
                         let outside = dlg.get_outside_dimensions();
@@ -4694,6 +4939,10 @@ fn main() -> anyhow::Result<()> {
                             dlg.get_feed_rate().parse::<f32>().unwrap_or(500.0).max(1.0);
                         let offset_x = dlg.get_offset_x().parse::<f32>().unwrap_or(10.0);
                         let offset_y = dlg.get_offset_y().parse::<f32>().unwrap_or(10.0);
+                        let dividers_x = dlg.get_dividers_x().parse::<u32>().unwrap_or(0);
+                        let dividers_y = dlg.get_dividers_y().parse::<u32>().unwrap_or(0);
+                        let optimize_layout = dlg.get_optimize_layout();
+                        let key_divider_type = KeyDividerType::from(dlg.get_key_divider_type());
 
                         // Save values back to main window for next time
                         window.set_tbox_x(dlg.get_box_x());
@@ -4705,6 +4954,9 @@ fn main() -> anyhow::Result<()> {
                         window.set_tbox_space_width(dlg.get_space_width());
                         window.set_tbox_surrounding_spaces(dlg.get_surrounding_spaces());
                         window.set_tbox_play(dlg.get_play());
+                        window.set_tbox_extra_length(dlg.get_extra_length());
+                        window.set_tbox_dimple_height(dlg.get_dimple_height());
+                        window.set_tbox_dimple_length(dlg.get_dimple_length());
                         window.set_tbox_finger_style(dlg.get_finger_style());
                         window.set_tbox_box_type(dlg.get_box_type());
                         window.set_tbox_outside_dims(dlg.get_outside_dimensions());
@@ -4713,14 +4965,20 @@ fn main() -> anyhow::Result<()> {
                         window.set_tbox_feed_rate(dlg.get_feed_rate());
                         window.set_tbox_offset_x(dlg.get_offset_x());
                         window.set_tbox_offset_y(dlg.get_offset_y());
+                        window.set_tbox_dividers_x(dlg.get_dividers_x());
+                        window.set_tbox_dividers_y(dlg.get_dividers_y());
+                        window.set_tbox_optimize_layout(dlg.get_optimize_layout());
+                        window.set_tbox_key_divider_type(dlg.get_key_divider_type());
 
                         let finger_joint = FingerJointSettings {
                             finger: finger_width,
                             space: space_width,
                             surrounding_spaces,
                             play,
-                            extra_length: 0.0,
+                            extra_length,
                             style: finger_style,
+                            dimple_height,
+                            dimple_length,
                         };
 
                         let params = BoxParameters {
@@ -4737,6 +4995,10 @@ fn main() -> anyhow::Result<()> {
                             feed_rate,
                             offset_x,
                             offset_y,
+                            dividers_x,
+                            dividers_y,
+                            optimize_layout,
+                            key_divider_type,
                         };
 
                         // Show progress and spawn background thread
@@ -5767,6 +6029,7 @@ fn main() -> anyhow::Result<()> {
                     render_origin_to_path(&visualizer, canvas_width as u32, canvas_height as u32);
                 window.set_visualization_grid_data(slint::SharedString::from(grid_data));
                 window.set_visualizer_grid_size(slint::SharedString::from(format!("{}mm", grid_size)));
+                window.set_visualizer_bounding_box_info(slint::SharedString::from(""));
                 window.set_visualization_origin_data(slint::SharedString::from(origin_data));
                 return;
             }
@@ -5776,7 +6039,7 @@ fn main() -> anyhow::Result<()> {
             // Spawn rendering thread
             let content_owned = content.to_string();
 
-            // Message format: (progress, status, path_data, rapid_moves_data, grid_data, origin_data, grid_size)
+            // Message format: (progress, status, path_data, rapid_moves_data, grid_data, origin_data, grid_size, bbox_info)
             let (tx, rx) = std::sync::mpsc::channel::<(
                 f32,
                 String,
@@ -5785,6 +6048,7 @@ fn main() -> anyhow::Result<()> {
                 Option<String>,
                 Option<String>,
                 Option<f32>,
+                Option<String>,
             )>();
             let window_weak_render = window_weak.clone();
             let zoom_scale_render = zoom_for_refresh.clone();
@@ -5802,7 +6066,7 @@ fn main() -> anyhow::Result<()> {
                     render_toolpath_to_path, Visualizer2D,
                 };
 
-                let _ = tx.send((0.1, "Parsing G-code...".to_string(), None, None, None, None, None));
+                let _ = tx.send((0.1, "Parsing G-code...".to_string(), None, None, None, None, None, None));
 
                 let mut visualizer = Visualizer2D::new();
                 visualizer.show_grid = show_grid;
@@ -5823,7 +6087,7 @@ fn main() -> anyhow::Result<()> {
                     visualizer.y_offset = offsets.1;
                 }
 
-                let _ = tx.send((0.3, "Rendering...".to_string(), None, None, None, None, None));
+                let _ = tx.send((0.3, "Rendering...".to_string(), None, None, None, None, None, None));
 
                 // Generate canvas path data
                 let path_data =
@@ -5841,6 +6105,14 @@ fn main() -> anyhow::Result<()> {
                 let origin_data =
                     render_origin_to_path(&visualizer, canvas_width as u32, canvas_height as u32);
 
+                // Calculate bounding box info
+                let bbox_info = if let Some((min_x, max_x, min_y, max_y)) = visualizer.get_cutting_bounds() {
+                    let width = max_x - min_x;
+                    let height = max_y - min_y;
+                    Some(format!("W: {:.1}mm H: {:.1}mm at X:{:.1} Y:{:.1}", width, height, min_x, min_y))
+                } else {
+                    None
+                };
 
                 if !path_data.is_empty() || !rapid_moves_data.is_empty() || !grid_data.is_empty() {
                     let _ = tx.send((
@@ -5851,10 +6123,11 @@ fn main() -> anyhow::Result<()> {
                         Some(grid_data),
                         Some(origin_data),
                         Some(grid_size),
+                        bbox_info,
                     ));
                 } else {
                     tracing::error!("ERROR: no render data generated!");
-                    let _ = tx.send((1.0, "Error: no data".to_string(), None, None, None, None, None));
+                    let _ = tx.send((1.0, "Error: no data".to_string(), None, None, None, None, None, None));
                 }
                 })) {
                     tracing::error!("Render thread panicked: {:?}", e);
@@ -5871,6 +6144,7 @@ fn main() -> anyhow::Result<()> {
                     grid_data,
                     origin_data,
                     grid_size,
+                    bbox_info,
                 )) = rx.recv()
                 {
                     let window_handle = window_weak_render.clone();
@@ -5879,6 +6153,7 @@ fn main() -> anyhow::Result<()> {
                     let rapid_moves_clone = rapid_moves_data.clone();
                     let grid_clone = grid_data.clone();
                     let origin_clone = origin_data.clone();
+                    let bbox_info_clone = bbox_info.clone();
                     let zoom_for_closure = zoom_scale_for_msg.clone();
                     let pan_for_closure = pan_offset_for_msg.clone();
 
@@ -5908,6 +6183,12 @@ fn main() -> anyhow::Result<()> {
                             }
                             if let Some(size) = grid_size {
                                 window.set_visualizer_grid_size(slint::SharedString::from(format!("{}mm", size)));
+                            }
+                            if let Some(info) = bbox_info_clone {
+                                window.set_visualizer_bounding_box_info(slint::SharedString::from(info));
+                            } else if progress == 1.0 {
+                                // Clear if no info and finished
+                                window.set_visualizer_bounding_box_info(slint::SharedString::from(""));
                             }
 
                             // Update indicator properties

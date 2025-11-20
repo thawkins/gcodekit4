@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.33.6-alpha] - 2025-11-20
+
+### Added
+- Added bounding box display to G-code visualizer (exact dimensions and offset)
+
+### Fixed
+- **Tabbed Box Generator**:
+  - Fixed missing halving slots in dividers when multiple slots are present in a single segment.
+  - Fixed issue with X divider positioning overlapping with other parts in Tabbed Box Generator.
+  - Corrected `apply_slots_to_path` logic to handle multiple intersections properly.
+  - Ensures all slots are generated for complex divider configurations (e.g., 2x2 grids).
+  - Fixed issue where X and Y offsets were ignored in Tabbed Box Generator.
+  - Fixed inconsistent offset application in Tabbed Box Generator by applying offset to coordinates directly instead of using G10 L20.
+
 ## [0.33.0-alpha] - 2025-11-20
 
 ### Added
@@ -25,6 +39,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Updated Tabbed Box Generator to use `extra_length` and `burn` parameters for accurate dimensions.
+
+## [0.33.5-alpha] - 2025-11-20
+
+### Added
+- **Tabbed Box Generator Phase 3 (Dividers)**:
+  - Added `KeyDividerType` support for keying dividers into walls and floor.
+  - Options: `WallsAndFloor`, `WallsOnly`, `FloorOnly`, `None`.
+  - Implemented slot generation in main panels (Front, Back, Left, Right, Bottom) to accept divider tabs.
+  - Added cross-divider slots (halving joints) for intersecting dividers.
+  - Updated UI to include "Divider Keying" selection.
+  - Updated `BoxParameters` and `TabbedBoxMaker` to handle divider keying logic.
+  - Fixed divider edge types to correctly use tabs for connections.
 
 ## [0.33.4-alpha] - 2025-11-20
 

@@ -1494,3 +1494,35 @@ See [FIRMWARE_CAPABILITIES_DATABASE.md](docs/FIRMWARE_CAPABILITIES_DATABASE.md) 
 - Removed all eprintln! debug statements
 - Cleaner console output
 
+
+## Device Database (DeviceDB)
+- **New Crate**: `gcodekit4-devicedb`
+- **Functionality**: Manages device profiles for CNC, Laser, and 3D Printers.
+- **Properties**:
+  - Workspace dimensions (X, Y, Z)
+  - Device type and controller type
+  - Connection settings (Port, Baud rate)
+  - Capabilities (Spindle watts, Laser watts)
+- **UI**: Dedicated tab for managing devices with CRUD operations.
+- **Persistence**: Profiles saved to `devices.json`.
+
+## Settings System Refactor
+- **New Crate**: `gcodekit4-settings`
+- **Architecture**: Centralized settings management decoupled from main UI.
+- **UI**: Improved Settings Dialog with categorized tabs.
+- **Migration**: General settings moved to DeviceDB where appropriate (e.g., connection settings).
+
+## Tabbed Box Generator (CAM Tool)
+- **Location**: Moved to `gcodekit4-camtools`.
+- **New Features**:
+  - **Dividers**: Configurable X and Y dividers with slot generation.
+  - **Keying**: Options for keying dividers into walls and floor (WallsAndFloor, WallsOnly, FloorOnly, None).
+  - **Dimples**: Optional dimples on tabs for friction fit (Drill point or Circle).
+  - **Box Types**: Support for Box with Top, Box without Top, and Tray (separate parts).
+  - **Layout Optimization**: 'Pack Paths' feature to minimize material usage.
+  - **UI**: Scrollable tabs using `Flickable` for better accessibility on small screens.
+
+## Visualizer Improvements
+- **Rendering**: Toolpaths now rendered with single-pixel wide lines for clarity at any zoom level.
+- **Grid**: Dynamic grid sizing that covers the entire canvas.
+- **Info Display**: Added bounding box dimensions and offset information to the visualizer toolbar.

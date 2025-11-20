@@ -19,7 +19,8 @@ import { MaterialsManager, MaterialData } from "ui_panels/materials_manager.slin
 import { ToolsManager, ToolData } from "ui_panels/tools_manager.slint";
 import { MainMenu } from "ui/ui_components/mainmenu.slint";
 import { SettingsDialog, SettingItem } from "../gcodekit4-settings/ui/settings_dialog.slint";
-import { TabbedBoxDialog } from "ui_panels/tabbed_box_dialog.slint";
+import { DeviceManagerPanel, DeviceProfileUiModel } from "../gcodekit4-devicedb/ui/device_manager.slint";
+import { TabbedBoxDialog } from "../gcodekit4-camtools/ui/tabbed_box_dialog.slint";
 
 export struct PortInfo {
     port: string,
@@ -131,6 +132,7 @@ export component MainWindow inherits Window {
     in property <float> visualizer-y-offset: 0.0;
     in property <float> visualizer-zoom-scale: 1.0;
     in property <string> visualizer-grid-size: "10mm";
+    in property <string> visualizer-bounding-box-info: "";
     in-out property <bool> visualizer-show-grid: true;
     in-out property <bool> visualizer-show-rapid-moves: true;
     in-out property <int> gcode-focus-trigger: 0;  // Incrementing this triggers editor focus
@@ -174,6 +176,11 @@ export component MainWindow inherits Window {
     // CNC Tools Manager properties
     in-out property <[ToolData]> cnc_tools: [];
     
+    // Device Manager properties
+    in-out property <[DeviceProfileUiModel]> device-profiles: [];
+    in-out property <DeviceProfileUiModel> active-device-profile;
+    in-out property <int> selected-device-index: -1;
+    
     // Tabbed Box Maker properties (boxes.py algorithm)
     in-out property <string> tbox-x: "100.0";
     in-out property <string> tbox-y: "100.0";
@@ -192,6 +199,13 @@ export component MainWindow inherits Window {
     in-out property <string> tbox-feed-rate: "500";
     in-out property <string> tbox-offset-x: "10.0";
     in-out property <string> tbox-offset-y: "10.0";
+    in-out property <string> tbox-extra-length: "0.0";
+    in-out property <string> tbox-dimple-height: "0.0";
+    in-out property <string> tbox-dimple-length: "0.0";
+    in-out property <string> tbox-dividers-x: "0";
+    in-out property <string> tbox-dividers-y: "0";
+    in-out property <bool> tbox-optimize-layout: false;
+    in-out property <int> tbox-key-divider-type: 0;
     
     // Jigsaw Puzzle properties
     in-out property <string> puzzle-width: "200.0";
@@ -272,6 +286,13 @@ export component MainWindow inherits Window {
     callback search_tools(string);
     callback filter_by_tool_type(string);
     callback import_gtc_package(string);
+    
+    // Device Manager callbacks
+    callback load-device-profiles();
+    callback add-device-profile();
+    callback save-device-profile(DeviceProfileUiModel);
+    callback delete-device-profile(string);
+    callback set-active-device-profile(string);
     
     // Configuration settings callbacks
     callback config-retrieve-settings();
@@ -417,6 +438,15 @@ export component MainWindow inherits Window {
                     if (current-view != "device-console") {
                         current-view = "device-console";
                         root.menu-view-device-console();
+                    }
+                }
+            }
+            MenuItem {
+                title: current-view == "device-manager" ? @tr("✓ Device Manager") : @tr("Device Manager");
+                activated => {
+                    if (current-view != "device-manager") {
+                        current-view = "device-manager";
+                        root.load-device-profiles();
                     }
                 }
             }
@@ -601,6 +631,31 @@ export component MainWindow inherits Window {
                                 mouse-cursor: pointer;
                                 clicked => {
                                     current-view = "device-info";
+                                }
+                            }
+                        }
+
+                        // Device Manager Tab
+                        Rectangle {
+                            width: 130px;
+                            height: 32px;
+                            background: current-view == "device-manager" ? #34495e : #3d5470;
+                            border-radius: 3px;
+                            
+                            Text {
+                                text: "🖥️ Device Manager";
+                                color: current-view == "device-manager" ? white : #bdc3c7;
+                                font-size: 12px;
+                                font-weight: current-view == "device-manager" ? 700 : 400;
+                                vertical-alignment: center;
+                                horizontal-alignment: center;
+                            }
+                            
+                            TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => {
+                                    current-view = "device-manager";
+                                    root.load-device-profiles();
                                 }
                             }
                         }
@@ -961,6 +1016,29 @@ export component MainWindow inherits Window {
                     device-name: root.device-name;
                     capabilities: root.device-capabilities;
                 }
+
+                // Device Manager View
+                if current-view == "device-manager" : DeviceManagerPanel {
+                    profiles: root.device-profiles;
+                    active-profile: root.active-device-profile;
+                    selected-index <=> root.selected-device-index;
+                    
+                    add-profile => {
+                        root.add-device-profile();
+                    }
+
+                    save-profile(profile) => {
+                        root.save-device-profile(profile);
+                    }
+                    
+                    delete-profile(id) => {
+                        root.delete-device-profile(id);
+                    }
+                    
+                    set-active-profile(id) => {
+                        root.set-active-device-profile(id);
+                    }
+                }
                 
                 // Configuration Settings View
                 if current-view == "config-settings" : config-panel := ConfigSettingsPanel {
@@ -1034,6 +1112,7 @@ export component MainWindow inherits Window {
                         y-offset: root.visualizer-y-offset;
                         zoom-scale: root.visualizer-zoom-scale;
                         grid-size: root.visualizer-grid-size;
+                        bounding-box-info: root.visualizer-bounding-box-info;
                         show-grid <=> root.visualizer-show-grid;
                         show-rapid-moves <=> root.visualizer-show-rapid-moves;
                         

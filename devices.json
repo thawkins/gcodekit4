@@ -1,0 +1,44 @@
+{
+  "active_id": "7a8b5f64-3bbb-4c4f-ae98-9ea1e519dfd4",
+  "profiles": [
+    {
+      "a_axis": {
+        "enabled": false,
+        "max": 360.0,
+        "min": 0.0
+      },
+      "auto_reconnect": true,
+      "baud_rate": 115200,
+      "cnc_spindle_watts": 500.0,
+      "connection_type": "Serial",
+      "controller_type": "Grbl",
+      "description": "Small portable Laser Engraver/Cutter",
+      "device_type": "LaserCutter",
+      "has_coolant": false,
+      "has_laser": true,
+      "has_spindle": false,
+      "id": "7a8b5f64-3bbb-4c4f-ae98-9ea1e519dfd4",
+      "laser_watts": 4.5,
+      "max_feed_rate": 1000.0,
+      "name": "Dimifun D9",
+      "port": "Auto",
+      "tcp_port": 23,
+      "timeout_ms": 5000,
+      "x_axis": {
+        "enabled": true,
+        "max": 200.0,
+        "min": 130.0
+      },
+      "y_axis": {
+        "enabled": true,
+        "max": 200.0,
+        "min": 150.0
+      },
+      "z_axis": {
+        "enabled": true,
+        "max": 100.0,
+        "min": 0.0
+      }
+    }
+  ]
+}

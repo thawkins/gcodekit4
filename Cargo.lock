@@ -1973,7 +1973,7 @@ dependencies = [
 
 [[package]]
 name = "gcodekit4"
-version = "0.33.0-alpha"
+version = "0.33.6-alpha"
 dependencies = [
  "anyhow",
  "arboard",
@@ -1982,7 +1982,9 @@ dependencies = [
  "gcodekit4-communication",
  "gcodekit4-core",
  "gcodekit4-designer",
+ "gcodekit4-devicedb",
  "gcodekit4-gcodeeditor",
+ "gcodekit4-settings",
  "gcodekit4-ui",
  "gcodekit4-visualizer",
  "image 0.25.8",
@@ -1998,7 +2000,7 @@ dependencies = [
 
 [[package]]
 name = "gcodekit4-camtools"
-version = "0.33.0-alpha"
+version = "0.33.6-alpha"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2017,7 +2019,7 @@ dependencies = [
 
 [[package]]
 name = "gcodekit4-communication"
-version = "0.33.0-alpha"
+version = "0.33.6-alpha"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2033,7 +2035,7 @@ dependencies = [
 
 [[package]]
 name = "gcodekit4-core"
-version = "0.33.0-alpha"
+version = "0.33.6-alpha"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2050,7 +2052,7 @@ dependencies = [
 
 [[package]]
 name = "gcodekit4-designer"
-version = "0.33.0-alpha"
+version = "0.33.6-alpha"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2069,8 +2071,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "gcodekit4-devicedb"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "serde",
+ "serde_json",
+ "slint",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tracing",
+ "uuid 1.18.1",
+]
+
+[[package]]
 name = "gcodekit4-gcodeeditor"
-version = "0.33.0-alpha"
+version = "0.33.6-alpha"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2084,7 +2100,7 @@ dependencies = [
 
 [[package]]
 name = "gcodekit4-settings"
-version = "0.33.0-alpha"
+version = "0.33.6-alpha"
 dependencies = [
  "anyhow",
  "dirs",
@@ -2097,7 +2113,7 @@ dependencies = [
 
 [[package]]
 name = "gcodekit4-ui"
-version = "0.33.0-alpha"
+version = "0.33.6-alpha"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2107,6 +2123,7 @@ dependencies = [
  "gcodekit4-communication",
  "gcodekit4-core",
  "gcodekit4-designer",
+ "gcodekit4-devicedb",
  "gcodekit4-gcodeeditor",
  "gcodekit4-settings",
  "gcodekit4-visualizer",
@@ -2124,7 +2141,7 @@ dependencies = [
 
 [[package]]
 name = "gcodekit4-visualizer"
-version = "0.33.0-alpha"
+version = "0.33.6-alpha"
 dependencies = [
  "anyhow",
  "chrono",
