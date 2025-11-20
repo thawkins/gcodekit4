@@ -5,6 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.33.0-alpha] - 2025-11-20
+
+### Added
+- **Tabbed Box Generator**:
+    -   Added `optimize_layout` option to pack parts tightly using a shelf packing algorithm.
+    -   Added UI checkbox for layout optimization.
+    -   Fixed type inference error in packing algorithm.
+- **Tabbed Box Maker Phase 2**
+  - Added "Dogbone" finger style for CNC machining (corner overcuts)
+  - Added support for internal dividers (X and Y axis)
+  - Updated UI to include Divider inputs and Tool Diameter label
+  - Added "Extra Length" setting to Tabbed Box Generator UI.
+
+### Fixed
+- Fixed "No Top" logic in Tabbed Box Generator (skips top panel and adjusts edge styles).
+- Implemented `extra_length` (protrusion) and `burn` (kerf) compensation in Tabbed Box Generator.
+- Fixed type annotation error in `tabbed_box.rs`.
+
+### Changed
+- Updated Tabbed Box Generator to use `extra_length` and `burn` parameters for accurate dimensions.
+
+## [0.33.4-alpha] - 2025-11-20
+
+### Added
+- **Tabbed Box Generator Phase 3**:
+  - Added support for all Box Types: Full Box, No Top, No Bottom, No Sides, No Front/Back, No Left/Right.
+  - Added support for Tab Dimples (friction fit bumps) with configurable height and length.
+  - Added `dimple_height` and `dimple_length` parameters to UI.
+  - Updated `BoxType` enum to match Python implementation.
+  - Fixed path continuity issues (closed loops) and Left edge finger direction.
+
+## [0.33.3-alpha] - 2025-11-20
+
+### Added
+- **Device Profile Management**
+  - Added Device Manager tab for managing machine profiles
+  - Created `gcodekit4-devicedb` crate for device profile management
+  - Implemented CRUD operations for device profiles
+  - Added "Set as Active" functionality to switch between machine configurations
+  - Integrated Device Manager into main UI with dedicated tab
+
+### Fixed
+- **Settings System**
+  - Fixed Settings Controller integration in main application
+  - Correctly bound Settings Dialog callbacks to controller logic
+  - Ensured settings are properly saved and loaded
+
 ## [0.33.2-alpha] - 2025-11-20
 
 ### Changed
