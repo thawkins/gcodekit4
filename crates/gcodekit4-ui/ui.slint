@@ -169,6 +169,10 @@ export component MainWindow inherits Window {
     in property <float> designer-selected-shape-h: 0.0;
     in property <int> designer-selected-shape-type: 0;
     in property <float> designer-selected-shape-radius: 5.0;
+    in property <bool> designer-selected-shape-is-pocket: false;
+    in property <float> designer-selected-shape-pocket-depth: 0.0;
+    in property <string> designer-selected-shape-text-content: "";
+    in property <float> designer-selected-shape-font-size: 12.0;
     
     // Materials Manager properties
     in-out property <[MaterialData]> materials: [];
@@ -336,6 +340,8 @@ export component MainWindow inherits Window {
     callback designer-set-shift-pressed(bool);              // Shift key state
     callback designer-save-shape-properties();              // Save all properties
     callback designer-update-shape-property(int, float);    // property_id, value
+    callback designer-update-shape-property-bool(int, bool); // property_id, value
+    callback designer-update-shape-property-string(int, string); // property_id, value
     callback designer-update-feed-rate(float);
     callback designer-update-spindle-speed(float);
     callback designer-update-tool-diameter(float);
@@ -1192,6 +1198,10 @@ export component MainWindow inherits Window {
                     selected_shape_h: root.designer-selected-shape-h;
                     selected_shape_type: root.designer-selected-shape-type;
                     selected_shape_radius: root.designer-selected-shape-radius;
+                    selected_shape_is_pocket: root.designer-selected-shape-is-pocket;
+                    selected_shape_pocket_depth: root.designer-selected-shape-pocket-depth;
+                    selected_shape_text_content: root.designer-selected-shape-text-content;
+                    selected_shape_font_size: root.designer-selected-shape-font-size;
                     
                     set_mode(m) => {
                         root.designer-set-mode(m);
@@ -1275,6 +1285,12 @@ export component MainWindow inherits Window {
                     
                     update_shape_property(prop_id, value) => {
                         root.designer-update-shape-property(prop_id, value);
+                    }
+                    update_shape_property_bool(prop_id, value) => {
+                        root.designer-update-shape-property-bool(prop_id, value);
+                    }
+                    update_shape_property_string(prop_id, value) => {
+                        root.designer-update-shape-property-string(prop_id, value);
                     }
                     
                     update_feed_rate(rate) => {

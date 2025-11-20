@@ -388,6 +388,7 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
                 gcodekit4::ShapeType::Polygon => 4,
                 gcodekit4::ShapeType::RoundRectangle => 5,
                 gcodekit4::ShapeType::Path => 6,
+                gcodekit4::ShapeType::Text => 7,
             };
             crate::DesignerShape {
                 id: obj.id as i32,
@@ -413,13 +414,46 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
     window.set_designer_shapes(slint::ModelRc::from(shapes_model));
 
     // Update shape indicator with selected shape info
-    if let Some(selected_shape) = shapes.iter().find(|s| s.selected) {
-        window.set_designer_selected_shape_x(selected_shape.x);
-        window.set_designer_selected_shape_y(selected_shape.y);
-        window.set_designer_selected_shape_w(selected_shape.width);
-        window.set_designer_selected_shape_h(selected_shape.height);
-        window.set_designer_selected_shape_type(selected_shape.shape_type);
-        window.set_designer_selected_shape_radius(selected_shape.radius);
+    if let Some(id) = state.canvas.selected_id() {
+        if let Some(obj) = state.canvas.shapes().iter().find(|o| o.id == id) {
+            let (x1, y1, x2, y2) = obj.shape.bounding_box();
+            let width = (x2 - x1).abs();
+            let height = (y2 - y1).abs();
+            let radius = if let Some(c) = obj.shape.as_any().downcast_ref::<gcodekit4::designer::shapes::Circle>() {
+                c.radius
+            } else {
+                0.0
+            };
+            
+            let shape_type = match obj.shape.shape_type() {
+                gcodekit4::ShapeType::Rectangle => 0,
+                gcodekit4::ShapeType::Circle => 1,
+                gcodekit4::ShapeType::Line => 2,
+                gcodekit4::ShapeType::Ellipse => 3,
+                gcodekit4::ShapeType::Polygon => 4,
+                gcodekit4::ShapeType::Path => 5,
+                gcodekit4::ShapeType::Text => 6,
+            };
+
+            window.set_designer_selected_shape_x(x1 as f32);
+            window.set_designer_selected_shape_y(y1 as f32);
+            window.set_designer_selected_shape_w(width as f32);
+            window.set_designer_selected_shape_h(height as f32);
+            window.set_designer_selected_shape_type(shape_type);
+            window.set_designer_selected_shape_radius(radius as f32);
+            
+            let is_pocket = obj.operation_type == gcodekit4::designer::shapes::OperationType::Pocket;
+            window.set_designer_selected_shape_is_pocket(is_pocket);
+            window.set_designer_selected_shape_pocket_depth(obj.pocket_depth as f32);
+            
+            if let Some(text) = obj.shape.as_any().downcast_ref::<gcodekit4::designer::shapes::TextShape>() {
+                window.set_designer_selected_shape_text_content(slint::SharedString::from(&text.text));
+                window.set_designer_selected_shape_font_size(text.font_size as f32);
+            } else {
+                window.set_designer_selected_shape_text_content(slint::SharedString::from(""));
+                window.set_designer_selected_shape_font_size(12.0);
+            }
+        }
     } else {
         // No shape selected - clear indicators
         window.set_designer_selected_shape_x(0.0);
@@ -428,6 +462,10 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
         window.set_designer_selected_shape_h(0.0);
         window.set_designer_selected_shape_type(0);
         window.set_designer_selected_shape_radius(5.0);
+        window.set_designer_selected_shape_is_pocket(false);
+        window.set_designer_selected_shape_pocket_depth(0.0);
+        window.set_designer_selected_shape_text_content(slint::SharedString::from(""));
+        window.set_designer_selected_shape_font_size(12.0);
     }
 
     // Increment update counter to force UI re-render
@@ -4769,8 +4807,9 @@ fn main() -> anyhow::Result<()> {
         *shift_pressed_clone.borrow_mut() = pressed;
     });
 
-    // Designer: Save shape properties (corner radius)
-    let pending_properties = Rc::new(RefCell::new((0.0f64, 0.0f64, 0.0f64, 0.0f64, 0.0f64)));
+    // Designer: Save shape properties
+    // (x, y, w, h, radius, is_pocket, pocket_depth, text_content, font_size)
+    let pending_properties = Rc::new(RefCell::new((0.0f64, 0.0f64, 0.0f64, 0.0f64, 0.0f64, false, 0.0f64, String::new(), 12.0f64)));
 
     let pending_clone = pending_properties.clone();
     main_window.on_designer_update_shape_property(move |prop_id: i32, value: f32| {
@@ -4781,6 +4820,26 @@ fn main() -> anyhow::Result<()> {
             2 => props.2 = value as f64, // w
             3 => props.3 = value as f64, // h
             4 => props.4 = value as f64, // radius
+            5 => props.6 = value as f64, // pocket_depth
+            6 => props.8 = value as f64, // font_size
+            _ => {}
+        }
+    });
+
+    let pending_clone_bool = pending_properties.clone();
+    main_window.on_designer_update_shape_property_bool(move |prop_id: i32, value: bool| {
+        let mut props = pending_clone_bool.borrow_mut();
+        match prop_id {
+            0 => props.5 = value, // is_pocket
+            _ => {}
+        }
+    });
+
+    let pending_clone_string = pending_properties.clone();
+    main_window.on_designer_update_shape_property_string(move |prop_id: i32, value: slint::SharedString| {
+        let mut props = pending_clone_string.borrow_mut();
+        match prop_id {
+            0 => props.7 = value.to_string(), // text_content
             _ => {}
         }
     });
@@ -4793,6 +4852,8 @@ fn main() -> anyhow::Result<()> {
         let mut state = designer_mgr_clone2.borrow_mut();
         state.set_selected_position_and_size(props.0, props.1, props.2, props.3);
         state.set_selected_corner_radius(props.4);
+        state.set_selected_pocket_properties(props.5, props.6);
+        state.set_selected_text_properties(&props.7, props.8);
 
         if let Some(window) = window_weak2.upgrade() {
             update_designer_ui(&window, &mut state);

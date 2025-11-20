@@ -55,10 +55,16 @@ pub struct ShapeData {
     pub width: f64,
     pub height: f64,
     #[serde(default)]
-    pub radius: f64,
-    #[serde(default)]
     pub points: Vec<(f64, f64)>,
     pub selected: bool,
+    #[serde(default)]
+    pub operation_type: String,
+    #[serde(default)]
+    pub pocket_depth: f64,
+    #[serde(default)]
+    pub text_content: String,
+    #[serde(default)]
+    pub font_size: f64,
 }
 
 /// Toolpath generation parameters
@@ -156,8 +162,14 @@ impl DesignFile {
             ShapeType::Line => "line",
             ShapeType::Ellipse => "ellipse",
             ShapeType::Polygon => "polygon",
-            ShapeType::RoundRectangle => "round_rectangle",
             ShapeType::Path => "path",
+            ShapeType::Text => "text",
+        };
+
+        let (text_content, font_size) = if let Some(text_shape) = obj.shape.as_any().downcast_ref::<TextShape>() {
+             (text_shape.text.clone(), text_shape.font_size)
+        } else {
+             (String::new(), 0.0)
         };
 
         ShapeData {
@@ -167,9 +179,15 @@ impl DesignFile {
             y,
             width,
             height,
-            radius: 0.0, // Will be set properly for Circle/RoundRectangle
             points: Vec::new(),
             selected: false,
+            operation_type: match obj.operation_type {
+                OperationType::Profile => "profile".to_string(),
+                OperationType::Pocket => "pocket".to_string(),
+            },
+            pocket_depth: obj.pocket_depth,
+            text_content,
+            font_size,
         }
     }
 
@@ -196,20 +214,26 @@ impl DesignFile {
                 let radius = data.width.min(data.height) / 2.0;
                 Box::new(Polygon::regular(center, radius, 6))
             }
-            "round_rectangle" => Box::new(RoundRectangle::new(
+            "text" => Box::new(TextShape::new(
+                data.text_content.clone(),
                 data.x,
                 data.y,
-                data.width,
-                data.height,
-                data.radius,
+                data.font_size,
             )),
             _ => anyhow::bail!("Unknown shape type: {}", data.shape_type),
+        };
+
+        let operation_type = match data.operation_type.as_str() {
+            "pocket" => OperationType::Pocket,
+            _ => OperationType::Profile,
         };
 
         Ok(DrawingObject {
             id: next_id as u64,
             shape,
             selected: data.selected,
+            operation_type,
+            pocket_depth: data.pocket_depth,
         })
     }
 }
@@ -239,7 +263,6 @@ mod tests {
             y: 0.0,
             width: 100.0,
             height: 50.0,
-            radius: 0.0,
             points: Vec::new(),
             selected: false,
         });

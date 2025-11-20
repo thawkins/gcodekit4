@@ -13,7 +13,7 @@
 //! - Scale and offset adjustment
 
 use crate::dxf_parser::{DxfEntity, DxfFile, DxfParser};
-use crate::shapes::{Circle, Line as DesignerLine, Point, Shape, PathShape};
+use crate::shapes::{Shape, PathShape};
 use anyhow::{anyhow, Result};
 use lyon::path::Path;
 use lyon::math::point;

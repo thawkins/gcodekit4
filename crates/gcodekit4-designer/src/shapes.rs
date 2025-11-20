@@ -5,6 +5,9 @@ use lyon::math::point;
 use lyon::algorithms::aabb::bounding_box;
 use lyon::algorithms::hit_test::hit_test_path;
 use lyon::path::FillRule;
+use std::any::Any;
+use crate::font_manager;
+use rusttype::{Scale, point as rt_point};
 
 /// Represents a 2D point with X and Y coordinates.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -33,8 +36,8 @@ pub enum ShapeType {
     Line,
     Ellipse,
     Polygon,
-    RoundRectangle,
     Path,
+    Text,
 }
 
 /// Base trait for all drawable shapes.
@@ -50,6 +53,9 @@ pub trait Shape: std::fmt::Debug {
 
     /// Returns a clone of the shape as a trait object.
     fn clone_shape(&self) -> Box<dyn Shape>;
+
+    /// Downcast helper
+    fn as_any(&self) -> &dyn Any;
 }
 
 /// A rectangle defined by its top-left corner and dimensions.
@@ -102,6 +108,10 @@ impl Shape for Rectangle {
     fn clone_shape(&self) -> Box<dyn Shape> {
         Box::new(*self)
     }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
 
 /// A circle defined by its center and radius.
@@ -138,6 +148,10 @@ impl Shape for Circle {
 
     fn clone_shape(&self) -> Box<dyn Shape> {
         Box::new(*self)
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 
@@ -186,6 +200,10 @@ impl Shape for Line {
     fn clone_shape(&self) -> Box<dyn Shape> {
         Box::new(*self)
     }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
 
 /// An ellipse defined by its center, horizontal radius, and vertical radius.
@@ -225,6 +243,10 @@ impl Shape for Ellipse {
 
     fn clone_shape(&self) -> Box<dyn Shape> {
         Box::new(*self)
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 
@@ -310,108 +332,9 @@ impl Shape for Polygon {
     fn clone_shape(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
     }
-}
 
-/// A rectangle with rounded corners defined by position, dimensions, and corner radius.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct RoundRectangle {
-    pub x: f64,
-    pub y: f64,
-    pub width: f64,
-    pub height: f64,
-    pub radius: f64,
-}
-
-impl RoundRectangle {
-    /// Creates a new round rectangle.
-    pub fn new(x: f64, y: f64, width: f64, height: f64, radius: f64) -> Self {
-        Self {
-            x,
-            y,
-            width,
-            height,
-            radius,
-        }
-    }
-
-    /// Creates a new round rectangle with default radius (5% of height).
-    pub fn with_default_radius(x: f64, y: f64, width: f64, height: f64) -> Self {
-        let radius = (height * 0.20).max(1.0); // Default to 20% of height, minimum 1.0
-        Self {
-            x,
-            y,
-            width,
-            height,
-            radius,
-        }
-    }
-}
-
-impl Shape for RoundRectangle {
-    fn shape_type(&self) -> ShapeType {
-        ShapeType::RoundRectangle
-    }
-
-    fn bounding_box(&self) -> (f64, f64, f64, f64) {
-        (self.x, self.y, self.x + self.width, self.y + self.height)
-    }
-
-    fn contains_point(&self, point: &Point) -> bool {
-        let px = point.x;
-        let py = point.y;
-        let x1 = self.x;
-        let y1 = self.y;
-        let x2 = self.x + self.width;
-        let y2 = self.y + self.height;
-        let r = self.radius;
-
-        // Check if point is within bounding box
-        if px < x1 || px > x2 || py < y1 || py > y2 {
-            return false;
-        }
-
-        // Check if point is in the main rectangular area
-        if (px >= x1 + r && px <= x2 - r) || (py >= y1 + r && py <= y2 - r) {
-            return true;
-        }
-
-        // Check rounded corners
-        let corners = [
-            (x1 + r, y1 + r), // top-left
-            (x2 - r, y1 + r), // top-right
-            (x2 - r, y2 - r), // bottom-right
-            (x1 + r, y2 - r), // bottom-left
-        ];
-
-        for (cx, cy) in corners {
-            let dist = ((px - cx).powi(2) + (py - cy).powi(2)).sqrt();
-            if dist <= r {
-                // Check if point is in the corner arc
-                if px <= cx && py <= cy {
-                    return true; // top-left corner
-                } else if px >= cx && py <= cy {
-                    return true; // top-right corner
-                } else if px >= cx && py >= cy {
-                    return true; // bottom-right corner
-                } else if px <= cx && py >= cy {
-                    return true; // bottom-left corner
-                }
-            }
-        }
-
-        // Check rectangular edges with rounded corners
-        if px >= x1 && px <= x2 && py >= y1 + r && py <= y2 - r {
-            return true; // vertical edges
-        }
-        if py >= y1 && py <= y2 && px >= x1 + r && px <= x2 - r {
-            return true; // horizontal edges
-        }
-
-        false
-    }
-
-    fn clone_shape(&self) -> Box<dyn Shape> {
-        Box::new(*self)
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 
@@ -448,6 +371,10 @@ impl Shape for PathShape {
 
     fn clone_shape(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 
@@ -532,44 +459,100 @@ mod tests {
         assert!(polygon.contains_point(&Point::new(5.0, 5.0)));
         assert!(!polygon.contains_point(&Point::new(15.0, 5.0)));
     }
+}
 
-    #[test]
-    fn test_round_rectangle_with_default_radius() {
-        let rrect = RoundRectangle::with_default_radius(0.0, 0.0, 100.0, 20.0);
-        assert_eq!(rrect.radius, 4.0); // 20% of 20 = 4.0
+#[derive(Debug, Clone)]
+pub struct TextShape {
+    pub text: String,
+    pub x: f64,
+    pub y: f64,
+    pub font_size: f64,
+}
+
+impl TextShape {
+    pub fn new(text: String, x: f64, y: f64, font_size: f64) -> Self {
+        Self {
+            text,
+            x,
+            y,
+            font_size,
+        }
+    }
+}
+
+impl Shape for TextShape {
+    fn shape_type(&self) -> ShapeType {
+        ShapeType::Text
     }
 
-    #[test]
-    fn test_round_rectangle_bounding_box() {
-        let rrect = RoundRectangle::new(10.0, 10.0, 50.0, 30.0, 5.0);
-        let (min_x, min_y, max_x, max_y) = rrect.bounding_box();
-        assert_eq!(min_x, 10.0);
-        assert_eq!(min_y, 10.0);
-        assert_eq!(max_x, 60.0);
-        assert_eq!(max_y, 40.0);
+    fn bounding_box(&self) -> (f64, f64, f64, f64) {
+        let font = font_manager::get_font();
+        let scale = Scale::uniform(self.font_size as f32);
+        let v_metrics = font.v_metrics(scale);
+        
+        // We treat (x, y) as the top-left corner of the text box.
+        // Text layout usually starts at a baseline.
+        // ascent is the distance from baseline to top.
+        // So baseline y = self.y + v_metrics.ascent.
+        
+        let start = rt_point(self.x as f32, self.y as f32 + v_metrics.ascent);
+        
+        let glyphs: Vec<_> = font.layout(&self.text, scale, start).collect();
+        
+        if glyphs.is_empty() {
+             return (self.x, self.y, self.x, self.y + self.font_size);
+        }
+
+        let mut min_x = f32::MAX;
+        let mut min_y = f32::MAX;
+        let mut max_x = f32::MIN;
+        let mut max_y = f32::MIN;
+        
+        let mut has_bounds = false;
+
+        for glyph in &glyphs {
+            if let Some(bb) = glyph.unpositioned().exact_bounding_box() {
+                let pos = glyph.position();
+                min_x = min_x.min(pos.x + bb.min.x);
+                min_y = min_y.min(pos.y + bb.min.y);
+                max_x = max_x.max(pos.x + bb.max.x);
+                max_y = max_y.max(pos.y + bb.max.y);
+                has_bounds = true;
+            }
+        }
+        
+        if !has_bounds {
+             // Fallback for whitespace only
+             let width = self.text.len() as f64 * self.font_size * 0.6;
+             return (self.x, self.y, self.x + width, self.y + self.font_size);
+        }
+        
+        (min_x as f64, min_y as f64, max_x as f64, max_y as f64)
     }
 
-    #[test]
-    fn test_round_rectangle_contains_point_center() {
-        let rrect = RoundRectangle::new(0.0, 0.0, 10.0, 10.0, 2.0);
-        assert!(rrect.contains_point(&Point::new(5.0, 5.0)));
+    fn contains_point(&self, point: &Point) -> bool {
+        let (min_x, min_y, max_x, max_y) = self.bounding_box();
+        point.x >= min_x && point.x <= max_x && point.y >= min_y && point.y <= max_y
     }
 
-    #[test]
-    fn test_round_rectangle_contains_point_edges() {
-        let rrect = RoundRectangle::new(0.0, 0.0, 10.0, 10.0, 2.0);
-        assert!(rrect.contains_point(&Point::new(5.0, 0.0)));
-        assert!(rrect.contains_point(&Point::new(0.0, 5.0)));
-        assert!(rrect.contains_point(&Point::new(10.0, 5.0)));
-        assert!(rrect.contains_point(&Point::new(5.0, 10.0)));
+    fn clone_shape(&self) -> Box<dyn Shape> {
+        Box::new(self.clone())
     }
 
-    #[test]
-    fn test_round_rectangle_excludes_outside() {
-        let rrect = RoundRectangle::new(0.0, 0.0, 10.0, 10.0, 2.0);
-        assert!(!rrect.contains_point(&Point::new(-1.0, 5.0)));
-        assert!(!rrect.contains_point(&Point::new(11.0, 5.0)));
-        assert!(!rrect.contains_point(&Point::new(5.0, -1.0)));
-        assert!(!rrect.contains_point(&Point::new(5.0, 11.0)));
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+/// Type of CAM operation to perform on the shape.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OperationType {
+    Profile,
+    Pocket,
+}
+
+impl Default for OperationType {
+    fn default() -> Self {
+        Self::Profile
     }
 }

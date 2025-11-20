@@ -6,8 +6,9 @@
 //! - Shape rendering with selection indicators
 //! - Viewport-based coordinate transformation
 
-use crate::{Canvas, ShapeType};
+use crate::{Canvas, ShapeType, font_manager};
 use image::{ImageBuffer, Rgb, RgbImage};
+use rusttype::{Scale, point as rt_point};
 
 const BG_COLOR: Rgb<u8> = Rgb([52, 73, 94]); // #34495e
 const SHAPE_COLOR: Rgb<u8> = Rgb([52, 152, 219]); // #3498db
@@ -240,28 +241,57 @@ pub fn render_canvas(
                     draw_selection_box(&mut img, screen_x1, screen_y1, screen_x2, screen_y2);
                 }
             }
-            ShapeType::RoundRectangle => {
-                // Draw rounded rectangle outline
-                draw_rounded_rectangle(
-                    &mut img,
-                    screen_x1,
-                    screen_y1,
-                    screen_x2,
-                    screen_y2,
-                    3,
-                    SHAPE_COLOR,
-                );
+            ShapeType::Path => {
+                // TODO: Render path
+            }
+            ShapeType::Text => {
+                if let Some(text_shape) = shape_obj.shape.as_any().downcast_ref::<crate::shapes::TextShape>() {
+                     // Convert position to screen coordinates
+                     let (screen_x, screen_y) = viewport.world_to_pixel(text_shape.x, text_shape.y);
+                     let font_size_screen = (text_shape.font_size * viewport.zoom()) as f32;
+                     
+                     draw_text(
+                         &mut img,
+                         &text_shape.text,
+                         screen_x as i32,
+                         screen_y as i32,
+                         font_size_screen,
+                         SHAPE_COLOR,
+                     );
+                }
+                
                 if shape_obj.selected {
                     draw_selection_box(&mut img, screen_x1, screen_y1, screen_x2, screen_y2);
                 }
-            }
-            ShapeType::Path => {
-                // TODO: Render path
             }
         }
     }
 
     img
+}
+
+/// Draw text
+fn draw_text(img: &mut RgbImage, text: &str, x: i32, y: i32, font_size: f32, color: Rgb<u8>) {
+    let font = font_manager::get_font();
+    let scale = Scale::uniform(font_size);
+    let v_metrics = font.v_metrics(scale);
+    
+    let start = rt_point(x as f32, y as f32 + v_metrics.ascent);
+
+    for glyph in font.layout(text, scale, start) {
+        if let Some(bounding_box) = glyph.pixel_bounding_box() {
+            glyph.draw(|gx, gy, v| {
+                let px = gx as i32 + bounding_box.min.x;
+                let py = gy as i32 + bounding_box.min.y;
+                
+                if px >= 0 && px < img.width() as i32 && py >= 0 && py < img.height() as i32 {
+                    if v > 0.5 {
+                        img.put_pixel(px as u32, py as u32, color);
+                    }
+                }
+            });
+        }
+    }
 }
 
 /// Draw a filled rectangle
@@ -301,66 +331,6 @@ fn draw_ellipse(img: &mut RgbImage, cx: i32, cy: i32, rx: i32, ry: i32, color: R
         let rad = (angle as f32).to_radians();
         let x = (cx as f32 + rx as f32 * rad.cos()) as i32;
         let y = (cy as f32 + ry as f32 * rad.sin()) as i32;
-        if x >= 0 && y >= 0 && (x as u32) < img.width() && (y as u32) < img.height() {
-            img.put_pixel(x as u32, y as u32, color);
-        }
-    }
-}
-
-/// Draw a rounded rectangle
-fn draw_rounded_rectangle(
-    img: &mut RgbImage,
-    x1: i32,
-    y1: i32,
-    x2: i32,
-    y2: i32,
-    radius: i32,
-    color: Rgb<u8>,
-) {
-    let min_x = x1.min(x2);
-    let max_x = x1.max(x2);
-    let min_y = y1.min(y2);
-    let max_y = y1.max(y2);
-    let r = radius.min((max_x - min_x) / 4).min((max_y - min_y) / 4);
-
-    // Draw top and bottom edges
-    draw_line(img, min_x + r, min_y, max_x - r, min_y, color);
-    draw_line(img, min_x + r, max_y, max_x - r, max_y, color);
-
-    // Draw left and right edges
-    draw_line(img, min_x, min_y + r, min_x, max_y - r, color);
-    draw_line(img, max_x, min_y + r, max_x, max_y - r, color);
-
-    // Draw rounded corners
-    for angle in 0..90 {
-        let rad = (angle as f32).to_radians();
-        let x_offset = (r as f32 * rad.cos()) as i32;
-        let y_offset = (r as f32 * rad.sin()) as i32;
-
-        // Top-left
-        let x = min_x + r - x_offset;
-        let y = min_y + r - y_offset;
-        if x >= 0 && y >= 0 && (x as u32) < img.width() && (y as u32) < img.height() {
-            img.put_pixel(x as u32, y as u32, color);
-        }
-
-        // Top-right
-        let x = max_x - r + x_offset;
-        let y = min_y + r - y_offset;
-        if x >= 0 && y >= 0 && (x as u32) < img.width() && (y as u32) < img.height() {
-            img.put_pixel(x as u32, y as u32, color);
-        }
-
-        // Bottom-right
-        let x = max_x - r + x_offset;
-        let y = max_y - r + y_offset;
-        if x >= 0 && y >= 0 && (x as u32) < img.width() && (y as u32) < img.height() {
-            img.put_pixel(x as u32, y as u32, color);
-        }
-
-        // Bottom-left
-        let x = min_x + r - x_offset;
-        let y = max_y - r + y_offset;
         if x >= 0 && y >= 0 && (x as u32) < img.width() && (y as u32) < img.height() {
             img.put_pixel(x as u32, y as u32, color);
         }
