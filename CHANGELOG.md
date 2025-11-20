@@ -12,23 +12,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Designer**: Added support for Pocket operations (rectangular and circular).
 - **Designer**: Implemented text rendering and toolpath generation.
 - **Designer**: Added UI controls for text content, font size, and pocket depth.
+- **Designer**: Added `stepIn` property to shapes and UI for controlling horizontal step-over in pockets and profiles.
+- **Designer**: Added `stepDown` property to shapes and UI for controlling vertical step-down.
 
 ### Changed
-- **Designer**: Removed RoundRectangle shape and tool.
+- **Designer**: Migrated Designer UI elements to `gcodekit4-designer` crate.
+- **Designer**: Moved G-code generation to a background thread to prevent UI blocking.
+- **Designer**: Removed `RoundRectangle` shape (replaced by `Rectangle` with corner radius).
+- **Designer**: Improved G-code generation debugging with instrumentation.
+- **Designer**: Updated `Generate` button in Designer to insert G-code directly into Editor.
 - Bumped version to 0.34.0-alpha
-
-### Added
-- Added `stepIn` property to shapes and UI for controlling horizontal step-over in pockets and profiles.
-- Added `stepDown` property to shapes and UI for controlling vertical step-down.
-- Added `Text` shape support to Designer with font rendering.
-- Added `Pocket` operation support to Designer.
-
-### Changed
-- Migrated Designer UI elements to `gcodekit4-designer` crate.
-- Moved G-code generation to a background thread to prevent UI blocking.
-- Removed `RoundRectangle` shape (replaced by `Rectangle` with corner radius).
-- Improved G-code generation debugging with instrumentation.
-- Updated `Generate` button in Designer to insert G-code directly into Editor.
 
 ### Fixed
 - Fixed issue where generated G-code was not appearing in the editor.
