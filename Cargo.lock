@@ -1973,7 +1973,7 @@ dependencies = [
 
 [[package]]
 name = "gcodekit4"
-version = "0.33.6-alpha"
+version = "0.34.0-alpha"
 dependencies = [
  "anyhow",
  "arboard",
@@ -2000,7 +2000,7 @@ dependencies = [
 
 [[package]]
 name = "gcodekit4-camtools"
-version = "0.33.6-alpha"
+version = "0.34.0-alpha"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2019,7 +2019,7 @@ dependencies = [
 
 [[package]]
 name = "gcodekit4-communication"
-version = "0.33.6-alpha"
+version = "0.34.0-alpha"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2035,7 +2035,7 @@ dependencies = [
 
 [[package]]
 name = "gcodekit4-core"
-version = "0.33.6-alpha"
+version = "0.34.0-alpha"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2052,7 +2052,7 @@ dependencies = [
 
 [[package]]
 name = "gcodekit4-designer"
-version = "0.33.6-alpha"
+version = "0.34.0-alpha"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2086,7 +2086,7 @@ dependencies = [
 
 [[package]]
 name = "gcodekit4-gcodeeditor"
-version = "0.33.6-alpha"
+version = "0.34.0-alpha"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2100,7 +2100,7 @@ dependencies = [
 
 [[package]]
 name = "gcodekit4-settings"
-version = "0.33.6-alpha"
+version = "0.34.0-alpha"
 dependencies = [
  "anyhow",
  "dirs",
@@ -2113,7 +2113,7 @@ dependencies = [
 
 [[package]]
 name = "gcodekit4-ui"
-version = "0.33.6-alpha"
+version = "0.34.0-alpha"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2141,7 +2141,7 @@ dependencies = [
 
 [[package]]
 name = "gcodekit4-visualizer"
-version = "0.33.6-alpha"
+version = "0.34.0-alpha"
 dependencies = [
  "anyhow",
  "chrono",
