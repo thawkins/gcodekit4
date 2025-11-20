@@ -1,7 +1,10 @@
 //! Toolpath generation from design shapes.
 
 use super::shapes::{Circle, Line, Point, Rectangle};
+use super::pocket_operations::{PocketGenerator, PocketOperation};
 use std::f64::consts::PI;
+use rusttype::{OutlineBuilder, Scale, point as rt_point};
+use crate::font_manager;
 
 /// Types of toolpath segments.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -73,11 +76,13 @@ impl Toolpath {
 }
 
 /// Generates toolpaths from design shapes.
+#[derive(Debug, Clone)]
 pub struct ToolpathGenerator {
     feed_rate: f64,
     spindle_speed: u32,
     tool_diameter: f64,
     cut_depth: f64,
+    step_in: f64,
 }
 
 impl ToolpathGenerator {
@@ -88,6 +93,7 @@ impl ToolpathGenerator {
             spindle_speed: 1000,
             tool_diameter: 3.175, // 1/8 inch
             cut_depth: -5.0,      // 5mm deep
+            step_in: 1.0,
         }
     }
 
@@ -109,6 +115,11 @@ impl ToolpathGenerator {
     /// Sets the cut depth in mm (negative for downward).
     pub fn set_cut_depth(&mut self, depth: f64) {
         self.cut_depth = depth;
+    }
+
+    /// Sets the step in (step over) in mm.
+    pub fn set_step_in(&mut self, step_in: f64) {
+        self.step_in = step_in;
     }
 
     /// Creates an empty toolpath with current settings.
@@ -246,6 +257,108 @@ impl ToolpathGenerator {
         toolpath.add_segment(return_move);
 
         toolpath
+    }
+
+    /// Generates a pocket toolpath for a rectangle.
+    pub fn generate_rectangle_pocket(&self, rect: &Rectangle, pocket_depth: f64) -> Toolpath {
+        let op = PocketOperation::new("rect_pocket".to_string(), pocket_depth, self.tool_diameter);
+        let mut gen = PocketGenerator::new(op);
+        gen.operation.set_parameters(self.step_in, self.feed_rate, self.spindle_speed);
+        gen.generate_rectangular_pocket(rect)
+    }
+
+    /// Generates a pocket toolpath for a circle.
+    pub fn generate_circle_pocket(&self, circle: &Circle, pocket_depth: f64) -> Toolpath {
+        let op = PocketOperation::new("circle_pocket".to_string(), pocket_depth, self.tool_diameter);
+        let mut gen = PocketGenerator::new(op);
+        gen.operation.set_parameters(self.step_in, self.feed_rate, self.spindle_speed);
+        gen.generate_circular_pocket(circle)
+    }
+
+    /// Generates a toolpath for text.
+    pub fn generate_text_toolpath(&self, text_shape: &crate::shapes::TextShape) -> Toolpath {
+        let mut toolpath = Toolpath::new(self.tool_diameter, self.cut_depth);
+        let font = font_manager::get_font();
+        let scale = Scale::uniform(text_shape.font_size as f32);
+        let v_metrics = font.v_metrics(scale);
+        let start = rt_point(text_shape.x as f32, text_shape.y as f32 + v_metrics.ascent);
+        
+        for glyph in font.layout(&text_shape.text, scale, start) {
+             let mut builder = ToolpathBuilder::new(self.feed_rate, self.spindle_speed);
+             glyph.build_outline(&mut builder);
+             toolpath.segments.extend(builder.segments);
+        }
+        
+        toolpath
+    }
+}
+
+struct ToolpathBuilder {
+    segments: Vec<ToolpathSegment>,
+    current_point: Point,
+    start_point: Point,
+    feed_rate: f64,
+    spindle_speed: u32,
+}
+
+impl ToolpathBuilder {
+    fn new(feed_rate: f64, spindle_speed: u32) -> Self {
+        Self {
+            segments: Vec::new(),
+            current_point: Point::new(0.0, 0.0),
+            start_point: Point::new(0.0, 0.0),
+            feed_rate,
+            spindle_speed,
+        }
+    }
+}
+
+impl OutlineBuilder for ToolpathBuilder {
+    fn move_to(&mut self, x: f32, y: f32) {
+        let p = Point::new(x as f64, y as f64);
+        // Rapid move to start of contour (assumed safe height handling in G-code gen)
+        self.segments.push(ToolpathSegment::new(
+            ToolpathSegmentType::RapidMove,
+            self.current_point, 
+            p,
+            self.feed_rate,
+            self.spindle_speed,
+        ));
+        self.current_point = p;
+        self.start_point = p;
+    }
+
+    fn line_to(&mut self, x: f32, y: f32) {
+        let p = Point::new(x as f64, y as f64);
+        self.segments.push(ToolpathSegment::new(
+            ToolpathSegmentType::LinearMove,
+            self.current_point,
+            p,
+            self.feed_rate,
+            self.spindle_speed,
+        ));
+        self.current_point = p;
+    }
+
+    fn quad_to(&mut self, _x1: f32, _y1: f32, x: f32, y: f32) {
+        // Approximate quadratic bezier with line for now
+        self.line_to(x, y);
+    }
+
+    fn curve_to(&mut self, _x1: f32, _y1: f32, _x2: f32, _y2: f32, x: f32, y: f32) {
+        // Approximate cubic bezier with line for now
+        self.line_to(x, y);
+    }
+
+    fn close(&mut self) {
+        self.segments.push(ToolpathSegment::new(
+            ToolpathSegmentType::LinearMove,
+            self.current_point,
+            self.start_point,
+            self.feed_rate,
+            self.spindle_speed,
+        ));
+        self.current_point = self.start_point;
     }
 }
 

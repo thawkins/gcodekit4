@@ -3,11 +3,12 @@
 
 use crate::{
     Canvas, Circle, DrawingMode, Line, Point, Polygon, Rectangle, ToolpathGenerator,
-    ToolpathToGcode,
+    ToolpathToGcode, shapes::{OperationType, TextShape},
 };
 use gcodekit4_core::Units;
 
 /// Designer state for UI integration
+#[derive(Clone)]
 pub struct DesignerState {
     pub canvas: Canvas,
     pub toolpath_generator: ToolpathGenerator,
@@ -41,7 +42,7 @@ impl DesignerState {
             3 => DrawingMode::Line,
             4 => DrawingMode::Ellipse,
             5 => DrawingMode::Polygon,
-            6 => DrawingMode::RoundRectangle,
+            6 => DrawingMode::Text,
             _ => DrawingMode::Select,
         };
         self.canvas.set_mode(drawing_mode);
@@ -92,7 +93,11 @@ impl DesignerState {
                     // Get rectangle bounds from the shape
                     let (x1, y1, x2, y2) = shape.shape.bounding_box();
                     let rect = Rectangle::new(x1, y1, x2 - x1, y2 - y1);
-                    self.toolpath_generator.generate_rectangle_contour(&rect)
+                    if shape.operation_type == OperationType::Pocket {
+                        self.toolpath_generator.generate_rectangle_pocket(&rect, shape.pocket_depth)
+                    } else {
+                        self.toolpath_generator.generate_rectangle_contour(&rect)
+                    }
                 }
                 crate::ShapeType::Circle => {
                     // Get circle from shape
@@ -101,7 +106,11 @@ impl DesignerState {
                     let radius =
                         ((shape.shape.bounding_box().2 - shape.shape.bounding_box().0) / 2.0).abs();
                     let circle = Circle::new(Point::new(cx, cy), radius);
-                    self.toolpath_generator.generate_circle_contour(&circle)
+                    if shape.operation_type == OperationType::Pocket {
+                        self.toolpath_generator.generate_circle_pocket(&circle, shape.pocket_depth)
+                    } else {
+                        self.toolpath_generator.generate_circle_contour(&circle)
+                    }
                 }
                 crate::ShapeType::Line => {
                     let (x1, y1, x2, y2) = shape.shape.bounding_box();
@@ -123,13 +132,14 @@ impl DesignerState {
                     let rect = Rectangle::new(x1, y1, x2 - x1, y2 - y1);
                     self.toolpath_generator.generate_rectangle_contour(&rect)
                 }
-                crate::ShapeType::RoundRectangle => {
-                    // For round rectangles, generate rectangle contour (ignoring corner radius for now)
-                    let (x1, y1, x2, y2) = shape.shape.bounding_box();
-                    let rect = Rectangle::new(x1, y1, x2 - x1, y2 - y1);
-                    self.toolpath_generator.generate_rectangle_contour(&rect)
-                }
                 crate::ShapeType::Path => self.toolpath_generator.empty_toolpath(),
+                crate::ShapeType::Text => {
+                    if let Some(text) = shape.shape.as_any().downcast_ref::<TextShape>() {
+                        self.toolpath_generator.generate_text_toolpath(text)
+                    } else {
+                        self.toolpath_generator.empty_toolpath()
+                    }
+                }
             };
 
             // Generate G-code for this toolpath
@@ -209,11 +219,9 @@ impl DesignerState {
                 self.canvas
                     .add_polygon(Polygon::regular(Point::new(x, y), 30.0, 6).vertices);
             }
-            DrawingMode::RoundRectangle => {
-                // Draw 60x40 rounded rectangle with default 5% radius
-                let height = 40.0_f64;
-                let radius = (height * 0.20).max(1.0);
-                self.canvas.add_round_rectangle(x, y, 60.0, height, radius);
+            DrawingMode::Text => {
+                // Add default text
+                self.canvas.add_text("Text".to_string(), x, y, 20.0);
             }
         }
     }
@@ -239,39 +247,14 @@ impl DesignerState {
         self.canvas.deselect_all();
     }
 
-    /// Updates the corner radius of the selected shape (if it's a RoundRectangle)
-    pub fn set_selected_corner_radius(&mut self, radius: f64) {
-        use crate::shapes::RoundRectangle;
-
-        if let Some(id) = self.canvas.selected_id() {
-            if let Some(obj) = self.canvas.shapes_mut().iter_mut().find(|o| o.id == id) {
-                // Check if it's a RoundRectangle
-                if obj.shape.shape_type() == crate::ShapeType::RoundRectangle {
-                    let (x, y, x2, y2) = obj.shape.bounding_box();
-                    let width = (x2 - x).abs();
-                    let height = (y2 - y).abs();
-
-                    // Create new RoundRectangle with updated radius
-                    obj.shape = Box::new(RoundRectangle::new(
-                        x.min(x2),
-                        y.min(y2),
-                        width,
-                        height,
-                        radius,
-                    ));
-                }
-            }
-        }
-    }
-
     pub fn set_selected_position_and_size(&mut self, x: f64, y: f64, w: f64, h: f64) {
         use crate::shapes::*;
 
         if let Some(id) = self.canvas.selected_id() {
             if let Some(obj) = self.canvas.shapes_mut().iter_mut().find(|o| o.id == id) {
                 let (old_x, old_y, old_x2, old_y2) = obj.shape.bounding_box();
-                let old_w = old_x2 - old_x;
-                let old_h = old_y2 - old_y;
+                let _old_w = old_x2 - old_x;
+                let _old_h = old_y2 - old_y;
 
                 match obj.shape.shape_type() {
                     crate::ShapeType::Rectangle => {
@@ -297,16 +280,12 @@ impl DesignerState {
                             6,
                         ));
                     }
-                    crate::ShapeType::RoundRectangle => {
-                        // Get current radius from bounding box, preserve it
-                        let current_radius = if old_w > 0.0 && old_h > 0.0 {
-                            5.0 // Default radius, will be overridden in set_selected_corner_radius
-                        } else {
-                            5.0
-                        };
-                        obj.shape = Box::new(RoundRectangle::new(x, y, w, h, current_radius));
+                    crate::ShapeType::Path => {},
+                    crate::ShapeType::Text => {
+                        if let Some(text) = obj.shape.as_any().downcast_ref::<crate::shapes::TextShape>() {
+                            obj.shape = Box::new(crate::shapes::TextShape::new(text.text.clone(), x, y, text.font_size));
+                        }
                     }
-                    crate::ShapeType::Path => {}
                 }
             }
         }
@@ -398,6 +377,47 @@ impl DesignerState {
             format!("{}*", name)
         } else {
             name.to_string()
+        }
+    }
+
+    pub fn set_selected_pocket_properties(&mut self, is_pocket: bool, depth: f64) {
+        if let Some(id) = self.canvas.selected_id() {
+            if let Some(obj) = self.canvas.shapes_mut().iter_mut().find(|o| o.id == id) {
+                obj.operation_type = if is_pocket { OperationType::Pocket } else { OperationType::Profile };
+                obj.pocket_depth = depth;
+            }
+        }
+    }
+
+    pub fn set_selected_step_down(&mut self, step_down: f64) {
+        if let Some(id) = self.canvas.selected_id() {
+            if let Some(obj) = self.canvas.shapes_mut().iter_mut().find(|o| o.id == id) {
+                obj.step_down = step_down as f32;
+            }
+        }
+    }
+
+    pub fn set_selected_step_in(&mut self, step_in: f64) {
+        if let Some(id) = self.canvas.selected_id() {
+            if let Some(obj) = self.canvas.shapes_mut().iter_mut().find(|o| o.id == id) {
+                obj.step_in = step_in as f32;
+            }
+        }
+    }
+
+    pub fn set_selected_text_properties(&mut self, content: &str, font_size: f64) {
+        if let Some(id) = self.canvas.selected_id() {
+            if let Some(obj) = self.canvas.shapes_mut().iter_mut().find(|o| o.id == id) {
+                // We need to clone x, y because we borrow obj mutably
+                let (x, y) = {
+                    let (x1, y1, _, _) = obj.shape.bounding_box();
+                    (x1, y1)
+                };
+                
+                if let Some(_) = obj.shape.as_any().downcast_ref::<TextShape>() {
+                    obj.shape = Box::new(TextShape::new(content.to_string(), x, y, font_size));
+                }
+            }
         }
     }
 }

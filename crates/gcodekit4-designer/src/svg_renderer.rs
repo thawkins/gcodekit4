@@ -6,7 +6,8 @@
 //! - Shape rendering with selection indicators
 //! - Viewport-based coordinate transformation
 
-use crate::Canvas;
+use crate::{Canvas, font_manager};
+use rusttype::{Scale, point as rt_point, OutlineBuilder};
 
 /// Render crosshair at origin (0,0) as SVG path
 pub fn render_crosshair(canvas: &Canvas, width: u32, height: u32) -> String {
@@ -194,8 +195,37 @@ fn render_shape_trait(
                 screen_rx, screen_ry, cx + screen_rx, cy
             )
         }
-        ShapeType::Polygon | ShapeType::RoundRectangle | ShapeType::Path => {
-            // For polygon and rounded rectangle, we'll use a simple bounding box for now
+        ShapeType::Text => {
+            if let Some(text_shape) = shape.as_any().downcast_ref::<crate::shapes::TextShape>() {
+                let font = font_manager::get_font();
+                let scale = Scale::uniform(text_shape.font_size as f32);
+                let v_metrics = font.v_metrics(scale);
+                
+                let start = rt_point(text_shape.x as f32, text_shape.y as f32 + v_metrics.ascent);
+                
+                let mut builder = SvgPathBuilder {
+                    path: String::new(),
+                    viewport: viewport.clone(),
+                };
+                
+                for glyph in font.layout(&text_shape.text, scale, start) {
+                    glyph.build_outline(&mut builder);
+                }
+                
+                builder.path
+            } else {
+                // Fallback
+                let (sx1, sy1) = viewport.world_to_pixel(x1, y1);
+                let (sx2, sy2) = viewport.world_to_pixel(x2, y2);
+
+                format!(
+                    "M {} {} L {} {} L {} {} L {} {} Z ",
+                    sx1, sy1, sx2, sy1, sx2, sy2, sx1, sy2
+                )
+            }
+        }
+        ShapeType::Polygon | ShapeType::Path => {
+            // For polygon and path, we'll use a simple bounding box for now
             // since we don't have access to the detailed shape data through the trait object
             let (sx1, sy1) = viewport.world_to_pixel(x1, y1);
             let (sx2, sy2) = viewport.world_to_pixel(x2, y2);
@@ -205,6 +235,40 @@ fn render_shape_trait(
                 sx1, sy1, sx2, sy1, sx2, sy2, sx1, sy2
             )
         }
+    }
+}
+
+struct SvgPathBuilder {
+    path: String,
+    viewport: crate::viewport::Viewport,
+}
+
+impl OutlineBuilder for SvgPathBuilder {
+    fn move_to(&mut self, x: f32, y: f32) {
+        let (sx, sy) = self.viewport.world_to_pixel(x as f64, y as f64);
+        self.path.push_str(&format!("M {} {} ", sx, sy));
+    }
+
+    fn line_to(&mut self, x: f32, y: f32) {
+        let (sx, sy) = self.viewport.world_to_pixel(x as f64, y as f64);
+        self.path.push_str(&format!("L {} {} ", sx, sy));
+    }
+
+    fn quad_to(&mut self, x1: f32, y1: f32, x: f32, y: f32) {
+        let (sx1, sy1) = self.viewport.world_to_pixel(x1 as f64, y1 as f64);
+        let (sx, sy) = self.viewport.world_to_pixel(x as f64, y as f64);
+        self.path.push_str(&format!("Q {} {} {} {} ", sx1, sy1, sx, sy));
+    }
+
+    fn curve_to(&mut self, x1: f32, y1: f32, x2: f32, y2: f32, x: f32, y: f32) {
+        let (sx1, sy1) = self.viewport.world_to_pixel(x1 as f64, y1 as f64);
+        let (sx2, sy2) = self.viewport.world_to_pixel(x2 as f64, y2 as f64);
+        let (sx, sy) = self.viewport.world_to_pixel(x as f64, y as f64);
+        self.path.push_str(&format!("C {} {} {} {} {} {} ", sx1, sy1, sx2, sy2, sx, sy));
+    }
+
+    fn close(&mut self) {
+        self.path.push_str("Z ");
     }
 }
 

@@ -72,8 +72,8 @@ impl Island {
 
 /// Generates pocket toolpaths with island detection.
 pub struct PocketGenerator {
-    operation: PocketOperation,
-    islands: Vec<Island>,
+    pub operation: PocketOperation,
+    pub islands: Vec<Island>,
 }
 
 impl PocketGenerator {

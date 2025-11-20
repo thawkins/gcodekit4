@@ -1,7 +1,7 @@
 //! Designer Tool UI Panel  
 //! Provides 2D CAD drawing interface with vertical toolbox and canvas interaction
 
-import { Button, VerticalBox, HorizontalBox, ScrollView } from "std-widgets.slint";
+import { Button, VerticalBox, HorizontalBox, ScrollView, CheckBox } from "std-widgets.slint";
 
 component CompactSpinBox inherits Rectangle {
     in-out property <float> value;
@@ -103,6 +103,8 @@ export struct DesignerShape {
     y2: float,
     shape_type: int,
     selected: bool,
+    step_down: float,
+    step_in: float,
 }
 
 export struct DesignerState {
@@ -154,12 +156,18 @@ component ShapePropertiesDialog inherits Dialog {
     in-out property <float> shape_y: 0.0;
     in-out property <float> shape_w: 0.0;
     in-out property <float> shape_h: 0.0;
+    in-out property <bool> is_pocket: false;
+    in-out property <float> pocket_depth: 0.0;
+    in-out property <float> step_down: 0.0;
+    in-out property <float> step_in: 0.0;
+    in-out property <string> text_content: "";
+    in-out property <float> font_size: 12.0;
     
     callback save_properties();
     callback cancel_properties();
     
-    width: 300px;
-    height: shape_type == 5 ? 400px : 350px;
+    width: 390px;
+    height: shape_type == 5 ? 520px : 455px;
     
     VerticalBox {
         padding: 8px;
@@ -171,156 +179,230 @@ component ShapePropertiesDialog inherits Dialog {
             font-weight: 700;
         }
         
-        // Position controls
-        HorizontalBox {
-            spacing: 8px;
-            alignment: start;
-            
-            Text {
-                text: "X Position (mm):";
-                vertical-alignment: center;
-                width: 120px;
-            }
-            
-            Rectangle {
-                width: 100px;
-                height: 30px;
-                
-                CompactSpinBox {
-                    width: 100%;
-                    height: 100%;
-                    value <=> shape_x;
-                    minimum: -1000.0;
-                    maximum: 1000.0;
-                    step: 0.1;
-                    
-                    value-changed(val) => {
-                        shape_x = val;
-                    }
-                }
-            }
-        }
-        
-        HorizontalBox {
-            spacing: 8px;
-            alignment: start;
-            
-            Text {
-                text: "Y Position (mm):";
-                vertical-alignment: center;
-                width: 120px;
-            }
-            
-            Rectangle {
-                width: 100px;
-                height: 30px;
-                
-                CompactSpinBox {
-                    width: 100%;
-                    height: 100%;
-                    value <=> shape_y;
-                    minimum: -1000.0;
-                    maximum: 1000.0;
-                    step: 0.1;
-                    
-                    value-changed(val) => {
-                        shape_y = val;
-                    }
-                }
-            }
-        }
-        
-        // Size controls
-        HorizontalBox {
-            spacing: 8px;
-            alignment: start;
-            
-            Text {
-                text: "Width (mm):";
-                vertical-alignment: center;
-                width: 120px;
-            }
-            
-            Rectangle {
-                width: 100px;
-                height: 30px;
-                
-                CompactSpinBox {
-                    width: 100%;
-                    height: 100%;
-                    value <=> shape_w;
-                    minimum: 0.1;
-                    maximum: 1000.0;
-                    step: 0.1;
-                    
-                    value-changed(val) => {
-                        shape_w = val;
-                    }
-                }
-            }
-        }
-        
-        HorizontalBox {
-            spacing: 8px;
-            alignment: start;
-            
-            Text {
-                text: "Height (mm):";
-                vertical-alignment: center;
-                width: 120px;
-            }
-            
-            Rectangle {
-                width: 100px;
-                height: 30px;
-                
-                CompactSpinBox {
-                    width: 100%;
-                    height: 100%;
-                    value <=> shape_h;
-                    minimum: 0.1;
-                    maximum: 1000.0;
-                    step: 0.1;
-                    
-                    value-changed(val) => {
-                        shape_h = val;
-                    }
-                }
-            }
-        }
-        
-        // Only show corner radius for RoundRectangle (shape_type == 5)
-        if shape_type == 5: HorizontalBox {
-            spacing: 8px;
-            alignment: start;
-            
-            Text {
-                text: "Corner Radius (mm):";
-                vertical-alignment: center;
-                width: 120px;
-            }
-            
-            Rectangle {
-                width: 100px;
-                height: 30px;
-                
-                CompactSpinBox {
-                    width: 100%;
-                    height: 100%;
-                    value <=> corner_radius;
-                    minimum: 0.0;
-                    maximum: 100.0;
-                    step: 0.1;
-                    
-                    value-changed(val) => {
-                        corner_radius = val;
-                    }
-                }
-            }
-        }
-        
-        Rectangle {
+        ScrollView {
             vertical-stretch: 1;
+            viewport-width: self.width;
+            
+            VerticalBox {
+                padding: 0px;
+                spacing: 8px;
+                alignment: start;
+                
+                // Position controls
+                HorizontalBox {
+                    spacing: 8px;
+                    alignment: start;
+                    
+                    Text {
+                        text: "X Position (mm):";
+                        vertical-alignment: center;
+                        width: 120px;
+                    }
+                    
+                    Rectangle {
+                        width: 100px;
+                        height: 30px;
+                        
+                        CompactSpinBox {
+                            width: 100%;
+                            height: 100%;
+                            value <=> shape_x;
+                            minimum: -1000.0;
+                            maximum: 1000.0;
+                            step: 0.1;
+                            
+                            value-changed(val) => {
+                                shape_x = val;
+                            }
+                        }
+                    }
+                }
+                
+                HorizontalBox {
+                    spacing: 8px;
+                    alignment: start;
+                    
+                    Text {
+                        text: "Y Position (mm):";
+                        vertical-alignment: center;
+                        width: 120px;
+                    }
+                    
+                    Rectangle {
+                        width: 100px;
+                        height: 30px;
+                        
+                        CompactSpinBox {
+                            width: 100%;
+                            height: 100%;
+                            value <=> shape_y;
+                            minimum: -1000.0;
+                            maximum: 1000.0;
+                            step: 0.1;
+                            
+                            value-changed(val) => {
+                                shape_y = val;
+                            }
+                        }
+                    }
+                }
+                
+                // Size controls
+                HorizontalBox {
+                    spacing: 8px;
+                    alignment: start;
+                    
+                    Text {
+                        text: "Width (mm):";
+                        vertical-alignment: center;
+                        width: 120px;
+                    }
+                    
+                    Rectangle {
+                        width: 100px;
+                        height: 30px;
+                        
+                        CompactSpinBox {
+                            width: 100%;
+                            height: 100%;
+                            value <=> shape_w;
+                            minimum: 0.1;
+                            maximum: 1000.0;
+                            step: 0.1;
+                            
+                            value-changed(val) => {
+                                shape_w = val;
+                            }
+                        }
+                    }
+                }
+                
+                HorizontalBox {
+                    spacing: 8px;
+                    alignment: start;
+                    
+                    Text {
+                        text: "Height (mm):";
+                        vertical-alignment: center;
+                        width: 120px;
+                    }
+                    
+                    Rectangle {
+                        width: 100px;
+                        height: 30px;
+                        
+                        CompactSpinBox {
+                            width: 100%;
+                            height: 100%;
+                            value <=> shape_h;
+                            minimum: 0.1;
+                            maximum: 1000.0;
+                            step: 0.1;
+                            
+                            value-changed(val) => {
+                                shape_h = val;
+                            }
+                        }
+                    }
+                }
+                
+                // Only show corner radius for RoundRectangle (shape_type == 5) - REMOVED
+                
+                if shape_type == 6: VerticalBox {
+                    spacing: 8px;
+                    HorizontalBox {
+                        spacing: 8px;
+                        alignment: start;
+                        Text { text: "Content:"; vertical-alignment: center; width: 120px; }
+                        Rectangle {
+                            width: 100px;
+                            height: 30px;
+                            border-width: 1px;
+                            border-color: #ccc;
+                            TextInput { 
+                                width: 100%;
+                                height: 100%;
+                                text <=> text_content; 
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
+                    HorizontalBox {
+                        spacing: 8px;
+                        alignment: start;
+                        Text { text: "Font Size:"; vertical-alignment: center; width: 120px; }
+                        Rectangle {
+                            width: 100px;
+                            height: 30px;
+                            CompactSpinBox { 
+                                width: 100%;
+                                height: 100%;
+                                value <=> font_size; 
+                                minimum: 1.0; 
+                                maximum: 1000.0; 
+                            }
+                        }
+                    }
+                }
+
+                // Operation properties
+                HorizontalBox {
+                    spacing: 8px;
+                    alignment: start;
+                    CheckBox { text: "Pocket Operation"; checked <=> is_pocket; }
+                }
+                
+                if is_pocket: HorizontalBox {
+                    spacing: 8px;
+                    alignment: start;
+                    Text { text: "Pocket Depth:"; vertical-alignment: center; width: 120px; }
+                    Rectangle {
+                        width: 100px;
+                        height: 30px;
+                        CompactSpinBox { 
+                            width: 100%;
+                            height: 100%;
+                            value <=> pocket_depth; 
+                            minimum: -100.0; 
+                            maximum: 0.0; 
+                        }
+                    }
+                }
+
+                if is_pocket: HorizontalBox {
+                    spacing: 8px;
+                    alignment: start;
+                    Text { text: "Step Down:"; vertical-alignment: center; width: 120px; }
+                    Rectangle {
+                        width: 100px;
+                        height: 30px;
+                        CompactSpinBox { 
+                            width: 100%;
+                            height: 100%;
+                            value <=> step_down; 
+                            minimum: 0.1; 
+                            maximum: 100.0; 
+                        }
+                    }
+                }
+
+                if is_pocket: HorizontalBox {
+                    spacing: 8px;
+                    alignment: start;
+                    Text { text: "Step In:"; vertical-alignment: center; width: 120px; }
+                    Rectangle {
+                        width: 100px;
+                        height: 30px;
+                        CompactSpinBox { 
+                            width: 100%;
+                            height: 100%;
+                            value <=> step_in; 
+                            minimum: 0.1; 
+                            maximum: 100.0; 
+                        }
+                    }
+                }
+            }
         }
         
         HorizontalBox {
@@ -426,6 +508,7 @@ export component DesignerPanel inherits VerticalBox {
     in-out property <float> spindle_speed;
     in-out property <float> tool_diameter;
     in-out property <float> cut_depth;
+    in-out property <float> step_in;
     in property <string> generated_gcode: "";
     in property <bool> gcode_generated: false;
     in property <float> zoom_scale: 1.0;
@@ -443,6 +526,12 @@ export component DesignerPanel inherits VerticalBox {
     in property <float> selected_shape_h: 0.0;
     in property <int> selected_shape_type: 0;
     in property <float> selected_shape_radius: 5.0;
+    in property <bool> selected_shape_is_pocket: false;
+    in property <float> selected_shape_pocket_depth: 0.0;
+    in property <float> selected_shape_step_down: 0.0;
+    in property <float> selected_shape_step_in: 0.0;
+    in property <string> selected_shape_text_content: "";
+    in property <float> selected_shape_font_size: 12.0;
     
     callback set_mode(int);
     callback zoom_in();
@@ -452,11 +541,11 @@ export component DesignerPanel inherits VerticalBox {
     callback delete_selected();
     callback clear_canvas();
     callback generate_toolpath();
-    callback export_gcode();
     callback update_feed_rate(float);
     callback update_spindle_speed(float);
     callback update_tool_diameter(float);
     callback update_cut_depth(float);
+    callback update_step_in(float);
     callback import_dxf();
     callback import_svg();
     callback export_design();
@@ -469,7 +558,9 @@ export component DesignerPanel inherits VerticalBox {
     callback set_shift_pressed(bool);              // Notify backend of Shift key state
     callback show_context_menu(float, float);      // x, y - show context menu
     callback save_shape_properties();              // Save all properties from current dialog values
-    callback update_shape_property(int, float);    // property_id, value (0=x, 1=y, 2=w, 3=h, 4=radius)
+    callback update_shape_property(int, float);    // property_id, value (0=x, 1=y, 2=w, 3=h, 4=radius, 5=pocket_depth, 6=font_size, 7=step_down)
+    callback update_shape_property_bool(int, bool); // property_id, value (0=is_pocket)
+    callback update_shape_property_string(int, string); // property_id, value (0=text_content)
     
     // File operation callbacks
     callback file_new();
@@ -487,6 +578,11 @@ export component DesignerPanel inherits VerticalBox {
     private property <float> current_shape_y: 0.0;
     private property <float> current_shape_w: 0.0;
     private property <float> current_shape_h: 0.0;
+    private property <bool> is_pocket: false;
+    private property <float> pocket_depth: 0.0;
+    private property <float> step_down: 0.0;
+    private property <string> text_content: "";
+    private property <float> font_size: 12.0;
     
     // Track last delta sent to backend (per shape) to compute incremental changes
     private property <float> drag_start_x: 0.0;
@@ -656,11 +752,11 @@ export component DesignerPanel inherits VerticalBox {
                 ToolButton {
                     tool_id: 6;
                     current_mode: designer_state.mode;
-                    icon_text: "⬛";
-                    tooltip: "Round Rectangle (U)";
+                    icon_text: "T";
+                    tooltip: "Text (T)";
                     clicked => { set_mode(6); }
                 }
-                Rectangle { }
+                Rectangle { width: 48px; height: 48px; } // Placeholder for removed tool
             }
             
             // Separator
@@ -1169,6 +1265,29 @@ export component DesignerPanel inherits VerticalBox {
                         }
                     }
                     
+                    HorizontalBox {
+                        spacing: 2px;
+                        width: 100%;
+                        Text { 
+                            text: "Step In:"; 
+                            font-size: 11px;
+                            width: 50px;
+                            vertical-alignment: center;
+                        }
+                        CompactSpinBox { 
+                            value: root.step_in;
+                            minimum: 0.1;
+                            maximum: 50;
+                            step: 0.1;
+                            horizontal-stretch: 1;
+                            height: 22px;
+                            value-changed(v) => {
+                                root.step_in = v;
+                                root.update_step_in(v);
+                            }
+                        }
+                    }
+                    
                     Rectangle { height: 2px; }
                     
                     Text {
@@ -1181,12 +1300,6 @@ export component DesignerPanel inherits VerticalBox {
                         text: "Generate";
                         width: 100%;
                         clicked => { generate_toolpath(); }
-                    }
-                    
-                    Button {
-                        text: "Export";
-                        width: 100%;
-                        clicked => { export_gcode(); }
                     }
                     
                     Text {
@@ -1219,6 +1332,12 @@ export component DesignerPanel inherits VerticalBox {
             root.current_shape_y = root.selected_shape_y;
             root.current_shape_w = root.selected_shape_w;
             root.current_shape_h = root.selected_shape_h;
+            root.is_pocket = root.selected_shape_is_pocket;
+            root.pocket_depth = root.selected_shape_pocket_depth;
+            root.step_down = root.selected_shape_step_down;
+            root.step_in = root.selected_shape_step_in;
+            root.text_content = root.selected_shape_text_content;
+            root.font_size = root.selected_shape_font_size;
         }
     }
     
@@ -1242,6 +1361,11 @@ export component DesignerPanel inherits VerticalBox {
             shape_y <=> root.current_shape_y;
             shape_w <=> root.current_shape_w;
             shape_h <=> root.current_shape_h;
+            is_pocket <=> root.is_pocket;
+            pocket_depth <=> root.pocket_depth;
+            step_down <=> root.step_down;
+            text_content <=> root.text_content;
+            font_size <=> root.font_size;
             
             save_properties => {
                 update_shape_property(0, root.current_shape_x);
@@ -1249,6 +1373,12 @@ export component DesignerPanel inherits VerticalBox {
                 update_shape_property(2, root.current_shape_w);
                 update_shape_property(3, root.current_shape_h);
                 update_shape_property(4, root.current_corner_radius);
+                update_shape_property_bool(0, root.is_pocket);
+                update_shape_property(5, root.pocket_depth);
+                update_shape_property(7, root.step_down);
+                update_shape_property(8, root.step_in);
+                update_shape_property_string(0, root.text_content);
+                update_shape_property(6, root.font_size);
                 save_shape_properties();
                 root.properties_dialog_visible = false;
             }

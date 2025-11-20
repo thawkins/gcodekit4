@@ -1,7 +1,7 @@
 //! Canvas for drawing and manipulating shapes.
 
 use super::shapes::{
-    Circle, Ellipse, Line, Point, Polygon, Rectangle, RoundRectangle, Shape, ShapeType,
+    Circle, Ellipse, Line, Point, Polygon, Rectangle, Shape, ShapeType, OperationType, TextShape,
 };
 use super::viewport::Viewport;
 
@@ -39,7 +39,7 @@ pub enum DrawingMode {
     Line,
     Ellipse,
     Polygon,
-    RoundRectangle,
+    Text,
 }
 
 /// Drawing object on the canvas that can be selected and manipulated.
@@ -48,6 +48,10 @@ pub struct DrawingObject {
     pub id: u64,
     pub shape: Box<dyn Shape>,
     pub selected: bool,
+    pub operation_type: OperationType,
+    pub pocket_depth: f64,
+    pub step_down: f32,
+    pub step_in: f32,
 }
 
 impl DrawingObject {
@@ -57,6 +61,10 @@ impl DrawingObject {
             id,
             shape,
             selected: false,
+            operation_type: OperationType::default(),
+            pocket_depth: 0.0,
+            step_down: 0.0,
+            step_in: 0.0,
         }
     }
 }
@@ -67,12 +75,16 @@ impl Clone for DrawingObject {
             id: self.id,
             shape: self.shape.clone_shape(),
             selected: self.selected,
+            operation_type: self.operation_type,
+            pocket_depth: self.pocket_depth,
+            step_down: self.step_down,
+            step_in: self.step_in,
         }
     }
 }
 
 /// Canvas state managing shapes and drawing operations.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Canvas {
     shapes: Vec<DrawingObject>,
     next_id: u64,
@@ -167,20 +179,12 @@ impl Canvas {
         id
     }
 
-    /// Adds a round rectangle to the canvas.
-    pub fn add_round_rectangle(
-        &mut self,
-        x: f64,
-        y: f64,
-        width: f64,
-        height: f64,
-        radius: f64,
-    ) -> u64 {
+    /// Adds a text shape to the canvas.
+    pub fn add_text(&mut self, text: String, x: f64, y: f64, font_size: f64) -> u64 {
         let id = self.next_id;
         self.next_id += 1;
-        let round_rect = RoundRectangle::new(x, y, width, height, radius);
-        self.shapes
-            .push(DrawingObject::new(id, Box::new(round_rect)));
+        let shape = TextShape::new(text, x, y, font_size);
+        self.shapes.push(DrawingObject::new(id, Box::new(shape)));
         id
     }
 
@@ -418,14 +422,14 @@ impl Canvas {
                         // For polygon, move all vertices
                         obj.shape.clone_shape()
                     }
-                    ShapeType::RoundRectangle => Box::new(RoundRectangle::new(
-                        x1 + dx,
-                        y1 + dy,
-                        x2 - x1,
-                        y2 - y1,
-                        ((y2 - y1) * 0.20).max(1.0),
-                    )),
                     ShapeType::Path => shape.clone_shape(),
+                    ShapeType::Text => {
+                        if let Some(text) = shape.as_any().downcast_ref::<TextShape>() {
+                            Box::new(TextShape::new(text.text.clone(), text.x + dx, text.y + dy, text.font_size))
+                        } else {
+                            shape.clone_shape()
+                        }
+                    }
                 };
                 obj.shape = new_shape;
             }
@@ -552,28 +556,18 @@ impl Canvas {
                             obj.shape.clone_shape()
                         }
                     }
-                    ShapeType::RoundRectangle => {
-                        let (new_x1, new_y1, new_x2, new_y2) = match handle {
-                            0 => (x1 + dx, y1 + dy, x2, y2),           // Top-left
-                            1 => (x1, y1 + dy, x2 + dx, y2),           // Top-right
-                            2 => (x1 + dx, y1, x2, y2 + dy),           // Bottom-left
-                            3 => (x1, y1, x2 + dx, y2 + dy),           // Bottom-right
-                            4 => (x1 + dx, y1 + dy, x2 + dx, y2 + dy), // Center (move)
-                            _ => (x1, y1, x2, y2),
-                        };
-
-                        let width = (new_x2 - new_x1).abs();
-                        let height = (new_y2 - new_y1).abs();
-                        let radius = (height * 0.20).max(1.0);
-                        Box::new(RoundRectangle::new(
-                            new_x1.min(new_x2),
-                            new_y1.min(new_y2),
-                            width,
-                            height,
-                            radius,
-                        ))
-                    }
                     ShapeType::Path => shape.clone_shape(),
+                    ShapeType::Text => {
+                        if handle == 4 {
+                            if let Some(text) = shape.as_any().downcast_ref::<TextShape>() {
+                                Box::new(TextShape::new(text.text.clone(), text.x + dx, text.y + dy, text.font_size))
+                            } else {
+                                shape.clone_shape()
+                            }
+                        } else {
+                            shape.clone_shape()
+                        }
+                    }
                 };
                 obj.shape = new_shape;
             }
@@ -624,17 +618,14 @@ impl Canvas {
                         ))
                     }
                     ShapeType::Polygon => obj.shape.clone_shape(),
-                    ShapeType::RoundRectangle => {
-                        let radius = (snapped_height * 0.20).max(1.0);
-                        Box::new(RoundRectangle::new(
-                            snapped_x1,
-                            snapped_y1,
-                            snapped_width,
-                            snapped_height,
-                            radius,
-                        ))
-                    }
                     ShapeType::Path => shape.clone_shape(),
+                    ShapeType::Text => {
+                        if let Some(text) = shape.as_any().downcast_ref::<TextShape>() {
+                            Box::new(TextShape::new(text.text.clone(), snapped_x1, snapped_y1, text.font_size))
+                        } else {
+                            shape.clone_shape()
+                        }
+                    }
                 };
                 obj.shape = new_shape;
             }
