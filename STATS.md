@@ -1,10 +1,10 @@
 # Project Statistics
 
 **Last Updated**: 2025-11-20
-**Version**: 0.34.0-alpha
+**Version**: 0.34.1-alpha
 
 ## Codebase
-- **Crates**: 7 (gcodekit4, gcodekit4-ui, gcodekit4-visualizer, gcodekit4-camtools, gcodekit4-devicedb, gcodekit4-settings, gcodekit4-gcodeeditor)
+- **Crates**: 9 (gcodekit4-core, gcodekit4-communication, gcodekit4-ui, gcodekit4-visualizer, gcodekit4-camtools, gcodekit4-devicedb, gcodekit4-settings, gcodekit4-gcodeeditor, gcodekit4-designer)
 - **Languages**: Rust, Slint
 - **UI Framework**: Slint
 
