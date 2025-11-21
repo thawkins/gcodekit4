@@ -116,6 +116,8 @@ This modular structure enables:
   - Example: 37-path tiger head design converts to 26,000+ precise movement commands with optimal path breaks
 - **Interactive Editing**:
   - Zoom, pan, and fit-to-view controls
+  - **NEW**: Dynamic grid and origin indicator
+  - **NEW**: View controls (Zoom In/Out, Fit, Reset)
   - Precise positioning (X, Y, Width, Height inputs)
   - Properties dialog for detailed shape adjustments
   - Dual-grid system (10mm major + 1mm minor)

@@ -1494,6 +1494,13 @@ See [FIRMWARE_CAPABILITIES_DATABASE.md](docs/FIRMWARE_CAPABILITIES_DATABASE.md) 
 - Removed all eprintln! debug statements
 - Cleaner console output
 
+### Designer Grid and View Controls (November 2025)
+- **Grid Rendering**: Dynamic grid with adaptive spacing (10mm/100mm) covering full canvas.
+- **Origin Indicator**: Crosshair at (0,0) for reference.
+- **View Controls**: Zoom In/Out, Fit to Content, Reset View.
+- **Default View**: Origin at bottom-left with 5px margin.
+- **UI**: Controls integrated into right sidebar for accessibility.
+
 
 ## Device Database (DeviceDB)
 - **New Crate**: `gcodekit4-devicedb`
