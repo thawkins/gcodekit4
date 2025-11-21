@@ -19,7 +19,7 @@ impl Viewport {
     /// Creates a new viewport with initial dimensions.
     /// Sets up coordinate system with (0,0) at bottom-left with small margin.
     pub fn new(canvas_width: f64, canvas_height: f64) -> Self {
-        const MARGIN: f64 = 20.0; // pixels from edge
+        const MARGIN: f64 = 5.0; // pixels from edge
         Self {
             zoom: 1.0,
             // Position (0,0) at bottom-left with margin
@@ -237,11 +237,11 @@ impl Viewport {
         self.center_on(point.x, point.y);
     }
 
-    /// Resets viewport to default state (1:1 zoom, no pan).
+    /// Resets viewport to default state (1:1 zoom, default pan).
     pub fn reset(&mut self) {
         self.zoom = 1.0;
-        self.pan_x = 0.0;
-        self.pan_y = 0.0;
+        self.pan_x = 5.0;
+        self.pan_y = 5.0;
     }
 
     /// Gets viewport info as a string (for debugging or display).
@@ -267,16 +267,16 @@ mod tests {
     fn test_viewport_creation() {
         let vp = Viewport::new(800.0, 600.0);
         assert_eq!(vp.zoom(), 1.0);
-        assert_eq!(vp.pan_x(), 20.0); // Initial margin
-        assert_eq!(vp.pan_y(), 20.0); // Initial margin
+        assert_eq!(vp.pan_x(), 5.0); // Initial margin
+        assert_eq!(vp.pan_y(), 5.0); // Initial margin
     }
 
     #[test]
     fn test_pixel_to_world_origin_at_bottom_left() {
         let vp = Viewport::new(800.0, 600.0);
-        // With margin of 20px, pixel (20, 580) should map to world (0, 0)
-        // pixel_y=580 is 20px from bottom of 600px canvas
-        let world = vp.pixel_to_world(20.0, 580.0);
+        // With margin of 5px, pixel (5, 595) should map to world (0, 0)
+        // pixel_y=595 is 5px from bottom of 600px canvas
+        let world = vp.pixel_to_world(5.0, 595.0);
         assert!((world.x - 0.0).abs() < 0.01);
         assert!((world.y - 0.0).abs() < 0.01);
     }
@@ -284,10 +284,10 @@ mod tests {
     #[test]
     fn test_world_to_pixel_origin_at_bottom_left() {
         let vp = Viewport::new(800.0, 600.0);
-        // World (0, 0) should map to pixel (20, 580) with margin
+        // World (0, 0) should map to pixel (5, 595) with margin
         let (pixel_x, pixel_y) = vp.world_to_pixel(0.0, 0.0);
-        assert!((pixel_x - 20.0).abs() < 0.01);
-        assert!((pixel_y - 580.0).abs() < 0.01);
+        assert!((pixel_x - 5.0).abs() < 0.01);
+        assert!((pixel_y - 595.0).abs() < 0.01);
     }
 
     #[test]
@@ -382,7 +382,7 @@ mod tests {
         vp.reset();
 
         assert_eq!(vp.zoom(), 1.0);
-        assert_eq!(vp.pan_x(), 0.0);
-        assert_eq!(vp.pan_y(), 0.0);
+        assert_eq!(vp.pan_x(), 5.0);
+        assert_eq!(vp.pan_y(), 5.0);
     }
 }

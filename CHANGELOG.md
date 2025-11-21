@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.34.2-alpha] - 2025-11-21
+
+### Added
+- **Designer**: Added grid and origin rendering to the Designer view, matching the Visualizer's implementation.
+- **Designer**: Added "Show Grid" toggle button to the Designer toolbar.
+- **Designer**: Added grid size display to the Designer info bar.
+- Added Zoom In, Zoom Out, Fit, and Reset buttons to the Designer right sidebar.
+
+### Changed
+- **Designer**: Updated Designer renderer to support grid and origin paths.
+- **Designer**: Refactored Designer UI to support grid visibility state.
+- Moved "Show Grid" control to the right sidebar as a checkbox for better visibility and consistency.
+- Updated Designer default view to position origin at bottom-left with 5px inset.
+
+### Fixed
+- Fixed issue where generated G-code was not appearing in the editor.
+- Fixed UI freezing during complex G-code generation.
+- Fixed Designer grid and origin visibility issue (now visible on startup).
+- Fixed missing "Show Grid" toggle button in Designer toolbar.
+- Fixed Designer grid rendering to cover the full canvas width.
+- Implemented "Fit" functionality to zoom to bounding box of all shapes.
+
 ## [0.34.1-alpha] - 2025-11-20
 
 ### Started
@@ -28,9 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Designer**: Updated `Generate` button in Designer to insert G-code directly into Editor.
 - Bumped version to 0.34.0-alpha
 
-### Fixed
-- Fixed issue where generated G-code was not appearing in the editor.
-- Fixed UI freezing during complex G-code generation.
+
 
 ## [0.33.6-alpha] - 2025-11-20
 

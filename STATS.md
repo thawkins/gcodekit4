@@ -1,7 +1,7 @@
 # Project Statistics
 
-**Last Updated**: 2025-11-20
-**Version**: 0.34.1-alpha
+**Last Updated**: 2025-11-21
+**Version**: 0.34.2-alpha
 
 ## Codebase
 - **Crates**: 9 (gcodekit4-core, gcodekit4-communication, gcodekit4-ui, gcodekit4-visualizer, gcodekit4-camtools, gcodekit4-devicedb, gcodekit4-settings, gcodekit4-gcodeeditor, gcodekit4-designer)

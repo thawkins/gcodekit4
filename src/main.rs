@@ -334,9 +334,9 @@ fn update_device_info_panel(
 
 /// Update designer UI with current shapes from state
 fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState) {
-    // Get canvas dimensions from window (or use defaults)
-    let canvas_width = 800u32; // Will be overridden by actual canvas size
-    let canvas_height = 600u32;
+    // Get canvas dimensions from window
+    let canvas_width = window.get_designer_canvas_width().max(100.0) as u32;
+    let canvas_height = window.get_designer_canvas_height().max(100.0) as u32;
 
     // Update viewport canvas size to match actual rendering size
     state
@@ -346,6 +346,20 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
 
     // Render canvas using SVG paths
     let crosshair_data = gcodekit4::designer::svg_renderer::render_crosshair(
+        &state.canvas,
+        canvas_width,
+        canvas_height,
+    );
+    let (grid_data, grid_size) = if state.show_grid {
+        gcodekit4::designer::svg_renderer::render_grid(
+            &state.canvas,
+            canvas_width,
+            canvas_height,
+        )
+    } else {
+        (String::new(), 0.0)
+    };
+    let origin_data = gcodekit4::designer::svg_renderer::render_origin(
         &state.canvas,
         canvas_width,
         canvas_height,
@@ -368,6 +382,12 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
 
     // Update UI with SVG path data
     window.set_designer_canvas_crosshair_data(slint::SharedString::from(crosshair_data));
+    window.set_designer_canvas_grid_data(slint::SharedString::from(grid_data));
+    window.set_designer_canvas_origin_data(slint::SharedString::from(origin_data));
+    window.set_designer_show_grid(state.show_grid);
+    if grid_size > 0.0 {
+        window.set_designer_grid_size(slint::SharedString::from(format!("{}mm", grid_size)));
+    }
     window.set_designer_canvas_shapes_data(slint::SharedString::from(shapes_data));
     window
         .set_designer_canvas_selected_shapes_data(slint::SharedString::from(selected_shapes_data));
@@ -709,6 +729,28 @@ fn main() -> anyhow::Result<()> {
         update_counter: 0,
     };
     main_window.set_designer_state(initial_designer_state);
+    main_window.set_designer_show_grid(true); // Default to showing grid
+
+    // Initial UI update to show grid/origin
+    {
+        let mut state = designer_mgr.borrow_mut();
+        // Ensure view is reset to default (bottom-left origin) on startup
+        state.reset_view();
+        update_designer_ui(&main_window, &mut state);
+    }
+
+    // Handle designer toggle grid
+    {
+        let designer_mgr = designer_mgr.clone();
+        let window_weak = main_window.as_weak();
+        main_window.on_designer_toggle_grid(move || {
+            if let Some(window) = window_weak.upgrade() {
+                let mut state = designer_mgr.borrow_mut();
+                state.toggle_grid();
+                update_designer_ui(&window, &mut state);
+            }
+        });
+    }
 
     // Shared state for settings persistence
     let settings_persistence = Rc::new(RefCell::new(SettingsPersistence::new()));
@@ -4313,11 +4355,7 @@ fn main() -> anyhow::Result<()> {
     let window_weak = main_window.as_weak();
     main_window.on_designer_reset_view(move || {
         let mut state = designer_mgr_clone.borrow_mut();
-        // Reset zoom to 1.0 (100%)
-        state.canvas.set_zoom(1.0);
-        // Reset pan to 0,0
-        let (pan_x, pan_y) = state.canvas.pan_offset();
-        state.canvas.pan(-pan_x, -pan_y);
+        state.reset_view();
         if let Some(window) = window_weak.upgrade() {
             update_designer_ui(&window, &mut state);
             let ui_state = crate::DesignerState {

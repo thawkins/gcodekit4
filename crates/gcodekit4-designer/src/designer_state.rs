@@ -17,6 +17,7 @@ pub struct DesignerState {
     pub current_file_path: Option<std::path::PathBuf>,
     pub is_modified: bool,
     pub design_name: String,
+    pub show_grid: bool,
 }
 
 impl DesignerState {
@@ -30,7 +31,13 @@ impl DesignerState {
             current_file_path: None,
             is_modified: false,
             design_name: "Untitled".to_string(),
+            show_grid: true,
         }
+    }
+
+    /// Toggle grid visibility
+    pub fn toggle_grid(&mut self) {
+        self.show_grid = !self.show_grid;
     }
 
     /// Sets the drawing mode.
@@ -64,9 +71,31 @@ impl DesignerState {
 
     /// Zoom to fit all shapes.
     pub fn zoom_fit(&mut self) {
-        if !self.canvas.shapes().is_empty() {
-            self.canvas.set_zoom(1.0);
-        }
+        self.canvas.fit_all_shapes();
+    }
+
+    /// Reset view to default (origin at bottom-left with padding)
+    pub fn reset_view(&mut self) {
+        // Reset zoom to 100%
+        self.canvas.set_zoom(1.0);
+        
+        // Reset pan to place origin at bottom-left with 5px padding
+        // We need to access the viewport to set this up correctly
+        // Since we don't have direct access to viewport dimensions here easily without passing them,
+        // we'll rely on the viewport's internal size which should be updated by update_designer_ui
+        let height = self.canvas.viewport().canvas_height();
+        
+        // In screen coordinates, (0, height) is bottom-left.
+        // We want world (0,0) to be at screen (5, height-5).
+        // world_to_screen(0,0) = (pan_x, pan_y) usually (depending on implementation)
+        // Let's assume standard: screen_x = world_x * zoom + pan_x
+        // screen_y = height - (world_y * zoom + pan_y)  <-- typical for Y-up world, Y-down screen
+        // If we want screen_x = 5, screen_y = height - 5 for world(0,0):
+        // 5 = 0 * 1.0 + pan_x  => pan_x = 5
+        // height - 5 = height - (0 * 1.0 + pan_y) => 5 = pan_y
+        
+        // So we set pan to (5, 5)
+        self.canvas.set_pan(5.0, 5.0);
     }
 
     /// Deletes the selected shape.

@@ -146,6 +146,8 @@ export component MainWindow inherits Window {
     in-out property <string> visualization-origin-data: "";
     
     // Designer panel properties (Phase 2)
+    in-out property <float> designer-canvas-width: 800.0;
+    in-out property <float> designer-canvas-height: 600.0;
     in property <[DesignerShape]> designer-shapes: [];
     in property <DesignerState> designer-state: {
         mode: 0,
@@ -162,6 +164,10 @@ export component MainWindow inherits Window {
     in property <string> designer-generated-gcode: "";
     in property <bool> designer-gcode-generated: false;
     in property <string> designer-canvas-crosshair-data: "";
+    in property <string> designer-canvas-grid-data: "";
+    in property <string> designer-canvas-origin-data: "";
+    in-out property <bool> designer-show-grid: true;
+    in property <string> designer-grid-size: "10mm";
     in property <string> designer-canvas-shapes-data: "";
     in property <string> designer-canvas-selected-shapes-data: "";
     in property <string> designer-canvas-handles-data: "";
@@ -354,6 +360,7 @@ export component MainWindow inherits Window {
     callback designer-file-open();
     callback designer-file-save();
     callback designer-file-save-as();
+    callback designer-toggle-grid();
     callback invoke-designer-gcode-generated(string);
     
      // CAM Tool callbacks
@@ -1181,155 +1188,183 @@ export component MainWindow inherits Window {
                 }
 
                 // Designer View
-                if current-view == "designer" : DesignerPanel {
-                    shapes: root.designer-shapes;
-                    designer_state: root.designer-state;
-                    feed_rate <=> root.designer-feed-rate;
-                    spindle_speed <=> root.designer-spindle-speed;
-                    tool_diameter <=> root.designer-tool-diameter;
-                    cut_depth <=> root.designer-cut-depth;
-                    generated_gcode: root.designer-generated-gcode;
-                    gcode_generated: root.designer-gcode-generated;
-                    zoom_scale: root.designer-state.zoom;
-                    x_offset: root.designer-state.pan_x;
-                    y_offset: root.designer-state.pan_y;
-                    canvas_crosshair_data: root.designer-canvas-crosshair-data;
-                    canvas_shapes_data: root.designer-canvas-shapes-data;
-                    canvas_selected_shapes_data: root.designer-canvas-selected-shapes-data;
-                    canvas_handles_data: root.designer-canvas-handles-data;
-                    selected_shape_x: root.designer-selected-shape-x;
-                    selected_shape_y: root.designer-selected-shape-y;
-                    selected_shape_w: root.designer-selected-shape-w;
-                    selected_shape_h: root.designer-selected-shape-h;
-                    selected_shape_type: root.designer-selected-shape-type;
-                    selected_shape_radius: root.designer-selected-shape-radius;
-                    selected_shape_is_pocket: root.designer-selected-shape-is-pocket;
-                    selected_shape_pocket_depth: root.designer-selected-shape-pocket-depth;
-                    selected_shape_step_down: root.designer-selected-shape-step-down;
-                    selected_shape_step_in: root.designer-selected-shape-step-in;
-                    selected_shape_text_content: root.designer-selected-shape-text-content;
-                    selected_shape_font_size: root.designer-selected-shape-font-size;
-                    
-                    set_mode(m) => {
-                        root.designer-set-mode(m);
+                if current-view == "designer" : Rectangle {
+                    vertical-stretch: 1;
+                    horizontal-stretch: 1;
+                    background: transparent;
+
+                    designer-panel := DesignerPanel {
+                        width: 100%;
+                        height: 100%;
+                        shapes: root.designer-shapes;
+                        designer_state: root.designer-state;
+                        feed_rate <=> root.designer-feed-rate;
+                        spindle_speed <=> root.designer-spindle-speed;
+                        tool_diameter <=> root.designer-tool-diameter;
+                        cut_depth <=> root.designer-cut-depth;
+                        generated_gcode: root.designer-generated-gcode;
+                        gcode_generated: root.designer-gcode-generated;
+                        zoom_scale: root.designer-state.zoom;
+                        x_offset: root.designer-state.pan_x;
+                        y_offset: root.designer-state.pan_y;
+                        canvas_crosshair_data: root.designer-canvas-crosshair-data;
+                        canvas_grid_data: root.designer-canvas-grid-data;
+                        canvas_origin_data: root.designer-canvas-origin-data;
+                        show_grid <=> root.designer-show-grid;
+                        grid_size: root.designer-grid-size;
+                        canvas_shapes_data: root.designer-canvas-shapes-data;
+                        canvas_selected_shapes_data: root.designer-canvas-selected-shapes-data;
+                        canvas_handles_data: root.designer-canvas-handles-data;
+                        selected_shape_x: root.designer-selected-shape-x;
+                        selected_shape_y: root.designer-selected-shape-y;
+                        selected_shape_w: root.designer-selected-shape-w;
+                        selected_shape_h: root.designer-selected-shape-h;
+                        selected_shape_type: root.designer-selected-shape-type;
+                        selected_shape_radius: root.designer-selected-shape-radius;
+                        selected_shape_is_pocket: root.designer-selected-shape-is-pocket;
+                        selected_shape_pocket_depth: root.designer-selected-shape-pocket-depth;
+                        selected_shape_step_down: root.designer-selected-shape-step-down;
+                        selected_shape_step_in: root.designer-selected-shape-step-in;
+                        selected_shape_text_content: root.designer-selected-shape-text-content;
+                        selected_shape_font_size: root.designer-selected-shape-font-size;
+                        
+                        set_mode(m) => {
+                            root.designer-set-mode(m);
+                        }
+                        
+                        zoom_in => {
+                            root.designer-zoom-in();
+                        }
+                        
+                        zoom_out => {
+                            root.designer-zoom-out();
+                        }
+                        
+                        zoom_fit => {
+                            root.designer-zoom-fit();
+                        }
+                        
+                        reset_view => {
+                            root.designer-reset-view();
+                        }
+                        
+                        delete_selected => {
+                            root.designer-delete-selected();
+                        }
+                        
+                        clear_canvas => {
+                            root.designer-clear-canvas();
+                        }
+                        
+                        generate_toolpath => {
+                            root.designer-generate-toolpath();
+                        }
+                        
+                        import_dxf => {
+                            root.designer-import-dxf();
+                        }
+                        
+                        import_svg => {
+                            root.designer-import-svg();
+                        }
+                        
+                        export_design => {
+                            root.designer-export-design();
+                        }
+                        
+                        canvas_click(x, y) => {
+                            root.designer-canvas-click(x, y);
+                        }
+                        
+                        detect_handle(x, y) => {
+                            return root.designer-detect-handle(x, y);
+                        }
+                        
+                        shape_drag(id, dx, dy) => {
+                            root.designer-shape-drag(id, dx, dy);
+                        }
+                        
+                        handle_drag(id, handle, dx, dy) => {
+                            root.designer-handle-drag(id, handle, dx, dy);
+                        }
+                        
+                        canvas_pan(dx, dy) => {
+                            root.designer-canvas-pan(dx, dy);
+                        }
+                        
+                        deselect_all => {
+                            root.designer-deselect-all();
+                        }
+                        
+                        set_shift_pressed(pressed) => {
+                            root.designer-set-shift-pressed(pressed);
+                        }
+                        
+                        save_shape_properties() => {
+                            root.designer-save-shape-properties();
+                        }
+                        
+                        update_shape_property(prop_id, value) => {
+                            root.designer-update-shape-property(prop_id, value);
+                        }
+                        update_shape_property_bool(prop_id, value) => {
+                            root.designer-update-shape-property-bool(prop_id, value);
+                        }
+                        update_shape_property_string(prop_id, value) => {
+                            root.designer-update-shape-property-string(prop_id, value);
+                        }
+                        
+                        update_feed_rate(rate) => {
+                            root.designer-update-feed-rate(rate);
+                        }
+                        
+                        update_spindle_speed(speed) => {
+                            root.designer-update-spindle-speed(speed);
+                        }
+                        
+                        update_tool_diameter(diameter) => {
+                            root.designer-update-tool-diameter(diameter);
+                        }
+                        
+                        update_cut_depth(depth) => {
+                            root.designer-update-cut-depth(depth);
+                        }
+                        
+                        update_step_in(val) => {
+                            root.designer-update-step-in(val);
+                        }
+                        
+                        file_new => {
+                            root.designer-file-new();
+                        }
+                        
+                        file_open => {
+                            root.designer-file-open();
+                        }
+                        
+                        file_save => {
+                            root.designer-file-save();
+                        }
+                        
+                        file_save_as => {
+                            root.designer-file-save-as();
+                        }
+                        
+                        toggle_grid => {
+                            root.designer-toggle-grid();
+                        }
                     }
-                    
-                    zoom_in => {
-                        root.designer-zoom-in();
-                    }
-                    
-                    zoom_out => {
-                        root.designer-zoom-out();
-                    }
-                    
-                    zoom_fit => {
-                        root.designer-zoom-fit();
-                    }
-                    
-                    reset_view => {
-                        root.designer-reset-view();
-                    }
-                    
-                    delete_selected => {
-                        root.designer-delete-selected();
-                    }
-                    
-                    clear_canvas => {
-                        root.designer-clear-canvas();
-                    }
-                    
-                    generate_toolpath => {
-                        root.designer-generate-toolpath();
-                    }
-                    
-                    import_dxf => {
-                        root.designer-import-dxf();
-                    }
-                    
-                    import_svg => {
-                        root.designer-import-svg();
-                    }
-                    
-                    export_design => {
-                        root.designer-export-design();
-                    }
-                    
-                    canvas_click(x, y) => {
-                        root.designer-canvas-click(x, y);
-                    }
-                    
-                    detect_handle(x, y) => {
-                        return root.designer-detect-handle(x, y);
-                    }
-                    
-                    shape_drag(id, dx, dy) => {
-                        root.designer-shape-drag(id, dx, dy);
-                    }
-                    
-                    handle_drag(id, handle, dx, dy) => {
-                        root.designer-handle-drag(id, handle, dx, dy);
-                    }
-                    
-                    canvas_pan(dx, dy) => {
-                        root.designer-canvas-pan(dx, dy);
-                    }
-                    
-                    deselect_all => {
-                        root.designer-deselect-all();
-                    }
-                    
-                    set_shift_pressed(pressed) => {
-                        root.designer-set-shift-pressed(pressed);
-                    }
-                    
-                    save_shape_properties() => {
-                        root.designer-save-shape-properties();
-                    }
-                    
-                    update_shape_property(prop_id, value) => {
-                        root.designer-update-shape-property(prop_id, value);
-                    }
-                    update_shape_property_bool(prop_id, value) => {
-                        root.designer-update-shape-property-bool(prop_id, value);
-                    }
-                    update_shape_property_string(prop_id, value) => {
-                        root.designer-update-shape-property-string(prop_id, value);
-                    }
-                    
-                    update_feed_rate(rate) => {
-                        root.designer-update-feed-rate(rate);
-                    }
-                    
-                    update_spindle_speed(speed) => {
-                        root.designer-update-spindle-speed(speed);
-                    }
-                    
-                    update_tool_diameter(diameter) => {
-                        root.designer-update-tool-diameter(diameter);
-                    }
-                    
-                    update_cut_depth(depth) => {
-                        root.designer-update-cut-depth(depth);
-                    }
-                    
-                    update_step_in(val) => {
-                        root.designer-update-step-in(val);
-                    }
-                    
-                    file_new => {
-                        root.designer-file-new();
-                    }
-                    
-                    file_open => {
-                        root.designer-file-open();
-                    }
-                    
-                    file_save => {
-                        root.designer-file-save();
-                    }
-                    
-                    file_save_as => {
-                        root.designer-file-save-as();
+
+                    // Timer to sync canvas size to root properties
+                    Timer {
+                        interval: 50ms;
+                        running: true;
+                        triggered => {
+                            if (root.designer-canvas-width != designer-panel.canvas-width || root.designer-canvas-height != designer-panel.canvas-height) {
+                                root.designer-canvas-width = designer-panel.canvas-width;
+                                root.designer-canvas-height = designer-panel.canvas-height;
+                            }
+                        }
                     }
                 }
                 

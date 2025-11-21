@@ -160,3 +160,20 @@ Rectangle {
 ### Dynamic Layouts
 - Use `if` conditions to show/hide UI elements based on selected options (e.g., showing "Dimple Diameter" only when "Dimple" is enabled).
 - Use `ComboBox` for enumerated types (e.g., `KeyDividerType`, `BoxType`).
+
+### Designer Grid and View Controls (Added 2025-11-21)
+
+**Requirement**: Render a dynamic grid and origin indicator in the Designer view, similar to the Visualizer, and provide view controls (Zoom/Pan/Fit).
+
+**Implementation**:
+- **Grid Rendering**: Implemented in Rust backend (`svg_renderer.rs`) generating SVG path data strings.
+  - Grid lines are generated based on viewport bounds and zoom level.
+  - Path data is passed to Slint `Path` element via `canvas_grid_data` property.
+  - **Fix**: Ensure canvas dimensions are synced from UI to backend to cover full width/height.
+- **Origin Indicator**: Rendered as a crosshair at (0,0) using SVG paths.
+- **View Controls**:
+  - **Zoom/Pan**: Managed by `Viewport` struct in Rust.
+  - **Fit**: Calculates bounding box of all shapes and adjusts zoom/pan to fit with padding.
+  - **Reset**: Resets zoom to 1.0 and pan to default origin.
+- **Default View**: Origin positioned at bottom-left with 5px margin (inset) to ensure visibility.
+- **UI Controls**: Added buttons (+, -, Fit, Rst) and "Show Grid" checkbox to the right sidebar for better accessibility.

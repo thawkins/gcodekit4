@@ -32,6 +32,88 @@ pub fn render_crosshair(canvas: &Canvas, width: u32, height: u32) -> String {
     path
 }
 
+/// Render grid as SVG path commands
+pub fn render_grid(canvas: &Canvas, width: u32, height: u32) -> (String, f64) {
+    let viewport = canvas.viewport();
+    let mut path = String::new();
+    const MAX_ITERATIONS: usize = 100000;
+    const GRID_MAJOR_STEP_MM: f64 = 10.0;
+
+    // Calculate the world coordinate range needed to fill entire viewport
+    // Add extra margin to ensure full coverage
+    let margin_pixels = 500.0;
+    let top_left = viewport.pixel_to_world(-margin_pixels, -margin_pixels);
+    let bottom_right = viewport.pixel_to_world(width as f64 + margin_pixels, height as f64 + margin_pixels);
+
+    let world_left = top_left.x.min(bottom_right.x);
+    let world_right = top_left.x.max(bottom_right.x);
+    let world_bottom = top_left.y.min(bottom_right.y);
+    let world_top = top_left.y.max(bottom_right.y);
+
+    let world_width = world_right - world_left;
+    let world_height = world_top - world_bottom;
+
+    // Adaptive grid spacing
+    // Start with 10mm, increase by 10x if too dense
+    let mut step = GRID_MAJOR_STEP_MM;
+    while (world_width / step) > 100.0 || (world_height / step) > 100.0 {
+        step *= 10.0;
+    }
+
+    // Round to nearest grid line, ensuring we cover the full range
+    let start_x = (world_left / step).floor() * step;
+    let end_x = (world_right / step).ceil() * step;
+
+    let start_y = (world_bottom / step).floor() * step;
+    let end_y = (world_top / step).ceil() * step;
+
+    // Draw vertical grid lines
+    let mut x = start_x;
+    let mut iterations = 0;
+    while x <= end_x && iterations < MAX_ITERATIONS {
+        let (screen_x, _) = viewport.world_to_pixel(x, 0.0);
+        // Draw line across full height, no need to clip
+        path.push_str(&format!("M {} 0 L {} {} ", screen_x, screen_x, height));
+        x += step;
+        iterations += 1;
+    }
+
+    // Draw horizontal grid lines
+    let mut y = start_y;
+    iterations = 0;
+    while y <= end_y && iterations < MAX_ITERATIONS {
+        let (_, screen_y) = viewport.world_to_pixel(0.0, y);
+        // Draw line across full width, no need to clip
+        path.push_str(&format!("M 0 {} L {} {} ", screen_y, width, screen_y));
+        y += step;
+        iterations += 1;
+    }
+
+    (path, step)
+}
+
+/// Render origin marker at (0,0) as yellow cross
+pub fn render_origin(canvas: &Canvas, width: u32, height: u32) -> String {
+    let viewport = canvas.viewport();
+    let (origin_x, origin_y) = viewport.world_to_pixel(0.0, 0.0);
+
+    let mut path = String::new();
+
+    // Vertical line (full height)
+    path.push_str(&format!(
+        "M {} 0 L {} {} ",
+        origin_x, origin_x, height
+    ));
+
+    // Horizontal line (full width)
+    path.push_str(&format!(
+        "M 0 {} L {} {} ",
+        origin_y, width, origin_y
+    ));
+
+    path
+}
+
 /// Render all shapes as SVG path
 pub fn render_shapes(canvas: &Canvas, _width: u32, _height: u32) -> String {
     let viewport = canvas.viewport();
