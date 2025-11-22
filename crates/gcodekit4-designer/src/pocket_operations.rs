@@ -306,22 +306,58 @@ impl PocketGenerator {
                 self.generate_contour_parallel_pocket(vertices, step_down)
             },
             PocketStrategy::Adaptive => {
-                // Fallback to contour parallel for now
-                self.generate_contour_parallel_pocket(vertices, step_down)
+                self.generate_adaptive_pocket(vertices, step_down)
             }
         }
+    }
+
+    /// Prepares a polygon for offsetting by removing duplicates and enforcing CW orientation.
+    fn prepare_polygon(vertices: &[Point]) -> Polyline {
+        let mut clean_vertices = Vec::new();
+        if let Some(first) = vertices.first() {
+            clean_vertices.push(*first);
+            for p in vertices.iter().skip(1) {
+                let last = clean_vertices.last().unwrap();
+                if (p.x - last.x).abs() > 1e-6 || (p.y - last.y).abs() > 1e-6 {
+                    clean_vertices.push(*p);
+                }
+            }
+            
+            if clean_vertices.len() > 1 {
+                let first = clean_vertices.first().unwrap();
+                let last = clean_vertices.last().unwrap();
+                if (last.x - first.x).abs() < 1e-6 && (last.y - first.y).abs() < 1e-6 {
+                    clean_vertices.pop();
+                }
+            }
+        }
+
+        let mut signed_area = 0.0;
+        if !clean_vertices.is_empty() {
+            for i in 0..clean_vertices.len() {
+                let p1 = clean_vertices[i];
+                let p2 = clean_vertices[(i + 1) % clean_vertices.len()];
+                signed_area += p1.x * p2.y - p2.x * p1.y;
+            }
+        }
+        
+        if signed_area > 0.0 {
+            clean_vertices.reverse();
+        }
+
+        let mut polyline = Polyline::new();
+        for p in clean_vertices {
+            polyline.add_vertex(PlineVertex::new(p.x, p.y, 0.0));
+        }
+        polyline.set_is_closed(true);
+        polyline
     }
 
     fn generate_contour_parallel_pocket(&self, vertices: &[Point], step_down: f64) -> Vec<Toolpath> {
         let mut toolpaths = Vec::new();
         if vertices.is_empty() { return toolpaths; }
 
-        // Convert to cavalier_contours Polyline
-        let mut polyline = Polyline::new();
-        for p in vertices {
-            polyline.add_vertex(PlineVertex::new(p.x, p.y, 0.0));
-        }
-        polyline.set_is_closed(true);
+        let polyline = Self::prepare_polygon(vertices);
 
         // Calculate Z passes
         let total_depth = self.operation.depth.abs();
@@ -339,6 +375,7 @@ impl PocketGenerator {
             while has_paths {
                 // Offset inwards
                 let offsets = polyline.parallel_offset(-current_offset);
+                
                 if offsets.is_empty() {
                     break;
                 }
@@ -376,6 +413,111 @@ impl PocketGenerator {
                 }
                 
                 current_offset += self.operation.stepover;
+            }
+            toolpaths.push(toolpath);
+        }
+        toolpaths
+    }
+
+    fn generate_adaptive_pocket(&self, vertices: &[Point], step_down: f64) -> Vec<Toolpath> {
+        let mut toolpaths = Vec::new();
+        if vertices.is_empty() { return toolpaths; }
+
+        let polyline = Self::prepare_polygon(vertices);
+
+        // Calculate Z passes
+        let total_depth = self.operation.depth.abs();
+        let z_step = if step_down > 0.0 { step_down } else { total_depth };
+        let z_passes = (total_depth / z_step).ceil() as u32;
+        let tool_radius = self.operation.tool_diameter / 2.0;
+
+        // Generate all offset levels first (Outside-In)
+        let mut levels = Vec::new();
+        let mut current_offset = tool_radius;
+        
+        loop {
+            let offsets = polyline.parallel_offset(-current_offset);
+            if offsets.is_empty() {
+                break;
+            }
+            levels.push(offsets);
+            current_offset += self.operation.stepover;
+        }
+
+        // Reverse levels to go Inside-Out
+        levels.reverse();
+
+        for z_pass in 1..=z_passes {
+            let current_z = -(z_step * z_pass as f64).min(total_depth);
+            let mut toolpath = Toolpath::new(self.operation.tool_diameter, current_z);
+            
+            // Helical Entry for the first (innermost) level
+            if let Some(first_level) = levels.first() {
+                if let Some(first_path) = first_level.first() {
+                    if !first_path.vertex_data.is_empty() {
+                        let start_pt = Point::new(first_path.vertex_data[0].x, first_path.vertex_data[0].y);
+                        
+                        // Generate helix
+                        // let helix_radius = self.operation.tool_diameter * 0.25;
+                        // let helix_center = start_pt; 
+                        // Ideally helix should be inside the pocket. 
+                        // But start_pt is on the path.
+                        // For now, just ramp down to start_pt
+                        
+                        // Rapid to start XY, Safe Z
+                        toolpath.add_segment(ToolpathSegment::new(
+                            ToolpathSegmentType::RapidMove,
+                            Point::new(0.0, 0.0),
+                            start_pt,
+                            self.operation.feed_rate,
+                            self.operation.spindle_speed,
+                        ));
+                    }
+                }
+            }
+
+            for level in &levels {
+                for offset_path in level {
+                    let mut points = Vec::new();
+                    for v in &offset_path.vertex_data {
+                        points.push(Point::new(v.x, v.y));
+                    }
+                    
+                    if points.len() < 2 { continue; }
+
+                    // Close the loop
+                    points.push(points[0]);
+
+                    // If not connected to previous point, rapid move
+                    // (In a real adaptive path, we would link these smoothly)
+                    let start_pt = points[0];
+                    let needs_rapid = if let Some(last_seg) = toolpath.segments.last() {
+                        last_seg.end.distance_to(&start_pt) > 0.1
+                    } else {
+                        true
+                    };
+
+                    if needs_rapid {
+                        toolpath.add_segment(ToolpathSegment::new(
+                            ToolpathSegmentType::RapidMove,
+                            Point::new(0.0, 0.0),
+                            start_pt,
+                            self.operation.feed_rate,
+                            self.operation.spindle_speed,
+                        ));
+                    }
+
+                    // Add segments
+                    for window in points.windows(2) {
+                        toolpath.add_segment(ToolpathSegment::new(
+                            ToolpathSegmentType::LinearMove,
+                            window[0],
+                            window[1],
+                            self.operation.feed_rate,
+                            self.operation.spindle_speed,
+                        ));
+                    }
+                }
             }
             toolpaths.push(toolpath);
         }

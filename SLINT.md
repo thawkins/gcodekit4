@@ -207,3 +207,12 @@ Rectangle {
   - Explicit labels ensure users know which field is which at all times.
 - **Auto-Correction**: Implemented logic in `DeviceUiController` to automatically swap Min/Max values if entered inversely (Min > Max).
   - Prevents invalid device profiles that could cause negative dimensions in CAM tools.
+
+### Visualizer Performance Optimization (Added 2025-11-22)
+- **Issue**: Visualizer performance was poor during zoom/pan operations due to redundant G-code parsing and inefficient string generation.
+- **Optimization**:
+  - **Content Hashing**: Implemented content hashing in `Visualizer2D` to skip re-parsing when G-code content hasn't changed.
+  - **Shared State**: Used `Arc<Mutex<Visualizer2D>>` to share the visualizer instance across UI callbacks, persisting parsed state.
+  - **String Optimization**: Optimized `render_grid_to_path` and `render_origin_to_path` to use `String::with_capacity` and `std::fmt::Write` for efficient string building.
+  - **Reduced Precision**: Reduced SVG path coordinate precision from 3 to 2 decimal places to reduce data size and formatting overhead.
+- **Result**: Significantly smoother zoom and pan operations.

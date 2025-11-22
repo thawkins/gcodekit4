@@ -30,6 +30,10 @@ export component GcodeVisualizerPanel inherits VerticalBox {
     in property <string> bounding-box-info: "";
     in-out property <bool> show-grid: true;
     in-out property <bool> show-rapid-moves: true;
+    in property <float> viewbox-x: 0;
+    in property <float> viewbox-y: 0;
+    in property <float> viewbox-width: 100;
+    in property <float> viewbox-height: 100;
     out property <float> canvas-width: canvas-rect.width / 1px;
     out property <float> canvas-height: canvas-rect.height / 1px;
     
@@ -281,10 +285,10 @@ export component GcodeVisualizerPanel inherits VerticalBox {
                         
                         // Grid layer
                         if root.show-grid && root.visualization-grid-data != "" : Path {
-                            viewbox-x: 0;
-                            viewbox-y: 0;
-                            viewbox-width: canvas-rect.width / 1px;
-                            viewbox-height: canvas-rect.height / 1px;
+                            viewbox-x: root.viewbox-x;
+                            viewbox-y: root.viewbox-y;
+                            viewbox-width: root.viewbox-width;
+                            viewbox-height: root.viewbox-height;
                             width: 100%;
                             height: 100%;
                             fill: transparent;
@@ -295,10 +299,10 @@ export component GcodeVisualizerPanel inherits VerticalBox {
                         
                         // Origin marker layer (yellow cross at 0,0)
                         if root.visualization-origin-data != "" : Path {
-                            viewbox-x: 0;
-                            viewbox-y: 0;
-                            viewbox-width: canvas-rect.width / 1px;
-                            viewbox-height: canvas-rect.height / 1px;
+                            viewbox-x: root.viewbox-x;
+                            viewbox-y: root.viewbox-y;
+                            viewbox-width: root.viewbox-width;
+                            viewbox-height: root.viewbox-height;
                             width: 100%;
                             height: 100%;
                             fill: transparent;
@@ -309,29 +313,29 @@ export component GcodeVisualizerPanel inherits VerticalBox {
                         
                         // Rapid moves layer (G0) - Cyan, 50% opacity
                         if root.show-rapid-moves && root.visualization-rapid-moves-data != "" : Path {
-                            viewbox-x: 0;
-                            viewbox-y: 0;
-                            viewbox-width: canvas-rect.width / 1px;
-                            viewbox-height: canvas-rect.height / 1px;
+                            viewbox-x: root.viewbox-x;
+                            viewbox-y: root.viewbox-y;
+                            viewbox-width: root.viewbox-width;
+                            viewbox-height: root.viewbox-height;
                             width: 100%;
                             height: 100%;
                             fill: transparent;
                             stroke: #00FFFF80;  // Cyan with 50% opacity
-                            stroke-width: 1.5px;
+                            stroke-width: 1px;
                             commands: root.visualization-rapid-moves-data;
                         }
                         
                         // Toolpath layer (G1) - blue
                         if root.visualization-path-data != "" : Path {
-                            viewbox-x: 0;
-                            viewbox-y: 0;
-                            viewbox-width: canvas-rect.width / 1px;
-                            viewbox-height: canvas-rect.height / 1px;
+                            viewbox-x: root.viewbox-x;
+                            viewbox-y: root.viewbox-y;
+                            viewbox-width: root.viewbox-width;
+                            viewbox-height: root.viewbox-height;
                             width: 100%;
                             height: 100%;
                             fill: transparent;
                             stroke: #ff0000;  // Bright red for testing
-                            stroke-width: 1px;  // Single pixel wide
+                            stroke-width: 1px;
                             commands: root.visualization-path-data;
                         }
                         

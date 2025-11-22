@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.37.1-alpha] - 2025-11-22
+
+### Improved
+- **Visualizer Performance**: Optimized grid rendering and G-code parsing.
+  - Implemented content hashing to prevent redundant re-parsing of G-code during view operations (zoom/pan).
+  - Optimized SVG path string generation for grid and origin to reduce memory allocations.
+  - Reduced coordinate precision in SVG paths from 3 to 2 decimal places for smaller data transfer and faster rendering.
+  - Shared `Visualizer2D` instance across UI callbacks to persist state.
+
 ## [0.37.0-alpha] - 2025-11-22
 
 ### Added
@@ -18,9 +27,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Designer**: Updated `DesignerShape` and `DrawingObject` to store pocket strategy parameters.
 - **Designer**: Updated `generate_rectangular_pocket` and `generate_circular_pocket` to respect selected strategy (converting to polygon for Raster).
 
+### Added
+- **Designer**: Implemented "Adaptive" pocketing strategy using Spiral-Out HSM approach with rounded corners and inside-out ordering.
+
 ### Fixed
 - **Designer**: Fixed compilation errors related to `PathShape` removal (from previous task).
 - **Designer**: Fixed visibility of Raster Angle and Bidirectional controls in Shape Properties dialog (now always visible when pocketing is enabled).
+- **Designer**: Fixed panic in pocket generation caused by duplicate vertices in input polygons.
+- **Designer**: Fixed infinite loop in pocket generation by enforcing CW orientation for offset paths.
+- **Visualizer**: Improved performance by caching render paths and using SVG viewbox for zoom/pan.
+- **Visualizer**: Fixed stroke width to be consistent 1px regardless of zoom level.
+- **Visualizer**: Updated Grid and Origin rendering to use world coordinates for consistency.
 
 ## [0.36.0-alpha] - 2025-11-22
 

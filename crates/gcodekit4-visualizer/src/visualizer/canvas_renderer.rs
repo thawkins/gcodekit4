@@ -1,273 +1,79 @@
 //! Canvas-based G-Code Visualizer using SVG Path Commands
 //! Renders G-Code toolpaths as SVG path data for Slint Path elements
 
-use super::visualizer_2d::{GCodeCommand, Point2D, Visualizer2D};
+use super::visualizer_2d::Visualizer2D;
 
-const CANVAS_PADDING: f32 = 20.0;
-const _CANVAS_PADDING_2X: f32 = 40.0;
 const GRID_MAJOR_STEP_MM: f32 = 10.0;
 
-/// Transform helper for coordinate conversion
-struct CoordTransform {
-    min_x: f32,
-    min_y: f32,
-    scale: f32,
-    height: f32,
-    x_offset: f32,
-    y_offset: f32,
-}
-
-impl CoordTransform {
-    fn new(min_x: f32, min_y: f32, scale: f32, height: f32, x_offset: f32, y_offset: f32) -> Self {
-        Self {
-            min_x,
-            min_y,
-            scale,
-            height,
-            x_offset,
-            y_offset,
-        }
-    }
-
-    fn world_to_screen(&self, x: f32, y: f32) -> (f32, f32) {
-        let screen_x = (x - self.min_x) * self.scale + CANVAS_PADDING + self.x_offset;
-        // Flip Y axis: higher Y values should move up the screen (smaller screen_y)
-        let screen_y =
-            self.height - ((y - self.min_y) * self.scale + CANVAS_PADDING - self.y_offset);
-        (screen_x, screen_y)
-    }
-
-    fn screen_to_world(&self, screen_x: f32, screen_y: f32) -> (f32, f32) {
-        let world_x = ((screen_x - CANVAS_PADDING - self.x_offset) / self.scale) + self.min_x;
-        // Reverse the Y flip transformation
-        let world_y =
-            ((self.height - screen_y - CANVAS_PADDING + self.y_offset) / self.scale) + self.min_y;
-        (world_x, world_y)
-    }
-
-    fn point_to_screen(&self, point: Point2D) -> (f32, f32) {
-        self.world_to_screen(point.x, point.y)
-    }
-}
-
-use std::fmt::Write;
-
 /// Render toolpath as SVG path commands (cutting moves only)
-pub fn render_toolpath_to_path(visualizer: &Visualizer2D, width: u32, height: u32) -> String {
-    if visualizer.commands.is_empty() {
-        tracing::warn!("No commands to render - visualizer.commands is empty!");
-        return String::new();
-    }
-
-    // Estimate capacity: ~25 bytes per command (e.g. "L 123.45 678.90 ")
-    let estimated_capacity = visualizer.commands.len() * 25;
-    let mut path = String::with_capacity(estimated_capacity);
-
-    let scale = calculate_scale(visualizer, width, height);
-    let transform = CoordTransform::new(
-        visualizer.min_x,
-        visualizer.min_y,
-        scale,
-        height as f32,
-        visualizer.x_offset,
-        visualizer.y_offset,
-    );
-
-    let mut last_draw_pos: Option<(f32, f32)> = None;
-
-    for (idx, cmd) in visualizer.commands.iter().enumerate() {
-        match cmd {
-            GCodeCommand::Move { from, to, rapid } => {
-                let (x1, y1) = transform.point_to_screen(*from);
-                let (x2, y2) = transform.point_to_screen(*to);
-
-                if *rapid {
-                    // Rapid moves break path continuity (rendered separately)
-                    last_draw_pos = None;
-                    continue;
-                }
-
-                if idx < 5 {
-                }
-
-                // For cutting moves, ensure we start with a move command if needed
-                if last_draw_pos.is_none() {
-                    let _ = write!(path, "M {:.1} {:.1} ", x1, y1);
-                }
-
-                // Add the line to the destination
-                let _ = write!(path, "L {:.1} {:.1} ", x2, y2);
-                last_draw_pos = Some((x2, y2));
-            }
-            GCodeCommand::Arc {
-                from,
-                to,
-                center,
-                clockwise,
-            } => {
-                let (x1, y1) = transform.point_to_screen(*from);
-                let (x2, y2) = transform.point_to_screen(*to);
-
-                // Calculate radius in screen space
-                let radius = ((from.x - center.x).powi(2) + (from.y - center.y).powi(2)).sqrt();
-                let screen_radius = radius * scale;
-
-                if !screen_radius.is_finite() || screen_radius < 0.001 {
-                    continue;
-                }
-
-                // Ensure we have a starting position
-                if last_draw_pos.is_none() {
-                    let _ = write!(path, "M {:.1} {:.1} ", x1, y1);
-                }
-
-                // Check if this is a full circle (from == to)
-                let is_full_circle = (from.x - to.x).abs() < 0.001 && (from.y - to.y).abs() < 0.001;
-
-                if is_full_circle {
-                    // SVG can't render a full circle arc in one command
-                    // Split into two semicircles
-
-                    // Calculate midpoint on opposite side of circle
-                    let mid_x_world = center.x + (center.x - from.x);
-                    let mid_y_world = center.y + (center.y - from.y);
-                    let (mid_x, mid_y) = transform.world_to_screen(mid_x_world, mid_y_world);
-
-                    let sweep = if *clockwise { 1 } else { 0 };
-
-                    // First semicircle: from start to midpoint
-                    let _ = write!(
-                        path,
-                        "A {:.1} {:.1} 0 0 {} {:.1} {:.1} ",
-                        screen_radius, screen_radius, sweep, mid_x, mid_y
-                    );
-
-                    // Second semicircle: from midpoint back to start
-                    let _ = write!(
-                        path,
-                        "A {:.1} {:.1} 0 0 {} {:.1} {:.1} ",
-                        screen_radius, screen_radius, sweep, x2, y2
-                    );
-                } else {
-                    // Regular arc - determine if it's a large arc (>180 degrees)
-                    let start_angle = ((from.y - center.y).atan2(from.x - center.x)).to_degrees();
-                    let end_angle = ((to.y - center.y).atan2(to.x - center.x)).to_degrees();
-
-                    let mut arc_angle = if *clockwise {
-                        start_angle - end_angle
-                    } else {
-                        end_angle - start_angle
-                    };
-
-                    if arc_angle < 0.0 {
-                        arc_angle += 360.0;
-                    }
-
-                    let large_arc = if arc_angle > 180.0 { 1 } else { 0 };
-                    let sweep = if *clockwise { 1 } else { 0 };
-
-                    let _ = write!(
-                        path,
-                        "A {:.1} {:.1} 0 {} {} {:.1} {:.1} ",
-                        screen_radius, screen_radius, large_arc, sweep, x2, y2
-                    );
-                }
-
-                last_draw_pos = Some((x2, y2));
-            }
-        }
-    }
-
-    path
+pub fn render_toolpath_to_path(visualizer: &Visualizer2D, _width: u32, _height: u32) -> String {
+    visualizer.cached_path.clone()
 }
 
 /// Render rapid moves (G0) as SVG path commands
-pub fn render_rapid_moves_to_path(visualizer: &Visualizer2D, width: u32, height: u32) -> String {
-    if visualizer.commands.is_empty() {
-        return String::new();
-    }
-
-    // Estimate capacity: ~30 bytes per rapid move
-    let estimated_capacity = visualizer.commands.len() * 10; // Assuming 1/3 are rapids
-    let mut path = String::with_capacity(estimated_capacity);
-
-    let scale = calculate_scale(visualizer, width, height);
-    let transform = CoordTransform::new(
-        visualizer.min_x,
-        visualizer.min_y,
-        scale,
-        height as f32,
-        visualizer.x_offset,
-        visualizer.y_offset,
-    );
-
-    for cmd in &visualizer.commands {
-        match cmd {
-            GCodeCommand::Move { from, to, rapid } => {
-                if *rapid {
-                    let (x1, y1) = transform.point_to_screen(*from);
-                    let (x2, y2) = transform.point_to_screen(*to);
-                    let _ = write!(path, "M {:.1} {:.1} L {:.1} {:.1} ", x1, y1, x2, y2);
-                }
-            }
-            GCodeCommand::Arc { .. } => {
-                // Arcs are always cutting moves, skip
-            }
-        }
-    }
-
-    path
+pub fn render_rapid_moves_to_path(visualizer: &Visualizer2D, _width: u32, _height: u32) -> String {
+    visualizer.cached_rapid_path.clone()
 }
 
 /// Render grid as SVG path commands
 pub fn render_grid_to_path(visualizer: &Visualizer2D, width: u32, height: u32) -> (String, f32) {
-    let scale = calculate_scale(visualizer, width, height);
-    let transform = CoordTransform::new(
-        visualizer.min_x,
-        visualizer.min_y,
-        scale,
-        height as f32,
-        visualizer.x_offset,
-        visualizer.y_offset,
-    );
-
-    let mut path = String::new();
-    const MAX_ITERATIONS: usize = 100000;
-
-    // Calculate the world coordinate range needed to fill entire viewport
-    // Add extra margin to ensure full coverage
-    let margin_pixels = 500.0;
-    let (world_left, world_top) = transform.screen_to_world(-margin_pixels, -margin_pixels);
-    let (world_right, world_bottom) =
-        transform.screen_to_world(width as f32 + margin_pixels, height as f32 + margin_pixels);
-
-    // Y is flipped, so world_top > world_bottom. Use min/max to get correct range
+    // Get the visible world bounds from the viewbox calculation
+    let (vb_x, vb_y, vb_w, vb_h) = visualizer.get_viewbox(width as f32, height as f32);
+    
+    // SVG coordinates:
+    // Left = vb_x
+    // Right = vb_x + vb_w
+    // Top = vb_y
+    // Bottom = vb_y + vb_h
+    
+    // Convert back to World coordinates for grid calculation
+    // World X = SVG X
+    // World Y = -SVG Y
+    
+    let world_left = vb_x;
+    let world_right = vb_x + vb_w;
+    let world_top = -vb_y;
+    let world_bottom = -(vb_y + vb_h);
+    
     let min_y = world_bottom.min(world_top);
     let max_y = world_bottom.max(world_top);
     let world_width = world_right - world_left;
     let world_height = max_y - min_y;
 
     // Adaptive grid spacing
-    // Start with 10mm, increase by 10x if too dense
     let mut step = GRID_MAJOR_STEP_MM;
     while (world_width / step) > 100.0 || (world_height / step) > 100.0 {
         step *= 10.0;
     }
 
-    // Round to nearest grid line, ensuring we cover the full range
+    // Round to nearest grid line
     let start_x = (world_left / step).floor() * step;
     let end_x = (world_right / step).ceil() * step;
 
     let start_y = (min_y / step).floor() * step;
     let end_y = (max_y / step).ceil() * step;
 
+    // Estimate capacity: ~50 chars per line * (num_x + num_y lines)
+    let num_x = ((end_x - start_x) / step).abs() as usize + 2;
+    let num_y = ((end_y - start_y) / step).abs() as usize + 2;
+    let mut path = String::with_capacity((num_x + num_y) * 50);
+    
+    use std::fmt::Write;
+
+    const MAX_ITERATIONS: usize = 100000;
+
     // Draw vertical grid lines
     let mut x = start_x;
     let mut iterations = 0;
     while x <= end_x && iterations < MAX_ITERATIONS {
-        let (screen_x, _) = transform.world_to_screen(x, 0.0);
-        // Draw line across full height, no need to clip
-        path.push_str(&format!("M {} 0 L {} {} ", screen_x, screen_x, height));
+        // Line from bottom to top in world coords -> top to bottom in SVG coords
+        // SVG X = x
+        // SVG Y range: -min_y to -max_y
+        // But we can just draw from -max_y to -min_y (or vice versa)
+        // Actually, we want to cover the viewbox height.
+        // Viewbox Y range is vb_y to vb_y + vb_h.
+        // So we can just draw from vb_y to vb_y + vb_h.
+        let _ = write!(path, "M {:.2} {:.2} L {:.2} {:.2} ", x, vb_y, x, vb_y + vb_h);
         x += step;
         iterations += 1;
     }
@@ -276,9 +82,10 @@ pub fn render_grid_to_path(visualizer: &Visualizer2D, width: u32, height: u32) -
     let mut y = start_y;
     iterations = 0;
     while y <= end_y && iterations < MAX_ITERATIONS {
-        let (_, screen_y) = transform.world_to_screen(0.0, y);
-        // Draw line across full width, no need to clip
-        path.push_str(&format!("M 0 {} L {} {} ", screen_y, width, screen_y));
+        // Horizontal line at World Y = y
+        // SVG Y = -y
+        let svg_y = -y;
+        let _ = write!(path, "M {:.2} {:.2} L {:.2} {:.2} ", vb_x, svg_y, vb_x + vb_w, svg_y);
         y += step;
         iterations += 1;
     }
@@ -288,41 +95,18 @@ pub fn render_grid_to_path(visualizer: &Visualizer2D, width: u32, height: u32) -
 
 /// Render origin marker at (0,0) as yellow cross
 pub fn render_origin_to_path(visualizer: &Visualizer2D, width: u32, height: u32) -> String {
-    let scale = calculate_scale(visualizer, width, height);
+    let (vb_x, vb_y, vb_w, vb_h) = visualizer.get_viewbox(width as f32, height as f32);
+    
+    let mut path = String::with_capacity(100);
+    use std::fmt::Write;
 
-    let transform = CoordTransform::new(
-        visualizer.min_x,
-        visualizer.min_y,
-        scale,
-        height as f32,
-        visualizer.x_offset,
-        visualizer.y_offset,
-    );
+    // Vertical line (full height of viewbox) at X=0
+    let _ = write!(path, "M 0 {:.2} L 0 {:.2} ", vb_y, vb_y + vb_h);
 
-    let (origin_x, origin_y) = transform.world_to_screen(0.0, 0.0);
-
-    let mut path = String::new();
-
-    // Vertical line (full height)
-    path.push_str(&format!(
-        "M {} 0 L {} {} ",
-        origin_x, origin_x, height
-    ));
-
-    // Horizontal line (full width)
-    path.push_str(&format!(
-        "M 0 {} L {} {} ",
-        origin_y, width, origin_y
-    ));
+    // Horizontal line (full width of viewbox) at Y=0 (SVG Y=0)
+    let _ = write!(path, "M {:.2} 0 L {:.2} 0 ", vb_x, vb_x + vb_w);
 
     path
-}
-
-/// Calculate scale factor based on visualizer bounds and canvas size
-fn calculate_scale(visualizer: &Visualizer2D, _width: u32, _height: u32) -> f32 {
-    // Use 1:1 scale (1 pixel = 1mm) as base, then apply zoom and scale_factor
-    let base_scale = 1.0;
-    base_scale * visualizer.zoom_scale * visualizer.scale_factor
 }
 
 #[cfg(test)]

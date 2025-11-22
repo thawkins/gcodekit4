@@ -1684,6 +1684,8 @@ fn main() -> anyhow::Result<()> {
                             grid_data,
                             origin_data,
                             grid_size,
+                            _bbox_info,
+                            viewbox,
                         )) = rx.recv()
                         {
                             let window_handle = window_weak.clone();
@@ -1692,6 +1694,7 @@ fn main() -> anyhow::Result<()> {
                             let rapid_moves_clone = rapid_moves_data.clone();
                             let grid_clone = grid_data.clone();
                             let origin_clone = origin_data.clone();
+                            let viewbox_clone = viewbox.clone();
 
                             slint::invoke_from_event_loop(move || {
                                 if let Some(window) = window_handle.upgrade() {
@@ -1699,6 +1702,13 @@ fn main() -> anyhow::Result<()> {
                                     window.set_visualizer_status(slint::SharedString::from(
                                         status_clone.clone(),
                                     ));
+                                    
+                                    if let Some((vx, vy, vw, vh)) = viewbox_clone {
+                                        window.set_visualizer_viewbox_x(vx);
+                                        window.set_visualizer_viewbox_y(vy);
+                                        window.set_visualizer_viewbox_width(vw);
+                                        window.set_visualizer_viewbox_height(vh);
+                                    }
 
                                     // Set canvas path data if available
                                     if let Some(path) = path_clone {
@@ -6458,11 +6468,16 @@ fn main() -> anyhow::Result<()> {
     use std::sync::{Arc, Mutex};
     let zoom_scale = Arc::new(Mutex::new(1.0f32));
     let pan_offset = Arc::new(Mutex::new((0.0f32, 0.0f32)));
+    
+    // Shared visualizer instance to persist parsed data
+    use gcodekit4::visualizer::Visualizer2D;
+    let visualizer = Arc::new(Mutex::new(Visualizer2D::new()));
 
     // Handle refresh visualization button
     let window_weak = main_window.as_weak();
     let zoom_for_refresh = zoom_scale.clone();
     let pan_for_refresh = pan_offset.clone();
+    let visualizer_refresh = visualizer.clone();
     main_window.on_refresh_visualization(move |canvas_width, canvas_height| {
         // Skip if canvas dimensions are invalid (not yet laid out)
         if canvas_width < 100.0 || canvas_height < 100.0 {
@@ -6511,7 +6526,7 @@ fn main() -> anyhow::Result<()> {
             // Spawn rendering thread
             let content_owned = content.to_string();
 
-            // Message format: (progress, status, path_data, rapid_moves_data, grid_data, origin_data, grid_size, bbox_info)
+            // Message format: (progress, status, path_data, rapid_moves_data, grid_data, origin_data, grid_size, bbox_info, viewbox)
             let (tx, rx) = std::sync::mpsc::channel::<(
                 f32,
                 String,
@@ -6521,12 +6536,14 @@ fn main() -> anyhow::Result<()> {
                 Option<String>,
                 Option<f32>,
                 Option<String>,
+                Option<(f32, f32, f32, f32)>,
             )>();
             let window_weak_render = window_weak.clone();
             let zoom_scale_render = zoom_for_refresh.clone();
             let pan_offset_render = pan_for_refresh.clone();
             let zoom_scale_for_msg = zoom_for_refresh.clone();
             let pan_offset_for_msg = pan_for_refresh.clone();
+            let visualizer_thread = visualizer_refresh.clone();
 
             // Get show_grid state before spawning thread
             let show_grid = window.get_visualizer_show_grid();
@@ -6535,71 +6552,71 @@ fn main() -> anyhow::Result<()> {
                 if let Err(e) = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 use gcodekit4::visualizer::{
                     render_grid_to_path, render_origin_to_path, render_rapid_moves_to_path,
-                    render_toolpath_to_path, Visualizer2D,
+                    render_toolpath_to_path,
                 };
 
-                let _ = tx.send((0.1, "Parsing G-code...".to_string(), None, None, None, None, None, None));
+                let _ = tx.send((0.1, "Parsing G-code...".to_string(), None, None, None, None, None, None, None));
 
-                let mut visualizer = Visualizer2D::new();
-                visualizer.show_grid = show_grid;
+                if let Ok(mut visualizer) = visualizer_thread.lock() {
+                    visualizer.show_grid = show_grid;
 
-                visualizer.parse_gcode(&content_owned);
+                    visualizer.parse_gcode(&content_owned);
 
-                // Set default view to position origin at bottom-left
-                visualizer.set_default_view(canvas_width, canvas_height);
+                    // Apply zoom scale
+                    if let Ok(scale) = zoom_scale_render.lock() {
+                        visualizer.zoom_scale = *scale;
+                    }
 
-                // Apply zoom scale
-                if let Ok(scale) = zoom_scale_render.lock() {
-                    visualizer.zoom_scale = *scale;
-                }
+                    // Apply pan offsets
+                    if let Ok(offsets) = pan_offset_render.lock() {
+                        visualizer.x_offset = offsets.0;
+                        visualizer.y_offset = offsets.1;
+                    }
 
-                // Apply pan offsets
-                if let Ok(offsets) = pan_offset_render.lock() {
-                    visualizer.x_offset = offsets.0;
-                    visualizer.y_offset = offsets.1;
-                }
+                    let _ = tx.send((0.3, "Rendering...".to_string(), None, None, None, None, None, None, None));
 
-                let _ = tx.send((0.3, "Rendering...".to_string(), None, None, None, None, None, None));
+                    // Generate canvas path data
+                    let path_data =
+                        render_toolpath_to_path(&visualizer, canvas_width as u32, canvas_height as u32);
+                    let rapid_moves_data = render_rapid_moves_to_path(
+                        &visualizer,
+                        canvas_width as u32,
+                        canvas_height as u32,
+                    );
+                    let (grid_data, grid_size) = if show_grid {
+                        render_grid_to_path(&visualizer, canvas_width as u32, canvas_height as u32)
+                    } else {
+                        (String::new(), 0.0)
+                    };
+                    let origin_data =
+                        render_origin_to_path(&visualizer, canvas_width as u32, canvas_height as u32);
 
-                // Generate canvas path data
-                let path_data =
-                    render_toolpath_to_path(&visualizer, canvas_width as u32, canvas_height as u32);
-                let rapid_moves_data = render_rapid_moves_to_path(
-                    &visualizer,
-                    canvas_width as u32,
-                    canvas_height as u32,
-                );
-                let (grid_data, grid_size) = if show_grid {
-                    render_grid_to_path(&visualizer, canvas_width as u32, canvas_height as u32)
-                } else {
-                    (String::new(), 0.0)
-                };
-                let origin_data =
-                    render_origin_to_path(&visualizer, canvas_width as u32, canvas_height as u32);
+                    // Calculate bounding box info
+                    let bbox_info = if let Some((min_x, max_x, min_y, max_y)) = visualizer.get_cutting_bounds() {
+                        let width = max_x - min_x;
+                        let height = max_y - min_y;
+                        Some(format!("W: {:.1}mm H: {:.1}mm at X:{:.1} Y:{:.1}", width, height, min_x, min_y))
+                    } else {
+                        None
+                    };
+                    
+                    let viewbox = visualizer.get_viewbox(canvas_width, canvas_height);
 
-                // Calculate bounding box info
-                let bbox_info = if let Some((min_x, max_x, min_y, max_y)) = visualizer.get_cutting_bounds() {
-                    let width = max_x - min_x;
-                    let height = max_y - min_y;
-                    Some(format!("W: {:.1}mm H: {:.1}mm at X:{:.1} Y:{:.1}", width, height, min_x, min_y))
-                } else {
-                    None
-                };
-
-                if !path_data.is_empty() || !rapid_moves_data.is_empty() || !grid_data.is_empty() {
-                    let _ = tx.send((
-                        1.0,
-                        "Complete".to_string(),
-                        Some(path_data),
-                        Some(rapid_moves_data),
-                        Some(grid_data),
-                        Some(origin_data),
-                        Some(grid_size),
-                        bbox_info,
-                    ));
-                } else {
-                    tracing::error!("ERROR: no render data generated!");
-                    let _ = tx.send((1.0, "Error: no data".to_string(), None, None, None, None, None, None));
+                    if !path_data.is_empty() || !rapid_moves_data.is_empty() || !grid_data.is_empty() {
+                        let _ = tx.send((
+                            1.0,
+                            "Complete".to_string(),
+                            Some(path_data),
+                            Some(rapid_moves_data),
+                            Some(grid_data),
+                            Some(origin_data),
+                            Some(grid_size),
+                            bbox_info,
+                            Some(viewbox),
+                        ));
+                    } else {
+                        let _ = tx.send((1.0, "Error: no data".to_string(), None, None, None, None, None, None, None));
+                    }
                 }
                 })) {
                     tracing::error!("Render thread panicked: {:?}", e);
@@ -6617,6 +6634,7 @@ fn main() -> anyhow::Result<()> {
                     origin_data,
                     grid_size,
                     bbox_info,
+                    viewbox,
                 )) = rx.recv()
                 {
                     let window_handle = window_weak_render.clone();
@@ -6626,6 +6644,7 @@ fn main() -> anyhow::Result<()> {
                     let grid_clone = grid_data.clone();
                     let origin_clone = origin_data.clone();
                     let bbox_info_clone = bbox_info.clone();
+                    let viewbox_clone = viewbox.clone();
                     let zoom_for_closure = zoom_scale_for_msg.clone();
                     let pan_for_closure = pan_offset_for_msg.clone();
 
@@ -6661,6 +6680,13 @@ fn main() -> anyhow::Result<()> {
                             } else if progress == 1.0 {
                                 // Clear if no info and finished
                                 window.set_visualizer_bounding_box_info(slint::SharedString::from(""));
+                            }
+                            
+                            if let Some((vx, vy, vw, vh)) = viewbox_clone {
+                                window.set_visualizer_viewbox_x(vx);
+                                window.set_visualizer_viewbox_y(vy);
+                                window.set_visualizer_viewbox_width(vw);
+                                window.set_visualizer_viewbox_height(vh);
                             }
 
                             // Update indicator properties
@@ -6751,6 +6777,7 @@ fn main() -> anyhow::Result<()> {
     let window_weak_fit = main_window.as_weak();
     let zoom_for_fit = zoom_scale.clone();
     let pan_for_fit = pan_offset.clone();
+    let visualizer_fit = visualizer.clone();
     main_window.on_fit_to_view(move |canvas_width, canvas_height| {
         if let Some(window) = window_weak_fit.upgrade() {
             let content = window.get_gcode_content();
@@ -6770,30 +6797,30 @@ fn main() -> anyhow::Result<()> {
             let window_weak_render = window_weak_fit.clone();
             let zoom_fit_render = zoom_for_fit.clone();
             let pan_fit_render = pan_for_fit.clone();
+            let visualizer_thread = visualizer_fit.clone();
 
             // Get show_grid state before spawning thread
             let show_grid = window.get_visualizer_show_grid();
 
             std::thread::spawn(move || {
-                use gcodekit4::visualizer::Visualizer2D;
-
                 let _ = tx.send((0.1, "Calculating fit...".to_string()));
 
-                let mut visualizer = Visualizer2D::new();
-                visualizer.show_grid = show_grid;
-                visualizer.parse_gcode(&content_owned);
+                if let Ok(mut visualizer) = visualizer_thread.lock() {
+                    visualizer.show_grid = show_grid;
+                    visualizer.parse_gcode(&content_owned);
 
-                // Calculate fit parameters using actual canvas dimensions
-                visualizer.fit_to_view(canvas_width, canvas_height);
+                    // Calculate fit parameters using actual canvas dimensions
+                    visualizer.fit_to_view(canvas_width, canvas_height);
 
-                // Apply fit parameters to shared state
-                if let Ok(mut scale) = zoom_fit_render.lock() {
-                    *scale = visualizer.zoom_scale;
-                }
+                    // Apply fit parameters to shared state
+                    if let Ok(mut scale) = zoom_fit_render.lock() {
+                        *scale = visualizer.zoom_scale;
+                    }
 
-                if let Ok(mut offsets) = pan_fit_render.lock() {
-                    offsets.0 = visualizer.x_offset;
-                    offsets.1 = visualizer.y_offset;
+                    if let Ok(mut offsets) = pan_fit_render.lock() {
+                        offsets.0 = visualizer.x_offset;
+                        offsets.1 = visualizer.y_offset;
+                    }
                 }
 
                 let _ = tx.send((1.0, "Complete".to_string()));
@@ -6933,6 +6960,8 @@ fn render_gcode_visualization_background_channel(
         Option<String>,
         Option<String>,
         Option<f32>,
+        Option<String>,
+        Option<(f32, f32, f32, f32)>,
     )>,
 ) {
     use gcodekit4::visualizer::{
@@ -6940,7 +6969,7 @@ fn render_gcode_visualization_background_channel(
         render_toolpath_to_path, Visualizer2D,
     };
 
-    let _ = tx.send((0.1, "Parsing G-code...".to_string(), None, None, None, None, None));
+    let _ = tx.send((0.1, "Parsing G-code...".to_string(), None, None, None, None, None, None, None));
 
     // Parse G-code
     let mut visualizer = Visualizer2D::new();
@@ -6949,13 +6978,15 @@ fn render_gcode_visualization_background_channel(
     // Set default view to position origin at bottom-left
     visualizer.set_default_view(width as f32, height as f32);
 
-    let _ = tx.send((0.3, "Rendering...".to_string(), None, None, None, None, None));
+    let _ = tx.send((0.3, "Rendering...".to_string(), None, None, None, None, None, None, None));
 
     // Generate canvas path data
     let path_data = render_toolpath_to_path(&visualizer, width, height);
     let rapid_moves_data = render_rapid_moves_to_path(&visualizer, width, height);
     let (grid_data, grid_size) = render_grid_to_path(&visualizer, width, height);
     let origin_data = render_origin_to_path(&visualizer, width, height);
+    
+    let viewbox = visualizer.get_viewbox(width as f32, height as f32);
 
 
     if !path_data.is_empty() || !rapid_moves_data.is_empty() || !grid_data.is_empty() {
@@ -6967,8 +6998,10 @@ fn render_gcode_visualization_background_channel(
             Some(grid_data),
             Some(origin_data),
             Some(grid_size),
+            None,
+            Some(viewbox),
         ));
     } else {
-        let _ = tx.send((1.0, "Error: no data".to_string(), None, None, None, None, None));
+        let _ = tx.send((1.0, "Error: no data".to_string(), None, None, None, None, None, None, None));
     }
 }

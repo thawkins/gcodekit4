@@ -1,10 +1,21 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.36.0-alpha  
+**Version**: 0.37.1-alpha  
 **Last Updated**: 2025-11-22  
-**Status**: Spoilboard Surfacing & DeviceDB Improvements
+**Status**: Visualizer Performance Optimization
 
-### Latest Release (v0.36.0-alpha) - Spoilboard Surfacing & DeviceDB Improvements
+### Latest Release (v0.37.1-alpha) - Visualizer Performance Optimization
+- ✅ **Visualizer Performance**
+  - Optimized grid rendering and G-code parsing for smoother zoom/pan operations.
+  - Implemented content hashing to prevent redundant re-parsing.
+  - Shared `Visualizer2D` instance across UI callbacks.
+
+### Previous Release (v0.37.0-alpha) - Pocketing Strategies
+- ✅ **Pocketing Strategies**
+  - Added Raster, Contour-Parallel, and Adaptive strategies.
+  - Integrated `cavalier_contours` for robust polygon offsetting.
+
+### Previous Release (v0.36.0-alpha) - Spoilboard Surfacing & DeviceDB Improvements
 - ✅ **Spoilboard Surfacing Tool**
   - Dedicated CAM tool for flattening CNC beds/spoilboards
   - Automatic dimension loading from DeviceDB

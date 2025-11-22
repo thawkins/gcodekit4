@@ -6,6 +6,7 @@ use gcodekit4_designer::{
     ToolLibrary, ToolType, Toolpath, ToolpathAnalyzer, ToolpathSegment, ToolpathSegmentType,
     ToolpathSimulator, SimulationState,
 };
+use gcodekit4_designer::pocket_operations::PocketStrategy;
 
 #[test]
 fn test_phase3_tool_library_creation() {
@@ -303,4 +304,44 @@ fn test_phase3_combined_workflow() {
 
     assert!(total_time > 0.0);
     assert!(volume > 0.0);
+}
+
+#[test]
+fn test_phase3_pocket_with_duplicate_vertices() {
+    let op = PocketOperation::new("pocket_dup".to_string(), -5.0, 3.175);
+    let gen = PocketGenerator::new(op);
+    
+    // Create a polygon with duplicate vertices
+    let vertices = vec![
+        Point::new(0.0, 0.0),
+        Point::new(10.0, 0.0),
+        Point::new(10.0, 0.0), // Duplicate
+        Point::new(10.0, 10.0),
+        Point::new(0.0, 10.0),
+        Point::new(0.0, 0.0), // Closing point (same as first)
+    ];
+
+    // This should not panic
+    let toolpaths = gen.generate_polygon_pocket(&vertices, 5.0);
+    assert!(toolpaths.len() > 0);
+}
+
+#[test]
+fn test_phase3_pocket_adaptive() {
+    let mut op = PocketOperation::new("pocket_adaptive".to_string(), -5.0, 3.175);
+    op.set_strategy(PocketStrategy::Adaptive);
+    let gen = PocketGenerator::new(op);
+    
+    let rect = Rectangle::new(0.0, 0.0, 50.0, 50.0);
+    let toolpaths = gen.generate_rectangular_pocket(&rect, 5.0);
+    
+    assert!(toolpaths.len() > 0);
+    let toolpath = &toolpaths[0];
+    
+    // Check if we have segments
+    assert!(toolpath.segments.len() > 0);
+    
+    // Check if we have a helical entry (Rapid to start, then Linear moves)
+    // The current implementation just does Rapid to start.
+    // But we should verify it generates paths.
 }

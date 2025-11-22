@@ -143,6 +143,10 @@ export component MainWindow inherits Window {
     in property <string> visualizer-bounding-box-info: "";
     in-out property <bool> visualizer-show-grid: true;
     in-out property <bool> visualizer-show-rapid-moves: true;
+    in property <float> visualizer-viewbox-x: 0;
+    in property <float> visualizer-viewbox-y: 0;
+    in property <float> visualizer-viewbox-width: 100;
+    in property <float> visualizer-viewbox-height: 100;
     in-out property <int> gcode-focus-trigger: 0;  // Incrementing this triggers editor focus
     in-out property <float> visualizer-canvas-width: 800.0;
     in-out property <float> visualizer-canvas-height: 600.0;
@@ -1163,6 +1167,10 @@ export component MainWindow inherits Window {
                         bounding-box-info: root.visualizer-bounding-box-info;
                         show-grid <=> root.visualizer-show-grid;
                         show-rapid-moves <=> root.visualizer-show-rapid-moves;
+                        viewbox-x: root.visualizer-viewbox-x;
+                        viewbox-y: root.visualizer-viewbox-y;
+                        viewbox-width: root.visualizer-viewbox-width;
+                        viewbox-height: root.visualizer-viewbox-height;
                         
                         refresh-visualization(canvas-width, canvas-height) => {
                             root.visualizer-canvas-width = canvas-width;
