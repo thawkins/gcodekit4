@@ -4411,6 +4411,34 @@ fn main() -> anyhow::Result<()> {
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
     main_window.on_designer_delete_selected(move || {
+        let count = {
+            let state = designer_mgr_clone.borrow();
+            state.selected_count()
+        };
+
+        if count > 1 {
+            // Show confirmation dialog
+            if let Some(window) = window_weak.upgrade() {
+                window.invoke_show_delete_confirmation(count as i32);
+            }
+        } else if count == 1 {
+            // Just delete
+            let mut state = designer_mgr_clone.borrow_mut();
+            state.delete_selected();
+            if let Some(window) = window_weak.upgrade() {
+                update_designer_ui(&window, &mut state);
+                window.set_connection_status(slint::SharedString::from(format!(
+                    "Shapes: {}",
+                    state.canvas.shapes().len()
+                )));
+            }
+        }
+    });
+
+    // Designer: Confirm Delete callback
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_confirm_delete(move || {
         let mut state = designer_mgr_clone.borrow_mut();
         state.delete_selected();
         if let Some(window) = window_weak.upgrade() {
@@ -4721,19 +4749,15 @@ fn main() -> anyhow::Result<()> {
     // Designer: Canvas Click callback
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
+    let shift_pressed_clone = shift_pressed.clone();
     main_window.on_designer_canvas_click(move |x: f32, y: f32| {
         let mut state = designer_mgr_clone.borrow_mut();
 
         // Convert pixel coordinates to world coordinates
         let world_point = state.canvas.pixel_to_world(x as f64, y as f64);
-
-        // If in Select mode, try to select a shape; otherwise add a new shape
-        if state.canvas.mode() == gcodekit4::DrawingMode::Select {
-            // Try to select - this will deselect any other shapes
-            let _ = state.canvas.select_at(&world_point);
-        } else {
-            state.add_shape_at(world_point.x, world_point.y);
-        }
+        
+        let multi_select = *shift_pressed_clone.borrow();
+        state.add_shape_at(world_point.x, world_point.y, multi_select);
 
         if let Some(window) = window_weak.upgrade() {
             update_designer_ui(&window, &mut state);

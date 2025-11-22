@@ -98,11 +98,14 @@ impl DesignerState {
         self.canvas.set_pan(5.0, 5.0);
     }
 
-    /// Deletes the selected shape.
+    /// Deletes the selected shape(s).
     pub fn delete_selected(&mut self) {
-        if let Some(id) = self.canvas.selected_id() {
-            self.canvas.remove_shape(id);
-        }
+        self.canvas.remove_selected();
+    }
+
+    /// Get number of selected shapes
+    pub fn selected_count(&self) -> usize {
+        self.canvas.selected_count()
     }
 
     /// Clears all shapes from the canvas.
@@ -240,11 +243,11 @@ impl DesignerState {
     }
 
     /// Adds a shape to the canvas at the specified position based on current mode.
-    pub fn add_shape_at(&mut self, x: f64, y: f64) {
+    pub fn add_shape_at(&mut self, x: f64, y: f64, multi_select: bool) {
         match self.canvas.mode() {
             DrawingMode::Select => {
                 // Select mode - just select shape at position
-                self.canvas.select_at(&Point::new(x, y));
+                self.canvas.select_at(&Point::new(x, y), multi_select);
             }
             DrawingMode::Rectangle => {
                 // Draw 60x40 rectangle starting at click point

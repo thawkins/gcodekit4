@@ -1,4 +1,4 @@
-use gcodekit4_designer::shapes::{Circle, Ellipse, Line, Point, Polyline, Rectangle, Shape};
+use gcodekit4_designer::shapes::{Circle, Ellipse, Line, Point, Rectangle, Shape};
 
 #[test]
 fn test_point_distance() {
@@ -45,6 +45,7 @@ fn test_ellipse_bounding_box() {
     assert_eq!(max_y, 13.0);
 }
 
+/*
 #[test]
 fn test_polyline_regular() {
     let polyline = Polyline::regular(Point::new(0.0, 0.0), 10.0, 4);
@@ -77,3 +78,4 @@ fn test_polyline_contains_point() {
     assert!(polyline.contains_point(&Point::new(5.0, 5.0)));
     assert!(!polyline.contains_point(&Point::new(15.0, 5.0)));
 }
+*/

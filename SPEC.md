@@ -1,10 +1,16 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.37.1-alpha  
+**Version**: 0.37.2-alpha  
 **Last Updated**: 2025-11-22  
 **Status**: Visualizer Performance Optimization
 
-### Latest Release (v0.37.1-alpha) - Visualizer Performance Optimization
+### Latest Release (v0.37.2-alpha) - Designer Improvements
+- ✅ **Multiple Selection & Deletion**
+  - Added support for selecting multiple shapes with Shift+Click.
+  - Implemented confirmation dialog for bulk deletion.
+  - Added `DeleteConfirmationDialog` component.
+
+### Previous Release (v0.37.1-alpha) - Visualizer Performance Optimization
 - ✅ **Visualizer Performance**
   - Optimized grid rendering and G-code parsing for smoother zoom/pan operations.
   - Implemented content hashing to prevent redundant re-parsing.

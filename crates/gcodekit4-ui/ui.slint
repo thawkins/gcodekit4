@@ -392,6 +392,8 @@ export component MainWindow inherits Window {
     callback designer-file-save-as();
     callback designer-toggle-grid();
     callback invoke-designer-gcode-generated(string);
+    callback show-delete-confirmation(int);
+    callback designer-confirm-delete();
     
      // CAM Tool callbacks
     callback generate-tabbed-box();
@@ -427,6 +429,10 @@ export component MainWindow inherits Window {
     private property <bool> about-dialog-visible: false;
     private property <bool> settings-dialog-visible: false;
     in-out property <string> settings-category: "controller";
+    show-delete-confirmation(count) => {
+        designer-panel.show_delete_confirmation(count);
+    }
+
     // Native menu bar with dark theme support
     MenuBar {
         Menu {
@@ -1226,7 +1232,8 @@ export component MainWindow inherits Window {
                 }
 
                 // Designer View
-                if current-view == "designer" : Rectangle {
+                Rectangle {
+                    visible: current-view == "designer";
                     vertical-stretch: 1;
                     horizontal-stretch: 1;
                     background: transparent;
@@ -1353,6 +1360,10 @@ export component MainWindow inherits Window {
                         }
                         update_shape_property_string(prop_id, value) => {
                             root.designer-update-shape-property-string(prop_id, value);
+                        }
+                        
+                        confirm_delete => {
+                            root.designer-confirm-delete();
                         }
                         
                         update_feed_rate(rate) => {

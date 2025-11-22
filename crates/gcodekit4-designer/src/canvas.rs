@@ -193,24 +193,65 @@ impl Canvas {
         id
     }
 
-    /// Selects a shape at the given point, or deselects if no shape at that point.
-    pub fn select_at(&mut self, point: &Point) -> Option<u64> {
-        // Deselect all shapes first
-        for obj in self.shapes.iter_mut() {
-            obj.selected = false;
-        }
-        self.selected_id = None;
+    /// Selects a shape at the given point.
+    /// If multi is true, toggles selection of the shape at point while keeping others.
+    /// If multi is false, clears other selections and selects the shape at point.
+    pub fn select_at(&mut self, point: &Point, multi: bool) -> Option<u64> {
+        let mut found_id = None;
 
-        // Then try to select the shape at the given point
+        // Find the shape at the point (topmost first)
         for obj in self.shapes.iter_mut().rev() {
             if obj.shape.contains_point(point) {
-                obj.selected = true;
-                self.selected_id = Some(obj.id);
-                return Some(obj.id);
+                found_id = Some(obj.id);
+                break;
             }
         }
 
-        None
+        if !multi {
+            // Deselect all shapes first if not in multi-select mode
+            for obj in self.shapes.iter_mut() {
+                obj.selected = false;
+            }
+            self.selected_id = None;
+        }
+
+        if let Some(id) = found_id {
+            if let Some(obj) = self.shapes.iter_mut().find(|o| o.id == id) {
+                if multi {
+                    // Toggle selection
+                    obj.selected = !obj.selected;
+                    if obj.selected {
+                        self.selected_id = Some(id); // Update primary selection to most recent
+                    } else if self.selected_id == Some(id) {
+                        self.selected_id = None; // Deselected primary
+                        // Try to find another selected shape to be primary
+                        if let Some(other) = self.shapes.iter().find(|o| o.selected) {
+                            self.selected_id = Some(other.id);
+                        }
+                    }
+                } else {
+                    // Single select
+                    obj.selected = true;
+                    self.selected_id = Some(id);
+                }
+            }
+        } else if !multi {
+            // Clicked on empty space without shift -> deselect all
+            self.selected_id = None;
+        }
+
+        self.selected_id
+    }
+
+    /// Gets the number of selected shapes.
+    pub fn selected_count(&self) -> usize {
+        self.shapes.iter().filter(|o| o.selected).count()
+    }
+
+    /// Removes all selected shapes.
+    pub fn remove_selected(&mut self) {
+        self.shapes.retain(|obj| !obj.selected);
+        self.selected_id = None;
     }
 
     /// Gets all shapes on the canvas.

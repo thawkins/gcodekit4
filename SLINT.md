@@ -216,3 +216,17 @@ Rectangle {
   - **String Optimization**: Optimized `render_grid_to_path` and `render_origin_to_path` to use `String::with_capacity` and `std::fmt::Write` for efficient string building.
   - **Reduced Precision**: Reduced SVG path coordinate precision from 3 to 2 decimal places to reduce data size and formatting overhead.
 - **Result**: Significantly smoother zoom and pan operations.
+
+### Confirmation Dialog Pattern (Added 2025-11-22)
+- **Requirement**: Prompt user for confirmation before destructive actions (e.g., deleting multiple shapes).
+- **Implementation**:
+  - **Dialog Component**: Created `DeleteConfirmationDialog` inheriting from `Dialog`.
+  - **State Management**: Added `delete_confirmation_visible` and `delete_count` properties to `DesignerPanel`.
+  - **Callbacks**:
+    - `show_delete_confirmation(int)`: Called from Rust to show the dialog.
+    - `confirm_delete()`: Called from Slint to Rust when user confirms.
+  - **Logic**:
+    - Rust checks condition (e.g., `selected_count > 1`).
+    - If condition met, invokes `show_delete_confirmation`.
+    - User clicks "Continue" -> `confirm_delete` callback -> Rust performs action.
+    - If condition not met (single selection), Rust performs action immediately.

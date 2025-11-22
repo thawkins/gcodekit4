@@ -488,6 +488,45 @@ component ShapePropertiesDialog inherits Dialog {
     }
 }
 
+component DeleteConfirmationDialog inherits Dialog {
+    in property <int> count: 0;
+    callback confirm();
+    callback cancel();
+    
+    width: 300px;
+    height: 150px;
+    
+    VerticalBox {
+        padding: 20px;
+        spacing: 20px;
+        alignment: center;
+        
+        Text {
+            text: "Delete " + count + " selected shapes?";
+            font-size: 16px;
+            horizontal-alignment: center;
+            wrap: word-wrap;
+        }
+        
+        HorizontalBox {
+            alignment: center;
+            spacing: 20px;
+            
+            Button {
+                text: "Continue";
+                width: 100px;
+                clicked => { root.confirm(); }
+            }
+            Button {
+                text: "Cancel";
+                width: 100px;
+                clicked => { root.cancel(); }
+            }
+        }
+    }
+}
+
+
 // Context Menu for shapes
 component ContextMenu inherits Rectangle {
     in-out property <bool> show: false;
@@ -631,6 +670,8 @@ export component DesignerPanel inherits VerticalBox {
     callback update_shape_property_bool(int, bool); // property_id, value (0=is_pocket)
     callback update_shape_property_string(int, string); // property_id, value (0=text_content)
     callback toggle_grid();
+    callback show_delete_confirmation(int);
+    callback confirm_delete();
     
     // File operation callbacks
     callback file_new();
@@ -643,6 +684,8 @@ export component DesignerPanel inherits VerticalBox {
     private property <float> context_menu_x: 0;
     private property <float> context_menu_y: 0;
     private property <bool> properties_dialog_visible: false;
+    private property <bool> delete_confirmation_visible: false;
+    private property <int> delete_count: 0;
     private property <float> current_corner_radius: 5.0;
     private property <float> current_shape_x: 0.0;
     private property <float> current_shape_y: 0.0;
@@ -671,6 +714,11 @@ export component DesignerPanel inherits VerticalBox {
     private property <bool> shift_pressed: false;  // Track if Shift key is held
     
     // Main layout: vertical toolbox on left, canvas and properties on right
+    show_delete_confirmation(count) => {
+        root.delete_count = count;
+        root.delete_confirmation_visible = true;
+    }
+
     FocusScope {
         width: 100%;
         height: 100%;
@@ -1535,6 +1583,30 @@ export component DesignerPanel inherits VerticalBox {
             
             cancel_properties => {
                 root.properties_dialog_visible = false;
+            }
+        }
+    }
+
+    // Delete confirmation dialog overlay
+    if root.delete_confirmation_visible: Rectangle {
+        width: 100%;
+        height: 100%;
+        background: #00000080;
+        
+        TouchArea {
+            clicked => {
+                root.delete_confirmation_visible = false;
+            }
+        }
+        
+        DeleteConfirmationDialog {
+            count: root.delete_count;
+            confirm => {
+                root.delete_confirmation_visible = false;
+                root.confirm_delete();
+            }
+            cancel => {
+                root.delete_confirmation_visible = false;
             }
         }
     }
