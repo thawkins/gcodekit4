@@ -10,6 +10,7 @@ use std::path::Path;
 
 use super::canvas::DrawingObject;
 use super::shapes::*;
+use super::pocket_operations::PocketStrategy;
 
 /// Design file format version
 const FILE_FORMAT_VERSION: &str = "1.0";
@@ -69,6 +70,8 @@ pub struct ShapeData {
     pub text_content: String,
     #[serde(default)]
     pub font_size: f64,
+    #[serde(default)]
+    pub path_data: String,
 }
 
 /// Toolpath generation parameters
@@ -165,7 +168,6 @@ impl DesignFile {
             ShapeType::Circle => "circle",
             ShapeType::Line => "line",
             ShapeType::Ellipse => "ellipse",
-            ShapeType::Polyline => "polyline",
             ShapeType::Path => "path",
             ShapeType::Text => "text",
         };
@@ -174,6 +176,12 @@ impl DesignFile {
              (text_shape.text.clone(), text_shape.font_size)
         } else {
              (String::new(), 0.0)
+        };
+
+        let path_data = if let Some(path_shape) = obj.shape.as_any().downcast_ref::<PathShape>() {
+            path_shape.to_svg_path()
+        } else {
+            String::new()
         };
 
         ShapeData {
@@ -194,6 +202,7 @@ impl DesignFile {
             step_in: obj.step_in,
             text_content,
             font_size,
+            path_data,
         }
     }
 
@@ -218,7 +227,15 @@ impl DesignFile {
             "polygon" | "polyline" => {
                 let center = Point::new(data.x + data.width / 2.0, data.y + data.height / 2.0);
                 let radius = data.width.min(data.height) / 2.0;
-                Box::new(Polyline::regular(center, radius, 6))
+                let sides = 6;
+                let mut vertices = Vec::with_capacity(sides);
+                for i in 0..sides {
+                    let angle = 2.0 * std::f64::consts::PI * (i as f64) / (sides as f64);
+                    let x = center.x + radius * angle.cos();
+                    let y = center.y + radius * angle.sin();
+                    vertices.push(Point::new(x, y));
+                }
+                Box::new(PathShape::from_points(&vertices, true))
             }
             "text" => Box::new(TextShape::new(
                 data.text_content.clone(),
@@ -226,6 +243,14 @@ impl DesignFile {
                 data.y,
                 data.font_size,
             )),
+            "path" => {
+                if let Some(path_shape) = PathShape::from_svg_path(&data.path_data) {
+                    Box::new(path_shape)
+                } else {
+                    // Fallback if path parsing fails
+                    Box::new(Rectangle::new(data.x, data.y, data.width, data.height))
+                }
+            },
             _ => anyhow::bail!("Unknown shape type: {}", data.shape_type),
         };
 
@@ -242,6 +267,7 @@ impl DesignFile {
             pocket_depth: data.pocket_depth,
             step_down: data.step_down,
             step_in: data.step_in,
+            pocket_strategy: PocketStrategy::ContourParallel,
         })
     }
 }

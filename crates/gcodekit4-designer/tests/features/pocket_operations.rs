@@ -30,8 +30,9 @@ fn test_pocket_generator_rectangular() {
     let gen = PocketGenerator::new(op);
     let rect = Rectangle::new(0.0, 0.0, 100.0, 100.0);
 
-    let toolpath = gen.generate_rectangular_pocket(&rect);
-    assert!(toolpath.segments.len() > 0);
+    let toolpaths = gen.generate_rectangular_pocket(&rect, 1.0);
+    assert!(toolpaths.len() > 0);
+    assert!(toolpaths[0].segments.len() > 0);
 }
 
 #[test]
@@ -43,8 +44,9 @@ fn test_pocket_generator_circular() {
         radius: 25.0,
     };
 
-    let toolpath = gen.generate_circular_pocket(&circle);
-    assert!(toolpath.segments.len() > 0);
+    let toolpaths = gen.generate_circular_pocket(&circle, 1.0);
+    assert!(toolpaths.len() > 0);
+    assert!(toolpaths[0].segments.len() > 0);
 }
 
 #[test]

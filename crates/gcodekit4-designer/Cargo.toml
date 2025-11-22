@@ -24,6 +24,7 @@ lyon = "1.0"
 regex = "1.10"
 lazy_static = "1.4"
 rusttype = "0.9.3"
+cavalier_contours = "0.6.0"
 
 [dev-dependencies]
 tempfile = "3.10"

@@ -38,6 +38,7 @@ pub mod vector_engraver;
 pub mod hatch_generator;
 pub mod speeds_feeds;
 pub mod spoilboard_surfacing;
+pub mod spoilboard_grid;
 
 // UI module
 pub mod advanced_features_panel;
@@ -57,6 +58,7 @@ pub use laser_engraver::{
 pub use optimizer::GCodeOptimizer;
 pub use speeds_feeds::{SpeedsFeedsCalculator, CalculationResult};
 pub use spoilboard_surfacing::{SpoilboardSurfacingGenerator, SpoilboardSurfacingParameters};
+pub use spoilboard_grid::{SpoilboardGridGenerator, SpoilboardGridParameters};
 pub use stats::StatsCalculator;
 pub use tabbed_box::{BoxParameters, BoxType, FingerJointSettings, FingerStyle, TabbedBoxMaker, KeyDividerType};
 pub use validator::GCodeValidator;

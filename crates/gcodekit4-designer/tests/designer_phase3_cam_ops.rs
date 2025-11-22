@@ -28,7 +28,9 @@ fn test_phase3_pocket_rectangular() {
     let gen = PocketGenerator::new(op);
     let rect = Rectangle::new(0.0, 0.0, 100.0, 100.0);
 
-    let toolpath = gen.generate_rectangular_pocket(&rect);
+    let toolpaths = gen.generate_rectangular_pocket(&rect, 10.0);
+    assert!(toolpaths.len() > 0);
+    let toolpath = &toolpaths[0];
     assert!(toolpath.segments.len() > 0);
     assert_eq!(toolpath.tool_diameter, 3.175);
     assert_eq!(toolpath.depth, -10.0);
@@ -41,8 +43,9 @@ fn test_phase3_pocket_with_islands() {
     gen.add_circular_island(Point::new(50.0, 50.0), 15.0);
 
     let rect = Rectangle::new(0.0, 0.0, 100.0, 100.0);
-    let toolpath = gen.generate_rectangular_pocket(&rect);
-    assert!(toolpath.segments.len() > 0);
+    let toolpaths = gen.generate_rectangular_pocket(&rect, 10.0);
+    assert!(toolpaths.len() > 0);
+    assert!(toolpaths[0].segments.len() > 0);
 }
 
 #[test]
@@ -281,12 +284,13 @@ fn test_phase3_combined_workflow() {
 
     // Generate pocket toolpath
     let rect = Rectangle::new(0.0, 0.0, 100.0, 100.0);
-    let pocket_toolpath = pocket_gen.generate_rectangular_pocket(&rect);
+    let pocket_toolpaths = pocket_gen.generate_rectangular_pocket(&rect, 10.0);
+    let pocket_toolpath = &pocket_toolpaths[0];
 
     // Configure multi-pass for deep cut
     let multipass_config = MultiPassConfig::new(-20.0, 10.0);
     let multipass_gen = MultiPassToolpathGenerator::new(multipass_config);
-    let multipass_toolpath = multipass_gen.generate_multi_pass(&pocket_toolpath);
+    let multipass_toolpath = multipass_gen.generate_multi_pass(pocket_toolpath);
 
     // Simulate the toolpath
     let mut sim = ToolpathSimulator::new(multipass_toolpath.clone());

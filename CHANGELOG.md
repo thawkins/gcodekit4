@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.37.0-alpha] - 2025-11-22
+
+### Added
+- **Designer**: Implemented advanced pocketing strategies: Raster (Zig-Zag), Contour-Parallel (Offset), and Adaptive (placeholder).
+- **Designer**: Added UI controls for pocket strategy selection, raster angle, and bidirectional milling in Shape Properties.
+- **Designer**: Integrated `cavalier_contours` for robust polygon offsetting.
+- **Designer**: Updated toolpath generation to support different pocketing strategies for all shapes.
+
+### Changed
+- **Designer**: Refactored `pocket_operations.rs` to support strategy-based generation.
+- **Designer**: Updated `DesignerShape` and `DrawingObject` to store pocket strategy parameters.
+- **Designer**: Updated `generate_rectangular_pocket` and `generate_circular_pocket` to respect selected strategy (converting to polygon for Raster).
+
+### Fixed
+- **Designer**: Fixed compilation errors related to `PathShape` removal (from previous task).
+- **Designer**: Fixed visibility of Raster Angle and Bidirectional controls in Shape Properties dialog (now always visible when pocketing is enabled).
+
 ## [0.36.0-alpha] - 2025-11-22
 
 ### Added
@@ -19,6 +36,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Includes "Precision Fly Cutter" and "NITOMAK Surfacing Router Bit" in standard library.
 
 ### Changed
+- **Designer**: Substituted `PathShape` for all instances of `PolylineShape` usage.
+  - `Polyline` tool now creates `PathShape` internally.
+  - SVG/DXF import now converts polylines and polygons to `PathShape`.
+  - Serialization now saves/loads `PathShape` using SVG path data.
+  - Toolpath generation now supports `PathShape` for contour and pocket operations.
+  - UI now maps `PathShape` to "Polyline" properties panel.
+  - Removed `Polyline` struct and `ShapeType::Polyline` variant entirely.
 - **Device Manager**: Improved UI for axis limits.
   - Explicitly labeled "Min" and "Max" fields to prevent user error.
   - Added auto-correction logic to swap Min/Max values if entered inversely.

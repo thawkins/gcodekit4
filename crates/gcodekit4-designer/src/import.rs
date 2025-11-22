@@ -13,7 +13,7 @@
 //! - Scale and offset adjustment
 
 use crate::dxf_parser::{DxfEntity, DxfFile, DxfParser};
-use crate::shapes::{Shape, PathShape, Rectangle, Circle, Line, Ellipse, Polyline, Point};
+use crate::shapes::{Shape, PathShape, Rectangle, Circle, Line, Ellipse, Point};
 use anyhow::{anyhow, Result};
 use lyon::path::Path;
 use lyon::math::point;
@@ -56,7 +56,6 @@ enum ImportedShape {
     Circle(Circle),
     Line(Line),
     Ellipse(Ellipse),
-    Polyline(Polyline),
     Path(PathShape),
 }
 
@@ -67,7 +66,6 @@ impl ImportedShape {
             Self::Circle(s) => s.bounding_box(),
             Self::Line(s) => s.bounding_box(),
             Self::Ellipse(s) => s.bounding_box(),
-            Self::Polyline(s) => s.bounding_box(),
             Self::Path(s) => s.bounding_box(),
         }
     }
@@ -97,12 +95,6 @@ impl ImportedShape {
                 let new_y = -e.center.y + 2.0 * center_y + offset_y;
                 let new_x = e.center.x + offset_x;
                 Box::new(Ellipse::new(Point::new(new_x, new_y), e.rx, e.ry))
-            },
-            Self::Polyline(p) => {
-                let new_vertices = p.vertices.into_iter().map(|v| {
-                    Point::new(v.x + offset_x, -v.y + 2.0 * center_y + offset_y)
-                }).collect();
-                Box::new(Polyline::new(new_vertices))
             },
             Self::Path(p) => {
                 // Transform: Translate(0, -c) -> Scale(1, -1) -> Translate(0, c) -> Translate(off_x, off_y)
@@ -311,7 +303,7 @@ impl SvgImporter {
                         .collect();
                     
                     if !points.is_empty() {
-                        imported_shapes.push(ImportedShape::Polyline(Polyline::new(points)));
+                        imported_shapes.push(ImportedShape::Path(PathShape::from_points(&points, false)));
                     }
                 }
                 search_pos = abs_tag_start + tag_end + 1;
@@ -348,7 +340,7 @@ impl SvgImporter {
                         .collect();
                     
                     if !points.is_empty() {
-                        imported_shapes.push(ImportedShape::Polyline(Polyline::new(points)));
+                        imported_shapes.push(ImportedShape::Path(PathShape::from_points(&points, true)));
                     }
                 }
                 search_pos = abs_tag_start + tag_end + 1;
@@ -371,15 +363,15 @@ impl SvgImporter {
                         let d_value = &svg_content[abs_d_start..abs_d_start + d_end];
 
                         // Parse SVG path data
-                        if let Ok(path) = Self::build_path_from_svg_data(d_value) {
+                        if let Some(path) = PathShape::from_svg_path(d_value) {
                             // Apply group transform if present
                             let final_path = if let Some((a, b, c, d_coeff, e, f)) = group_transform {
                                 let transform = lyon::math::Transform::new(
                                     a, b, c, d_coeff, e, f
                                 );
-                                path.clone().transformed(&transform)
+                                path.path.clone().transformed(&transform)
                             } else {
-                                path
+                                path.path
                             };
                             
                             // Apply importer scale only
@@ -456,268 +448,6 @@ impl SvgImporter {
             }
         }
         None
-    }
-
-    /// Build lyon Path from SVG path data string
-    fn build_path_from_svg_data(data_str: &str) -> Result<Path> {
-        let mut builder = Path::builder();
-        let mut current_x = 0.0f32;
-        let mut current_y = 0.0f32;
-        let mut start_x = 0.0f32;
-        let mut start_y = 0.0f32;
-        let mut subpath_active = false;
-
-        let commands = Self::tokenize_svg_path(data_str);
-        let mut i = 0;
-
-        while i < commands.len() {
-            let cmd = &commands[i];
-
-            match cmd.as_str() {
-                "M" | "m" => {
-                    if i + 2 < commands.len() {
-                        let x: f32 = commands[i + 1].parse().unwrap_or(0.0);
-                        let y: f32 = commands[i + 2].parse().unwrap_or(0.0);
-
-                        if cmd == "m" {
-                            current_x += x;
-                            current_y += y;
-                        } else {
-                            current_x = x;
-                            current_y = y;
-                        }
-                        
-                        if subpath_active {
-                            builder.end(false);
-                        }
-                        
-                        start_x = current_x;
-                        start_y = current_y;
-                        builder.begin(point(current_x, current_y));
-                        subpath_active = true;
-                        i += 3;
-                    } else {
-                        i += 1;
-                    }
-                }
-                "L" | "l" => {
-                    if !subpath_active {
-                        builder.begin(point(current_x, current_y));
-                        subpath_active = true;
-                    }
-                    let mut j = i + 1;
-                    while j + 1 < commands.len() {
-                        let x: f32 = commands[j].parse().unwrap_or(0.0);
-                        let y: f32 = commands[j + 1].parse().unwrap_or(0.0);
-
-                        if cmd == "l" {
-                            current_x += x;
-                            current_y += y;
-                        } else {
-                            current_x = x;
-                            current_y = y;
-                        }
-
-                        builder.line_to(point(current_x, current_y));
-                        j += 2;
-
-                        if j < commands.len() {
-                            let next = &commands[j];
-                            if next.len() == 1 && next.chars().all(|c| c.is_alphabetic()) {
-                                break;
-                            } else if next.parse::<f32>().is_err() {
-                                break;
-                            }
-                        } else {
-                            break;
-                        }
-                    }
-                    i = j;
-                }
-                "H" | "h" => {
-                    if !subpath_active {
-                        builder.begin(point(current_x, current_y));
-                        subpath_active = true;
-                    }
-                    if i + 1 < commands.len() {
-                        let x: f32 = commands[i + 1].parse().unwrap_or(0.0);
-                        if cmd == "h" {
-                            current_x += x;
-                        } else {
-                            current_x = x;
-                        }
-                        builder.line_to(point(current_x, current_y));
-                        i += 2;
-                    } else {
-                        i += 1;
-                    }
-                }
-                "V" | "v" => {
-                    if !subpath_active {
-                        builder.begin(point(current_x, current_y));
-                        subpath_active = true;
-                    }
-                    if i + 1 < commands.len() {
-                        let y: f32 = commands[i + 1].parse().unwrap_or(0.0);
-                        if cmd == "v" {
-                            current_y += y;
-                        } else {
-                            current_y = y;
-                        }
-                        builder.line_to(point(current_x, current_y));
-                        i += 2;
-                    } else {
-                        i += 1;
-                    }
-                }
-                "C" | "c" => {
-                    if !subpath_active {
-                        builder.begin(point(current_x, current_y));
-                        subpath_active = true;
-                    }
-                    let mut j = i + 1;
-                    while j + 5 < commands.len() {
-                        let x1: f32 = commands[j].parse().unwrap_or(0.0);
-                        let y1: f32 = commands[j + 1].parse().unwrap_or(0.0);
-                        let x2: f32 = commands[j + 2].parse().unwrap_or(0.0);
-                        let y2: f32 = commands[j + 3].parse().unwrap_or(0.0);
-                        let x: f32 = commands[j + 4].parse().unwrap_or(0.0);
-                        let y: f32 = commands[j + 5].parse().unwrap_or(0.0);
-
-                        let mut cp1_x = x1;
-                        let mut cp1_y = y1;
-                        let mut cp2_x = x2;
-                        let mut cp2_y = y2;
-                        let mut end_x = x;
-                        let mut end_y = y;
-
-                        if cmd == "c" {
-                            cp1_x += current_x;
-                            cp1_y += current_y;
-                            cp2_x += current_x;
-                            cp2_y += current_y;
-                            end_x += current_x;
-                            end_y += current_y;
-                        }
-
-                        builder.cubic_bezier_to(
-                            point(cp1_x, cp1_y),
-                            point(cp2_x, cp2_y),
-                            point(end_x, end_y)
-                        );
-
-                        current_x = end_x;
-                        current_y = end_y;
-                        j += 6;
-
-                        if j < commands.len() {
-                            let next = &commands[j];
-                            if next.len() == 1 && next.chars().all(|c| c.is_alphabetic()) {
-                                break;
-                            } else if next.parse::<f32>().is_err() {
-                                break;
-                            }
-                        } else {
-                            break;
-                        }
-                    }
-                    i = j;
-                }
-                "Q" | "q" => {
-                    if !subpath_active {
-                        builder.begin(point(current_x, current_y));
-                        subpath_active = true;
-                    }
-                    let mut j = i + 1;
-                    while j + 3 < commands.len() {
-                        let x1: f32 = commands[j].parse().unwrap_or(0.0);
-                        let y1: f32 = commands[j + 1].parse().unwrap_or(0.0);
-                        let x: f32 = commands[j + 2].parse().unwrap_or(0.0);
-                        let y: f32 = commands[j + 3].parse().unwrap_or(0.0);
-
-                        let mut cp_x = x1;
-                        let mut cp_y = y1;
-                        let mut end_x = x;
-                        let mut end_y = y;
-
-                        if cmd == "q" {
-                            cp_x += current_x;
-                            cp_y += current_y;
-                            end_x += current_x;
-                            end_y += current_y;
-                        }
-
-                        builder.quadratic_bezier_to(
-                            point(cp_x, cp_y),
-                            point(end_x, end_y)
-                        );
-
-                        current_x = end_x;
-                        current_y = end_y;
-                        j += 4;
-
-                        if j < commands.len() {
-                            let next = &commands[j];
-                            if next.len() == 1 && next.chars().all(|c| c.is_alphabetic()) {
-                                break;
-                            } else if next.parse::<f32>().is_err() {
-                                break;
-                            }
-                        } else {
-                            break;
-                        }
-                    }
-                    i = j;
-                }
-                "Z" | "z" => {
-                    if subpath_active {
-                        builder.close();
-                        subpath_active = false;
-                    }
-                    current_x = start_x;
-                    current_y = start_y;
-                    i += 1;
-                }
-                _ => i += 1,
-            }
-        }
-        
-        if subpath_active {
-            builder.end(false);
-        }
-        Ok(builder.build())
-    }
-
-    /// Tokenize SVG path data into commands and numbers
-    fn tokenize_svg_path(path_data: &str) -> Vec<String> {
-        let mut tokens = Vec::new();
-        let mut current_token = String::new();
-
-        for ch in path_data.chars() {
-            match ch {
-                'M' | 'm' | 'L' | 'l' | 'H' | 'h' | 'V' | 'v' | 'C' | 'c' | 'S' | 's' | 'Q'
-                | 'q' | 'T' | 't' | 'A' | 'a' | 'Z' | 'z' => {
-                    if !current_token.is_empty() {
-                        tokens.push(current_token.clone());
-                        current_token.clear();
-                    }
-                    tokens.push(ch.to_string());
-                }
-                ' ' | ',' | '\n' | '\r' | '\t' => {
-                    if !current_token.is_empty() {
-                        tokens.push(current_token.clone());
-                        current_token.clear();
-                    }
-                }
-                _ => current_token.push(ch),
-            }
-        }
-
-        if !current_token.is_empty() {
-            tokens.push(current_token);
-        }
-
-        tokens
     }
 }
 

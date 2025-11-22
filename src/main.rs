@@ -407,8 +407,7 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
                 gcodekit4::ShapeType::Circle => 1,
                 gcodekit4::ShapeType::Line => 2,
                 gcodekit4::ShapeType::Ellipse => 3,
-                gcodekit4::ShapeType::Polyline => 4,
-                gcodekit4::ShapeType::Path => 7,
+                gcodekit4::ShapeType::Path => 4,
                 gcodekit4::ShapeType::Text => 6,
             };
             crate::DesignerShape {
@@ -424,6 +423,21 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
                 selected: obj.selected,
                 step_down: obj.step_down as f32,
                 step_in: obj.step_in as f32,
+                pocket_strategy: match obj.pocket_strategy {
+                    gcodekit4::designer::pocket_operations::PocketStrategy::Raster { .. } => 0,
+                    gcodekit4::designer::pocket_operations::PocketStrategy::ContourParallel => 1,
+                    gcodekit4::designer::pocket_operations::PocketStrategy::Adaptive => 2,
+                },
+                raster_angle: if let gcodekit4::designer::pocket_operations::PocketStrategy::Raster { angle, .. } = obj.pocket_strategy {
+                    angle as f32
+                } else {
+                    0.0
+                },
+                bidirectional: if let gcodekit4::designer::pocket_operations::PocketStrategy::Raster { bidirectional, .. } = obj.pocket_strategy {
+                    bidirectional
+                } else {
+                    true
+                },
             }
         })
         .collect();
@@ -453,8 +467,7 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
                 gcodekit4::ShapeType::Circle => 1,
                 gcodekit4::ShapeType::Line => 2,
                 gcodekit4::ShapeType::Ellipse => 3,
-                gcodekit4::ShapeType::Polyline => 4,
-                gcodekit4::ShapeType::Path => 5,
+                gcodekit4::ShapeType::Path => 4,
                 gcodekit4::ShapeType::Text => 6,
             };
 
@@ -470,6 +483,15 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
             window.set_designer_selected_shape_pocket_depth(obj.pocket_depth as f32);
             window.set_designer_selected_shape_step_down(obj.step_down as f32);
             window.set_designer_selected_shape_step_in(obj.step_in as f32);
+            
+            let (strategy_idx, angle, bidir) = match obj.pocket_strategy {
+                gcodekit4::designer::pocket_operations::PocketStrategy::Raster { angle, bidirectional } => (0, angle as f32, bidirectional),
+                gcodekit4::designer::pocket_operations::PocketStrategy::ContourParallel => (1, 0.0, true),
+                gcodekit4::designer::pocket_operations::PocketStrategy::Adaptive => (2, 0.0, true),
+            };
+            window.set_designer_selected_shape_pocket_strategy(strategy_idx);
+            window.set_designer_selected_shape_raster_angle(angle);
+            window.set_designer_selected_shape_bidirectional(bidir);
             
             if let Some(text) = obj.shape.as_any().downcast_ref::<gcodekit4::designer::shapes::TextShape>() {
                 window.set_designer_selected_shape_text_content(slint::SharedString::from(&text.text));
@@ -490,6 +512,9 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
         window.set_designer_selected_shape_is_pocket(false);
         window.set_designer_selected_shape_pocket_depth(0.0);
         window.set_designer_selected_shape_step_down(0.0);
+        window.set_designer_selected_shape_pocket_strategy(1);
+        window.set_designer_selected_shape_raster_angle(0.0);
+        window.set_designer_selected_shape_bidirectional(true);
         window.set_designer_selected_shape_text_content(slint::SharedString::from(""));
         window.set_designer_selected_shape_font_size(12.0);
     }
@@ -4849,8 +4874,8 @@ fn main() -> anyhow::Result<()> {
     });
 
     // Designer: Save shape properties
-    // (x, y, w, h, radius, is_pocket, pocket_depth, text_content, font_size, step_down, step_in)
-    let pending_properties = Rc::new(RefCell::new((0.0f64, 0.0f64, 0.0f64, 0.0f64, 0.0f64, false, 0.0f64, String::new(), 12.0f64, 0.0f64, 0.0f64)));
+    // (x, y, w, h, radius, is_pocket, pocket_depth, text_content, font_size, step_down, step_in, pocket_strategy, raster_angle, bidirectional)
+    let pending_properties = Rc::new(RefCell::new((0.0f64, 0.0f64, 0.0f64, 0.0f64, 0.0f64, false, 0.0f64, String::new(), 12.0f64, 0.0f64, 0.0f64, 1, 0.0f64, true)));
 
     let pending_clone = pending_properties.clone();
     main_window.on_designer_update_shape_property(move |prop_id: i32, value: f32| {
@@ -4865,6 +4890,8 @@ fn main() -> anyhow::Result<()> {
             6 => props.8 = value as f64, // font_size
             7 => props.9 = value as f64, // step_down
             8 => props.10 = value as f64, // step_in
+            9 => props.11 = value as i32, // pocket_strategy
+            10 => props.12 = value as f64, // raster_angle
             _ => {}
         }
     });
@@ -4874,6 +4901,7 @@ fn main() -> anyhow::Result<()> {
         let mut props = pending_clone_bool.borrow_mut();
         match prop_id {
             0 => props.5 = value, // is_pocket
+            1 => props.13 = value, // bidirectional
             _ => {}
         }
     });
@@ -4898,6 +4926,14 @@ fn main() -> anyhow::Result<()> {
         state.set_selected_text_properties(&props.7, props.8);
         state.set_selected_step_down(props.9);
         state.set_selected_step_in(props.10);
+        
+        let strategy = match props.11 {
+            0 => gcodekit4::designer::pocket_operations::PocketStrategy::Raster { angle: props.12, bidirectional: props.13 },
+            1 => gcodekit4::designer::pocket_operations::PocketStrategy::ContourParallel,
+            2 => gcodekit4::designer::pocket_operations::PocketStrategy::Adaptive,
+            _ => gcodekit4::designer::pocket_operations::PocketStrategy::ContourParallel,
+        };
+        state.set_selected_pocket_strategy(strategy);
 
         if let Some(window) = window_weak2.upgrade() {
             update_designer_ui(&window, &mut state);

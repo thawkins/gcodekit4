@@ -158,6 +158,18 @@ Rectangle {
   - **Clamping Display**: If calculated values exceed device limits, the clamped value is shown, followed by the original calculated value in red brackets (e.g., `10000 (12500)`).
   - **Layout**: Centered dialog within the CAM Tools panel using `Rectangle` wrapper for styling.
 
+### Designer Shape Properties (November 2025)
+- **Dynamic Dialog Layout**:
+  - Shape Properties Dialog height adjusts dynamically based on enabled features (e.g., Pocketing).
+  - Prevents empty space and ensures controls are accessible without excessive scrolling.
+- **Pocketing Controls**:
+  - **Strategy Selection**: `ComboBox` for selecting Raster, Contour, or Adaptive strategies.
+  - **Conditional Visibility**: Raster Angle and Bidirectional controls only appear when Pocketing is enabled.
+  - **Data Binding**: Controls bound to `DesignerShape` properties (`pocket_strategy`, `raster_angle`, `bidirectional`).
+- **Integration**:
+  - Updates are sent to backend via `update_shape_property` callbacks.
+  - Backend state (`DesignerState`) is updated to reflect UI changes.
+
 ## UI Patterns (November 2025)
 
 ### Scrollable Tabs

@@ -103,3 +103,51 @@ fn test_designer_state_multi_shape_design() {
     assert!(g00_count > 5); // At least one rapid move per shape
     assert!(g01_count > 5); // At least one linear move per shape
 }
+
+#[test]
+fn test_designer_state_polyline_update() {
+    use gcodekit4_designer::shapes::PathShape;
+    use gcodekit4_designer::{Point, Shape};
+    let mut state = DesignerState::new();
+
+    // Create a custom polyline (triangle)
+    let vertices = vec![
+        Point::new(0.0, 0.0),
+        Point::new(100.0, 0.0),
+        Point::new(50.0, 86.6),
+    ];
+    state.canvas.add_polyline(vertices.clone());
+    
+    // Select it
+    state.canvas.select_at(&Point::new(50.0, 10.0));
+    assert!(state.canvas.selected_id().is_some());
+    
+    // Verify it's a PathShape
+    if let Some(id) = state.canvas.selected_id() {
+        if let Some(obj) = state.canvas.shapes().iter().find(|o| o.id == id) {
+            if let Some(path) = obj.shape.as_any().downcast_ref::<PathShape>() {
+                let (x1, _y1, x2, _y2) = path.bounding_box();
+                assert!((x1 - 0.0).abs() < 0.1);
+                assert!((x2 - 100.0).abs() < 0.1);
+            } else {
+                panic!("Shape is not a PathShape");
+            }
+        }
+    }
+
+    // Update properties (move it)
+    state.set_selected_position_and_size(10.0, 10.0, 100.0, 86.6);
+    
+    // Verify it moved
+    if let Some(id) = state.canvas.selected_id() {
+        if let Some(obj) = state.canvas.shapes().iter().find(|o| o.id == id) {
+            if let Some(path) = obj.shape.as_any().downcast_ref::<PathShape>() {
+                let (x1, y1, _x2, _y2) = path.bounding_box();
+                assert!((x1 - 10.0).abs() < 0.1);
+                assert!((y1 - 10.0).abs() < 0.1);
+            } else {
+                panic!("Shape is not a PathShape after update");
+            }
+        }
+    }
+}

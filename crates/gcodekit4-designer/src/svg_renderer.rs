@@ -306,28 +306,6 @@ fn render_shape_trait(
                 )
             }
         }
-        ShapeType::Polyline => {
-            if let Some(polyline) = shape.as_any().downcast_ref::<crate::shapes::Polyline>() {
-                let mut path = String::new();
-                let vertices = &polyline.vertices;
-                if !vertices.is_empty() {
-                    let (sx, sy) = viewport.world_to_pixel(vertices[0].x, vertices[0].y);
-                    path.push_str(&format!("M {} {} ", sx, sy));
-                    
-                    for i in 1..vertices.len() {
-                        let (sx, sy) = viewport.world_to_pixel(vertices[i].x, vertices[i].y);
-                        path.push_str(&format!("L {} {} ", sx, sy));
-                    }
-                    path.push_str("Z "); // Close loop
-                }
-                path
-            } else {
-                // Fallback
-                let (sx1, sy1) = viewport.world_to_pixel(x1, y1);
-                let (sx2, sy2) = viewport.world_to_pixel(x2, y2);
-                format!("M {} {} L {} {} L {} {} L {} {} Z ", sx1, sy1, sx2, sy1, sx2, sy2, sx1, sy2)
-            }
-        }
         ShapeType::Path => {
             if let Some(path_shape) = shape.as_any().downcast_ref::<crate::shapes::PathShape>() {
                 let mut path_str = String::new();

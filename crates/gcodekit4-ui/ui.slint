@@ -22,6 +22,7 @@ import { SettingsDialog, SettingItem } from "../gcodekit4-settings/ui/settings_d
 import { DeviceManagerPanel, DeviceProfileUiModel } from "../gcodekit4-devicedb/ui/device_manager.slint";
 import { TabbedBoxDialog } from "../gcodekit4-camtools/ui/tabbed_box_dialog.slint";
 import { SpoilboardSurfacingDialog } from "../gcodekit4-camtools/ui/spoilboard_surfacing_dialog.slint";
+import { SpoilboardGridDialog } from "../gcodekit4-camtools/ui/spoilboard_grid_dialog.slint";
 import { SpeedsFeedsDialog } from "../gcodekit4-camtools/ui/speeds_feeds_dialog.slint";
 
 export struct PortInfo {
@@ -42,6 +43,9 @@ export struct DesignerShape {
     selected: bool,
     step_down: float,
     step_in: float,
+    pocket_strategy: int,
+    raster_angle: float,
+    bidirectional: bool,
 }
 
 export struct DesignerState {
@@ -183,6 +187,9 @@ export component MainWindow inherits Window {
     in property <float> designer-selected-shape-pocket-depth: 0.0;
     in property <float> designer-selected-shape-step-down: 0.0;
     in property <float> designer-selected-shape-step-in: 0.0;
+    in property <int> designer-selected-shape-pocket-strategy: 1;
+    in property <float> designer-selected-shape-raster-angle: 0.0;
+    in property <bool> designer-selected-shape-bidirectional: true;
     in property <string> designer-selected-shape-text-content: "";
     in property <float> designer-selected-shape-font-size: 12.0;
     
@@ -386,6 +393,7 @@ export component MainWindow inherits Window {
     callback generate-tabbed-box();
     callback generate-jigsaw-puzzle();
     callback generate-spoilboard-surfacing();
+    callback generate-spoilboard-grid();
     callback generate-laser-engraving();
     callback generate-vector-engraving();
     callback calculate-speeds-feeds();
@@ -1247,6 +1255,9 @@ export component MainWindow inherits Window {
                         selected_shape_pocket_depth: root.designer-selected-shape-pocket-depth;
                         selected_shape_step_down: root.designer-selected-shape-step-down;
                         selected_shape_step_in: root.designer-selected-shape-step-in;
+                        selected_shape_pocket_strategy: root.designer-selected-shape-pocket-strategy;
+                        selected_shape_raster_angle: root.designer-selected-shape-raster-angle;
+                        selected_shape_bidirectional: root.designer-selected-shape-bidirectional;
                         selected_shape_text_content: root.designer-selected-shape-text-content;
                         selected_shape_font_size: root.designer-selected-shape-font-size;
                         
@@ -1403,6 +1414,9 @@ export component MainWindow inherits Window {
                         }
                         open-spoilboard-surfacing => {
                             root.generate-spoilboard-surfacing();
+                        }
+                        open-spoilboard-grid => {
+                            root.generate-spoilboard-grid();
                         }
                         open-laser-engraver => {
                             root.generate-laser-engraving();

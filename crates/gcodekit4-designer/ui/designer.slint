@@ -1,7 +1,7 @@
 //! Designer Tool UI Panel  
 //! Provides 2D CAD drawing interface with vertical toolbox and canvas interaction
 
-import { Button, VerticalBox, HorizontalBox, ScrollView, CheckBox } from "std-widgets.slint";
+import { Button, VerticalBox, HorizontalBox, ScrollView, CheckBox, ComboBox } from "std-widgets.slint";
 
 component CompactSpinBox inherits Rectangle {
     in-out property <float> value;
@@ -105,6 +105,9 @@ export struct DesignerShape {
     selected: bool,
     step_down: float,
     step_in: float,
+    pocket_strategy: int,
+    raster_angle: float,
+    bidirectional: bool,
 }
 
 export struct DesignerState {
@@ -160,14 +163,18 @@ component ShapePropertiesDialog inherits Dialog {
     in-out property <float> pocket_depth: 0.0;
     in-out property <float> step_down: 0.0;
     in-out property <float> step_in: 0.0;
+    in-out property <int> pocket_strategy: 1;
+    in-out property <float> raster_angle: 0.0;
+    in-out property <bool> bidirectional: true;
     in-out property <string> text_content: "";
     in-out property <float> font_size: 12.0;
+    in-out property <string> error_message: "";
     
     callback save_properties();
     callback cancel_properties();
     
     width: 390px;
-    height: shape_type == 5 ? 520px : 455px;
+    height: shape_type == 5 ? 750px : (is_pocket ? 700px : 455px);
     
     VerticalBox {
         padding: 8px;
@@ -369,7 +376,10 @@ component ShapePropertiesDialog inherits Dialog {
                             height: 100%;
                             value <=> pocket_depth; 
                             minimum: -100.0; 
-                            maximum: 0.0; 
+                            maximum: 100.0;
+                            value-changed(val) => {
+                                root.error_message = "";
+                            }
                         }
                     }
                 }
@@ -407,9 +417,51 @@ component ShapePropertiesDialog inherits Dialog {
                         }
                     }
                 }
+
+                if is_pocket: HorizontalBox {
+                    spacing: 8px;
+                    alignment: start;
+                    Text { text: "Strategy:"; vertical-alignment: center; width: 120px; }
+                    ComboBox {
+                        model: ["Raster", "Contour", "Adaptive"];
+                        current-index <=> pocket_strategy;
+                        width: 100px;
+                        height: 30px;
+                    }
+                }
+
+                if is_pocket: HorizontalBox {
+                    spacing: 8px;
+                    alignment: start;
+                    Text { text: "Raster Angle:"; vertical-alignment: center; width: 120px; }
+                    Rectangle {
+                        width: 100px;
+                        height: 30px;
+                        CompactSpinBox { 
+                            width: 100%;
+                            height: 100%;
+                            value <=> raster_angle; 
+                            minimum: -360.0; 
+                            maximum: 360.0; 
+                        }
+                    }
+                }
+
+                if is_pocket: HorizontalBox {
+                    spacing: 8px;
+                    alignment: start;
+                    CheckBox { text: "Bidirectional"; checked <=> bidirectional; }
+                }
             }
         }
         
+        if root.error_message != "": Text {
+            text: root.error_message;
+            color: red;
+            font-size: 12px;
+            horizontal-alignment: center;
+        }
+
         HorizontalBox {
             spacing: 8px;
             alignment: end;
@@ -417,7 +469,12 @@ component ShapePropertiesDialog inherits Dialog {
             Button {
                 text: "Save";
                 clicked => {
-                    root.save_properties();
+                    if (root.is_pocket && root.pocket_depth > 0.0) {
+                        root.error_message = "Pocket depth must be negative";
+                    } else {
+                        root.error_message = "";
+                        root.save_properties();
+                    }
                 }
             }
             
@@ -539,6 +596,9 @@ export component DesignerPanel inherits VerticalBox {
     in property <float> selected_shape_pocket_depth: 0.0;
     in property <float> selected_shape_step_down: 0.0;
     in property <float> selected_shape_step_in: 0.0;
+    in property <int> selected_shape_pocket_strategy: 1;
+    in property <float> selected_shape_raster_angle: 0.0;
+    in property <bool> selected_shape_bidirectional: true;
     in property <string> selected_shape_text_content: "";
     in property <float> selected_shape_font_size: 12.0;
     
@@ -591,6 +651,10 @@ export component DesignerPanel inherits VerticalBox {
     private property <bool> is_pocket: false;
     private property <float> pocket_depth: 0.0;
     private property <float> step_down: 0.0;
+    private property <float> dialog_step_in: 0.0;
+    private property <int> dialog_pocket_strategy: 1;
+    private property <float> dialog_raster_angle: 0.0;
+    private property <bool> dialog_bidirectional: true;
     private property <string> text_content: "";
     private property <float> font_size: 12.0;
     
@@ -1411,7 +1475,10 @@ export component DesignerPanel inherits VerticalBox {
             root.is_pocket = root.selected_shape_is_pocket;
             root.pocket_depth = root.selected_shape_pocket_depth;
             root.step_down = root.selected_shape_step_down;
-            root.step_in = root.selected_shape_step_in;
+            root.dialog_step_in = root.selected_shape_step_in;
+            root.dialog_pocket_strategy = root.selected_shape_pocket_strategy;
+            root.dialog_raster_angle = root.selected_shape_raster_angle;
+            root.dialog_bidirectional = root.selected_shape_bidirectional;
             root.text_content = root.selected_shape_text_content;
             root.font_size = root.selected_shape_font_size;
         }
@@ -1440,6 +1507,10 @@ export component DesignerPanel inherits VerticalBox {
             is_pocket <=> root.is_pocket;
             pocket_depth <=> root.pocket_depth;
             step_down <=> root.step_down;
+            step_in <=> root.dialog_step_in;
+            pocket_strategy <=> root.dialog_pocket_strategy;
+            raster_angle <=> root.dialog_raster_angle;
+            bidirectional <=> root.dialog_bidirectional;
             text_content <=> root.text_content;
             font_size <=> root.font_size;
             
@@ -1452,7 +1523,10 @@ export component DesignerPanel inherits VerticalBox {
                 update_shape_property_bool(0, root.is_pocket);
                 update_shape_property(5, root.pocket_depth);
                 update_shape_property(7, root.step_down);
-                update_shape_property(8, root.step_in);
+                update_shape_property(8, root.dialog_step_in);
+                update_shape_property(9, root.dialog_pocket_strategy * 1.0);
+                update_shape_property(10, root.dialog_raster_angle);
+                update_shape_property_bool(1, root.dialog_bidirectional);
                 update_shape_property_string(0, root.text_content);
                 update_shape_property(6, root.font_size);
                 save_shape_properties();

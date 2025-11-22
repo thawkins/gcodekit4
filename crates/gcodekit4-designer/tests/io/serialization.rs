@@ -29,6 +29,7 @@ fn test_save_and_load() {
         step_in: 0.0,
         text_content: String::new(),
         font_size: 0.0,
+        path_data: String::new(),
     });
 
     design.save_to_file(&file_path).unwrap();

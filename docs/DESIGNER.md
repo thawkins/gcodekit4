@@ -125,3 +125,11 @@ Each shape/object will effectively have:
 - Moved G-code generation to a background thread to prevent UI blocking.
 - Implemented `invoke-designer-gcode-generated` callback in UI to handle updates from the background thread.
 - [x] Migrated all designer UI elements to `gcodekit4-designer` crate.
+
+### Refactoring: Polyline to PathShape
+- [x] Substituted `PathShape` for all instances of `PolylineShape` usage.
+- [x] Updated `canvas.rs` to create `PathShape` for polyline tool.
+- [x] Updated `import.rs` to import polylines/polygons as `PathShape`.
+- [x] Updated `serialization.rs` to save/load `PathShape` using SVG path data.
+- [x] Updated `toolpath.rs` to support `PathShape` contour and pocket generation.
+- [x] Updated `main.rs` to map `PathShape` to Polyline UI type.

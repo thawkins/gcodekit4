@@ -1,7 +1,8 @@
 //! Toolpath generation from design shapes.
 
-use super::shapes::{Circle, Line, Point, Rectangle};
-use super::pocket_operations::{PocketGenerator, PocketOperation};
+use super::shapes::{Circle, Line, Point, Rectangle, PathShape};
+use lyon::path::iterator::PathIterator;
+use super::pocket_operations::{PocketGenerator, PocketOperation, PocketStrategy};
 use std::f64::consts::PI;
 use rusttype::{OutlineBuilder, Scale, point as rt_point};
 use crate::font_manager;
@@ -83,6 +84,7 @@ pub struct ToolpathGenerator {
     tool_diameter: f64,
     cut_depth: f64,
     step_in: f64,
+    pocket_strategy: PocketStrategy,
 }
 
 impl ToolpathGenerator {
@@ -94,7 +96,13 @@ impl ToolpathGenerator {
             tool_diameter: 3.175, // 1/8 inch
             cut_depth: -5.0,      // 5mm deep
             step_in: 1.0,
+            pocket_strategy: PocketStrategy::ContourParallel,
         }
+    }
+
+    /// Sets the pocket strategy.
+    pub fn set_pocket_strategy(&mut self, strategy: PocketStrategy) {
+        self.pocket_strategy = strategy;
     }
 
     /// Sets the feed rate in mm/min.
@@ -259,20 +267,155 @@ impl ToolpathGenerator {
         toolpath
     }
 
+    /// Generates a contour toolpath for a polyline.
+    pub fn generate_polyline_contour(&self, vertices: &[Point]) -> Toolpath {
+        let mut toolpath = Toolpath::new(self.tool_diameter, self.cut_depth);
+
+        if vertices.is_empty() {
+            return toolpath;
+        }
+
+        // Start at first vertex with rapid move
+        let first_move = ToolpathSegment::new(
+            ToolpathSegmentType::RapidMove,
+            Point::new(0.0, 0.0),
+            vertices[0],
+            self.feed_rate,
+            self.spindle_speed,
+        );
+        toolpath.add_segment(first_move);
+
+        // Move along the polyline
+        for i in 0..vertices.len() {
+            let next_i = (i + 1) % vertices.len();
+            let segment = ToolpathSegment::new(
+                ToolpathSegmentType::LinearMove,
+                vertices[i],
+                vertices[next_i],
+                self.feed_rate,
+                self.spindle_speed,
+            );
+            toolpath.add_segment(segment);
+        }
+
+        // Return to origin with rapid move
+        let return_move = ToolpathSegment::new(
+            ToolpathSegmentType::RapidMove,
+            vertices[0],
+            Point::new(0.0, 0.0),
+            self.feed_rate,
+            self.spindle_speed,
+        );
+        toolpath.add_segment(return_move);
+
+        toolpath
+    }
+
     /// Generates a pocket toolpath for a rectangle.
-    pub fn generate_rectangle_pocket(&self, rect: &Rectangle, pocket_depth: f64) -> Toolpath {
+    pub fn generate_rectangle_pocket(&self, rect: &Rectangle, pocket_depth: f64, step_down: f64, step_in: f64) -> Vec<Toolpath> {
         let op = PocketOperation::new("rect_pocket".to_string(), pocket_depth, self.tool_diameter);
         let mut gen = PocketGenerator::new(op);
-        gen.operation.set_parameters(self.step_in, self.feed_rate, self.spindle_speed);
-        gen.generate_rectangular_pocket(rect)
+        let effective_step_in = if step_in > 0.0 { step_in } else { self.step_in };
+        gen.operation.set_parameters(effective_step_in, self.feed_rate, self.spindle_speed);
+        gen.generate_rectangular_pocket(rect, step_down)
     }
 
     /// Generates a pocket toolpath for a circle.
-    pub fn generate_circle_pocket(&self, circle: &Circle, pocket_depth: f64) -> Toolpath {
+    pub fn generate_circle_pocket(&self, circle: &Circle, pocket_depth: f64, step_down: f64, step_in: f64) -> Vec<Toolpath> {
         let op = PocketOperation::new("circle_pocket".to_string(), pocket_depth, self.tool_diameter);
         let mut gen = PocketGenerator::new(op);
-        gen.operation.set_parameters(self.step_in, self.feed_rate, self.spindle_speed);
-        gen.generate_circular_pocket(circle)
+        let effective_step_in = if step_in > 0.0 { step_in } else { self.step_in };
+        gen.operation.set_parameters(effective_step_in, self.feed_rate, self.spindle_speed);
+        gen.generate_circular_pocket(circle, step_down)
+    }
+
+    /// Generates a pocket toolpath for a polyline.
+    pub fn generate_polyline_pocket(&self, vertices: &[Point], pocket_depth: f64, step_down: f64, step_in: f64) -> Vec<Toolpath> {
+        let op = PocketOperation::new("polyline_pocket".to_string(), pocket_depth, self.tool_diameter);
+        let mut gen = PocketGenerator::new(op);
+        let effective_step_in = if step_in > 0.0 { step_in } else { self.step_in };
+        gen.operation.set_parameters(effective_step_in, self.feed_rate, self.spindle_speed);
+        gen.operation.set_strategy(self.pocket_strategy);
+        gen.generate_polygon_pocket(vertices, step_down)
+    }
+
+    /// Generates a contour toolpath for a PathShape.
+    pub fn generate_path_contour(&self, path_shape: &PathShape) -> Toolpath {
+        let mut toolpath = Toolpath::new(self.tool_diameter, self.cut_depth);
+        let tolerance = 0.05; // mm
+        
+        let mut current_point = Point::new(0.0, 0.0);
+        let mut start_point = Point::new(0.0, 0.0);
+        
+        for event in path_shape.path.iter().flattened(tolerance) {
+            match event {
+                lyon::path::Event::Begin { at } => {
+                    let p = Point::new(at.x as f64, at.y as f64);
+                    toolpath.add_segment(ToolpathSegment::new(
+                        ToolpathSegmentType::RapidMove,
+                        current_point,
+                        p,
+                        self.feed_rate,
+                        self.spindle_speed
+                    ));
+                    current_point = p;
+                    start_point = p;
+                },
+                lyon::path::Event::Line { from: _, to } => {
+                    let p = Point::new(to.x as f64, to.y as f64);
+                    toolpath.add_segment(ToolpathSegment::new(
+                        ToolpathSegmentType::LinearMove,
+                        current_point,
+                        p,
+                        self.feed_rate,
+                        self.spindle_speed
+                    ));
+                    current_point = p;
+                },
+                lyon::path::Event::End { last: _, first: _, close } => {
+                    if close {
+                        toolpath.add_segment(ToolpathSegment::new(
+                            ToolpathSegmentType::LinearMove,
+                            current_point,
+                            start_point,
+                            self.feed_rate,
+                            self.spindle_speed
+                        ));
+                        current_point = start_point;
+                    }
+                },
+                _ => {}
+            }
+        }
+        
+        // Return to origin
+        toolpath.add_segment(ToolpathSegment::new(
+            ToolpathSegmentType::RapidMove,
+            current_point,
+            Point::new(0.0, 0.0),
+            self.feed_rate,
+            self.spindle_speed
+        ));
+        
+        toolpath
+    }
+
+    /// Generates a pocket toolpath for a PathShape.
+    pub fn generate_path_pocket(&self, path_shape: &PathShape, pocket_depth: f64, step_down: f64, step_in: f64) -> Vec<Toolpath> {
+        // Flatten path to polyline and use polyline pocket generation
+        let tolerance = 0.1; // mm
+        let mut vertices = Vec::new();
+        
+        for event in path_shape.path.iter().flattened(tolerance) {
+             match event {
+                 lyon::path::Event::Begin { at } => vertices.push(Point::new(at.x as f64, at.y as f64)),
+                 lyon::path::Event::Line { from: _, to } => vertices.push(Point::new(to.x as f64, to.y as f64)),
+                 _ => {} 
+             }
+        }
+        
+        let polyline_vertices = vertices;
+        self.generate_polyline_pocket(&polyline_vertices, pocket_depth, step_down, step_in)
     }
 
     /// Generates a toolpath for text.

@@ -35,7 +35,6 @@ pub enum ShapeType {
     Circle,
     Line,
     Ellipse,
-    Polyline,
     Path,
     Text,
 }
@@ -250,94 +249,6 @@ impl Shape for Ellipse {
     }
 }
 
-/// A polyline defined by a list of vertices.
-#[derive(Debug, Clone, PartialEq)]
-pub struct Polyline {
-    pub vertices: Vec<Point>,
-}
-
-impl Polyline {
-    /// Creates a new polyline from a list of vertices.
-    pub fn new(vertices: Vec<Point>) -> Self {
-        Self { vertices }
-    }
-
-    /// Creates a regular polygon with n sides.
-    pub fn regular(center: Point, radius: f64, sides: usize) -> Self {
-        let mut vertices = Vec::with_capacity(sides);
-        for i in 0..sides {
-            let angle = 2.0 * std::f64::consts::PI * (i as f64) / (sides as f64);
-            let x = center.x + radius * angle.cos();
-            let y = center.y + radius * angle.sin();
-            vertices.push(Point::new(x, y));
-        }
-        Self { vertices }
-    }
-}
-
-impl Shape for Polyline {
-    fn shape_type(&self) -> ShapeType {
-        ShapeType::Polyline
-    }
-
-    fn bounding_box(&self) -> (f64, f64, f64, f64) {
-        if self.vertices.is_empty() {
-            return (0.0, 0.0, 0.0, 0.0);
-        }
-        let mut min_x = self.vertices[0].x;
-        let mut min_y = self.vertices[0].y;
-        let mut max_x = self.vertices[0].x;
-        let mut max_y = self.vertices[0].y;
-
-        for v in &self.vertices {
-            if v.x < min_x {
-                min_x = v.x;
-            }
-            if v.x > max_x {
-                max_x = v.x;
-            }
-            if v.y < min_y {
-                min_y = v.y;
-            }
-            if v.y > max_y {
-                max_y = v.y;
-            }
-        }
-        (min_x, min_y, max_x, max_y)
-    }
-
-    fn contains_point(&self, point: &Point) -> bool {
-        if self.vertices.len() < 3 {
-            return false;
-        }
-        let mut inside = false;
-        let mut j = self.vertices.len() - 1;
-
-        for i in 0..self.vertices.len() {
-            let xi = self.vertices[i].x;
-            let yi = self.vertices[i].y;
-            let xj = self.vertices[j].x;
-            let yj = self.vertices[j].y;
-
-            if (yi > point.y) != (yj > point.y)
-                && (point.x < (xj - xi) * (point.y - yi) / (yj - yi) + xi)
-            {
-                inside = !inside;
-            }
-            j = i;
-        }
-        inside
-    }
-
-    fn clone_shape(&self) -> Box<dyn Shape> {
-        Box::new(self.clone())
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-}
-
 /// A generic path shape wrapping lyon::path::Path
 #[derive(Debug, Clone)]
 pub struct PathShape {
@@ -347,6 +258,377 @@ pub struct PathShape {
 impl PathShape {
     pub fn new(path: Path) -> Self {
         Self { path }
+    }
+
+    pub fn from_points(points: &[Point], closed: bool) -> Self {
+        let mut builder = Path::builder();
+        if let Some(first) = points.first() {
+            builder.begin(point(first.x as f32, first.y as f32));
+            for p in points.iter().skip(1) {
+                builder.line_to(point(p.x as f32, p.y as f32));
+            }
+            if closed {
+                builder.close();
+            } else {
+                builder.end(false);
+            }
+        }
+        Self { path: builder.build() }
+    }
+
+    pub fn translate(&self, dx: f64, dy: f64) -> Self {
+        let mut builder = Path::builder();
+        for event in self.path.iter() {
+            match event {
+                lyon::path::Event::Begin { at } => {
+                    builder.begin(point(at.x + dx as f32, at.y + dy as f32));
+                }
+                lyon::path::Event::Line { from: _, to } => {
+                    builder.line_to(point(to.x + dx as f32, to.y + dy as f32));
+                }
+                lyon::path::Event::Quadratic { from: _, ctrl, to } => {
+                    builder.quadratic_bezier_to(
+                        point(ctrl.x + dx as f32, ctrl.y + dy as f32),
+                        point(to.x + dx as f32, to.y + dy as f32),
+                    );
+                }
+                lyon::path::Event::Cubic { from: _, ctrl1, ctrl2, to } => {
+                    builder.cubic_bezier_to(
+                        point(ctrl1.x + dx as f32, ctrl1.y + dy as f32),
+                        point(ctrl2.x + dx as f32, ctrl2.y + dy as f32),
+                        point(to.x + dx as f32, to.y + dy as f32),
+                    );
+                }
+                lyon::path::Event::End { last: _, first: _, close } => {
+                    if close {
+                        builder.close();
+                    } else {
+                        builder.end(false);
+                    }
+                }
+            }
+        }
+        Self { path: builder.build() }
+    }
+
+    pub fn scale(&self, sx: f64, sy: f64, center: Point) -> Self {
+        let mut builder = Path::builder();
+        let transform = |p: lyon::math::Point| -> lyon::math::Point {
+            let x = center.x + (p.x as f64 - center.x) * sx;
+            let y = center.y + (p.y as f64 - center.y) * sy;
+            point(x as f32, y as f32)
+        };
+
+        for event in self.path.iter() {
+            match event {
+                lyon::path::Event::Begin { at } => {
+                    builder.begin(transform(at));
+                }
+                lyon::path::Event::Line { from: _, to } => {
+                    builder.line_to(transform(to));
+                }
+                lyon::path::Event::Quadratic { from: _, ctrl, to } => {
+                    builder.quadratic_bezier_to(transform(ctrl), transform(to));
+                }
+                lyon::path::Event::Cubic { from: _, ctrl1, ctrl2, to } => {
+                    builder.cubic_bezier_to(transform(ctrl1), transform(ctrl2), transform(to));
+                }
+                lyon::path::Event::End { last: _, first: _, close } => {
+                    if close {
+                        builder.close();
+                    } else {
+                        builder.end(false);
+                    }
+                }
+            }
+        }
+        Self { path: builder.build() }
+    }
+
+    pub fn to_svg_path(&self) -> String {
+        let mut path_str = String::new();
+        for event in self.path.iter() {
+            match event {
+                lyon::path::Event::Begin { at } => {
+                    path_str.push_str(&format!("M {} {} ", at.x, at.y));
+                }
+                lyon::path::Event::Line { from: _, to } => {
+                    path_str.push_str(&format!("L {} {} ", to.x, to.y));
+                }
+                lyon::path::Event::Quadratic { from: _, ctrl, to } => {
+                    path_str.push_str(&format!("Q {} {} {} {} ", ctrl.x, ctrl.y, to.x, to.y));
+                }
+                lyon::path::Event::Cubic { from: _, ctrl1, ctrl2, to } => {
+                    path_str.push_str(&format!("C {} {} {} {} {} {} ", ctrl1.x, ctrl1.y, ctrl2.x, ctrl2.y, to.x, to.y));
+                }
+                lyon::path::Event::End { last: _, first: _, close } => {
+                    if close {
+                        path_str.push_str("Z ");
+                    }
+                }
+            }
+        }
+        path_str
+    }
+
+    pub fn from_svg_path(data_str: &str) -> Option<Self> {
+        let mut builder = Path::builder();
+        let mut current_x = 0.0f32;
+        let mut current_y = 0.0f32;
+        let mut start_x = 0.0f32;
+        let mut start_y = 0.0f32;
+        let mut subpath_active = false;
+
+        let commands = Self::tokenize_svg_path(data_str);
+        let mut i = 0;
+
+        while i < commands.len() {
+            let cmd = &commands[i];
+
+            match cmd.as_str() {
+                "M" | "m" => {
+                    if i + 2 < commands.len() {
+                        let x: f32 = commands[i + 1].parse().unwrap_or(0.0);
+                        let y: f32 = commands[i + 2].parse().unwrap_or(0.0);
+
+                        if cmd == "m" {
+                            current_x += x;
+                            current_y += y;
+                        } else {
+                            current_x = x;
+                            current_y = y;
+                        }
+                        
+                        if subpath_active {
+                            builder.end(false);
+                        }
+                        
+                        start_x = current_x;
+                        start_y = current_y;
+                        builder.begin(point(current_x, current_y));
+                        subpath_active = true;
+                        i += 3;
+                    } else {
+                        i += 1;
+                    }
+                }
+                "L" | "l" => {
+                    if !subpath_active {
+                        builder.begin(point(current_x, current_y));
+                        subpath_active = true;
+                    }
+                    let mut j = i + 1;
+                    while j + 1 < commands.len() {
+                        let x: f32 = commands[j].parse().unwrap_or(0.0);
+                        let y: f32 = commands[j + 1].parse().unwrap_or(0.0);
+
+                        if cmd == "l" {
+                            current_x += x;
+                            current_y += y;
+                        } else {
+                            current_x = x;
+                            current_y = y;
+                        }
+
+                        builder.line_to(point(current_x, current_y));
+                        j += 2;
+
+                        if j < commands.len() {
+                            let next = &commands[j];
+                            if next.len() == 1 && next.chars().all(|c| c.is_alphabetic()) {
+                                break;
+                            } else if next.parse::<f32>().is_err() {
+                                break;
+                            }
+                        } else {
+                            break;
+                        }
+                    }
+                    i = j;
+                }
+                "H" | "h" => {
+                    if !subpath_active {
+                        builder.begin(point(current_x, current_y));
+                        subpath_active = true;
+                    }
+                    if i + 1 < commands.len() {
+                        let x: f32 = commands[i + 1].parse().unwrap_or(0.0);
+                        if cmd == "h" {
+                            current_x += x;
+                        } else {
+                            current_x = x;
+                        }
+                        builder.line_to(point(current_x, current_y));
+                        i += 2;
+                    } else {
+                        i += 1;
+                    }
+                }
+                "V" | "v" => {
+                    if !subpath_active {
+                        builder.begin(point(current_x, current_y));
+                        subpath_active = true;
+                    }
+                    if i + 1 < commands.len() {
+                        let y: f32 = commands[i + 1].parse().unwrap_or(0.0);
+                        if cmd == "v" {
+                            current_y += y;
+                        } else {
+                            current_y = y;
+                        }
+                        builder.line_to(point(current_x, current_y));
+                        i += 2;
+                    } else {
+                        i += 1;
+                    }
+                }
+                "C" | "c" => {
+                    if !subpath_active {
+                        builder.begin(point(current_x, current_y));
+                        subpath_active = true;
+                    }
+                    let mut j = i + 1;
+                    while j + 5 < commands.len() {
+                        let x1: f32 = commands[j].parse().unwrap_or(0.0);
+                        let y1: f32 = commands[j + 1].parse().unwrap_or(0.0);
+                        let x2: f32 = commands[j + 2].parse().unwrap_or(0.0);
+                        let y2: f32 = commands[j + 3].parse().unwrap_or(0.0);
+                        let x: f32 = commands[j + 4].parse().unwrap_or(0.0);
+                        let y: f32 = commands[j + 5].parse().unwrap_or(0.0);
+
+                        let mut cp1_x = x1;
+                        let mut cp1_y = y1;
+                        let mut cp2_x = x2;
+                        let mut cp2_y = y2;
+                        let mut end_x = x;
+                        let mut end_y = y;
+
+                        if cmd == "c" {
+                            cp1_x += current_x;
+                            cp1_y += current_y;
+                            cp2_x += current_x;
+                            cp2_y += current_y;
+                            end_x += current_x;
+                            end_y += current_y;
+                        }
+
+                        builder.cubic_bezier_to(
+                            point(cp1_x, cp1_y),
+                            point(cp2_x, cp2_y),
+                            point(end_x, end_y)
+                        );
+
+                        current_x = end_x;
+                        current_y = end_y;
+                        j += 6;
+
+                        if j < commands.len() {
+                            let next = &commands[j];
+                            if next.len() == 1 && next.chars().all(|c| c.is_alphabetic()) {
+                                break;
+                            } else if next.parse::<f32>().is_err() {
+                                break;
+                            }
+                        } else {
+                            break;
+                        }
+                    }
+                    i = j;
+                }
+                "Q" | "q" => {
+                    if !subpath_active {
+                        builder.begin(point(current_x, current_y));
+                        subpath_active = true;
+                    }
+                    let mut j = i + 1;
+                    while j + 3 < commands.len() {
+                        let x1: f32 = commands[j].parse().unwrap_or(0.0);
+                        let y1: f32 = commands[j + 1].parse().unwrap_or(0.0);
+                        let x: f32 = commands[j + 2].parse().unwrap_or(0.0);
+                        let y: f32 = commands[j + 3].parse().unwrap_or(0.0);
+
+                        let mut cp_x = x1;
+                        let mut cp_y = y1;
+                        let mut end_x = x;
+                        let mut end_y = y;
+
+                        if cmd == "q" {
+                            cp_x += current_x;
+                            cp_y += current_y;
+                            end_x += current_x;
+                            end_y += current_y;
+                        }
+
+                        builder.quadratic_bezier_to(
+                            point(cp_x, cp_y),
+                            point(end_x, end_y)
+                        );
+
+                        current_x = end_x;
+                        current_y = end_y;
+                        j += 4;
+
+                        if j < commands.len() {
+                            let next = &commands[j];
+                            if next.len() == 1 && next.chars().all(|c| c.is_alphabetic()) {
+                                break;
+                            } else if next.parse::<f32>().is_err() {
+                                break;
+                            }
+                        } else {
+                            break;
+                        }
+                    }
+                    i = j;
+                }
+                "Z" | "z" => {
+                    if subpath_active {
+                        builder.close();
+                        subpath_active = false;
+                    }
+                    current_x = start_x;
+                    current_y = start_y;
+                    i += 1;
+                }
+                _ => i += 1,
+            }
+        }
+        
+        if subpath_active {
+            builder.end(false);
+        }
+        Some(Self { path: builder.build() })
+    }
+
+    fn tokenize_svg_path(path_data: &str) -> Vec<String> {
+        let mut tokens = Vec::new();
+        let mut current_token = String::new();
+
+        for ch in path_data.chars() {
+            match ch {
+                'M' | 'm' | 'L' | 'l' | 'H' | 'h' | 'V' | 'v' | 'C' | 'c' | 'S' | 's' | 'Q'
+                | 'q' | 'T' | 't' | 'A' | 'a' | 'Z' | 'z' => {
+                    if !current_token.is_empty() {
+                        tokens.push(current_token.clone());
+                        current_token.clear();
+                    }
+                    tokens.push(ch.to_string());
+                }
+                ' ' | ',' | '\n' | '\r' | '\t' => {
+                    if !current_token.is_empty() {
+                        tokens.push(current_token.clone());
+                        current_token.clear();
+                    }
+                }
+                _ => current_token.push(ch),
+            }
+        }
+
+        if !current_token.is_empty() {
+            tokens.push(current_token);
+        }
+
+        tokens
     }
 }
 

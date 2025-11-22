@@ -67,6 +67,7 @@ export component CAMToolsPanel inherits Rectangle {
     callback open-vector-engraver();
     callback open-speeds-feeds-calculator();
     callback open-spoilboard-surfacing();
+    callback open-spoilboard-grid();
     
     VerticalBox {
         padding: 10px;
@@ -164,10 +165,10 @@ export component CAMToolsPanel inherits Rectangle {
                         spacing: 10px;
                         
                         ToolCard {
-                            tool-title: "Tool 7";
-                            tool-description: "Tool to go here";
+                            tool-title: "Create Spoilboard Grid";
+                            tool-description: "Generate a laser grid pattern on your spoilboard for alignment";
                             clicked => {
-                                // Placeholder for future tool action
+                                root.open-spoilboard-grid();
                             }
                         }
                         

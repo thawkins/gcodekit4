@@ -204,28 +204,6 @@ pub fn render_canvas(
                     );
                 }
             }
-            ShapeType::Polyline => {
-                if let Some(polyline) = shape_obj.shape.as_any().downcast_ref::<crate::shapes::Polyline>() {
-                    let vertices = &polyline.vertices;
-                    if vertices.len() > 1 {
-                        for i in 0..vertices.len() {
-                            let p1 = vertices[i];
-                            let p2 = vertices[(i + 1) % vertices.len()];
-                            
-                            let (x1, y1) = viewport.world_to_pixel(p1.x, p1.y);
-                            let (x2, y2) = viewport.world_to_pixel(p2.x, p2.y);
-                            
-                            draw_line(&mut img, x1 as i32, y1 as i32, x2 as i32, y2 as i32, SHAPE_COLOR);
-                        }
-                    }
-                }
-                if shape_obj.selected {
-                    let (x1, y1, x2, y2) = shape_obj.shape.bounding_box();
-                    let (screen_x1, screen_y1) = viewport.world_to_pixel(x1, y1);
-                    let (screen_x2, screen_y2) = viewport.world_to_pixel(x2, y2);
-                    draw_selection_box(&mut img, screen_x1 as i32, screen_y1 as i32, screen_x2 as i32, screen_y2 as i32);
-                }
-            }
             ShapeType::Path => {
                 if let Some(path_shape) = shape_obj.shape.as_any().downcast_ref::<crate::shapes::PathShape>() {
                     let tolerance = 0.5 / viewport.zoom();

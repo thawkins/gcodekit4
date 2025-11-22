@@ -2,7 +2,7 @@
 //! Manages the designer canvas state and handles UI callbacks.
 
 use crate::{
-    Canvas, Circle, DrawingMode, Line, Point, Polyline, Rectangle, ToolpathGenerator,
+    Canvas, Circle, DrawingMode, Line, Point, Rectangle, ToolpathGenerator,
     ToolpathToGcode, shapes::{OperationType, TextShape},
 };
 use gcodekit4_core::Units;
@@ -114,69 +114,89 @@ impl DesignerState {
     /// Generates G-code from the current design.
     pub fn generate_gcode(&mut self) -> String {
         let mut gcode = String::new();
+        let gcode_gen = ToolpathToGcode::new(Units::MM, 10.0);
+        let mut toolpaths = Vec::new();
 
-        // Generate toolpath for each shape
         for shape in self.canvas.shapes() {
-            let toolpath = match shape.shape.shape_type() {
+            // Set strategy for this shape
+            self.toolpath_generator.set_pocket_strategy(shape.pocket_strategy);
+
+            let shape_toolpaths = match shape.shape.shape_type() {
                 crate::ShapeType::Rectangle => {
-                    // Get rectangle bounds from the shape
                     let (x1, y1, x2, y2) = shape.shape.bounding_box();
                     let rect = Rectangle::new(x1, y1, x2 - x1, y2 - y1);
                     if shape.operation_type == OperationType::Pocket {
-                        self.toolpath_generator.generate_rectangle_pocket(&rect, shape.pocket_depth)
+                        self.toolpath_generator.generate_rectangle_pocket(&rect, shape.pocket_depth, shape.step_down as f64, shape.step_in as f64)
                     } else {
-                        self.toolpath_generator.generate_rectangle_contour(&rect)
+                        vec![self.toolpath_generator.generate_rectangle_contour(&rect)]
                     }
                 }
                 crate::ShapeType::Circle => {
-                    // Get circle from shape
                     let (cx, cy, _, _) = shape.shape.bounding_box();
-                    // For circles, we need radius - estimate from bounds
-                    let radius =
-                        ((shape.shape.bounding_box().2 - shape.shape.bounding_box().0) / 2.0).abs();
+                    let radius = ((shape.shape.bounding_box().2 - shape.shape.bounding_box().0) / 2.0).abs();
                     let circle = Circle::new(Point::new(cx, cy), radius);
                     if shape.operation_type == OperationType::Pocket {
-                        self.toolpath_generator.generate_circle_pocket(&circle, shape.pocket_depth)
+                        self.toolpath_generator.generate_circle_pocket(&circle, shape.pocket_depth, shape.step_down as f64, shape.step_in as f64)
                     } else {
-                        self.toolpath_generator.generate_circle_contour(&circle)
+                        vec![self.toolpath_generator.generate_circle_contour(&circle)]
                     }
                 }
                 crate::ShapeType::Line => {
                     let (x1, y1, x2, y2) = shape.shape.bounding_box();
                     let line = Line::new(Point::new(x1, y1), Point::new(x2, y2));
-                    self.toolpath_generator.generate_line_contour(&line)
+                    vec![self.toolpath_generator.generate_line_contour(&line)]
                 }
                 crate::ShapeType::Ellipse => {
-                    // For ellipses, generate circle contour approximation
                     let (x1, y1, x2, y2) = shape.shape.bounding_box();
                     let cx = (x1 + x2) / 2.0;
                     let cy = (y1 + y2) / 2.0;
                     let radius = ((x2 - x1).abs().max((y2 - y1).abs())) / 2.0;
                     let circle = Circle::new(Point::new(cx, cy), radius);
-                    self.toolpath_generator.generate_circle_contour(&circle)
+                    vec![self.toolpath_generator.generate_circle_contour(&circle)]
                 }
-                crate::ShapeType::Polyline => {
-                    // For polylines, generate rectangle contour as approximation
-                    let (x1, y1, x2, y2) = shape.shape.bounding_box();
-                    let rect = Rectangle::new(x1, y1, x2 - x1, y2 - y1);
-                    self.toolpath_generator.generate_rectangle_contour(&rect)
-                }
-                crate::ShapeType::Path => self.toolpath_generator.empty_toolpath(),
+                crate::ShapeType::Path => {
+                    if let Some(path_shape) = shape.shape.as_any().downcast_ref::<crate::shapes::PathShape>() {
+                        if shape.operation_type == OperationType::Pocket {
+                            self.toolpath_generator.generate_path_pocket(path_shape, shape.pocket_depth, shape.step_down as f64, shape.step_in as f64)
+                        } else {
+                            vec![self.toolpath_generator.generate_path_contour(path_shape)]
+                        }
+                    } else {
+                        vec![self.toolpath_generator.empty_toolpath()]
+                    }
+                },
                 crate::ShapeType::Text => {
                     if let Some(text) = shape.shape.as_any().downcast_ref::<TextShape>() {
-                        self.toolpath_generator.generate_text_toolpath(text)
+                        vec![self.toolpath_generator.generate_text_toolpath(text)]
                     } else {
-                        self.toolpath_generator.empty_toolpath()
+                        vec![self.toolpath_generator.empty_toolpath()]
                     }
                 }
             };
-
-            // Generate G-code for this toolpath
-            let gcode_gen = ToolpathToGcode::new(Units::MM, 10.0);
-            let shape_gcode = gcode_gen.generate(&toolpath);
-            gcode.push_str(&shape_gcode);
-            gcode.push('\n');
+            toolpaths.extend(shape_toolpaths);
         }
+
+        let total_length: f64 = toolpaths.iter().map(|tp| tp.total_length()).sum();
+        
+        // Use settings from first toolpath if available, or defaults
+        let (header_speed, header_feed, header_diam, header_depth) = if let Some(first) = toolpaths.first() {
+             let s = first.segments.first().map(|seg| seg.spindle_speed).unwrap_or(3000);
+             let f = first.segments.first().map(|seg| seg.feed_rate).unwrap_or(100.0);
+             (s, f, first.tool_diameter, first.depth)
+        } else {
+             (3000, 100.0, 3.175, -5.0)
+        };
+
+        gcode.push_str(&gcode_gen.generate_header(header_speed, header_feed, header_diam, header_depth, total_length));
+
+        let mut line_number = 10;
+        for toolpath in toolpaths {
+            gcode.push_str(&gcode_gen.generate_body(&toolpath, line_number));
+            // Estimate line count increment (rough)
+            line_number += (toolpath.segments.len() as u32) * 10;
+        }
+
+        gcode.push_str(&gcode_gen.generate_footer());
 
         self.generated_gcode = gcode.clone();
         self.gcode_generated = !self.canvas.shapes().is_empty();
@@ -245,8 +265,17 @@ impl DesignerState {
             }
             DrawingMode::Polyline => {
                 // Draw regular hexagon with radius 30 centered at click point
-                self.canvas
-                    .add_polyline(Polyline::regular(Point::new(x, y), 30.0, 6).vertices);
+                let center = Point::new(x, y);
+                let radius = 30.0;
+                let sides = 6;
+                let mut vertices = Vec::with_capacity(sides);
+                for i in 0..sides {
+                    let angle = 2.0 * std::f64::consts::PI * (i as f64) / (sides as f64);
+                    let vx = center.x + radius * angle.cos();
+                    let vy = center.y + radius * angle.sin();
+                    vertices.push(Point::new(vx, vy));
+                }
+                self.canvas.add_polyline(vertices);
             }
             DrawingMode::Text => {
                 // Add default text
@@ -301,15 +330,29 @@ impl DesignerState {
                         let center = Point::new(x + w / 2.0, y + h / 2.0);
                         obj.shape = Box::new(Ellipse::new(center, w / 2.0, h / 2.0));
                     }
-                    crate::ShapeType::Polyline => {
-                        // For polyline, we recreate a regular hexagon at the new position/size
-                        obj.shape = Box::new(Polyline::regular(
-                            Point::new(x + w / 2.0, y + h / 2.0),
-                            w.min(h) / 2.0,
-                            6,
-                        ));
-                    }
-                    crate::ShapeType::Path => {},
+                    crate::ShapeType::Path => {
+                        if let Some(path_shape) = obj.shape.as_any().downcast_ref::<crate::shapes::PathShape>() {
+                             let (old_x, old_y, old_x2, old_y2) = path_shape.bounding_box();
+                             let old_w = old_x2 - old_x;
+                             let old_h = old_y2 - old_y;
+                             
+                             let scale_x = if old_w.abs() > 1e-6 { w / old_w } else { 1.0 };
+                             let scale_y = if old_h.abs() > 1e-6 { h / old_h } else { 1.0 };
+                             
+                             let center_x = (old_x + old_x2) / 2.0;
+                             let center_y = (old_y + old_y2) / 2.0;
+                             
+                             let scaled = path_shape.scale(scale_x, scale_y, Point::new(center_x, center_y));
+                             
+                             let new_center_x = x + w / 2.0;
+                             let new_center_y = y + h / 2.0;
+                             
+                             let dx = new_center_x - center_x;
+                             let dy = new_center_y - center_y;
+                             
+                             obj.shape = Box::new(scaled.translate(dx, dy));
+                        }
+                    },
                     crate::ShapeType::Text => {
                         if let Some(text) = obj.shape.as_any().downcast_ref::<crate::shapes::TextShape>() {
                             obj.shape = Box::new(crate::shapes::TextShape::new(text.text.clone(), x, y, text.font_size));
@@ -446,6 +489,14 @@ impl DesignerState {
                 if let Some(_) = obj.shape.as_any().downcast_ref::<TextShape>() {
                     obj.shape = Box::new(TextShape::new(content.to_string(), x, y, font_size));
                 }
+            }
+        }
+    }
+
+    pub fn set_selected_pocket_strategy(&mut self, strategy: crate::pocket_operations::PocketStrategy) {
+        if let Some(id) = self.canvas.selected_id() {
+            if let Some(obj) = self.canvas.shapes_mut().iter_mut().find(|o| o.id == id) {
+                obj.pocket_strategy = strategy;
             }
         }
     }

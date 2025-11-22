@@ -1515,6 +1515,20 @@ See [FIRMWARE_CAPABILITIES_DATABASE.md](docs/FIRMWARE_CAPABILITIES_DATABASE.md) 
 - **UI**: Controls integrated into right sidebar for accessibility.
 
 
+## Pocketing Strategies (November 2025)
+- **Strategies**:
+  - **Raster (Zig-Zag)**: Parallel passes at configurable angle. Supports bidirectional cutting.
+  - **Contour-Parallel (Offset)**: Spiraling inward from boundary. Uses `cavalier_contours` for robust offsetting.
+  - **Adaptive**: Placeholder for high-speed machining strategy.
+- **UI Controls**:
+  - **Strategy Selector**: Dropdown in Shape Properties.
+  - **Raster Angle**: Configurable angle for raster passes.
+  - **Bidirectional**: Toggle for two-way cutting in raster mode.
+- **Implementation**:
+  - Refactored `pocket_operations.rs` to support strategy pattern.
+  - Integrated `cavalier_contours` for polygon operations.
+  - Updated `DesignerShape` and `DrawingObject` to persist strategy settings.
+
 ## Device Database (DeviceDB)
 - **New Crate**: `gcodekit4-devicedb`
 - **Functionality**: Manages device profiles for CNC, Laser, and 3D Printers.

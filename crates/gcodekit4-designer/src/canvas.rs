@@ -1,9 +1,10 @@
 //! Canvas for drawing and manipulating shapes.
 
 use super::shapes::{
-    Circle, Ellipse, Line, Point, Polyline, Rectangle, Shape, ShapeType, OperationType, TextShape,
+    Circle, Ellipse, Line, Point, Rectangle, Shape, ShapeType, OperationType, TextShape, PathShape,
 };
 use super::viewport::Viewport;
+use super::pocket_operations::PocketStrategy;
 
 /// Canvas coordinates for drawing.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -52,6 +53,7 @@ pub struct DrawingObject {
     pub pocket_depth: f64,
     pub step_down: f32,
     pub step_in: f32,
+    pub pocket_strategy: PocketStrategy,
 }
 
 impl DrawingObject {
@@ -65,6 +67,7 @@ impl DrawingObject {
             pocket_depth: 0.0,
             step_down: 0.0,
             step_in: 0.0,
+            pocket_strategy: PocketStrategy::ContourParallel,
         }
     }
 }
@@ -79,6 +82,7 @@ impl Clone for DrawingObject {
             pocket_depth: self.pocket_depth,
             step_down: self.step_down,
             step_in: self.step_in,
+            pocket_strategy: self.pocket_strategy,
         }
     }
 }
@@ -174,8 +178,9 @@ impl Canvas {
     pub fn add_polyline(&mut self, vertices: Vec<Point>) -> u64 {
         let id = self.next_id;
         self.next_id += 1;
-        let polyline = Polyline::new(vertices);
-        self.shapes.push(DrawingObject::new(id, Box::new(polyline)));
+        // Create a closed PathShape from vertices
+        let path_shape = PathShape::from_points(&vertices, true);
+        self.shapes.push(DrawingObject::new(id, Box::new(path_shape)));
         id
     }
 
@@ -418,11 +423,13 @@ impl Canvas {
                             ry,
                         ))
                     }
-                    ShapeType::Polyline => {
-                        // For polyline, move all vertices
-                        obj.shape.clone_shape()
-                    }
-                    ShapeType::Path => shape.clone_shape(),
+                    ShapeType::Path => {
+                        if let Some(path_shape) = shape.as_any().downcast_ref::<PathShape>() {
+                            Box::new(path_shape.translate(dx, dy))
+                        } else {
+                            shape.clone_shape()
+                        }
+                    },
                     ShapeType::Text => {
                         if let Some(text) = shape.as_any().downcast_ref::<TextShape>() {
                             Box::new(TextShape::new(text.text.clone(), text.x + dx, text.y + dy, text.font_size))
@@ -547,16 +554,42 @@ impl Canvas {
                         };
                         Box::new(Ellipse::new(Point::new(new_cx, new_cy), new_rx, new_ry))
                     }
-                    ShapeType::Polyline => {
-                        // For polyline, apply move only
-                        if handle == 4 {
-                            // Center move: move all vertices
-                            obj.shape.clone_shape()
+                    ShapeType::Path => {
+                        if let Some(path_shape) = shape.as_any().downcast_ref::<PathShape>() {
+                            if handle == 4 {
+                                Box::new(path_shape.translate(dx, dy))
+                            } else {
+                                let (new_x1, new_y1, new_x2, new_y2) = match handle {
+                                    0 => (x1 + dx, y1 + dy, x2, y2),           // Top-left
+                                    1 => (x1, y1 + dy, x2 + dx, y2),           // Top-right
+                                    2 => (x1 + dx, y1, x2, y2 + dy),           // Bottom-left
+                                    3 => (x1, y1, x2 + dx, y2 + dy),           // Bottom-right
+                                    _ => (x1, y1, x2, y2),
+                                };
+                                let width = x2 - x1;
+                                let height = y2 - y1;
+                                let new_width = (new_x2 - new_x1).abs();
+                                let new_height = (new_y2 - new_y1).abs();
+                                
+                                let sx = if width.abs() > 1e-6 { new_width / width } else { 1.0 };
+                                let sy = if height.abs() > 1e-6 { new_height / height } else { 1.0 };
+                                
+                                let center_x = (x1 + x2) / 2.0;
+                                let center_y = (y1 + y2) / 2.0;
+                                
+                                let scaled = path_shape.scale(sx, sy, Point::new(center_x, center_y));
+                                
+                                let new_center_x = (new_x1 + new_x2) / 2.0;
+                                let new_center_y = (new_y1 + new_y2) / 2.0;
+                                let t_dx = new_center_x - center_x;
+                                let t_dy = new_center_y - center_y;
+                                
+                                Box::new(scaled.translate(t_dx, t_dy))
+                            }
                         } else {
-                            obj.shape.clone_shape()
+                            shape.clone_shape()
                         }
-                    }
-                    ShapeType::Path => shape.clone_shape(),
+                    },
                     ShapeType::Text => {
                         if handle == 4 {
                             if let Some(text) = shape.as_any().downcast_ref::<TextShape>() {
@@ -617,8 +650,26 @@ impl Canvas {
                             ry,
                         ))
                     }
-                    ShapeType::Polyline => obj.shape.clone_shape(),
-                    ShapeType::Path => shape.clone_shape(),
+                    ShapeType::Path => {
+                        if let Some(path_shape) = shape.as_any().downcast_ref::<PathShape>() {
+                            let sx = if width.abs() > 1e-6 { snapped_width / width } else { 1.0 };
+                            let sy = if height.abs() > 1e-6 { snapped_height / height } else { 1.0 };
+                            
+                            let center_x = (x1 + x2) / 2.0;
+                            let center_y = (y1 + y2) / 2.0;
+                            
+                            let scaled = path_shape.scale(sx, sy, Point::new(center_x, center_y));
+                            
+                            let new_center_x = snapped_x1 + snapped_width / 2.0;
+                            let new_center_y = snapped_y1 + snapped_height / 2.0;
+                            let t_dx = new_center_x - center_x;
+                            let t_dy = new_center_y - center_y;
+                            
+                            Box::new(scaled.translate(t_dx, t_dy))
+                        } else {
+                            shape.clone_shape()
+                        }
+                    },
                     ShapeType::Text => {
                         if let Some(text) = shape.as_any().downcast_ref::<TextShape>() {
                             Box::new(TextShape::new(text.text.clone(), snapped_x1, snapped_y1, text.font_size))

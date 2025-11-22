@@ -45,18 +45,27 @@ impl ToolpathToGcode {
             .map(|s| s.feed_rate)
             .unwrap_or(100.0);
 
-        // Header
+        gcode.push_str(&self.generate_header(spindle_speed, feed_rate, toolpath.tool_diameter, toolpath.depth, toolpath.total_length()));
+        gcode.push_str(&self.generate_body(toolpath, 10));
+        gcode.push_str(&self.generate_footer());
+
+        gcode
+    }
+
+    /// Generates the G-code header.
+    pub fn generate_header(&self, spindle_speed: u32, feed_rate: f64, tool_diameter: f64, depth: f64, total_length: f64) -> String {
+        let mut gcode = String::new();
         gcode.push_str("; Generated G-code from Designer tool\n");
         gcode.push_str(&format!(
             "; Tool diameter: {:.3}mm\n",
-            toolpath.tool_diameter
+            tool_diameter
         ));
-        gcode.push_str(&format!("; Cut depth: {:.3}mm\n", toolpath.depth));
+        gcode.push_str(&format!("; Cut depth: {:.3}mm\n", depth));
         gcode.push_str(&format!("; Feed rate: {:.0} mm/min\n", feed_rate));
         gcode.push_str(&format!("; Spindle speed: {} RPM\n", spindle_speed));
         gcode.push_str(&format!(
             "; Total path length: {:.3}mm\n",
-            toolpath.total_length()
+            total_length
         ));
         gcode.push('\n');
 
@@ -69,9 +78,13 @@ impl ToolpathToGcode {
             spindle_speed, spindle_speed
         ));
         gcode.push('\n');
+        gcode
+    }
 
-        // Generate moves for each segment
-        let mut line_number = 10;
+    /// Generates the G-code body (moves) for a toolpath.
+    pub fn generate_body(&self, toolpath: &Toolpath, start_line_number: u32) -> String {
+        let mut gcode = String::new();
+        let mut line_number = start_line_number;
         let mut current_z = self.safe_z;
 
         for segment in &toolpath.segments {
@@ -145,14 +158,17 @@ impl ToolpathToGcode {
 
             line_number += 10;
         }
+        gcode
+    }
 
-        // Cleanup
+    /// Generates the G-code footer.
+    pub fn generate_footer(&self) -> String {
+        let mut gcode = String::new();
         gcode.push('\n');
         gcode.push_str("M5          ; Spindle off\n");
         gcode.push_str("G00 Z10     ; Raise tool\n");
         gcode.push_str("G00 X0 Y0   ; Return to origin\n");
         gcode.push_str("M30         ; End program\n");
-
         gcode
     }
 }
