@@ -181,18 +181,7 @@ impl Default for ToolsManagerBackend {
 
 // Helper conversion functions for UI
 pub fn string_to_tool_type(s: &str) -> Option<ToolType> {
-    match s {
-        "Flat End Mill" => Some(ToolType::EndMillFlat),
-        "Ball End Mill" => Some(ToolType::EndMillBall),
-        "Corner Radius End Mill" => Some(ToolType::EndMillCornerRadius),
-        "V-Bit" => Some(ToolType::VBit),
-        "Drill Bit" => Some(ToolType::DrillBit),
-        "Spot Drill" => Some(ToolType::SpotDrill),
-        "Engraving Bit" => Some(ToolType::EngravingBit),
-        "Chamfer Tool" => Some(ToolType::ChamferTool),
-        "Specialty" => Some(ToolType::Specialty),
-        _ => None,
-    }
+    ToolType::all().iter().find(|t| t.to_string() == s).cloned()
 }
 
 pub fn string_to_tool_material(s: &str) -> Option<ToolMaterial> {

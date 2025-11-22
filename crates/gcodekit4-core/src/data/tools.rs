@@ -33,6 +33,23 @@ pub enum ToolType {
     Specialty,
 }
 
+impl ToolType {
+    /// Get all tool types
+    pub fn all() -> &'static [ToolType] {
+        &[
+            ToolType::EndMillFlat,
+            ToolType::EndMillBall,
+            ToolType::EndMillCornerRadius,
+            ToolType::VBit,
+            ToolType::DrillBit,
+            ToolType::SpotDrill,
+            ToolType::EngravingBit,
+            ToolType::ChamferTool,
+            ToolType::Specialty,
+        ]
+    }
+}
+
 impl std::fmt::Display for ToolType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -446,6 +463,49 @@ pub fn init_standard_library() -> ToolLibrary {
     tool5.params.feed_rate = 1200.0;
     tool5.params.stepover_percent = 20.0;
     library.add_tool(tool5);
+
+    // Precision Fly Cutter
+    let mut tool6 = Tool::new(
+        ToolId("tool_fly_cutter_50mm".to_string()),
+        6,
+        "Precision Fly Cutter".to_string(),
+        ToolType::Specialty,
+        50.0, // 50mm cutting diameter (approx 2 inch)
+        60.0, // Length
+    );
+    tool6.flutes = 1; // Single point cutter
+    tool6.shaft_diameter = Some(12.7); // 1/2 inch shank
+    tool6.material = ToolMaterial::Carbide; // Holder is steel, bit is carbide
+    tool6.manufacturer = Some("Buyohlic".to_string());
+    tool6.description = "Precision Fly Cutter with 1/2\" Shank. Ideal for surfacing steel, cast iron, and aluminum.".to_string();
+    tool6.params.rpm = 1500; // Slower for fly cutters
+    tool6.params.rpm_range = (500, 3000);
+    tool6.params.feed_rate = 300.0;
+    tool6.params.stepover_percent = 70.0; // Large stepover for facing
+    tool6.params.depth_per_pass = 0.5;
+    library.add_tool(tool6);
+
+    // NITOMAK Surfacing Router Bit
+    let mut tool7 = Tool::new(
+        ToolId("tool_nitomak_surfacing_2in".to_string()),
+        7,
+        "NITOMAK Surfacing Router Bit".to_string(),
+        ToolType::Specialty,
+        50.8, // 2 inch
+        60.0, // Assumed overall length
+    );
+    tool7.flutes = 3;
+    tool7.flute_length = 12.7; // 1/2 inch cutting length
+    tool7.shaft_diameter = Some(12.7); // 1/2 inch shank
+    tool7.material = ToolMaterial::Carbide;
+    tool7.manufacturer = Some("NITOMAK".to_string());
+    tool7.description = "CNC Spoilboard Surfacing Router Bit, 1/2\" Shank, 2\" Cutting Diameter, 3 Flutes. Teflon coated.".to_string();
+    tool7.params.rpm = 12000; // Router bits usually run faster than fly cutters
+    tool7.params.rpm_range = (10000, 18000);
+    tool7.params.feed_rate = 2000.0;
+    tool7.params.stepover_percent = 40.0;
+    tool7.params.depth_per_pass = 1.0;
+    library.add_tool(tool7);
 
     library
 }

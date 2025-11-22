@@ -21,6 +21,7 @@ import { MainMenu } from "ui/ui_components/mainmenu.slint";
 import { SettingsDialog, SettingItem } from "../gcodekit4-settings/ui/settings_dialog.slint";
 import { DeviceManagerPanel, DeviceProfileUiModel } from "../gcodekit4-devicedb/ui/device_manager.slint";
 import { TabbedBoxDialog } from "../gcodekit4-camtools/ui/tabbed_box_dialog.slint";
+import { SpoilboardSurfacingDialog } from "../gcodekit4-camtools/ui/spoilboard_surfacing_dialog.slint";
 import { SpeedsFeedsDialog } from "../gcodekit4-camtools/ui/speeds_feeds_dialog.slint";
 
 export struct PortInfo {
@@ -384,6 +385,7 @@ export component MainWindow inherits Window {
      // CAM Tool callbacks
     callback generate-tabbed-box();
     callback generate-jigsaw-puzzle();
+    callback generate-spoilboard-surfacing();
     callback generate-laser-engraving();
     callback generate-vector-engraving();
     callback calculate-speeds-feeds();
@@ -1398,6 +1400,9 @@ export component MainWindow inherits Window {
                         }
                         open-jigsaw-puzzle-maker => {
                             root.generate-jigsaw-puzzle();
+                        }
+                        open-spoilboard-surfacing => {
+                            root.generate-spoilboard-surfacing();
                         }
                         open-laser-engraver => {
                             root.generate-laser-engraving();

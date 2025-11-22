@@ -4,7 +4,7 @@ A modern, cross-platform G-Code sender and CNC machine controller written in Rus
 
 [![Build Status](https://github.com/thawkins/gcodekit4/workflows/CI/badge.svg)](https://github.com/thawkins/gcodekit4/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-0.33.0--alpha-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-0.36.0--alpha-brightgreen.svg)](CHANGELOG.md)
 
 ## Overview
 
@@ -536,9 +536,14 @@ You may choose either license for your use of this software.
 
 ## Project Status
 
-**Current Version**: 0.35.0-alpha
+**Current Version**: 0.36.0-alpha
 **Status**: Active Development
 **Stability**: Alpha (breaking changes may occur)
+
+### Recent Updates (v0.36)
+- **Spoilboard Surfacing**: New CAM tool for flattening CNC beds.
+- **Device Manager**: Improved UI with explicit Min/Max labels and auto-correction.
+- **CNC Tools**: Added "Specialty" tool category and dynamic tool type handling.
 
 ### Recent Updates (v0.35)
 - **Speeds & Feeds Calculator**: New CAM tool for calculating optimal cutting parameters based on material and tool data.

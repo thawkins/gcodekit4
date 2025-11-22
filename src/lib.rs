@@ -69,6 +69,7 @@ pub use gcodekit4_designer::{
 pub use gcodekit4_camtools::{
     BoxParameters, BoxType, FingerJointSettings, FingerStyle, JigsawPuzzleMaker, PuzzleParameters,
     TabbedBoxMaker, KeyDividerType, SpeedsFeedsCalculator, CalculationResult,
+    SpoilboardSurfacingGenerator, SpoilboardSurfacingParameters,
 };
 
 pub use gcodekit4_communication::{

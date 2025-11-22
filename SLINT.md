@@ -188,3 +188,10 @@ Rectangle {
   - **Reset**: Resets zoom to 1.0 and pan to default origin.
 - **Default View**: Origin positioned at bottom-left with 5px margin (inset) to ensure visibility.
 - **UI Controls**: Added buttons (+, -, Fit, Rst) and "Show Grid" checkbox to the right sidebar for better accessibility.
+
+### Device Manager UI Improvements (Added 2025-11-22)
+- **Explicit Labels**: Added "Min:" and "Max:" labels to axis limit fields in `DeviceManagerPanel`.
+  - Previously used placeholder text which disappeared when values were present, leading to confusion.
+  - Explicit labels ensure users know which field is which at all times.
+- **Auto-Correction**: Implemented logic in `DeviceUiController` to automatically swap Min/Max values if entered inversely (Min > Max).
+  - Prevents invalid device profiles that could cause negative dimensions in CAM tools.

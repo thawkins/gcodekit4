@@ -281,23 +281,26 @@ export component DeviceManagerPanel inherits Rectangle {
                             
                             HorizontalBox {
                                 Text { text: "X Axis (mm):"; width: 100px; vertical-alignment: center; }
-                                LineEdit { text: p.x-min; width: 80px; placeholder-text: "Min"; edited(s) => { root.temp-profile = p; root.temp-profile.x-min = s; root.save-profile(root.temp-profile); } }
-                                Text { text: "to"; vertical-alignment: center; }
-                                LineEdit { text: p.x-max; width: 80px; placeholder-text: "Max"; edited(s) => { root.temp-profile = p; root.temp-profile.x-max = s; root.save-profile(root.temp-profile); } }
+                                Text { text: "Min:"; vertical-alignment: center; font-size: 10px; }
+                                LineEdit { text: p.x-min; width: 70px; placeholder-text: "0.0"; edited(s) => { root.temp-profile = p; root.temp-profile.x-min = s; root.save-profile(root.temp-profile); } }
+                                Text { text: "Max:"; vertical-alignment: center; font-size: 10px; }
+                                LineEdit { text: p.x-max; width: 70px; placeholder-text: "200.0"; edited(s) => { root.temp-profile = p; root.temp-profile.x-max = s; root.save-profile(root.temp-profile); } }
                             }
                             
                             HorizontalBox {
                                 Text { text: "Y Axis (mm):"; width: 100px; vertical-alignment: center; }
-                                LineEdit { text: p.y-min; width: 80px; placeholder-text: "Min"; edited(s) => { root.temp-profile = p; root.temp-profile.y-min = s; root.save-profile(root.temp-profile); } }
-                                Text { text: "to"; vertical-alignment: center; }
-                                LineEdit { text: p.y-max; width: 80px; placeholder-text: "Max"; edited(s) => { root.temp-profile = p; root.temp-profile.y-max = s; root.save-profile(root.temp-profile); } }
+                                Text { text: "Min:"; vertical-alignment: center; font-size: 10px; }
+                                LineEdit { text: p.y-min; width: 70px; placeholder-text: "0.0"; edited(s) => { root.temp-profile = p; root.temp-profile.y-min = s; root.save-profile(root.temp-profile); } }
+                                Text { text: "Max:"; vertical-alignment: center; font-size: 10px; }
+                                LineEdit { text: p.y-max; width: 70px; placeholder-text: "200.0"; edited(s) => { root.temp-profile = p; root.temp-profile.y-max = s; root.save-profile(root.temp-profile); } }
                             }
                             
                             HorizontalBox {
                                 Text { text: "Z Axis (mm):"; width: 100px; vertical-alignment: center; }
-                                LineEdit { text: p.z-min; width: 80px; placeholder-text: "Min"; edited(s) => { root.temp-profile = p; root.temp-profile.z-min = s; root.save-profile(root.temp-profile); } }
-                                Text { text: "to"; vertical-alignment: center; }
-                                LineEdit { text: p.z-max; width: 80px; placeholder-text: "Max"; edited(s) => { root.temp-profile = p; root.temp-profile.z-max = s; root.save-profile(root.temp-profile); } }
+                                Text { text: "Min:"; vertical-alignment: center; font-size: 10px; }
+                                LineEdit { text: p.z-min; width: 70px; placeholder-text: "0.0"; edited(s) => { root.temp-profile = p; root.temp-profile.z-min = s; root.save-profile(root.temp-profile); } }
+                                Text { text: "Max:"; vertical-alignment: center; font-size: 10px; }
+                                LineEdit { text: p.z-max; width: 70px; placeholder-text: "100.0"; edited(s) => { root.temp-profile = p; root.temp-profile.z-max = s; root.save-profile(root.temp-profile); } }
                             }
                         }
                         }

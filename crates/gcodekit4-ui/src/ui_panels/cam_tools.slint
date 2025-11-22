@@ -62,6 +62,7 @@ export component CAMToolsPanel inherits Rectangle {
     
     callback open-tabbed-box-maker();
     callback open-jigsaw-puzzle-maker();
+    callback open-spoilboard-surfacing();
     
     VerticalBox {
         padding: 10px;
@@ -133,10 +134,10 @@ export component CAMToolsPanel inherits Rectangle {
                 }
                 
                 ToolCard {
-                    tool-title: "Tool 6";
-                    tool-description: "Tool to go here";
+                    tool-title: "Spoilboard Surfacing";
+                    tool-description: "Generate G-code to surface/flatten your spoilboard";
                     clicked => {
-                        // Placeholder for future tool action
+                        root.open-spoilboard-surfacing();
                     }
                     col: 2;
                     row: 1;

@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.36.0-alpha] - 2025-11-22
+
+### Added
+- **CAM Tools**: Added "Spoilboard Surfacing" tool.
+  - Generates G-code for surfacing/flattening the CNC bed or spoilboard.
+  - Automatically loads dimensions from the selected Device Profile.
+  - Supports tool selection from the CNC Tool Database.
+  - Configurable parameters: Tool Diameter, Feed Rate, Spindle Speed, Stepover, Cut Depth.
+  - Includes proper initialization sequence (G21, G90, G17, $H, G54, G10).
+- **CNC Tools**: Added "Specialty" tool category.
+  - Replaces "Fly Cutter" to be more generic.
+  - Includes "Precision Fly Cutter" and "NITOMAK Surfacing Router Bit" in standard library.
+
+### Changed
+- **Device Manager**: Improved UI for axis limits.
+  - Explicitly labeled "Min" and "Max" fields to prevent user error.
+  - Added auto-correction logic to swap Min/Max values if entered inversely.
+- **CNC Tools**: Refactored tool type handling to be dynamic.
+  - `ToolType::all()` now provides the source of truth for tool categories.
+  - UI dropdowns automatically populate from the core definition.
+
+### Fixed
+- **DeviceDB**: Fixed issue where incorrect axis limits (Min > Max) caused negative dimensions in CAM tools.
+- **Spoilboard Tool**: Fixed issue where dimensions were not updating when switching devices.
+
 ## [0.35.0-alpha] - 2025-11-22
 
 ### Added

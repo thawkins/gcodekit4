@@ -1,10 +1,23 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.33.0-alpha  
-**Last Updated**: 2025-11-19  
-**Status**: Vector Hatching & Lyon Integration Complete
+**Version**: 0.36.0-alpha  
+**Last Updated**: 2025-11-22  
+**Status**: Spoilboard Surfacing & DeviceDB Improvements
 
-### Latest Release (v0.33.0-alpha) - Vector Hatching & Lyon Integration
+### Latest Release (v0.36.0-alpha) - Spoilboard Surfacing & DeviceDB Improvements
+- ✅ **Spoilboard Surfacing Tool**
+  - Dedicated CAM tool for flattening CNC beds/spoilboards
+  - Automatic dimension loading from DeviceDB
+  - Configurable tool parameters (diameter, feed, speed, stepover)
+  - Proper G-code initialization sequence ($H, G54, G10)
+- ✅ **Device Manager Improvements**
+  - Explicit Min/Max axis limit fields
+  - Auto-correction for inverted Min/Max values
+- ✅ **CNC Tool Library**
+  - Added "Specialty" tool category
+  - Dynamic tool type handling
+
+### Previous Release (v0.33.0-alpha) - Vector Hatching & Lyon Integration
 - ✅ **Vector Hatching Support**
   - Implemented vector hatching with configurable angle, spacing, and tolerance
   - Added cross-hatch support (second pass at 90 degrees offset)

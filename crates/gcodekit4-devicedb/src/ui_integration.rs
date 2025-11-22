@@ -112,12 +112,23 @@ impl DeviceUiController {
             _ => ControllerType::Grbl,
         };
 
-        profile.x_axis.min = ui_model.x_min.parse().unwrap_or(0.0);
-        profile.x_axis.max = ui_model.x_max.parse().unwrap_or(200.0);
-        profile.y_axis.min = ui_model.y_min.parse().unwrap_or(0.0);
-        profile.y_axis.max = ui_model.y_max.parse().unwrap_or(200.0);
-        profile.z_axis.min = ui_model.z_min.parse().unwrap_or(0.0);
-        profile.z_axis.max = ui_model.z_max.parse().unwrap_or(100.0);
+        let mut x_min = ui_model.x_min.parse().unwrap_or(0.0);
+        let mut x_max = ui_model.x_max.parse().unwrap_or(200.0);
+        if x_min > x_max { std::mem::swap(&mut x_min, &mut x_max); }
+        profile.x_axis.min = x_min;
+        profile.x_axis.max = x_max;
+
+        let mut y_min = ui_model.y_min.parse().unwrap_or(0.0);
+        let mut y_max = ui_model.y_max.parse().unwrap_or(200.0);
+        if y_min > y_max { std::mem::swap(&mut y_min, &mut y_max); }
+        profile.y_axis.min = y_min;
+        profile.y_axis.max = y_max;
+
+        let mut z_min = ui_model.z_min.parse().unwrap_or(0.0);
+        let mut z_max = ui_model.z_max.parse().unwrap_or(100.0);
+        if z_min > z_max { std::mem::swap(&mut z_min, &mut z_max); }
+        profile.z_axis.min = z_min;
+        profile.z_axis.max = z_max;
         
         profile.has_spindle = ui_model.has_spindle;
         profile.has_laser = ui_model.has_laser;

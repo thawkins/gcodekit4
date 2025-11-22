@@ -4,7 +4,7 @@ use gcodekit4::{
     FingerJointSettings, FingerStyle, FirmwareSettingsIntegration, GcodeEditor, JigsawPuzzleMaker,
     KeyDividerType, PuzzleParameters, SerialCommunicator, SerialParity, SettingsCategory, SettingsController,
     SettingsDialog, SettingsManager, SettingsPersistence, TabbedBoxMaker, BUILD_DATE, VERSION,
-    SpeedsFeedsCalculator,
+    SpeedsFeedsCalculator, SpoilboardSurfacingGenerator, SpoilboardSurfacingParameters,
 };
 use gcodekit4_devicedb::{DeviceManager, DeviceUiController, DeviceProfileUiModel as DbDeviceProfile};
 use gcodekit4_ui::EditorBridge;
@@ -21,6 +21,7 @@ slint::include_modules!();
 slint::slint! {
     export { TabbedBoxDialog } from "crates/gcodekit4-camtools/ui/tabbed_box_dialog.slint";
     export { JigsawPuzzleDialog } from "crates/gcodekit4-camtools/ui/jigsaw_puzzle_dialog.slint";
+    export { SpoilboardSurfacingDialog } from "crates/gcodekit4-camtools/ui/spoilboard_surfacing_dialog.slint";
     export { LaserEngraverDialog } from "crates/gcodekit4-camtools/ui/laser_engraver_dialog.slint";
     export { VectorEngraverDialog } from "crates/gcodekit4-camtools/ui/vector_engraver_dialog.slint";
     export { ErrorDialog } from "crates/gcodekit4-ui/ui_panels/error_dialog.slint";
@@ -6202,7 +6203,222 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
-    // Zoom state tracking (Arc for shared state across closures)
+    // Spoilboard Surfacing Tool
+    let window_weak = main_window.as_weak();
+    let device_manager_ss = device_manager.clone();
+    let editor_bridge_ss = editor_bridge.clone();
+    let tools_backend_ss = tools_backend.clone();
+    
+    main_window.on_generate_spoilboard_surfacing(move || {
+        if let Some(window) = window_weak.upgrade() {
+            let dialog = SpoilboardSurfacingDialog::new().unwrap();
+            
+            // Populate Devices
+            let mut profiles = device_manager_ss.get_all_profiles();
+            profiles.sort_by(|a, b| a.name.cmp(&b.name));
+            let device_names: Vec<slint::SharedString> = profiles.iter()
+                .map(|p| slint::SharedString::from(p.name.clone()))
+                .collect();
+            dialog.set_devices(slint::ModelRc::new(VecModel::from(device_names)));
+            
+            // Set active device if available
+            if let Some(active) = device_manager_ss.get_active_profile() {
+                if let Some(idx) = profiles.iter().position(|p| p.id == active.id) {
+                    dialog.set_selected_device_index(idx as i32);
+                    let width = active.x_axis.max - active.x_axis.min;
+                    let height = active.y_axis.max - active.y_axis.min;
+                    dialog.set_width_mm(slint::SharedString::from(format!("{:.1}", width)));
+                    dialog.set_height_mm(slint::SharedString::from(format!("{:.1}", height)));
+                }
+            }
+            
+            // Populate Tool Categories
+            let categories: Vec<String> = gcodekit4_core::data::tools::ToolType::all()
+                .iter()
+                .map(|t| t.to_string())
+                .collect();
+            
+            let category_names: Vec<slint::SharedString> = categories.iter()
+                .map(|c| slint::SharedString::from(c.as_str()))
+                .collect();
+            dialog.set_tool_categories(slint::ModelRc::new(VecModel::from(category_names)));
+            
+            // Default to Specialty if available, else Flat End Mill
+            let default_cat_idx = categories.iter().position(|c| c == "Specialty").unwrap_or(0);
+            dialog.set_selected_category_index(default_cat_idx as i32);
+            
+            // Helper to populate tools based on category
+            let categories_clone = categories.clone();
+            let populate_tools = {
+                let dialog_weak = dialog.as_weak();
+                let tools_backend = tools_backend_ss.clone();
+                move |category_idx: i32| {
+                    if let Some(dlg) = dialog_weak.upgrade() {
+                        if category_idx < 0 || category_idx >= categories_clone.len() as i32 {
+                            dlg.set_tools(slint::ModelRc::new(VecModel::from(vec![])));
+                            return;
+                        }
+                        
+                        let category = &categories_clone[category_idx as usize];
+                        let tool_type = gcodekit4::ui::tools_manager_backend::string_to_tool_type(category);
+                        
+                        if let Some(tt) = tool_type {
+                            let backend = tools_backend.borrow();
+                            let tools = backend.filter_by_type(tt);
+                            let tool_names: Vec<slint::SharedString> = tools.iter()
+                                .map(|t| slint::SharedString::from(format!("{} (D{:.1}mm)", t.name, t.diameter)))
+                                .collect();
+                            dlg.set_tools(slint::ModelRc::new(VecModel::from(tool_names)));
+                            
+                            // Select first tool if available
+                            if !tools.is_empty() {
+                                dlg.set_selected_tool_index(0);
+                                // Trigger tool selection update manually since we can't call callback directly easily
+                                // We'll just update the fields directly here
+                                let t = tools[0];
+                                dlg.set_tool_diameter(slint::SharedString::from(format!("{:.3}", t.diameter)));
+                                dlg.set_feed_rate(slint::SharedString::from(format!("{:.0}", t.params.feed_rate)));
+                                dlg.set_spindle_speed(slint::SharedString::from(format!("{}", t.params.rpm)));
+                                dlg.set_stepover(slint::SharedString::from(format!("{:.1}", t.params.stepover_percent)));
+                                dlg.set_cut_depth(slint::SharedString::from(format!("{:.3}", t.params.depth_per_pass)));
+                            } else {
+                                dlg.set_selected_tool_index(-1);
+                            }
+                        }
+                    }
+                }
+            };
+            
+            // Initial population
+            populate_tools(default_cat_idx as i32);
+            
+            // Callbacks
+            let dialog_weak = dialog.as_weak();
+            let device_manager_cb = device_manager_ss.clone();
+            dialog.on_device_selected(move |idx| {
+                if let Some(dlg) = dialog_weak.upgrade() {
+                    let mut profiles = device_manager_cb.get_all_profiles();
+                    profiles.sort_by(|a, b| a.name.cmp(&b.name));
+                    if let Some(profile) = profiles.get(idx as usize) {
+                        let width = profile.x_axis.max - profile.x_axis.min;
+                        let height = profile.y_axis.max - profile.y_axis.min;
+                        dlg.set_width_mm(slint::SharedString::from(format!("{:.1}", width)));
+                        dlg.set_height_mm(slint::SharedString::from(format!("{:.1}", height)));
+                    }
+                }
+            });
+            
+            let populate_tools_cb = populate_tools.clone();
+            dialog.on_category_selected(move |idx| {
+                populate_tools_cb(idx);
+            });
+            
+            let dialog_weak = dialog.as_weak();
+            let tools_backend_cb = tools_backend_ss.clone();
+            let categories_clone_2 = categories.clone();
+            dialog.on_tool_selected(move |idx| {
+                if let Some(dlg) = dialog_weak.upgrade() {
+                    let cat_idx = dlg.get_selected_category_index();
+                    if cat_idx >= 0 && idx >= 0 {
+                        let category = &categories_clone_2[cat_idx as usize];
+                        if let Some(tt) = gcodekit4::ui::tools_manager_backend::string_to_tool_type(category) {
+                            let backend = tools_backend_cb.borrow();
+                            let tools = backend.filter_by_type(tt);
+                            if let Some(t) = tools.get(idx as usize) {
+                                dlg.set_tool_diameter(slint::SharedString::from(format!("{:.3}", t.diameter)));
+                                dlg.set_feed_rate(slint::SharedString::from(format!("{:.0}", t.params.feed_rate)));
+                                dlg.set_spindle_speed(slint::SharedString::from(format!("{}", t.params.rpm)));
+                                dlg.set_stepover(slint::SharedString::from(format!("{:.1}", t.params.stepover_percent)));
+                                dlg.set_cut_depth(slint::SharedString::from(format!("{:.3}", t.params.depth_per_pass)));
+                            }
+                        }
+                    }
+                }
+            });
+            
+            let dialog_weak = dialog.as_weak();
+            let window_weak_gen = window.as_weak();
+            let _editor_bridge_gen = editor_bridge_ss.clone();
+            
+            dialog.on_generate_gcode(move || {
+                if let Some(dlg) = dialog_weak.upgrade() {
+                    // Parse parameters
+                    let width = dlg.get_width_mm().parse::<f64>().unwrap_or(300.0);
+                    let height = dlg.get_height_mm().parse::<f64>().unwrap_or(180.0);
+                    let tool_diameter = dlg.get_tool_diameter().parse::<f64>().unwrap_or(25.4);
+                    let feed_rate = dlg.get_feed_rate().parse::<f64>().unwrap_or(1000.0);
+                    let spindle_speed = dlg.get_spindle_speed().parse::<f64>().unwrap_or(12000.0);
+                    let cut_depth = dlg.get_cut_depth().parse::<f64>().unwrap_or(0.5);
+                    let stepover_percent = dlg.get_stepover().parse::<f64>().unwrap_or(40.0);
+                    let safe_z = dlg.get_safe_z().parse::<f64>().unwrap_or(5.0);
+                    
+                    let params = SpoilboardSurfacingParameters {
+                        width,
+                        height,
+                        tool_diameter,
+                        feed_rate,
+                        spindle_speed,
+                        cut_depth,
+                        stepover_percent,
+                        safe_z,
+                    };
+                    
+                    // Close dialog
+                    dlg.hide().unwrap();
+                    
+                    // Generate G-code
+                    let generator = SpoilboardSurfacingGenerator::new(params);
+                    match generator.generate() {
+                        Ok(gcode) => {
+                            if let Some(win) = window_weak_gen.upgrade() {
+                                // Load into editor
+                                win.invoke_load_editor_text(slint::SharedString::from(gcode));
+                                win.set_current_view(slint::SharedString::from("gcode-editor"));
+                                win.set_gcode_focus_trigger(win.get_gcode_focus_trigger() + 1);
+                                
+                                // Show success message
+                                let success_dialog = ErrorDialog::new().unwrap();
+                                success_dialog.set_error_message(
+                                    slint::SharedString::from("Spoilboard surfacing G-code generated successfully."),
+                                );
+                                let success_weak = success_dialog.as_weak();
+                                success_dialog.on_close_dialog(move || {
+                                    if let Some(d) = success_weak.upgrade() {
+                                        d.hide().unwrap();
+                                    }
+                                });
+                                success_dialog.show().unwrap();
+                            }
+                        }
+                        Err(e) => {
+                            if let Some(_win) = window_weak_gen.upgrade() {
+                                let error_dialog = ErrorDialog::new().unwrap();
+                                error_dialog.set_error_message(
+                                    slint::SharedString::from(format!("Failed to generate G-code: {}", e)),
+                                );
+                                let error_weak = error_dialog.as_weak();
+                                error_dialog.on_close_dialog(move || {
+                                    if let Some(d) = error_weak.upgrade() {
+                                        d.hide().unwrap();
+                                    }
+                                });
+                                error_dialog.show().unwrap();
+                            }
+                        }
+                    }
+                }
+            });
+            
+            let dialog_weak_cancel = dialog.as_weak();
+            dialog.on_cancel_dialog(move || {
+                if let Some(dlg) = dialog_weak_cancel.upgrade() {
+                    dlg.hide().unwrap();
+                }
+            });
+            
+            dialog.show().unwrap();
+        }
+    });
     use std::sync::{Arc, Mutex};
     let zoom_scale = Arc::new(Mutex::new(1.0f32));
     let pan_offset = Arc::new(Mutex::new((0.0f32, 0.0f32)));

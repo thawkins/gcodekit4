@@ -66,6 +66,7 @@ export component CAMToolsPanel inherits Rectangle {
     callback open-laser-engraver();
     callback open-vector-engraver();
     callback open-speeds-feeds-calculator();
+    callback open-spoilboard-surfacing();
     
     VerticalBox {
         padding: 10px;
@@ -145,10 +146,10 @@ export component CAMToolsPanel inherits Rectangle {
                         }
                         
                         ToolCard {
-                            tool-title: "Tool 6";
-                            tool-description: "Tool to go here";
+                            tool-title: "Spoilboard Surfacing";
+                            tool-description: "Generate G-code to surface/flatten your spoilboard";
                             clicked => {
-                                // Placeholder for future tool action
+                                root.open-spoilboard-surfacing();
                             }
                         }
                     }
