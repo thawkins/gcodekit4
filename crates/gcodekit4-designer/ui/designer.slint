@@ -174,7 +174,12 @@ component ShapePropertiesDialog inherits Dialog {
         spacing: 8px;
         
         Text {
-            text: "Shape Properties";
+            text: (shape_type == 1 ? "Rectangle" : 
+                   shape_type == 2 ? "Circle" : 
+                   shape_type == 3 ? "Line" : 
+                   shape_type == 4 ? "Ellipse" : 
+                   shape_type == 5 ? "Polyline" : 
+                   shape_type == 6 ? "Text" : "Shape") + " properties";
             font-size: 16px;
             font-weight: 700;
         }
@@ -745,7 +750,7 @@ export component DesignerPanel inherits VerticalBox {
                     tool_id: 5;
                     current_mode: designer_state.mode;
                     icon_text: "⬠";
-                    tooltip: "Polygon (P)";
+                    tooltip: "Polyline (P)";
                     clicked => { set_mode(5); }
                 }
             }

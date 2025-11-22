@@ -19,7 +19,7 @@ use tokio::time::Duration;
 
 /// GRBL Controller state management
 #[derive(Debug, Clone)]
-struct GrblControllerState {
+pub struct GrblControllerState {
     /// Current connection state
     pub state: ControllerState,
     /// Current status
@@ -558,15 +558,4 @@ impl ControllerTrait for GrblController {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
 
-    #[test]
-    fn test_grbl_controller_state_default() {
-        let state = GrblControllerState::default();
-        assert_eq!(state.state, ControllerState::Disconnected);
-        assert_eq!(state.poll_rate_ms, 100);
-        assert!(!state.is_streaming);
-    }
-}

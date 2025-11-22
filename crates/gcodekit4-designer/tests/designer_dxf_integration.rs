@@ -1,9 +1,10 @@
 //! Integration tests for DXF import and parsing (Phase 4.5)
 
-use gcodekit4::designer::{
+use gcodekit4_designer::dxf_parser::{
     DxfArc, DxfCircle, DxfEntity, DxfEntityType, DxfFile, DxfHeader, DxfLine, DxfParser,
-    DxfPolyline, DxfText, DxfUnit, Point,
+    DxfPolyline, DxfText, DxfUnit,
 };
+use gcodekit4_designer::Point;
 
 #[test]
 fn test_dxf_unit_all_conversions() {
@@ -103,7 +104,7 @@ fn test_dxf_polyline_closed() {
             Point::new(5.0, 10.0),
         ],
         closed: false,
-        layer: "Polygons".to_string(),
+        layer: "Polylines".to_string(),
         color: 1,
     };
 

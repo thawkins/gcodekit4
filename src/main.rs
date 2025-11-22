@@ -4,6 +4,7 @@ use gcodekit4::{
     FingerJointSettings, FingerStyle, FirmwareSettingsIntegration, GcodeEditor, JigsawPuzzleMaker,
     KeyDividerType, PuzzleParameters, SerialCommunicator, SerialParity, SettingsCategory, SettingsController,
     SettingsDialog, SettingsManager, SettingsPersistence, TabbedBoxMaker, BUILD_DATE, VERSION,
+    SpeedsFeedsCalculator,
 };
 use gcodekit4_devicedb::{DeviceManager, DeviceUiController, DeviceProfileUiModel as DbDeviceProfile};
 use gcodekit4_ui::EditorBridge;
@@ -405,7 +406,7 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
                 gcodekit4::ShapeType::Circle => 1,
                 gcodekit4::ShapeType::Line => 2,
                 gcodekit4::ShapeType::Ellipse => 3,
-                gcodekit4::ShapeType::Polygon => 4,
+                gcodekit4::ShapeType::Polyline => 4,
                 gcodekit4::ShapeType::Path => 7,
                 gcodekit4::ShapeType::Text => 6,
             };
@@ -451,7 +452,7 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
                 gcodekit4::ShapeType::Circle => 1,
                 gcodekit4::ShapeType::Line => 2,
                 gcodekit4::ShapeType::Ellipse => 3,
-                gcodekit4::ShapeType::Polygon => 4,
+                gcodekit4::ShapeType::Polyline => 4,
                 gcodekit4::ShapeType::Path => 5,
                 gcodekit4::ShapeType::Text => 6,
             };
@@ -4974,17 +4975,6 @@ fn main() -> anyhow::Result<()> {
         state.toolpath_generator.set_step_in(step_in as f64);
     });
 
-    // Designer: Update step in
-    let designer_mgr_clone = designer_mgr.clone();
-    main_window.on_designer_update_step_in(move |step_in: f32| {
-        let mut state = designer_mgr_clone.borrow_mut();
-        // We don't have a global step_in setting in DesignerState yet.
-        // But we should probably add it to ToolpathGenerator if it's a global setting.
-        // For now, let's just log it or ignore it if it's not used globally.
-        // Wait, the user said "add to tool setup panel... which is used to determine...".
-        // This implies it should be used.
-        // I'll check ToolpathGenerator.
-    });
 
     // Tabbed Box Maker: Open dialog window
     let window_weak = main_window.as_weak();
@@ -6101,6 +6091,114 @@ fn main() -> anyhow::Result<()> {
             });
 
             dialog.show().unwrap();
+        }
+    });
+
+    // Speeds and Feeds Calculator
+    let window_weak = main_window.as_weak();
+    let materials_backend_sf = materials_backend.clone();
+    let tools_backend_sf = tools_backend.clone();
+    let device_manager_sf = device_manager.clone();
+    
+    main_window.on_load_speeds_feeds_data(move || {
+        if let Some(window) = window_weak.upgrade() {
+            // Load Materials
+            let backend = materials_backend_sf.borrow();
+            let materials = backend.get_all_materials();
+            let material_names: Vec<slint::SharedString> = materials.iter()
+                .map(|m| slint::SharedString::from(m.name.clone()))
+                .collect();
+            window.set_sf_materials(slint::ModelRc::new(VecModel::from(material_names)));
+            
+            // Load Tools
+            let tool_backend = tools_backend_sf.borrow();
+            let tools = tool_backend.get_all_tools();
+            let tool_names: Vec<slint::SharedString> = tools.iter()
+                .map(|t| slint::SharedString::from(format!("{} - {}mm {}", t.name, t.diameter, t.tool_type)))
+                .collect();
+            window.set_sf_tools(slint::ModelRc::new(VecModel::from(tool_names)));
+            
+            // Load Devices
+            let devices = device_manager_sf.get_all_profiles();
+            let device_names: Vec<slint::SharedString> = devices.iter()
+                .map(|d| slint::SharedString::from(d.name.clone()))
+                .collect();
+            window.set_sf_devices(slint::ModelRc::new(VecModel::from(device_names)));
+            
+            // Set defaults if empty
+            if window.get_sf_selected_material_index() == -1 && !materials.is_empty() {
+                window.set_sf_selected_material_index(0);
+            }
+            if window.get_sf_selected_tool_index() == -1 && !tools.is_empty() {
+                window.set_sf_selected_tool_index(0);
+            }
+            if window.get_sf_selected_device_index() == -1 && !devices.is_empty() {
+                // Try to find active device
+                if let Some(active) = device_manager_sf.get_active_profile() {
+                    if let Some(idx) = devices.iter().position(|d| d.id == active.id) {
+                        window.set_sf_selected_device_index(idx as i32);
+                    } else {
+                        window.set_sf_selected_device_index(0);
+                    }
+                } else {
+                    window.set_sf_selected_device_index(0);
+                }
+            }
+        }
+    });
+    
+    let window_weak = main_window.as_weak();
+    let materials_backend_sf = materials_backend.clone();
+    let tools_backend_sf = tools_backend.clone();
+    let device_manager_sf = device_manager.clone();
+    
+    main_window.on_calculate_speeds_feeds(move || {
+        if let Some(window) = window_weak.upgrade() {
+            let mat_idx = window.get_sf_selected_material_index();
+            let tool_idx = window.get_sf_selected_tool_index();
+            let dev_idx = window.get_sf_selected_device_index();
+            
+            if mat_idx < 0 || tool_idx < 0 || dev_idx < 0 {
+                return;
+            }
+            
+            let mat_backend = materials_backend_sf.borrow();
+            let materials = mat_backend.get_all_materials();
+            let tool_backend = tools_backend_sf.borrow();
+            let tools = tool_backend.get_all_tools();
+            let devices = device_manager_sf.get_all_profiles();
+            
+            if let (Some(material), Some(tool), Some(device)) = (
+                materials.get(mat_idx as usize),
+                tools.get(tool_idx as usize),
+                devices.get(dev_idx as usize)
+            ) {
+                let result = SpeedsFeedsCalculator::calculate(material, tool, device);
+                
+                window.set_sf_result_rpm(slint::SharedString::from(format!("{}", result.rpm)));
+                if let Some(unclamped) = result.unclamped_rpm {
+                    window.set_sf_result_unclamped_rpm(slint::SharedString::from(format!("{}", unclamped)));
+                } else {
+                    window.set_sf_result_unclamped_rpm(slint::SharedString::from(""));
+                }
+                
+                window.set_sf_result_feed(slint::SharedString::from(format!("{:.0}", result.feed_rate)));
+                if let Some(unclamped) = result.unclamped_feed_rate {
+                    window.set_sf_result_unclamped_feed(slint::SharedString::from(format!("{:.0}", unclamped)));
+                } else {
+                    window.set_sf_result_unclamped_feed(slint::SharedString::from(""));
+                }
+
+                window.set_sf_result_surface_speed(slint::SharedString::from(format!("{:.1}", result.surface_speed)));
+                window.set_sf_result_chip_load(slint::SharedString::from(format!("{:.4}", result.chip_load)));
+                window.set_sf_result_source(slint::SharedString::from(result.source));
+                
+                if result.warnings.is_empty() {
+                    window.set_sf_result_warnings(slint::SharedString::from(""));
+                } else {
+                    window.set_sf_result_warnings(slint::SharedString::from(result.warnings.join("\n")));
+                }
+            }
         }
     });
 

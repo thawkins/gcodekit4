@@ -306,16 +306,66 @@ fn render_shape_trait(
                 )
             }
         }
-        ShapeType::Polygon | ShapeType::Path => {
-            // For polygon and path, we'll use a simple bounding box for now
-            // since we don't have access to the detailed shape data through the trait object
-            let (sx1, sy1) = viewport.world_to_pixel(x1, y1);
-            let (sx2, sy2) = viewport.world_to_pixel(x2, y2);
-
-            format!(
-                "M {} {} L {} {} L {} {} L {} {} Z ",
-                sx1, sy1, sx2, sy1, sx2, sy2, sx1, sy2
-            )
+        ShapeType::Polyline => {
+            if let Some(polyline) = shape.as_any().downcast_ref::<crate::shapes::Polyline>() {
+                let mut path = String::new();
+                let vertices = &polyline.vertices;
+                if !vertices.is_empty() {
+                    let (sx, sy) = viewport.world_to_pixel(vertices[0].x, vertices[0].y);
+                    path.push_str(&format!("M {} {} ", sx, sy));
+                    
+                    for i in 1..vertices.len() {
+                        let (sx, sy) = viewport.world_to_pixel(vertices[i].x, vertices[i].y);
+                        path.push_str(&format!("L {} {} ", sx, sy));
+                    }
+                    path.push_str("Z "); // Close loop
+                }
+                path
+            } else {
+                // Fallback
+                let (sx1, sy1) = viewport.world_to_pixel(x1, y1);
+                let (sx2, sy2) = viewport.world_to_pixel(x2, y2);
+                format!("M {} {} L {} {} L {} {} L {} {} Z ", sx1, sy1, sx2, sy1, sx2, sy2, sx1, sy2)
+            }
+        }
+        ShapeType::Path => {
+            if let Some(path_shape) = shape.as_any().downcast_ref::<crate::shapes::PathShape>() {
+                let mut path_str = String::new();
+                for event in path_shape.path.iter() {
+                    match event {
+                        lyon::path::Event::Begin { at } => {
+                            let (sx, sy) = viewport.world_to_pixel(at.x as f64, at.y as f64);
+                            path_str.push_str(&format!("M {} {} ", sx, sy));
+                        }
+                        lyon::path::Event::Line { from: _, to } => {
+                            let (sx, sy) = viewport.world_to_pixel(to.x as f64, to.y as f64);
+                            path_str.push_str(&format!("L {} {} ", sx, sy));
+                        }
+                        lyon::path::Event::Quadratic { from: _, ctrl, to } => {
+                            let (cx, cy) = viewport.world_to_pixel(ctrl.x as f64, ctrl.y as f64);
+                            let (sx, sy) = viewport.world_to_pixel(to.x as f64, to.y as f64);
+                            path_str.push_str(&format!("Q {} {} {} {} ", cx, cy, sx, sy));
+                        }
+                        lyon::path::Event::Cubic { from: _, ctrl1, ctrl2, to } => {
+                            let (c1x, c1y) = viewport.world_to_pixel(ctrl1.x as f64, ctrl1.y as f64);
+                            let (c2x, c2y) = viewport.world_to_pixel(ctrl2.x as f64, ctrl2.y as f64);
+                            let (sx, sy) = viewport.world_to_pixel(to.x as f64, to.y as f64);
+                            path_str.push_str(&format!("C {} {} {} {} {} {} ", c1x, c1y, c2x, c2y, sx, sy));
+                        }
+                        lyon::path::Event::End { last: _, first: _, close } => {
+                            if close {
+                                path_str.push_str("Z ");
+                            }
+                        }
+                    }
+                }
+                path_str
+            } else {
+                // Fallback
+                let (sx1, sy1) = viewport.world_to_pixel(x1, y1);
+                let (sx2, sy2) = viewport.world_to_pixel(x2, y2);
+                format!("M {} {} L {} {} L {} {} L {} {} Z ", sx1, sy1, sx2, sy1, sx2, sy2, sx1, sy2)
+            }
         }
     }
 }
@@ -354,49 +404,4 @@ impl OutlineBuilder for SvgPathBuilder {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::shapes::*;
 
-    #[test]
-    fn test_render_empty_canvas() {
-        let canvas = Canvas::new();
-        let path = render_shapes(&canvas, 800, 600);
-        assert_eq!(path, "");
-    }
-
-    #[test]
-    fn test_render_crosshair() {
-        let canvas = Canvas::new();
-        let path = render_crosshair(&canvas, 800, 600);
-        assert!(!path.is_empty());
-        assert!(path.contains("M"));
-        assert!(path.contains("L"));
-    }
-
-    #[test]
-    fn test_render_rectangle() {
-        let mut canvas = Canvas::new();
-        let rect = Rectangle::new(10.0, 10.0, 50.0, 50.0);
-        canvas.add_shape(Box::new(rect));
-
-        let path = render_shapes(&canvas, 800, 600);
-        assert!(!path.is_empty());
-        assert!(path.contains("M"));
-        assert!(path.contains("L"));
-        assert!(path.contains("Z"));
-    }
-
-    #[test]
-    fn test_render_circle() {
-        let mut canvas = Canvas::new();
-        let circle = Circle::new(Point::new(30.0, 30.0), 20.0);
-        canvas.add_shape(Box::new(circle));
-
-        let path = render_shapes(&canvas, 800, 600);
-        assert!(!path.is_empty());
-        assert!(path.contains("M"));
-        assert!(path.contains("A")); // Arc commands for circle
-    }
-}

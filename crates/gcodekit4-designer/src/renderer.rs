@@ -9,6 +9,7 @@
 use crate::{Canvas, ShapeType, font_manager};
 use image::{ImageBuffer, Rgb, RgbImage};
 use rusttype::{Scale, point as rt_point};
+use lyon::path::iterator::PathIterator;
 
 const BG_COLOR: Rgb<u8> = Rgb([52, 73, 94]); // #34495e
 const SHAPE_COLOR: Rgb<u8> = Rgb([52, 152, 219]); // #3498db
@@ -203,46 +204,68 @@ pub fn render_canvas(
                     );
                 }
             }
-            ShapeType::Polygon => {
-                // For polygon, just draw a bounding box outline
-                draw_line(
-                    &mut img,
-                    screen_x1,
-                    screen_y1,
-                    screen_x2,
-                    screen_y1,
-                    SHAPE_COLOR,
-                );
-                draw_line(
-                    &mut img,
-                    screen_x2,
-                    screen_y1,
-                    screen_x2,
-                    screen_y2,
-                    SHAPE_COLOR,
-                );
-                draw_line(
-                    &mut img,
-                    screen_x2,
-                    screen_y2,
-                    screen_x1,
-                    screen_y2,
-                    SHAPE_COLOR,
-                );
-                draw_line(
-                    &mut img,
-                    screen_x1,
-                    screen_y2,
-                    screen_x1,
-                    screen_y1,
-                    SHAPE_COLOR,
-                );
+            ShapeType::Polyline => {
+                if let Some(polyline) = shape_obj.shape.as_any().downcast_ref::<crate::shapes::Polyline>() {
+                    let vertices = &polyline.vertices;
+                    if vertices.len() > 1 {
+                        for i in 0..vertices.len() {
+                            let p1 = vertices[i];
+                            let p2 = vertices[(i + 1) % vertices.len()];
+                            
+                            let (x1, y1) = viewport.world_to_pixel(p1.x, p1.y);
+                            let (x2, y2) = viewport.world_to_pixel(p2.x, p2.y);
+                            
+                            draw_line(&mut img, x1 as i32, y1 as i32, x2 as i32, y2 as i32, SHAPE_COLOR);
+                        }
+                    }
+                }
                 if shape_obj.selected {
-                    draw_selection_box(&mut img, screen_x1, screen_y1, screen_x2, screen_y2);
+                    let (x1, y1, x2, y2) = shape_obj.shape.bounding_box();
+                    let (screen_x1, screen_y1) = viewport.world_to_pixel(x1, y1);
+                    let (screen_x2, screen_y2) = viewport.world_to_pixel(x2, y2);
+                    draw_selection_box(&mut img, screen_x1 as i32, screen_y1 as i32, screen_x2 as i32, screen_y2 as i32);
                 }
             }
             ShapeType::Path => {
-                // TODO: Render path
+                if let Some(path_shape) = shape_obj.shape.as_any().downcast_ref::<crate::shapes::PathShape>() {
+                    let tolerance = 0.5 / viewport.zoom();
+                    let mut start = None;
+                    let mut current = None;
+                    
+                    for event in path_shape.path.iter().flattened(tolerance as f32) {
+                        match event {
+                            lyon::path::Event::Begin { at } => {
+                                let (x, y) = viewport.world_to_pixel(at.x as f64, at.y as f64);
+                                start = Some((x as i32, y as i32));
+                                current = Some((x as i32, y as i32));
+                            }
+                            lyon::path::Event::Line { from: _, to } => {
+                                let (x, y) = viewport.world_to_pixel(to.x as f64, to.y as f64);
+                                if let Some((cx, cy)) = current {
+                                    draw_line(&mut img, cx, cy, x as i32, y as i32, SHAPE_COLOR);
+                                }
+                                current = Some((x as i32, y as i32));
+                            }
+                            lyon::path::Event::End { last: _, first: _, close } => {
+                                if close {
+                                    if let (Some((sx, sy)), Some((cx, cy))) = (start, current) {
+                                        draw_line(&mut img, cx, cy, sx, sy, SHAPE_COLOR);
+                                    }
+                                }
+                                start = None;
+                                current = None;
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+                
+                if shape_obj.selected {
+                    let (x1, y1, x2, y2) = shape_obj.shape.bounding_box();
+                    let (screen_x1, screen_y1) = viewport.world_to_pixel(x1, y1);
+                    let (screen_x2, screen_y2) = viewport.world_to_pixel(x2, y2);
+                    draw_selection_box(&mut img, screen_x1 as i32, screen_y1 as i32, screen_x2 as i32, screen_y2 as i32);
+                }
             }
             ShapeType::Text => {
                 if let Some(text_shape) = shape_obj.shape.as_any().downcast_ref::<crate::shapes::TextShape>() {

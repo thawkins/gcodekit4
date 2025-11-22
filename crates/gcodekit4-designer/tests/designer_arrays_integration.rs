@@ -1,6 +1,6 @@
 //! Integration tests for Designer array operations (Phase 4.2)
 
-use gcodekit4::designer::{
+use gcodekit4_designer::{
     ArrayGenerator, ArrayOperation, ArrayType, CircularArrayParams, GridArrayParams,
     LinearArrayParams, Point,
 };

@@ -1,6 +1,6 @@
 //! Integration tests for parametric design system (Phase 4.6)
 
-use gcodekit4::designer::{
+use gcodekit4_designer::parametric::{
     Parameter, ParameterConstraint, ParameterSet, ParameterType, ParametricGenerator,
     ParametricTemplate, TemplateLibrary,
 };

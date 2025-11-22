@@ -30,6 +30,8 @@ All tests **MUST** be located in the `tests/` inside each crate, if the test is 
 - Import from the public `gcodekit4` crate (e.g., `use gcodekiti4::communication::GrblController;`)
 - Be organized with related tests grouped together
 - Follow naming convention: `test_<component>_<scenario>` (e.g., `test_jog_x_positive`)
+- For each project crate, reorganise tests by:  migrating all tests related to the crate into relevant subfolders in the tests folder in the crate, review tests both inside crate and outside of it to find candidate tests for migration, then look at all .rs files that are outside of the tests folder in the crate and relocate all the inline tests found within them into seperate files in suitable subfolders in the crate tests folder 
+
 
 ## Lint & Format Commands
 - `cargo clippy` - Run linter with clippy

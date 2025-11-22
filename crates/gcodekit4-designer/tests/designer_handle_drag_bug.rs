@@ -2,7 +2,7 @@
 //! Verifies that dragging different handles uses current handle position,
 //! not the position of the first handle used.
 
-use gcodekit4::designer::{Canvas, Point};
+use gcodekit4_designer::{Canvas, Point};
 
 #[test]
 fn test_single_handle_resize() {

@@ -1,6 +1,6 @@
 //! Integration tests for Designer file import functionality (Phase 4.1)
 
-use gcodekit4::designer::{DxfImporter, FileFormat, SvgImporter};
+use gcodekit4_designer::{DxfImporter, FileFormat, SvgImporter};
 
 #[test]
 fn test_svg_importer_basic_creation() {
@@ -398,5 +398,6 @@ EOF"#;
 
     assert!(result.is_ok());
     let design = result.unwrap();
-    assert!(design.shapes.len() >= 2);
+    // Polyline is converted to a single PathShape
+    assert_eq!(design.shapes.len(), 1);
 }

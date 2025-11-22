@@ -193,7 +193,7 @@ impl GtcImporter {
         Err("No catalog file found in GTC package".into())
     }
 
-    fn convert_gtc_tool(&mut self, gtc_tool: GtcTool) -> Result<Tool, Box<dyn std::error::Error>> {
+    pub fn convert_gtc_tool(&mut self, gtc_tool: GtcTool) -> Result<Tool, Box<dyn std::error::Error>> {
         // Map GTC tool type to our ToolType
         let tool_type = self.map_tool_type(&gtc_tool.tool_type)?;
 
@@ -255,7 +255,7 @@ impl GtcImporter {
         Ok(tool)
     }
 
-    fn map_tool_type(&self, gtc_type: &str) -> Result<ToolType, Box<dyn std::error::Error>> {
+    pub fn map_tool_type(&self, gtc_type: &str) -> Result<ToolType, Box<dyn std::error::Error>> {
         let gtc_type_lower = gtc_type.to_lowercase();
 
         if gtc_type_lower.contains("end mill") || gtc_type_lower.contains("endmill") {
@@ -285,7 +285,7 @@ impl GtcImporter {
         }
     }
 
-    fn map_tool_material(&self, material: &str) -> ToolMaterial {
+    pub fn map_tool_material(&self, material: &str) -> ToolMaterial {
         let material_lower = material.to_lowercase();
 
         if material_lower.contains("carbide") {
@@ -303,7 +303,7 @@ impl GtcImporter {
         }
     }
 
-    fn map_coating(&self, coating: &str) -> ToolCoating {
+    pub fn map_coating(&self, coating: &str) -> ToolCoating {
         let coating_lower = coating.to_lowercase();
 
         if coating_lower.contains("tialn") {
@@ -321,62 +321,4 @@ impl GtcImporter {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
 
-    #[test]
-    fn test_tool_type_mapping() {
-        let importer = GtcImporter::new(1);
-
-        assert_eq!(
-            importer.map_tool_type("End Mill").unwrap(),
-            ToolType::EndMillFlat
-        );
-        assert_eq!(
-            importer.map_tool_type("Ball End Mill").unwrap(),
-            ToolType::EndMillBall
-        );
-        assert_eq!(
-            importer.map_tool_type("Drill Bit").unwrap(),
-            ToolType::DrillBit
-        );
-    }
-
-    #[test]
-    fn test_material_mapping() {
-        let importer = GtcImporter::new(1);
-
-        assert_eq!(
-            importer.map_tool_material("Solid Carbide"),
-            ToolMaterial::Carbide
-        );
-        assert_eq!(importer.map_tool_material("HSS"), ToolMaterial::HSS);
-    }
-
-    #[test]
-    fn test_gtc_tool_conversion() {
-        let mut importer = GtcImporter::new(100);
-
-        let gtc_tool = GtcTool {
-            id: "EM-001".to_string(),
-            description: "6mm Carbide End Mill".to_string(),
-            tool_type: "End Mill".to_string(),
-            diameter: 6.0,
-            length: 50.0,
-            flute_length: Some(20.0),
-            shank_diameter: Some(6.0),
-            number_of_flutes: Some(2),
-            material: Some("Carbide".to_string()),
-            coating: Some("TiAlN".to_string()),
-            manufacturer: Some("Test Mfg".to_string()),
-            part_number: Some("EM-6-2F".to_string()),
-            cutting_parameters: None,
-        };
-
-        let tool = importer.convert_gtc_tool(gtc_tool).unwrap();
-        assert_eq!(tool.diameter, 6.0);
-        assert_eq!(tool.tool_type, ToolType::EndMillFlat);
-        assert_eq!(tool.number, 100);
-    }
-}

@@ -2,7 +2,7 @@
 //! Manages the designer canvas state and handles UI callbacks.
 
 use crate::{
-    Canvas, Circle, DrawingMode, Line, Point, Polygon, Rectangle, ToolpathGenerator,
+    Canvas, Circle, DrawingMode, Line, Point, Polyline, Rectangle, ToolpathGenerator,
     ToolpathToGcode, shapes::{OperationType, TextShape},
 };
 use gcodekit4_core::Units;
@@ -48,7 +48,7 @@ impl DesignerState {
             2 => DrawingMode::Circle,
             3 => DrawingMode::Line,
             4 => DrawingMode::Ellipse,
-            5 => DrawingMode::Polygon,
+            5 => DrawingMode::Polyline,
             6 => DrawingMode::Text,
             _ => DrawingMode::Select,
         };
@@ -83,7 +83,7 @@ impl DesignerState {
         // We need to access the viewport to set this up correctly
         // Since we don't have direct access to viewport dimensions here easily without passing them,
         // we'll rely on the viewport's internal size which should be updated by update_designer_ui
-        let height = self.canvas.viewport().canvas_height();
+        let _height = self.canvas.viewport().canvas_height();
         
         // In screen coordinates, (0, height) is bottom-left.
         // We want world (0,0) to be at screen (5, height-5).
@@ -155,8 +155,8 @@ impl DesignerState {
                     let circle = Circle::new(Point::new(cx, cy), radius);
                     self.toolpath_generator.generate_circle_contour(&circle)
                 }
-                crate::ShapeType::Polygon => {
-                    // For polygons, generate rectangle contour as approximation
+                crate::ShapeType::Polyline => {
+                    // For polylines, generate rectangle contour as approximation
                     let (x1, y1, x2, y2) = shape.shape.bounding_box();
                     let rect = Rectangle::new(x1, y1, x2 - x1, y2 - y1);
                     self.toolpath_generator.generate_rectangle_contour(&rect)
@@ -243,10 +243,10 @@ impl DesignerState {
                 // Draw ellipse with rx=40, ry=25 centered at click point
                 self.canvas.add_ellipse(Point::new(x, y), 40.0, 25.0);
             }
-            DrawingMode::Polygon => {
+            DrawingMode::Polyline => {
                 // Draw regular hexagon with radius 30 centered at click point
                 self.canvas
-                    .add_polygon(Polygon::regular(Point::new(x, y), 30.0, 6).vertices);
+                    .add_polyline(Polyline::regular(Point::new(x, y), 30.0, 6).vertices);
             }
             DrawingMode::Text => {
                 // Add default text
@@ -301,9 +301,9 @@ impl DesignerState {
                         let center = Point::new(x + w / 2.0, y + h / 2.0);
                         obj.shape = Box::new(Ellipse::new(center, w / 2.0, h / 2.0));
                     }
-                    crate::ShapeType::Polygon => {
-                        // For polygon, we recreate a regular hexagon at the new position/size
-                        obj.shape = Box::new(Polygon::regular(
+                    crate::ShapeType::Polyline => {
+                        // For polyline, we recreate a regular hexagon at the new position/size
+                        obj.shape = Box::new(Polyline::regular(
                             Point::new(x + w / 2.0, y + h / 2.0),
                             w.min(h) / 2.0,
                             6,
@@ -457,47 +457,4 @@ impl Default for DesignerState {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
 
-    #[test]
-    fn test_designer_state_new() {
-        let state = DesignerState::new();
-        assert_eq!(state.canvas.shapes().len(), 0);
-        assert!(!state.gcode_generated);
-    }
-
-    #[test]
-    fn test_set_mode() {
-        let mut state = DesignerState::new();
-        state.set_mode(1);
-        assert_eq!(state.canvas.mode(), DrawingMode::Rectangle);
-
-        state.set_mode(2);
-        assert_eq!(state.canvas.mode(), DrawingMode::Circle);
-    }
-
-    #[test]
-    fn test_zoom() {
-        let mut state = DesignerState::new();
-        let initial = state.canvas.zoom();
-
-        state.zoom_in();
-        assert!(state.canvas.zoom() > initial);
-
-        state.zoom_out();
-        assert!(state.canvas.zoom() <= initial * 1.1);
-    }
-
-    #[test]
-    fn test_generate_gcode() {
-        let mut state = DesignerState::new();
-        state.canvas.add_rectangle(0.0, 0.0, 10.0, 10.0);
-
-        let gcode = state.generate_gcode();
-        assert!(!gcode.is_empty());
-        assert!(state.gcode_generated);
-        assert!(gcode.contains("G90"));
-    }
-}

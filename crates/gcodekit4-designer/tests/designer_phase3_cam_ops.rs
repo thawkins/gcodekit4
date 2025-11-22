@@ -1,10 +1,10 @@
 //! Integration tests for Phase 3 CAM operations.
 
-use gcodekit4::designer::{
+use gcodekit4_designer::{
     DepthStrategy, DrillOperation, DrillingPattern, DrillingPatternGenerator, MultiPassConfig,
     MultiPassToolpathGenerator, PatternType, PocketGenerator, PocketOperation, Point, Rectangle,
     ToolLibrary, ToolType, Toolpath, ToolpathAnalyzer, ToolpathSegment, ToolpathSegmentType,
-    ToolpathSimulator,
+    ToolpathSimulator, SimulationState,
 };
 
 #[test]
@@ -154,22 +154,22 @@ fn test_phase3_toolpath_simulation_lifecycle() {
     let toolpath = Toolpath::new(3.175, -5.0);
     let mut sim = ToolpathSimulator::new(toolpath);
 
-    assert_eq!(sim.get_state(), gcodekit4::designer::SimulationState::Idle);
+    assert_eq!(sim.get_state(), SimulationState::Idle);
 
     sim.start();
     assert_eq!(
         sim.get_state(),
-        gcodekit4::designer::SimulationState::Running
+        SimulationState::Running
     );
 
     sim.pause();
     assert_eq!(
         sim.get_state(),
-        gcodekit4::designer::SimulationState::Paused
+        SimulationState::Paused
     );
 
     sim.reset();
-    assert_eq!(sim.get_state(), gcodekit4::designer::SimulationState::Idle);
+    assert_eq!(sim.get_state(), SimulationState::Idle);
 }
 
 #[test]

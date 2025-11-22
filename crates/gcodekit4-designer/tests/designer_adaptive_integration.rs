@@ -1,6 +1,6 @@
 //! Integration tests for adaptive clearing strategy (Phase 4.4)
 
-use gcodekit4::designer::{
+use gcodekit4_designer::{
     AdaptiveAlgorithm, AdaptiveClearing, DynamicStepover, LoadMonitor, MaterialProperties,
     MaterialType,
 };

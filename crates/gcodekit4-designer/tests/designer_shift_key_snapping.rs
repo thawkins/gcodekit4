@@ -1,7 +1,7 @@
 //! Integration tests for shift key snapping behavior in designer
 //! Tests that shift key events are properly detected and trigger snapping to whole mm
 
-use gcodekit4::designer::{Canvas, Point};
+use gcodekit4_designer::{Canvas, Point};
 
 /// Test that snapping to whole mm works correctly
 #[test]

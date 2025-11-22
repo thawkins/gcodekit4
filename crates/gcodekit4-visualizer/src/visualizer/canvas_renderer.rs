@@ -6,7 +6,6 @@ use super::visualizer_2d::{GCodeCommand, Point2D, Visualizer2D};
 const CANVAS_PADDING: f32 = 20.0;
 const _CANVAS_PADDING_2X: f32 = 40.0;
 const GRID_MAJOR_STEP_MM: f32 = 10.0;
-const GRID_MAJOR_VISIBILITY_SCALE: f32 = 0.3;
 
 /// Transform helper for coordinate conversion
 struct CoordTransform {

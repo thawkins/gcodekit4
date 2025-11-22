@@ -1,6 +1,7 @@
 //! Integration tests for V-carving toolpath generation (Phase 4.3)
 
-use gcodekit4::designer::{Point, VBitTool, VCarveGenerator, VCarveParams};
+use gcodekit4_designer::vcarve::{VBitTool, VCarveParams};
+use gcodekit4_designer::{Point, VCarveGenerator};
 
 #[test]
 fn test_vbit_60_degree() {

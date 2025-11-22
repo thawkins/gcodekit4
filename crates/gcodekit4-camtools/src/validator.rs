@@ -157,21 +157,4 @@ impl Default for GCodeValidator {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
 
-    #[test]
-    fn test_coordinate_validation() {
-        let validator = GCodeValidator::default();
-        let result = validator.validate_line("G0 X2000 Y10", 0);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_valid_line() {
-        let validator = GCodeValidator::default();
-        let result = validator.validate_line("G0 X10 Y20 Z0", 0);
-        assert!(result.is_ok());
-    }
-}

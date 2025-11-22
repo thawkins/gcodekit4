@@ -68,7 +68,7 @@ pub use gcodekit4_designer::{
 
 pub use gcodekit4_camtools::{
     BoxParameters, BoxType, FingerJointSettings, FingerStyle, JigsawPuzzleMaker, PuzzleParameters,
-    TabbedBoxMaker, KeyDividerType,
+    TabbedBoxMaker, KeyDividerType, SpeedsFeedsCalculator, CalculationResult,
 };
 
 pub use gcodekit4_communication::{

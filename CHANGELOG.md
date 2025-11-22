@@ -5,6 +5,59 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.35.0-alpha] - 2025-11-22
+
+### Added
+- **CAM Tools**: Added "Speeds and Feeds Calculator" tool.
+  - Calculates Spindle Speed (RPM) and Feed Rate (mm/min) based on Material, Tool, and Device parameters.
+  - Integrated with MaterialDB, DeviceDB, and CNCToolsDB.
+  - Displays clamped values with original calculated values in red brackets if limits are exceeded.
+  - UI integrated into the "CAM Tools" tab as the 5th card.
+
+### Changed
+- **Designer**: Renamed "Polygon" shape to "Polyline" to better reflect its nature and align with DXF terminology.
+  - Updated UI tooltips and labels.
+  - Updated internal data structures and API.
+- **Designer**: Implemented rendering for Polyline and Path shapes in the Designer canvas and SVG export.
+- **Designer**: Updated "Shape Properties" dialog title to be dynamic (e.g., "Rectangle properties", "Circle properties") based on the selected shape type.
+- **Test Reorganization**: Comprehensive reorganization of tests across all crates.
+  - Migrated root `tests/` folder content to respective crates (`gcodekit4-core`, `gcodekit4-communication`, `gcodekit4-ui`, `gcodekit4-designer`, `gcodekit4-visualizer`).
+  - Migrated inline tests from `src/` to `tests/` directory for `gcodekit4-core`, `gcodekit4-communication`, `gcodekit4-gcodeeditor`, `gcodekit4-settings`, `gcodekit4-ui`, and `gcodekit4-visualizer`.
+  - Created proper test module structures and integration tests.
+  - Fixed visibility issues for testing internal components where necessary.
+  - Removed broken or misplaced tests (e.g., UI tests in backend crates).
+  - Ensured all tests pass for each crate.
+
+### Fixed
+- **Designer**: Fixed SVG import mirroring to correctly flip Y-axis while maintaining relative position (mirror around bounding box center).
+- **Vector Engraver**: Fixed SVG import mirroring to correctly flip Y-axis while maintaining relative position (mirror around bounding box center).
+- **Firmware Version**: Fixed display format in tests to match implementation.
+- **Device Status**: Fixed parsing tests in `gcodekit4-communication` to match actual behavior.
+- **Visualizer**: Fixed `Visualizer2D` import in `visualizer_coordinate_transforms` test by moving it to the correct crate.
+
+## [0.34.4-alpha] - 2025-11-22
+
+### Changed
+- **Testing**: Migrated `gcodekit4-designer` tests to `tests/` directory structure.
+  - Organized tests into `core`, `features`, `integration`, and `io` categories.
+  - Fixed legacy tests in `gcodekit4-designer`.
+  - Removed redundant tests `designer_mouse_event_mapping.rs` and `designer_viewport_coordinate_mapping.rs`.
+  - Fixed doc tests in `viewport.rs`.
+
+### Fixed
+- Fixed compilation errors in `gcodekit4-designer` tests.
+- Fixed imports in legacy tests.
+
+## [0.34.3-alpha] - 2025-11-21
+
+### Added
+- **CAM Tools**: Added Speeds and Feeds Calculator tool.
+  - Calculates RPM and Feed Rate based on Material, Tool, and Device properties.
+  - Supports metric calculations based on Surface Speed and Chip Load.
+  - Includes fallback logic for missing material data.
+  - Validates against device capabilities (Max Feed Rate).
+- **Core**: Added `surface_speed_m_min` and `chip_load_mm` to `CuttingParameters` in `gcodekit4-core`.
+
 ## [0.34.2-alpha] - 2025-11-21
 
 ### Added

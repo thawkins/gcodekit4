@@ -216,7 +216,7 @@ impl TabbedBoxMaker {
     }
 
     /// Calculate number of fingers and leftover space for a given length
-    fn calc_fingers(&self, length: f32) -> (usize, f32) {
+    pub fn calc_fingers(&self, length: f32) -> (usize, f32) {
         let settings = &self.params.finger_joint;
         let t = self.t;
 
@@ -1181,29 +1181,4 @@ impl TabbedBoxMaker {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
 
-    #[test]
-    fn test_default_box() {
-        let params = BoxParameters::default();
-        let mut maker = TabbedBoxMaker::new(params).unwrap();
-        maker.generate().unwrap();
-        let gcode = maker.to_gcode();
-        assert!(gcode.contains("G21"));
-        assert!(gcode.contains("M3"));
-    }
-
-    #[test]
-    fn test_finger_calculation() {
-        let params = BoxParameters::default();
-        let maker = TabbedBoxMaker::new(params).unwrap();
-
-        // For 100mm length with finger=2*t=6mm and space=2*t=6mm
-        // fingers should be about 8-9
-        let (fingers, leftover) = maker.calc_fingers(100.0);
-        assert!(fingers >= 7 && fingers <= 10);
-        assert!(leftover > 0.0);
-    }
-}

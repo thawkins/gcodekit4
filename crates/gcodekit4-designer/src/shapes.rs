@@ -35,7 +35,7 @@ pub enum ShapeType {
     Circle,
     Line,
     Ellipse,
-    Polygon,
+    Polyline,
     Path,
     Text,
 }
@@ -250,14 +250,14 @@ impl Shape for Ellipse {
     }
 }
 
-/// A polygon defined by a list of vertices.
+/// A polyline defined by a list of vertices.
 #[derive(Debug, Clone, PartialEq)]
-pub struct Polygon {
+pub struct Polyline {
     pub vertices: Vec<Point>,
 }
 
-impl Polygon {
-    /// Creates a new polygon from a list of vertices.
+impl Polyline {
+    /// Creates a new polyline from a list of vertices.
     pub fn new(vertices: Vec<Point>) -> Self {
         Self { vertices }
     }
@@ -275,9 +275,9 @@ impl Polygon {
     }
 }
 
-impl Shape for Polygon {
+impl Shape for Polyline {
     fn shape_type(&self) -> ShapeType {
-        ShapeType::Polygon
+        ShapeType::Polyline
     }
 
     fn bounding_box(&self) -> (f64, f64, f64, f64) {
@@ -378,88 +378,7 @@ impl Shape for PathShape {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
 
-    #[test]
-    fn test_point_distance() {
-        let p1 = Point::new(0.0, 0.0);
-        let p2 = Point::new(3.0, 4.0);
-        assert_eq!(p1.distance_to(&p2), 5.0);
-    }
-
-    #[test]
-    fn test_rectangle_contains_point() {
-        let rect = Rectangle::new(0.0, 0.0, 10.0, 10.0);
-        assert!(rect.contains_point(&Point::new(5.0, 5.0)));
-        assert!(!rect.contains_point(&Point::new(15.0, 5.0)));
-    }
-
-    #[test]
-    fn test_circle_contains_point() {
-        let circle = Circle::new(Point::new(0.0, 0.0), 5.0);
-        assert!(circle.contains_point(&Point::new(3.0, 4.0)));
-        assert!(!circle.contains_point(&Point::new(10.0, 0.0)));
-    }
-
-    #[test]
-    fn test_line_length() {
-        let line = Line::new(Point::new(0.0, 0.0), Point::new(3.0, 4.0));
-        assert_eq!(line.length(), 5.0);
-    }
-
-    #[test]
-    fn test_ellipse_contains_point() {
-        let ellipse = Ellipse::new(Point::new(0.0, 0.0), 5.0, 3.0);
-        assert!(ellipse.contains_point(&Point::new(0.0, 0.0)));
-        assert!(ellipse.contains_point(&Point::new(4.0, 0.0)));
-        assert!(!ellipse.contains_point(&Point::new(6.0, 0.0)));
-    }
-
-    #[test]
-    fn test_ellipse_bounding_box() {
-        let ellipse = Ellipse::new(Point::new(10.0, 10.0), 5.0, 3.0);
-        let (min_x, min_y, max_x, max_y) = ellipse.bounding_box();
-        assert_eq!(min_x, 5.0);
-        assert_eq!(min_y, 7.0);
-        assert_eq!(max_x, 15.0);
-        assert_eq!(max_y, 13.0);
-    }
-
-    #[test]
-    fn test_polygon_regular() {
-        let polygon = Polygon::regular(Point::new(0.0, 0.0), 10.0, 4);
-        assert_eq!(polygon.vertices.len(), 4);
-    }
-
-    #[test]
-    fn test_polygon_bounding_box() {
-        let polygon = Polygon::new(vec![
-            Point::new(0.0, 0.0),
-            Point::new(10.0, 0.0),
-            Point::new(10.0, 10.0),
-            Point::new(0.0, 10.0),
-        ]);
-        let (min_x, min_y, max_x, max_y) = polygon.bounding_box();
-        assert_eq!(min_x, 0.0);
-        assert_eq!(min_y, 0.0);
-        assert_eq!(max_x, 10.0);
-        assert_eq!(max_y, 10.0);
-    }
-
-    #[test]
-    fn test_polygon_contains_point() {
-        let polygon = Polygon::new(vec![
-            Point::new(0.0, 0.0),
-            Point::new(10.0, 0.0),
-            Point::new(10.0, 10.0),
-            Point::new(0.0, 10.0),
-        ]);
-        assert!(polygon.contains_point(&Point::new(5.0, 5.0)));
-        assert!(!polygon.contains_point(&Point::new(15.0, 5.0)));
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct TextShape {

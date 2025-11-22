@@ -6,6 +6,7 @@ import { TabbedBoxDialog } from "../../gcodekit4-camtools/ui/tabbed_box_dialog.s
 import { JigsawPuzzleDialog } from "../../gcodekit4-camtools/ui/jigsaw_puzzle_dialog.slint";
 import { LaserEngraverDialog } from "../../gcodekit4-camtools/ui/laser_engraver_dialog.slint";
 import { VectorEngraverDialog } from "../../gcodekit4-camtools/ui/vector_engraver_dialog.slint";
+import { SpeedsFeedsDialog } from "../../gcodekit4-camtools/ui/speeds_feeds_dialog.slint";
 
 component ToolCard inherits Rectangle {
     in property <string> tool-title: "Tool";
@@ -64,6 +65,7 @@ export component CAMToolsPanel inherits Rectangle {
     callback open-jigsaw-puzzle-maker();
     callback open-laser-engraver();
     callback open-vector-engraver();
+    callback open-speeds-feeds-calculator();
     
     VerticalBox {
         padding: 10px;
@@ -135,10 +137,10 @@ export component CAMToolsPanel inherits Rectangle {
                         }
                         
                         ToolCard {
-                            tool-title: "Tool 5";
-                            tool-description: "Tool to go here";
+                            tool-title: "Speeds & Feeds Calculator";
+                            tool-description: "Calculate optimal spindle speeds and feed rates based on material and tool";
                             clicked => {
-                                // Placeholder for future tool action
+                                root.open-speeds-feeds-calculator();
                             }
                         }
                         

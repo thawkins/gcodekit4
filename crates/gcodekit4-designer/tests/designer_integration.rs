@@ -1,8 +1,9 @@
 //! Integration tests for the Designer tool
 
-use gcodekit4::{
-    Canvas, Circle, DrawingMode, Line, Point, Rectangle, ToolpathGenerator, ToolpathToGcode, Units,
+use gcodekit4_designer::{
+    Canvas, Circle, DrawingMode, Line, Point, Rectangle, ToolpathGenerator, ToolpathToGcode,
 };
+use gcodekit4_core::Units;
 
 #[test]
 fn test_designer_workflow_rectangle() {
@@ -53,6 +54,8 @@ fn test_designer_canvas_pan_zoom() {
     assert_eq!(canvas.zoom(), 0.5);
 
     // Test pan - pan accumulates
+    // Note: Canvas starts with 5.0 margin
+    canvas.set_pan(0.0, 0.0); // Reset to 0 for test
     canvas.pan(10.0, 20.0);
     let (pan_x, pan_y) = canvas.pan_offset();
     assert_eq!(pan_x, 10.0);

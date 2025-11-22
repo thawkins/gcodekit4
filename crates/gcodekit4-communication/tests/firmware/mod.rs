@@ -1,0 +1,14 @@
+mod grbl;
+mod device_status;
+mod firmware_version;
+mod capabilities_db;
+mod device_db;
+mod capability_manager;
+mod firmware_detector;
+mod connection_watch;
+mod file_service;
+mod override_manager;
+mod settings_test;
+mod g2core_capabilities;
+mod fluidnc;
+mod smoothieware;

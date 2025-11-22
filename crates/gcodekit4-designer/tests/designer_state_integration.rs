@@ -1,6 +1,6 @@
 //! Designer state manager integration tests
 
-use gcodekit4::DesignerState;
+use gcodekit4_designer::{DesignerState, DrawingMode, Point};
 
 #[test]
 fn test_designer_state_complete_workflow() {
@@ -10,10 +10,10 @@ fn test_designer_state_complete_workflow() {
     state.canvas.add_rectangle(0.0, 0.0, 50.0, 30.0);
     state
         .canvas
-        .add_circle(gcodekit4::Point::new(100.0, 100.0), 20.0);
+        .add_circle(Point::new(100.0, 100.0), 20.0);
     state.canvas.add_line(
-        gcodekit4::Point::new(0.0, 0.0),
-        gcodekit4::Point::new(100.0, 100.0),
+        Point::new(0.0, 0.0),
+        Point::new(100.0, 100.0),
     );
 
     assert_eq!(state.canvas.shapes().len(), 3);
@@ -21,7 +21,7 @@ fn test_designer_state_complete_workflow() {
     // Test drawing modes
     state.set_mode(0); // Select
     state.set_mode(1); // Rectangle
-    assert_eq!(state.canvas.mode(), gcodekit4::DrawingMode::Rectangle);
+    assert_eq!(state.canvas.mode(), DrawingMode::Rectangle);
 
     // Test zoom
     let initial_zoom = state.canvas.zoom();
@@ -29,7 +29,7 @@ fn test_designer_state_complete_workflow() {
     assert!(state.canvas.zoom() > initial_zoom);
 
     // Test selection
-    state.canvas.select_at(&gcodekit4::Point::new(25.0, 15.0));
+    state.canvas.select_at(&Point::new(25.0, 15.0));
     assert!(state.canvas.selected_id().is_some());
 
     // Test deletion

@@ -147,6 +147,17 @@ Rectangle {
 - `crates/gcodekit4-visualizer/ui/gcode_visualizer.slint`
 - (Duplicate files removed in cleanup)
 
+### Speeds and Feeds Calculator (Added 2025-11-22)
+- **Backend**: `crates/gcodekit4-camtools/src/speeds_feeds.rs`
+- **UI Component**: `SpeedsFeedsDialog` in `ui.slint`
+- **Functionality**: Calculates RPM and Feed Rate based on Material, Tool, and Device.
+- **Integration**:
+  - Integrated as a card in the "CAM Tools" tab.
+  - Uses `ComboBox` for selection of Material, Tool, and Device.
+  - Displays calculated values dynamically.
+  - **Clamping Display**: If calculated values exceed device limits, the clamped value is shown, followed by the original calculated value in red brackets (e.g., `10000 (12500)`).
+  - **Layout**: Centered dialog within the CAM Tools panel using `Rectangle` wrapper for styling.
+
 ## UI Patterns (November 2025)
 
 ### Scrollable Tabs

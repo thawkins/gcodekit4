@@ -165,7 +165,7 @@ impl DesignFile {
             ShapeType::Circle => "circle",
             ShapeType::Line => "line",
             ShapeType::Ellipse => "ellipse",
-            ShapeType::Polygon => "polygon",
+            ShapeType::Polyline => "polyline",
             ShapeType::Path => "path",
             ShapeType::Text => "text",
         };
@@ -215,10 +215,10 @@ impl DesignFile {
                 let center = Point::new(data.x + data.width / 2.0, data.y + data.height / 2.0);
                 Box::new(Ellipse::new(center, data.width / 2.0, data.height / 2.0))
             }
-            "polygon" => {
+            "polygon" | "polyline" => {
                 let center = Point::new(data.x + data.width / 2.0, data.y + data.height / 2.0);
                 let radius = data.width.min(data.height) / 2.0;
-                Box::new(Polygon::regular(center, radius, 6))
+                Box::new(Polyline::regular(center, radius, 6))
             }
             "text" => Box::new(TextShape::new(
                 data.text_content.clone(),
@@ -243,44 +243,5 @@ impl DesignFile {
             step_down: data.step_down,
             step_in: data.step_in,
         })
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_create_new_design() {
-        let design = DesignFile::new("Test Design");
-        assert_eq!(design.version, "1.0");
-        assert_eq!(design.metadata.name, "Test Design");
-        assert_eq!(design.shapes.len(), 0);
-    }
-
-    #[test]
-    fn test_save_and_load() {
-        let temp_dir = std::env::temp_dir();
-        let file_path = temp_dir.join("test_design.gck4");
-
-        let mut design = DesignFile::new("Test");
-        design.shapes.push(ShapeData {
-            id: 1,
-            shape_type: "rectangle".to_string(),
-            x: 0.0,
-            y: 0.0,
-            width: 100.0,
-            height: 50.0,
-            points: Vec::new(),
-            selected: false,
-        });
-
-        design.save_to_file(&file_path).unwrap();
-        let loaded = DesignFile::load_from_file(&file_path).unwrap();
-
-        assert_eq!(loaded.shapes.len(), 1);
-        assert_eq!(loaded.shapes[0].width, 100.0);
-
-        std::fs::remove_file(&file_path).ok();
     }
 }

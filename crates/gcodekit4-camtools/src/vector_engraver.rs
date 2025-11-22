@@ -82,12 +82,12 @@ impl Default for VectorEngravingParameters {
 /// Vector engraver for SVG and DXF formats
 #[derive(Debug)]
 pub struct VectorEngraver {
-    file_path: String,
-    params: VectorEngravingParameters,
-    paths: Vec<Path>,
+    pub file_path: String,
+    pub params: VectorEngravingParameters,
+    pub paths: Vec<Path>,
     /// Scale factor from SVG units to mm
     #[allow(dead_code)]
-    scale_factor: f32,
+    pub scale_factor: f32,
 }
 
 impl VectorEngraver {
@@ -191,6 +191,52 @@ impl VectorEngraver {
 
                     all_paths.push(final_path);
                 }
+            }
+        }
+
+        // Mirror paths around X axis (flip Y) using center of bounding box
+        if !all_paths.is_empty() {
+            let mut min_y = f32::MAX;
+            let mut max_y = f32::MIN;
+            let mut has_points = false;
+
+            for path in &all_paths {
+                for event in path.iter().flattened(0.1) {
+                    match event {
+                        lyon::path::Event::Begin { at } => {
+                            min_y = min_y.min(at.y);
+                            max_y = max_y.max(at.y);
+                            has_points = true;
+                        }
+                        lyon::path::Event::Line { from, to } => {
+                            min_y = min_y.min(from.y).min(to.y);
+                            max_y = max_y.max(from.y).max(to.y);
+                            has_points = true;
+                        }
+                        _ => {}
+                    }
+                }
+            }
+
+            if has_points && min_y < max_y {
+                let center_y = (min_y + max_y) / 2.0;
+                // Mirror around Y = center_y
+                // y' = -y + 2*center_y
+                // Transform matrix:
+                // [ 1  0  0 ]
+                // [ 0 -1  2*center_y ]
+                let transform = lyon::math::Transform::new(
+                    1.0, 0.0,
+                    0.0, -1.0,
+                    0.0, 2.0 * center_y
+                );
+
+                let mirrored_paths: Vec<Path> = all_paths
+                    .into_iter()
+                    .map(|p| p.transformed(&transform))
+                    .collect();
+                
+                all_paths = mirrored_paths;
             }
         }
 
@@ -455,7 +501,7 @@ impl VectorEngraver {
     }
 
     /// Tokenize SVG path data into commands and numbers
-    fn tokenize_svg_path(path_data: &str) -> Vec<String> {
+    pub fn tokenize_svg_path(path_data: &str) -> Vec<String> {
         let mut tokens = Vec::new();
         let mut current_token = String::new();
 
@@ -939,75 +985,5 @@ impl VectorEngraver {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
 
-    #[test]
-    fn test_default_parameters() {
-        let params = VectorEngravingParameters::default();
-        assert_eq!(params.feed_rate, 600.0);
-        assert_eq!(params.cut_power, 100.0);
-        assert_eq!(params.engrave_power, 50.0);
-        assert!(!params.multi_pass);
-    }
-
-    #[test]
-    fn test_svg_file_validation() {
-        let result = VectorEngraver::from_file("test.txt", VectorEngravingParameters::default());
-        assert!(result.is_err());
-        let error_msg = result.unwrap_err().to_string();
-        // Either unsupported format or file not found is acceptable
-        assert!(
-            error_msg.contains("Unsupported file format") || error_msg.contains("File not found")
-        );
-    }
-
-    #[test]
-    fn test_svg_path_tokenization() {
-        let tokens = VectorEngraver::tokenize_svg_path("M 10 20 L 30 40 Z");
-        assert_eq!(tokens.len(), 7);
-        assert_eq!(tokens[0], "M");
-        assert_eq!(tokens[1], "10");
-    }
-
-    #[test]
-    fn test_estimate_time() {
-        let mut params = VectorEngravingParameters::default();
-        params.feed_rate = 100.0;
-
-        let mut builder = Path::builder();
-        builder.begin(point(0.0, 0.0));
-        builder.line_to(point(100.0, 0.0));
-        builder.end(false);
-        let path = builder.build();
-
-        let engraver = VectorEngraver {
-            file_path: "test.svg".to_string(),
-            params,
-            paths: vec![path],
-            scale_factor: 1.0,
-        };
-
-        let time = engraver.estimate_time();
-        assert!(time > 0.0);
-    }
-
-    #[test]
-    fn test_svg_with_dtd_parsing() {
-        // Test with actual SVG that may have DTD
-        let tiger_path = "assets/svg/tiger_head_zhThh.svg";
-        
-        // Skip test if file doesn't exist
-        if !std::path::Path::new(tiger_path).exists() {
-            return;
-        }
-        
-        let params = VectorEngravingParameters::default();
-        let result = VectorEngraver::from_file(tiger_path, params);
-        
-        // Should successfully parse DTD SVG
-        assert!(result.is_ok(), "Failed to parse SVG with DTD: {:?}", result);
-    }
-}
 

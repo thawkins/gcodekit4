@@ -3,7 +3,7 @@
 //! Tests for the design template system including persistence,
 //! search, filtering, and library management.
 
-use gcodekit4::designer::{
+use gcodekit4_designer::templates::{
     DesignTemplate, DesignTemplateLibrary, TemplateCategory, TemplateManager, TemplatePersistence,
 };
 use tempfile::TempDir;

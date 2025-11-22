@@ -7,7 +7,7 @@
 //! ## Core Components
 //!
 //! ### Design Elements
-//! - **Shapes**: Rectangles, circles, polygons, text, and custom paths
+//! - **Shapes**: Rectangles, circles, polylines, text, and custom paths
 //! - **Templates**: Pre-built designs (boxes, puzzles, engravings, etc.)
 //! - **Canvas**: Drawing surface with coordinate systems and transformations
 //! - **Viewport**: Camera control and zoom for navigation
@@ -105,7 +105,7 @@ pub use multipass::{DepthStrategy, MultiPassConfig, MultiPassToolpathGenerator};
 pub use parametric::ParametricGenerator;
 pub use pocket_operations::{Island, PocketGenerator, PocketOperation};
 pub use render_optimizer::{RenderOptimizer, RenderStats};
-pub use shapes::{Point, Circle, Rectangle, Line, Polygon, Ellipse, Shape, ShapeType};
+pub use shapes::{Point, Circle, Rectangle, Line, Polyline, Ellipse, Shape, ShapeType};
 pub use spatial_index::{Bounds, SpatialIndex, SpatialIndexStats};
 pub use templates::*;
 pub use tool_library::{CoolantType, MaterialProfile, Tool, ToolLibrary, ToolType};

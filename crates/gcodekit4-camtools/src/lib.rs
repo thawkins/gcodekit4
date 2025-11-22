@@ -36,6 +36,7 @@ pub mod tabbed_box;
 pub mod validator;
 pub mod vector_engraver;
 pub mod hatch_generator;
+pub mod speeds_feeds;
 
 // UI module
 pub mod advanced_features_panel;
@@ -53,6 +54,7 @@ pub use laser_engraver::{
     ScanDirection,
 };
 pub use optimizer::GCodeOptimizer;
+pub use speeds_feeds::{SpeedsFeedsCalculator, CalculationResult};
 pub use stats::StatsCalculator;
 pub use tabbed_box::{BoxParameters, BoxType, FingerJointSettings, FingerStyle, TabbedBoxMaker, KeyDividerType};
 pub use validator::GCodeValidator;
