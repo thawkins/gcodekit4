@@ -53,6 +53,15 @@ pub trait Shape: std::fmt::Debug + Send + Sync {
     /// Returns a clone of the shape as a trait object.
     fn clone_shape(&self) -> Box<dyn Shape>;
 
+    /// Translates the shape by (dx, dy).
+    fn translate(&self, dx: f64, dy: f64) -> Box<dyn Shape>;
+
+    /// Resizes the shape using a handle.
+    fn resize(&self, handle: usize, dx: f64, dy: f64) -> Box<dyn Shape>;
+
+    /// Scales the shape by (sx, sy) relative to a center point.
+    fn scale(&self, sx: f64, sy: f64, center: Point) -> Box<dyn Shape>;
+
     /// Downcast helper
     fn as_any(&self) -> &dyn Any;
 }
@@ -108,6 +117,39 @@ impl Shape for Rectangle {
         Box::new(*self)
     }
 
+    fn translate(&self, dx: f64, dy: f64) -> Box<dyn Shape> {
+        Box::new(Rectangle::new(self.x + dx, self.y + dy, self.width, self.height))
+    }
+
+    fn scale(&self, sx: f64, sy: f64, center: Point) -> Box<dyn Shape> {
+        let new_width = self.width * sx;
+        let new_height = self.height * sy;
+        let new_x = center.x + (self.x - center.x) * sx;
+        let new_y = center.y + (self.y - center.y) * sy;
+        Box::new(Rectangle::new(new_x, new_y, new_width, new_height))
+    }
+
+    fn resize(&self, handle: usize, dx: f64, dy: f64) -> Box<dyn Shape> {
+        let (x1, y1, x2, y2) = (self.x, self.y, self.x + self.width, self.y + self.height);
+        let (new_x1, new_y1, new_x2, new_y2) = match handle {
+            0 => (x1 + dx, y1 + dy, x2, y2),           // Top-left
+            1 => (x1, y1 + dy, x2 + dx, y2),           // Top-right
+            2 => (x1 + dx, y1, x2, y2 + dy),           // Bottom-left
+            3 => (x1, y1, x2 + dx, y2 + dy),           // Bottom-right
+            4 => (x1 + dx, y1 + dy, x2 + dx, y2 + dy), // Center (move)
+            _ => (x1, y1, x2, y2),
+        };
+
+        let width = (new_x2 - new_x1).abs();
+        let height = (new_y2 - new_y1).abs();
+        Box::new(Rectangle::new(
+            new_x1.min(new_x2),
+            new_y1.min(new_y2),
+            width,
+            height,
+        ))
+    }
+
     fn as_any(&self) -> &dyn Any {
         self
     }
@@ -147,6 +189,60 @@ impl Shape for Circle {
 
     fn clone_shape(&self) -> Box<dyn Shape> {
         Box::new(*self)
+    }
+
+    fn translate(&self, dx: f64, dy: f64) -> Box<dyn Shape> {
+        Box::new(Circle::new(
+            Point::new(self.center.x + dx, self.center.y + dy),
+            self.radius,
+        ))
+    }
+
+    fn scale(&self, sx: f64, sy: f64, center: Point) -> Box<dyn Shape> {
+        let new_center_x = center.x + (self.center.x - center.x) * sx;
+        let new_center_y = center.y + (self.center.y - center.y) * sy;
+        
+        if (sx - sy).abs() < 1e-6 {
+            let new_radius = self.radius * sx;
+            Box::new(Circle::new(Point::new(new_center_x, new_center_y), new_radius))
+        } else {
+            let new_rx = self.radius * sx;
+            let new_ry = self.radius * sy;
+            Box::new(Ellipse::new(Point::new(new_center_x, new_center_y), new_rx, new_ry))
+        }
+    }
+
+    fn resize(&self, handle: usize, dx: f64, dy: f64) -> Box<dyn Shape> {
+        let (new_cx, new_cy, new_r) = match handle {
+            0 => {
+                // Top-left: adjust radius by the average of dx and dy movement
+                // Moving handle away from center increases radius
+                let delta = ((-dx) + (-dy)) / 2.0;
+                let new_r = (self.radius + delta).max(5.0);
+                (self.center.x, self.center.y, new_r)
+            }
+            1 => {
+                // Top-right: adjust radius by the average of dx and dy movement
+                let delta = (dx + (-dy)) / 2.0;
+                let new_r = (self.radius + delta).max(5.0);
+                (self.center.x, self.center.y, new_r)
+            }
+            2 => {
+                // Bottom-left: adjust radius by the average of dx and dy movement
+                let delta = ((-dx) + dy) / 2.0;
+                let new_r = (self.radius + delta).max(5.0);
+                (self.center.x, self.center.y, new_r)
+            }
+            3 => {
+                // Bottom-right: adjust radius by the average of dx and dy movement
+                let delta = (dx + dy) / 2.0;
+                let new_r = (self.radius + delta).max(5.0);
+                (self.center.x, self.center.y, new_r)
+            }
+            4 => (self.center.x + dx, self.center.y + dy, self.radius), // Center (move)
+            _ => (self.center.x, self.center.y, self.radius),
+        };
+        Box::new(Circle::new(Point::new(new_cx, new_cy), new_r))
     }
 
     fn as_any(&self) -> &dyn Any {
@@ -200,6 +296,39 @@ impl Shape for Line {
         Box::new(*self)
     }
 
+    fn translate(&self, dx: f64, dy: f64) -> Box<dyn Shape> {
+        Box::new(Line::new(
+            Point::new(self.start.x + dx, self.start.y + dy),
+            Point::new(self.end.x + dx, self.end.y + dy),
+        ))
+    }
+
+    fn scale(&self, sx: f64, sy: f64, center: Point) -> Box<dyn Shape> {
+        let start_x = center.x + (self.start.x - center.x) * sx;
+        let start_y = center.y + (self.start.y - center.y) * sy;
+        let end_x = center.x + (self.end.x - center.x) * sx;
+        let end_y = center.y + (self.end.y - center.y) * sy;
+        Box::new(Line::new(Point::new(start_x, start_y), Point::new(end_x, end_y)))
+    }
+
+    fn resize(&self, handle: usize, dx: f64, dy: f64) -> Box<dyn Shape> {
+        let (new_x1, new_y1, new_x2, new_y2) = match handle {
+            0 => (self.start.x + dx, self.start.y + dy, self.end.x, self.end.y), // Move start
+            1 => (self.start.x, self.start.y, self.end.x + dx, self.end.y + dy), // Move end
+            4 => (
+                self.start.x + dx,
+                self.start.y + dy,
+                self.end.x + dx,
+                self.end.y + dy,
+            ), // Move both
+            _ => (self.start.x, self.start.y, self.end.x, self.end.y),
+        };
+        Box::new(Line::new(
+            Point::new(new_x1, new_y1),
+            Point::new(new_x2, new_y2),
+        ))
+    }
+
     fn as_any(&self) -> &dyn Any {
         self
     }
@@ -242,6 +371,55 @@ impl Shape for Ellipse {
 
     fn clone_shape(&self) -> Box<dyn Shape> {
         Box::new(*self)
+    }
+
+    fn translate(&self, dx: f64, dy: f64) -> Box<dyn Shape> {
+        Box::new(Ellipse::new(
+            Point::new(self.center.x + dx, self.center.y + dy),
+            self.rx,
+            self.ry,
+        ))
+    }
+
+    fn scale(&self, sx: f64, sy: f64, center: Point) -> Box<dyn Shape> {
+        let new_center_x = center.x + (self.center.x - center.x) * sx;
+        let new_center_y = center.y + (self.center.y - center.y) * sy;
+        let new_rx = self.rx * sx;
+        let new_ry = self.ry * sy;
+        Box::new(Ellipse::new(Point::new(new_center_x, new_center_y), new_rx, new_ry))
+    }
+
+    fn resize(&self, handle: usize, dx: f64, dy: f64) -> Box<dyn Shape> {
+        let (x1, y1, x2, y2) = self.bounding_box();
+        let (new_cx, new_cy, new_rx, new_ry) = match handle {
+            0 => {
+                // Top-left: resize
+                let new_rx = ((self.center.x - (x1 + dx)) / 1.0).abs().max(5.0);
+                let new_ry = ((self.center.y - (y1 + dy)) / 1.0).abs().max(5.0);
+                (self.center.x, self.center.y, new_rx, new_ry)
+            }
+            1 => {
+                // Top-right: resize
+                let new_rx = ((self.center.x - (x2 + dx)) / 1.0).abs().max(5.0);
+                let new_ry = ((self.center.y - (y1 + dy)) / 1.0).abs().max(5.0);
+                (self.center.x, self.center.y, new_rx, new_ry)
+            }
+            2 => {
+                // Bottom-left: resize
+                let new_rx = ((self.center.x - (x1 + dx)) / 1.0).abs().max(5.0);
+                let new_ry = ((self.center.y - (y2 + dy)) / 1.0).abs().max(5.0);
+                (self.center.x, self.center.y, new_rx, new_ry)
+            }
+            3 => {
+                // Bottom-right: resize
+                let new_rx = ((self.center.x - (x2 + dx)) / 1.0).abs().max(5.0);
+                let new_ry = ((self.center.y - (y2 + dy)) / 1.0).abs().max(5.0);
+                (self.center.x, self.center.y, new_rx, new_ry)
+            }
+            4 => (self.center.x + dx, self.center.y + dy, self.rx, self.ry), // Center (move)
+            _ => (self.center.x, self.center.y, self.rx, self.ry),
+        };
+        Box::new(Ellipse::new(Point::new(new_cx, new_cy), new_rx, new_ry))
     }
 
     fn as_any(&self) -> &dyn Any {
@@ -655,6 +833,56 @@ impl Shape for PathShape {
         Box::new(self.clone())
     }
 
+    fn translate(&self, dx: f64, dy: f64) -> Box<dyn Shape> {
+        Box::new(self.translate(dx, dy))
+    }
+
+    fn scale(&self, sx: f64, sy: f64, center: Point) -> Box<dyn Shape> {
+        Box::new(self.scale(sx, sy, center))
+    }
+
+    fn resize(&self, handle: usize, dx: f64, dy: f64) -> Box<dyn Shape> {
+        if handle == 4 {
+            return Box::new(self.translate(dx, dy));
+        }
+
+        let (x1, y1, x2, y2) = self.bounding_box();
+        let (new_x1, new_y1, new_x2, new_y2) = match handle {
+            0 => (x1 + dx, y1 + dy, x2, y2), // Top-left
+            1 => (x1, y1 + dy, x2 + dx, y2), // Top-right
+            2 => (x1 + dx, y1, x2, y2 + dy), // Bottom-left
+            3 => (x1, y1, x2 + dx, y2 + dy), // Bottom-right
+            _ => (x1, y1, x2, y2),
+        };
+        let width = x2 - x1;
+        let height = y2 - y1;
+        let new_width = (new_x2 - new_x1).abs();
+        let new_height = (new_y2 - new_y1).abs();
+
+        let sx = if width.abs() > 1e-6 {
+            new_width / width
+        } else {
+            1.0
+        };
+        let sy = if height.abs() > 1e-6 {
+            new_height / height
+        } else {
+            1.0
+        };
+
+        let center_x = (x1 + x2) / 2.0;
+        let center_y = (y1 + y2) / 2.0;
+
+        let scaled = self.scale(sx, sy, Point::new(center_x, center_y));
+
+        let new_center_x = (new_x1 + new_x2) / 2.0;
+        let new_center_y = (new_y1 + new_y2) / 2.0;
+        let t_dx = new_center_x - center_x;
+        let t_dy = new_center_y - center_y;
+
+        Box::new(scaled.translate(t_dx, t_dy))
+    }
+
     fn as_any(&self) -> &dyn Any {
         self
     }
@@ -738,6 +966,31 @@ impl Shape for TextShape {
 
     fn clone_shape(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
+    }
+
+    fn translate(&self, dx: f64, dy: f64) -> Box<dyn Shape> {
+        Box::new(TextShape::new(
+            self.text.clone(),
+            self.x + dx,
+            self.y + dy,
+            self.font_size,
+        ))
+    }
+
+    fn scale(&self, sx: f64, sy: f64, center: Point) -> Box<dyn Shape> {
+        let new_x = center.x + (self.x - center.x) * sx;
+        let new_y = center.y + (self.y - center.y) * sy;
+        let avg_scale = (sx + sy) / 2.0;
+        let new_font_size = self.font_size * avg_scale;
+        Box::new(TextShape::new(self.text.clone(), new_x, new_y, new_font_size))
+    }
+
+    fn resize(&self, handle: usize, dx: f64, dy: f64) -> Box<dyn Shape> {
+        if handle == 4 {
+            return self.translate(dx, dy);
+        }
+        // Text resizing not fully implemented (would require font size change)
+        self.clone_shape()
     }
 
     fn as_any(&self) -> &dyn Any {

@@ -72,6 +72,8 @@ pub struct ShapeData {
     pub font_size: f64,
     #[serde(default)]
     pub path_data: String,
+    #[serde(default)]
+    pub group_id: Option<u64>,
 }
 
 /// Toolpath generation parameters
@@ -203,6 +205,7 @@ impl DesignFile {
             text_content,
             font_size,
             path_data,
+            group_id: obj.group_id,
         }
     }
 
@@ -261,6 +264,7 @@ impl DesignFile {
 
         Ok(DrawingObject {
             id: next_id as u64,
+            group_id: data.group_id,
             shape,
             selected: data.selected,
             operation_type,

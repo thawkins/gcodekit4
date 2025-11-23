@@ -286,3 +286,26 @@ Rectangle {
     - If condition met, invokes `show_delete_confirmation`.
     - User clicks "Continue" -> `confirm_delete` callback -> Rust performs action.
     - If condition not met (single selection), Rust performs action immediately.
+
+### CustomTextEdit Simplification (2025-11-23)
+- **Files**: `crates/gcodekit4-ui/ui/ui_components/custom_text_edit.slint`
+- **Cleanup**: Removed unused `TextInput` overlay that was dead code.
+- **Bug Fix**: Fixed hardcoded `8px` character width in mouse click calculation to use calculated `root.char-width`.
+- **Duplication**: Removed unused duplicate file `crates/gcodekit4-gcodeeditor/ui/custom_text_edit.slint`.
+
+### Designer Grouping Functionality (2025-11-23)
+- **Files**: `crates/gcodekit4-designer/src/canvas.rs`, `svg_renderer.rs`, `ui/designer.slint`, `src/main.rs`
+- **Data Structure**: Added `group_id: Option<u64>` to `DrawingObject` to link shapes together.
+- **Selection Logic**: Updated `select_at` to automatically select all members of a group when any member is clicked.
+- **Rendering**:
+  - Added `canvas_grouped_shapes_data` property and layer to `DesignerPanel`.
+  - Grouped shapes are rendered in **green** (`#2ecc71`) to distinguish them from normal (blue) and selected (yellow) shapes.
+  - Selected grouped shapes retain their green color but show yellow selection handles.
+  - Added a dotted green bounding box around selected groups to clearly indicate the group extent.
+  - Selection handles are now drawn for the *union* bounding box of all selected shapes (or the group), rather than individual shapes, improving the resizing experience.
+- **Resizing**:
+  - Refactored `resize_selected` to calculate the bounding box of *all* selected shapes (the group).
+  - Implemented `scale` method on `Shape` trait to support group resizing by scaling relative to the group center.
+  - This ensures groups resize as a single unit, maintaining relative positions and proportions.
+- **UI**: Added "Grp" (Group) and "UGrp" (Ungroup) buttons to the designer toolbar.
+

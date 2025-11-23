@@ -64,10 +64,10 @@ impl Bounds {
 }
 
 /// Quadtree node for spatial indexing
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct QuadtreeNode {
     bounds: Bounds,
-    items: Vec<usize>,
+    items: Vec<u64>,
     children: Option<Box<[QuadtreeNode; 4]>>,
     depth: usize,
 }
@@ -115,7 +115,7 @@ impl QuadtreeNode {
 /// Insert item into node tree (helper function to avoid borrow checker issues)
 fn insert_into_node(
     node: &mut QuadtreeNode,
-    index: usize,
+    id: u64,
     bounds: &Bounds,
     max_depth: usize,
     max_items: usize,
@@ -129,14 +129,14 @@ fn insert_into_node(
     if node.children.is_some() {
         let children = node.children.as_mut().unwrap();
         for child in children.iter_mut() {
-            insert_into_node(child, index, bounds, max_depth, max_items);
+            insert_into_node(child, id, bounds, max_depth, max_items);
         }
         return;
     }
 
     // Add to current node
-    if !node.items.contains(&index) {
-        node.items.push(index);
+    if !node.items.contains(&id) {
+        node.items.push(id);
     }
 
     // Split if necessary
@@ -144,21 +144,38 @@ fn insert_into_node(
         node.split();
 
         // Redistribute items among children
-        let items: Vec<usize> = node.items.drain(..).collect();
-        for item_idx in items {
+        let items: Vec<u64> = node.items.drain(..).collect();
+        for item_id in items {
             let children = node.children.as_mut().unwrap();
             // Insert into only the children that intersect with the item bounds
             for child in children.iter_mut() {
-                if child.bounds.intersects(bounds) && !child.items.contains(&item_idx) {
-                    child.items.push(item_idx);
+                if child.bounds.intersects(bounds) && !child.items.contains(&item_id) {
+                    child.items.push(item_id);
                 }
             }
         }
     }
 }
 
+/// Remove item from node tree (helper function)
+fn remove_from_node(node: &mut QuadtreeNode, id: u64, bounds: &Bounds) {
+    if !node.bounds.intersects(bounds) {
+        return;
+    }
+
+    if let Some(pos) = node.items.iter().position(|&x| x == id) {
+        node.items.remove(pos);
+    }
+
+    if let Some(children) = &mut node.children {
+        for child in children.iter_mut() {
+            remove_from_node(child, id, bounds);
+        }
+    }
+}
+
 /// Query node tree (helper function)
-fn query_node(node: &QuadtreeNode, query_bounds: &Bounds, results: &mut Vec<usize>) {
+fn query_node(node: &QuadtreeNode, query_bounds: &Bounds, results: &mut Vec<u64>) {
     if !node.bounds.intersects(query_bounds) {
         return;
     }
@@ -173,7 +190,7 @@ fn query_node(node: &QuadtreeNode, query_bounds: &Bounds, results: &mut Vec<usiz
 }
 
 /// Query node tree for point (helper function)
-fn query_point_node(node: &QuadtreeNode, x: f64, y: f64, results: &mut Vec<usize>) {
+fn query_point_node(node: &QuadtreeNode, x: f64, y: f64, results: &mut Vec<u64>) {
     if !node.bounds.contains_point(x, y) {
         return;
     }
@@ -188,7 +205,7 @@ fn query_point_node(node: &QuadtreeNode, x: f64, y: f64, results: &mut Vec<usize
 }
 
 /// Quadtree spatial index for efficient shape queries
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SpatialIndex {
     root: QuadtreeNode,
     max_depth: usize,
@@ -206,25 +223,40 @@ impl SpatialIndex {
     }
 
     /// Insert item at given bounds
-    pub fn insert(&mut self, index: usize, item_bounds: &Bounds) {
+    pub fn insert(&mut self, id: u64, item_bounds: &Bounds) {
+        if !self.root.bounds.intersects(item_bounds) {
+            tracing::warn!(
+                "Item {} bounds {:?} outside spatial index bounds {:?}",
+                id,
+                item_bounds,
+                self.root.bounds
+            );
+            return;
+        }
+
         insert_into_node(
             &mut self.root,
-            index,
+            id,
             item_bounds,
             self.max_depth,
             self.max_items_per_node,
         );
     }
 
+    /// Remove item from index
+    pub fn remove(&mut self, id: u64, item_bounds: &Bounds) {
+        remove_from_node(&mut self.root, id, item_bounds);
+    }
+
     /// Query items in given bounds
-    pub fn query(&self, query_bounds: &Bounds) -> Vec<usize> {
+    pub fn query(&self, query_bounds: &Bounds) -> Vec<u64> {
         let mut results = Vec::new();
         query_node(&self.root, query_bounds, &mut results);
         results
     }
 
     /// Query items containing a point
-    pub fn query_point(&self, x: f64, y: f64) -> Vec<usize> {
+    pub fn query_point(&self, x: f64, y: f64) -> Vec<u64> {
         let mut results = Vec::new();
         query_point_node(&self.root, x, y, &mut results);
         results
@@ -263,7 +295,7 @@ impl SpatialIndex {
 /// Estimate node tree size (helper)
 fn estimate_node_size(node: &QuadtreeNode) -> usize {
     let mut size = std::mem::size_of::<QuadtreeNode>();
-    size += node.items.capacity() * std::mem::size_of::<usize>();
+    size += node.items.capacity() * std::mem::size_of::<u64>();
 
     if let Some(children) = &node.children {
         for child in children.iter() {
@@ -298,7 +330,9 @@ pub struct SpatialIndexStats {
 
 impl Default for SpatialIndex {
     fn default() -> Self {
-        Self::new(Bounds::new(-1000.0, -1000.0, 1000.0, 1000.0), 8, 16)
+        // Use a much larger range to cover typical CNC workspaces
+        // +/- 1,000,000 mm should be sufficient for almost any machine
+        Self::new(Bounds::new(-1000000.0, -1000000.0, 1000000.0, 1000000.0), 8, 16)
     }
 }
 

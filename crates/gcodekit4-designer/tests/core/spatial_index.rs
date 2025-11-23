@@ -135,3 +135,25 @@ fn test_spatial_index_stress() {
     let results = index.query(&query_bounds);
     assert!(!results.is_empty());
 }
+
+#[test]
+fn test_spatial_index_large_coordinates() {
+    // Use default constructor which should now have large bounds
+    let mut index = SpatialIndex::default();
+
+    // Insert item at large coordinates (previously failed at +/- 1000)
+    let bounds = Bounds::new(1000.0, 1000.0, 1010.0, 1010.0);
+    index.insert(1, &bounds);
+
+    // Query point inside
+    let results = index.query_point(1005.0, 1005.0);
+    assert!(results.contains(&1), "Should find item at (1000, 1000)");
+
+    // Insert item at very large coordinates
+    let bounds2 = Bounds::new(50000.0, -50000.0, 50010.0, -49990.0);
+    index.insert(2, &bounds2);
+
+    // Query point inside
+    let results2 = index.query_point(50005.0, -49995.0);
+    assert!(results2.contains(&2), "Should find item at (50000, -50000)");
+}

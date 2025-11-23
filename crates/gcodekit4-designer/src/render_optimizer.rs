@@ -31,12 +31,12 @@ impl RenderOptimizer {
     }
 
     /// Add shape to spatial index
-    pub fn add_shape(&mut self, id: usize, bounds: &Bounds) {
+    pub fn add_shape(&mut self, id: u64, bounds: &Bounds) {
         self.spatial_index.insert(id, bounds);
     }
 
     /// Get shapes visible in viewport (culled set)
-    pub fn get_visible_shapes(&mut self) -> Vec<usize> {
+    pub fn get_visible_shapes(&mut self) -> Vec<u64> {
         let visible = self.spatial_index.query(&self.viewport_bounds);
         self.culled_count = 0;
         self.drawn_count = visible.len();

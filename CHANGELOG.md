@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.37.13-alpha] - 2025-11-23
+
+### Added
+- **Designer**: Implemented grouping and ungrouping functionality.
+  - Added `group_id` to `DrawingObject` and serialization.
+  - Added "Group" and "Ungroup" buttons to the designer toolbar.
+  - Grouped shapes are selected, moved, and resized as a single unit.
+  - Grouped shapes are rendered in green to distinguish them.
+  - Added dotted green bounding box around selected groups.
+  - Unified selection handles for multiple selections and groups.
+  - Implemented `scale` method for all shapes to support group resizing.
+
+### Fixed
+- **Designer**: Fixed issue where shapes outside +/- 1000mm were not selectable.
+  - Increased spatial index bounds to +/- 1,000,000mm.
+  - Added warning logging when shapes are inserted outside spatial index bounds.
+
 ## [0.37.12-alpha] - 2025-11-23
 
 ### Changed

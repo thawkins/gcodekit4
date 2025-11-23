@@ -1,10 +1,18 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.37.12-alpha  
+**Version**: 0.37.13-alpha  
 **Last Updated**: 2025-11-23  
-**Status**: Visualizer Analytic Bounds
+**Status**: Designer Grouping & Fixes
 
-### Latest Release (v0.37.12-alpha) - Visualizer Analytic Bounds
+### Latest Release (v0.37.13-alpha) - Designer Grouping & Fixes
+- ✅ **Grouping Functionality**
+  - Group/Ungroup shapes to manipulate them as a single unit.
+  - Grouped shapes rendered in green with dotted bounding box.
+  - Unified selection handles for groups and multi-selections.
+- ✅ **Spatial Index Fix**
+  - Increased spatial index bounds to +/- 1,000,000mm to fix selection issues with large coordinates.
+
+### Previous Release (v0.37.12-alpha) - Visualizer Analytic Bounds
 - ✅ **Arc Bounding Boxes**
   - Arcs expose analytic bounding boxes so fit/zoom never need to discretize geometry.
 - ✅ **Toolpath Bounding Cache**

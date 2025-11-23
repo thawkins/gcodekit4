@@ -381,6 +381,16 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
         canvas_width,
         canvas_height,
     );
+    let grouped_shapes_data = gcodekit4::designer::svg_renderer::render_grouped_shapes(
+        &state.canvas,
+        canvas_width,
+        canvas_height,
+    );
+    let group_bounding_box_data = gcodekit4::designer::svg_renderer::render_group_bounding_box(
+        &state.canvas,
+        canvas_width,
+        canvas_height,
+    );
     let selected_shapes_data = gcodekit4::designer::svg_renderer::render_selected_shapes(
         &state.canvas,
         canvas_width,
@@ -401,6 +411,10 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
         window.set_designer_grid_size(slint::SharedString::from(format!("{}mm", grid_size)));
     }
     window.set_designer_canvas_shapes_data(slint::SharedString::from(shapes_data));
+    window.set_designer_canvas_grouped_shapes_data(slint::SharedString::from(grouped_shapes_data));
+    window.set_designer_canvas_group_bounding_box_data(slint::SharedString::from(
+        group_bounding_box_data,
+    ));
     window
         .set_designer_canvas_selected_shapes_data(slint::SharedString::from(selected_shapes_data));
     window.set_designer_canvas_handles_data(slint::SharedString::from(handles_data));
@@ -812,6 +826,32 @@ fn main() -> anyhow::Result<()> {
             if let Some(window) = window_weak.upgrade() {
                 let mut state = designer_mgr.borrow_mut();
                 state.toggle_grid();
+                update_designer_ui(&window, &mut state);
+            }
+        });
+    }
+
+    // Handle designer group selected
+    {
+        let designer_mgr = designer_mgr.clone();
+        let window_weak = main_window.as_weak();
+        main_window.on_designer_group_selected(move || {
+            if let Some(window) = window_weak.upgrade() {
+                let mut state = designer_mgr.borrow_mut();
+                state.canvas.group_selected();
+                update_designer_ui(&window, &mut state);
+            }
+        });
+    }
+
+    // Handle designer ungroup selected
+    {
+        let designer_mgr = designer_mgr.clone();
+        let window_weak = main_window.as_weak();
+        main_window.on_designer_ungroup_selected(move || {
+            if let Some(window) = window_weak.upgrade() {
+                let mut state = designer_mgr.borrow_mut();
+                state.canvas.ungroup_selected();
                 update_designer_ui(&window, &mut state);
             }
         });

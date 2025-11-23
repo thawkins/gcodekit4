@@ -4,7 +4,7 @@ A modern, cross-platform G-Code sender and CNC machine controller written in Rus
 
 [![Build Status](https://github.com/thawkins/gcodekit4/workflows/CI/badge.svg)](https://github.com/thawkins/gcodekit4/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-0.37.12--alpha-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-0.37.13--alpha-brightgreen.svg)](CHANGELOG.md)
 
 ## Overview
 
@@ -542,9 +542,13 @@ You may choose either license for your use of this software.
 
 ## Project Status
 
-**Current Version**: 0.37.2-alpha
+**Current Version**: 0.37.13-alpha
 **Status**: Active Development
 **Stability**: Alpha (breaking changes may occur)
+
+### Recent Updates (v0.37.13)
+- **Designer Grouping**: Group/Ungroup shapes, unified selection handles, and group bounding box.
+- **Spatial Index Fix**: Increased bounds to support large coordinate ranges (+/- 1,000,000mm).
 
 ### Recent Updates (v0.37.1)
 - **Visualizer Performance**: Optimized grid rendering and G-code parsing for smoother zoom/pan operations.

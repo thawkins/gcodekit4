@@ -161,8 +161,8 @@ export component CustomTextEdit inherits Rectangle {
                     let line_offset = (mouse_y_px - 12px) / root.line-height;
                     let clicked_line = root.visible-start-line + line_offset;
                     
-                    // Calculate column from horizontal position (rough estimate - 8px per character)
-                    let col_offset = mouse_x_px / 8px;
+                    // Calculate column from horizontal position
+                    let col_offset = mouse_x_px / root.char-width;
                     
                     root.cursor_moved(clicked_line, col_offset);
                 }
@@ -240,29 +240,6 @@ export component CustomTextEdit inherits Rectangle {
     }
     
     // Keyboard and mouse interaction  
-    // Invisible TextInput overlay to capture keyboard input
-    text-input := TextInput {
-        x: 0px;
-        y: 0px;
-        width: 0px;
-        height: 0px;
-        opacity: 0;
-        single-line: false;
-        
-        accepted => {
-            // Enter key pressed - insert newline
-            root.text-inserted(root.cursor-line, root.cursor-column, "\n");
-        }
-        
-        edited => {
-            // Text changed - insert the new text
-            if (self.text != "") {
-                root.text-inserted(root.cursor-line, root.cursor-column, self.text);
-                self.text = "";
-            }
-        }
-    }
-    
     
     fs := FocusScope {
         key-pressed(event) => {

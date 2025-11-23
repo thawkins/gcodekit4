@@ -30,6 +30,7 @@ fn test_save_and_load() {
         text_content: String::new(),
         font_size: 0.0,
         path_data: String::new(),
+        group_id: None,
     });
 
     design.save_to_file(&file_path).unwrap();

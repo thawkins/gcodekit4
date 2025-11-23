@@ -179,6 +179,8 @@ export component MainWindow inherits Window {
     in-out property <bool> designer-show-grid: true;
     in property <string> designer-grid-size: "10mm";
     in property <string> designer-canvas-shapes-data: "";
+    in property <string> designer-canvas-grouped-shapes-data: "";
+    in property <string> designer-canvas-group-bounding-box-data: "";
     in property <string> designer-canvas-selected-shapes-data: "";
     in property <string> designer-canvas-handles-data: "";
     in property <int> designer-selected-count: 0;
@@ -366,6 +368,8 @@ export component MainWindow inherits Window {
     callback designer-zoom-fit();
     callback designer-reset-view();
     callback designer-delete-selected();
+    callback designer-group-selected();
+    callback designer-ungroup-selected();
     callback designer-clear-canvas();
     callback designer-generate-toolpath();
     callback designer-import-dxf();
@@ -1268,6 +1272,8 @@ export component MainWindow inherits Window {
                         show_grid <=> root.designer-show-grid;
                         grid_size: root.designer-grid-size;
                         canvas_shapes_data: root.designer-canvas-shapes-data;
+                        canvas_grouped_shapes_data: root.designer-canvas-grouped-shapes-data;
+                        canvas_group_bounding_box_data: root.designer-canvas-group-bounding-box-data;
                         canvas_selected_shapes_data: root.designer-canvas-selected-shapes-data;
                         canvas_handles_data: root.designer-canvas-handles-data;
                         delete_confirmation_trigger: root.designer-delete-trigger;
@@ -1311,6 +1317,14 @@ export component MainWindow inherits Window {
                         
                         delete_selected => {
                             root.designer-delete-selected();
+                        }
+                        
+                        group_selected => {
+                            root.designer-group-selected();
+                        }
+                        
+                        ungroup_selected => {
+                            root.designer-ungroup-selected();
                         }
                         
                         clear_canvas => {

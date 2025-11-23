@@ -121,7 +121,8 @@ pub fn render_shapes(canvas: &Canvas, _width: u32, _height: u32) -> String {
 
     for shape_obj in canvas.shapes() {
         // Skip selected shapes - they'll be rendered separately
-        if shape_obj.selected {
+        // Also skip grouped shapes - they'll be rendered in green
+        if shape_obj.selected || shape_obj.group_id.is_some() {
             continue;
         }
 
@@ -138,7 +139,9 @@ pub fn render_selected_shapes(canvas: &Canvas, _width: u32, _height: u32) -> Str
     let mut path = String::new();
 
     for shape_obj in canvas.shapes() {
-        if !shape_obj.selected {
+        // Only render selected shapes that are NOT in a group
+        // Grouped shapes are rendered in green regardless of selection state
+        if !shape_obj.selected || shape_obj.group_id.is_some() {
             continue;
         }
 
@@ -149,60 +152,164 @@ pub fn render_selected_shapes(canvas: &Canvas, _width: u32, _height: u32) -> Str
     path
 }
 
-/// Render selection handles for selected shapes
+/// Render grouped shapes (green)
+pub fn render_grouped_shapes(canvas: &Canvas, _width: u32, _height: u32) -> String {
+    let viewport = canvas.viewport();
+    let mut path = String::new();
+
+    for shape_obj in canvas.shapes() {
+        if shape_obj.group_id.is_some() {
+            let shape_path = render_shape_trait(&*shape_obj.shape, viewport);
+            path.push_str(&shape_path);
+        }
+    }
+
+    path
+}
+
+/// Render selection handles for selected shapes (unified bounding box)
 pub fn render_selection_handles(canvas: &Canvas, _width: u32, _height: u32) -> String {
     let viewport = canvas.viewport();
     let mut path = String::new();
-    const HANDLE_SIZE: f64 = 8.0; // Increased from 6.0 for better visibility
+    const HANDLE_SIZE: f64 = 8.0;
+
+    let mut min_x = f64::INFINITY;
+    let mut min_y = f64::INFINITY;
+    let mut max_x = f64::NEG_INFINITY;
+    let mut max_y = f64::NEG_INFINITY;
+    let mut has_selected = false;
 
     for shape_obj in canvas.shapes() {
-        if !shape_obj.selected {
-            continue;
+        if shape_obj.selected {
+            let (x1, y1, x2, y2) = shape_obj.shape.bounding_box();
+            min_x = min_x.min(x1);
+            min_y = min_y.min(y1);
+            max_x = max_x.max(x2);
+            max_y = max_y.max(y2);
+            has_selected = true;
         }
+    }
 
-        let (x1, y1, x2, y2) = shape_obj.shape.bounding_box();
+    if !has_selected {
+        return path;
+    }
 
-        // Convert to screen coordinates
-        // x1 < x2 in world coords, sx1 < sx2 in screen coords (X not flipped)
-        // y1 < y2 in world coords, but sy1 > sy2 in screen coords (Y IS flipped)
-        let (sx1, sy1) = viewport.world_to_pixel(x1, y1);
-        let (sx2, sy2) = viewport.world_to_pixel(x2, y2);
+    // Convert to screen coordinates
+    let (sx1, sy1) = viewport.world_to_pixel(min_x, min_y);
+    let (sx2, sy2) = viewport.world_to_pixel(max_x, max_y);
 
-        // X coordinates maintain order (left < right)
-        // Y coordinates are flipped, so we need min/max
-        let screen_left = sx1; // x1 is left in world, sx1 is left in screen
-        let screen_right = sx2; // x2 is right in world, sx2 is right in screen
-        let screen_top = sy1.min(sy2); // Top of screen is lower pixel Y
-        let screen_bottom = sy1.max(sy2); // Bottom of screen is higher pixel Y
+    // X coordinates maintain order (left < right)
+    // Y coordinates are flipped, so we need min/max
+    let screen_left = sx1;
+    let screen_right = sx2;
+    let screen_top = sy1.min(sy2);
+    let screen_bottom = sy1.max(sy2);
 
-        // Calculate handle positions (corners and center) in screen space
-        let handles = [
-            (screen_left, screen_top),     // Top-left (screen)
-            (screen_right, screen_top),    // Top-right (screen)
-            (screen_left, screen_bottom),  // Bottom-left (screen)
-            (screen_right, screen_bottom), // Bottom-right (screen)
-            (
-                (screen_left + screen_right) / 2.0,
-                (screen_top + screen_bottom) / 2.0,
-            ), // Center
-        ];
+    // Calculate handle positions (corners and center) in screen space
+    let handles = [
+        (screen_left, screen_top),     // Top-left (screen)
+        (screen_right, screen_top),    // Top-right (screen)
+        (screen_left, screen_bottom),  // Bottom-left (screen)
+        (screen_right, screen_bottom), // Bottom-right (screen)
+        (
+            (screen_left + screen_right) / 2.0,
+            (screen_top + screen_bottom) / 2.0,
+        ), // Center
+    ];
 
-        // Draw handles as small rectangles
-        for (hx, hy) in &handles {
-            let x = hx - HANDLE_SIZE / 2.0;
-            let y = hy - HANDLE_SIZE / 2.0;
-            path.push_str(&format!(
-                "M {} {} L {} {} L {} {} L {} {} Z ",
-                x,
-                y,
-                x + HANDLE_SIZE,
-                y,
-                x + HANDLE_SIZE,
-                y + HANDLE_SIZE,
-                x,
-                y + HANDLE_SIZE
-            ));
+    // Draw handles as small rectangles
+    for (hx, hy) in &handles {
+        let x = hx - HANDLE_SIZE / 2.0;
+        let y = hy - HANDLE_SIZE / 2.0;
+        path.push_str(&format!(
+            "M {} {} L {} {} L {} {} L {} {} Z ",
+            x,
+            y,
+            x + HANDLE_SIZE,
+            y,
+            x + HANDLE_SIZE,
+            y + HANDLE_SIZE,
+            x,
+            y + HANDLE_SIZE
+        ));
+    }
+
+    path
+}
+
+/// Render dotted bounding box for selected group/multiple shapes
+pub fn render_group_bounding_box(canvas: &Canvas, _width: u32, _height: u32) -> String {
+    let viewport = canvas.viewport();
+    let mut path = String::new();
+
+    let mut min_x = f64::INFINITY;
+    let mut min_y = f64::INFINITY;
+    let mut max_x = f64::NEG_INFINITY;
+    let mut max_y = f64::NEG_INFINITY;
+    let mut selected_count = 0;
+    let mut has_group = false;
+
+    for shape_obj in canvas.shapes() {
+        if shape_obj.selected {
+            let (x1, y1, x2, y2) = shape_obj.shape.bounding_box();
+            min_x = min_x.min(x1);
+            min_y = min_y.min(y1);
+            max_x = max_x.max(x2);
+            max_y = max_y.max(y2);
+            selected_count += 1;
+            if shape_obj.group_id.is_some() {
+                has_group = true;
+            }
         }
+    }
+
+    // Only draw if we have a group or multiple items selected
+    if selected_count < 2 && !has_group {
+        return path;
+    }
+
+    let (sx1, sy1) = viewport.world_to_pixel(min_x, min_y);
+    let (sx2, sy2) = viewport.world_to_pixel(max_x, max_y);
+
+    let left = sx1;
+    let right = sx2;
+    let top = sy1.min(sy2);
+    let bottom = sy1.max(sy2);
+    
+    // Simulate dotted line
+    let dash_len = 4.0;
+    let gap_len = 4.0;
+    
+    // Top edge
+    let mut x = left;
+    while x < right {
+        let next_x = (x + dash_len).min(right);
+        path.push_str(&format!("M {} {} L {} {} ", x, top, next_x, top));
+        x += dash_len + gap_len;
+    }
+    
+    // Right edge
+    let mut y = top;
+    while y < bottom {
+        let next_y = (y + dash_len).min(bottom);
+        path.push_str(&format!("M {} {} L {} {} ", right, y, right, next_y));
+        y += dash_len + gap_len;
+    }
+    
+    // Bottom edge
+    let mut x = right;
+    while x > left {
+        let next_x = (x - dash_len).max(left);
+        path.push_str(&format!("M {} {} L {} {} ", x, bottom, next_x, bottom));
+        x -= dash_len + gap_len;
+    }
+    
+    // Left edge
+    let mut y = bottom;
+    while y > top {
+        let next_y = (y - dash_len).max(top);
+        path.push_str(&format!("M {} {} L {} {} ", left, y, left, next_y));
+        y -= dash_len + gap_len;
     }
 
     path
