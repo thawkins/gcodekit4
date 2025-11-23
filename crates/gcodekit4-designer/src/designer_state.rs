@@ -2,8 +2,8 @@
 //! Manages the designer canvas state and handles UI callbacks.
 
 use crate::{
-    Canvas, Circle, DrawingMode, Line, Point, Rectangle, ToolpathGenerator,
-    ToolpathToGcode, shapes::{OperationType, TextShape},
+    shapes::{OperationType, TextShape},
+    Canvas, Circle, DrawingMode, Line, Point, Rectangle, ToolpathGenerator, ToolpathToGcode,
 };
 use gcodekit4_core::Units;
 
@@ -78,13 +78,13 @@ impl DesignerState {
     pub fn reset_view(&mut self) {
         // Reset zoom to 100%
         self.canvas.set_zoom(1.0);
-        
+
         // Reset pan to place origin at bottom-left with 5px padding
         // We need to access the viewport to set this up correctly
         // Since we don't have direct access to viewport dimensions here easily without passing them,
         // we'll rely on the viewport's internal size which should be updated by update_designer_ui
         let _height = self.canvas.viewport().canvas_height();
-        
+
         // In screen coordinates, (0, height) is bottom-left.
         // We want world (0,0) to be at screen (5, height-5).
         // world_to_screen(0,0) = (pan_x, pan_y) usually (depending on implementation)
@@ -93,7 +93,7 @@ impl DesignerState {
         // If we want screen_x = 5, screen_y = height - 5 for world(0,0):
         // 5 = 0 * 1.0 + pan_x  => pan_x = 5
         // height - 5 = height - (0 * 1.0 + pan_y) => 5 = pan_y
-        
+
         // So we set pan to (5, 5)
         self.canvas.set_pan(5.0, 5.0);
     }
@@ -106,6 +106,54 @@ impl DesignerState {
     /// Get number of selected shapes
     pub fn selected_count(&self) -> usize {
         self.canvas.selected_count()
+    }
+
+    /// Align selected shapes by their left edges
+    pub fn align_selected_horizontal_left(&mut self) {
+        if self.canvas.align_selected_left() {
+            self.is_modified = true;
+            self.gcode_generated = false;
+        }
+    }
+
+    /// Align selected shapes by their horizontal centers
+    pub fn align_selected_horizontal_center(&mut self) {
+        if self.canvas.align_selected_center() {
+            self.is_modified = true;
+            self.gcode_generated = false;
+        }
+    }
+
+    /// Align selected shapes by their right edges
+    pub fn align_selected_horizontal_right(&mut self) {
+        if self.canvas.align_selected_right() {
+            self.is_modified = true;
+            self.gcode_generated = false;
+        }
+    }
+
+    /// Align selected shapes by their top edges
+    pub fn align_selected_vertical_top(&mut self) {
+        if self.canvas.align_selected_top() {
+            self.is_modified = true;
+            self.gcode_generated = false;
+        }
+    }
+
+    /// Align selected shapes by their vertical centers
+    pub fn align_selected_vertical_center(&mut self) {
+        if self.canvas.align_selected_vertical_center() {
+            self.is_modified = true;
+            self.gcode_generated = false;
+        }
+    }
+
+    /// Align selected shapes by their bottom edges
+    pub fn align_selected_vertical_bottom(&mut self) {
+        if self.canvas.align_selected_bottom() {
+            self.is_modified = true;
+            self.gcode_generated = false;
+        }
     }
 
     /// Clears all shapes from the canvas.
@@ -122,24 +170,36 @@ impl DesignerState {
 
         for shape in self.canvas.shapes() {
             // Set strategy for this shape
-            self.toolpath_generator.set_pocket_strategy(shape.pocket_strategy);
+            self.toolpath_generator
+                .set_pocket_strategy(shape.pocket_strategy);
 
             let shape_toolpaths = match shape.shape.shape_type() {
                 crate::ShapeType::Rectangle => {
                     let (x1, y1, x2, y2) = shape.shape.bounding_box();
                     let rect = Rectangle::new(x1, y1, x2 - x1, y2 - y1);
                     if shape.operation_type == OperationType::Pocket {
-                        self.toolpath_generator.generate_rectangle_pocket(&rect, shape.pocket_depth, shape.step_down as f64, shape.step_in as f64)
+                        self.toolpath_generator.generate_rectangle_pocket(
+                            &rect,
+                            shape.pocket_depth,
+                            shape.step_down as f64,
+                            shape.step_in as f64,
+                        )
                     } else {
                         vec![self.toolpath_generator.generate_rectangle_contour(&rect)]
                     }
                 }
                 crate::ShapeType::Circle => {
                     let (cx, cy, _, _) = shape.shape.bounding_box();
-                    let radius = ((shape.shape.bounding_box().2 - shape.shape.bounding_box().0) / 2.0).abs();
+                    let radius =
+                        ((shape.shape.bounding_box().2 - shape.shape.bounding_box().0) / 2.0).abs();
                     let circle = Circle::new(Point::new(cx, cy), radius);
                     if shape.operation_type == OperationType::Pocket {
-                        self.toolpath_generator.generate_circle_pocket(&circle, shape.pocket_depth, shape.step_down as f64, shape.step_in as f64)
+                        self.toolpath_generator.generate_circle_pocket(
+                            &circle,
+                            shape.pocket_depth,
+                            shape.step_down as f64,
+                            shape.step_in as f64,
+                        )
                     } else {
                         vec![self.toolpath_generator.generate_circle_contour(&circle)]
                     }
@@ -158,16 +218,25 @@ impl DesignerState {
                     vec![self.toolpath_generator.generate_circle_contour(&circle)]
                 }
                 crate::ShapeType::Path => {
-                    if let Some(path_shape) = shape.shape.as_any().downcast_ref::<crate::shapes::PathShape>() {
+                    if let Some(path_shape) = shape
+                        .shape
+                        .as_any()
+                        .downcast_ref::<crate::shapes::PathShape>()
+                    {
                         if shape.operation_type == OperationType::Pocket {
-                            self.toolpath_generator.generate_path_pocket(path_shape, shape.pocket_depth, shape.step_down as f64, shape.step_in as f64)
+                            self.toolpath_generator.generate_path_pocket(
+                                path_shape,
+                                shape.pocket_depth,
+                                shape.step_down as f64,
+                                shape.step_in as f64,
+                            )
                         } else {
                             vec![self.toolpath_generator.generate_path_contour(path_shape)]
                         }
                     } else {
                         vec![self.toolpath_generator.empty_toolpath()]
                     }
-                },
+                }
                 crate::ShapeType::Text => {
                     if let Some(text) = shape.shape.as_any().downcast_ref::<TextShape>() {
                         vec![self.toolpath_generator.generate_text_toolpath(text)]
@@ -180,17 +249,32 @@ impl DesignerState {
         }
 
         let total_length: f64 = toolpaths.iter().map(|tp| tp.total_length()).sum();
-        
-        // Use settings from first toolpath if available, or defaults
-        let (header_speed, header_feed, header_diam, header_depth) = if let Some(first) = toolpaths.first() {
-             let s = first.segments.first().map(|seg| seg.spindle_speed).unwrap_or(3000);
-             let f = first.segments.first().map(|seg| seg.feed_rate).unwrap_or(100.0);
-             (s, f, first.tool_diameter, first.depth)
-        } else {
-             (3000, 100.0, 3.175, -5.0)
-        };
 
-        gcode.push_str(&gcode_gen.generate_header(header_speed, header_feed, header_diam, header_depth, total_length));
+        // Use settings from first toolpath if available, or defaults
+        let (header_speed, header_feed, header_diam, header_depth) =
+            if let Some(first) = toolpaths.first() {
+                let s = first
+                    .segments
+                    .first()
+                    .map(|seg| seg.spindle_speed)
+                    .unwrap_or(3000);
+                let f = first
+                    .segments
+                    .first()
+                    .map(|seg| seg.feed_rate)
+                    .unwrap_or(100.0);
+                (s, f, first.tool_diameter, first.depth)
+            } else {
+                (3000, 100.0, 3.175, -5.0)
+            };
+
+        gcode.push_str(&gcode_gen.generate_header(
+            header_speed,
+            header_feed,
+            header_diam,
+            header_depth,
+            total_length,
+        ));
 
         let mut line_number = 10;
         for toolpath in toolpaths {
@@ -334,31 +418,45 @@ impl DesignerState {
                         obj.shape = Box::new(Ellipse::new(center, w / 2.0, h / 2.0));
                     }
                     crate::ShapeType::Path => {
-                        if let Some(path_shape) = obj.shape.as_any().downcast_ref::<crate::shapes::PathShape>() {
-                             let (old_x, old_y, old_x2, old_y2) = path_shape.bounding_box();
-                             let old_w = old_x2 - old_x;
-                             let old_h = old_y2 - old_y;
-                             
-                             let scale_x = if old_w.abs() > 1e-6 { w / old_w } else { 1.0 };
-                             let scale_y = if old_h.abs() > 1e-6 { h / old_h } else { 1.0 };
-                             
-                             let center_x = (old_x + old_x2) / 2.0;
-                             let center_y = (old_y + old_y2) / 2.0;
-                             
-                             let scaled = path_shape.scale(scale_x, scale_y, Point::new(center_x, center_y));
-                             
-                             let new_center_x = x + w / 2.0;
-                             let new_center_y = y + h / 2.0;
-                             
-                             let dx = new_center_x - center_x;
-                             let dy = new_center_y - center_y;
-                             
-                             obj.shape = Box::new(scaled.translate(dx, dy));
+                        if let Some(path_shape) = obj
+                            .shape
+                            .as_any()
+                            .downcast_ref::<crate::shapes::PathShape>()
+                        {
+                            let (old_x, old_y, old_x2, old_y2) = path_shape.bounding_box();
+                            let old_w = old_x2 - old_x;
+                            let old_h = old_y2 - old_y;
+
+                            let scale_x = if old_w.abs() > 1e-6 { w / old_w } else { 1.0 };
+                            let scale_y = if old_h.abs() > 1e-6 { h / old_h } else { 1.0 };
+
+                            let center_x = (old_x + old_x2) / 2.0;
+                            let center_y = (old_y + old_y2) / 2.0;
+
+                            let scaled =
+                                path_shape.scale(scale_x, scale_y, Point::new(center_x, center_y));
+
+                            let new_center_x = x + w / 2.0;
+                            let new_center_y = y + h / 2.0;
+
+                            let dx = new_center_x - center_x;
+                            let dy = new_center_y - center_y;
+
+                            obj.shape = Box::new(scaled.translate(dx, dy));
                         }
-                    },
+                    }
                     crate::ShapeType::Text => {
-                        if let Some(text) = obj.shape.as_any().downcast_ref::<crate::shapes::TextShape>() {
-                            obj.shape = Box::new(crate::shapes::TextShape::new(text.text.clone(), x, y, text.font_size));
+                        if let Some(text) = obj
+                            .shape
+                            .as_any()
+                            .downcast_ref::<crate::shapes::TextShape>()
+                        {
+                            obj.shape = Box::new(crate::shapes::TextShape::new(
+                                text.text.clone(),
+                                x,
+                                y,
+                                text.font_size,
+                            ));
                         }
                     }
                 }
@@ -458,7 +556,11 @@ impl DesignerState {
     pub fn set_selected_pocket_properties(&mut self, is_pocket: bool, depth: f64) {
         if let Some(id) = self.canvas.selected_id() {
             if let Some(obj) = self.canvas.shapes_mut().iter_mut().find(|o| o.id == id) {
-                obj.operation_type = if is_pocket { OperationType::Pocket } else { OperationType::Profile };
+                obj.operation_type = if is_pocket {
+                    OperationType::Pocket
+                } else {
+                    OperationType::Profile
+                };
                 obj.pocket_depth = depth;
             }
         }
@@ -488,7 +590,7 @@ impl DesignerState {
                     let (x1, y1, _, _) = obj.shape.bounding_box();
                     (x1, y1)
                 };
-                
+
                 if let Some(_) = obj.shape.as_any().downcast_ref::<TextShape>() {
                     obj.shape = Box::new(TextShape::new(content.to_string(), x, y, font_size));
                 }
@@ -496,7 +598,10 @@ impl DesignerState {
         }
     }
 
-    pub fn set_selected_pocket_strategy(&mut self, strategy: crate::pocket_operations::PocketStrategy) {
+    pub fn set_selected_pocket_strategy(
+        &mut self,
+        strategy: crate::pocket_operations::PocketStrategy,
+    ) {
         if let Some(id) = self.canvas.selected_id() {
             if let Some(obj) = self.canvas.shapes_mut().iter_mut().find(|o| o.id == id) {
                 obj.pocket_strategy = strategy;
@@ -510,5 +615,3 @@ impl Default for DesignerState {
         Self::new()
     }
 }
-
-

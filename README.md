@@ -4,7 +4,7 @@ A modern, cross-platform G-Code sender and CNC machine controller written in Rus
 
 [![Build Status](https://github.com/thawkins/gcodekit4/workflows/CI/badge.svg)](https://github.com/thawkins/gcodekit4/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-0.37.1--alpha-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-0.37.3--alpha-brightgreen.svg)](CHANGELOG.md)
 
 ## Overview
 
@@ -122,7 +122,8 @@ This modular structure enables:
   - Properties dialog for detailed shape adjustments
   - Dual-grid system (10mm major + 1mm minor)
 - **SVG Canvas Rendering**: High-quality vector-based canvas
-- **Context Menu**: Right-click for Delete and Properties
+- **Context Menu**: Right-click for Delete, Properties, and the new multi-level Align menu
+  - Align horizontally (Left/Center/Right) or vertically (Top/Center/Bottom) across multi-selection groups
 - **Toolpath Generation**: Convert designs to executable G-code
 
 ### 👁️ 2D Visualizer

@@ -2,11 +2,14 @@ use gcodekit4::{
     init_logging, list_ports, BoxParameters, BoxType, CapabilityManager, Communicator,
     ConnectionDriver, ConnectionParams, ConsoleListener, DeviceConsoleManager, DeviceMessageType,
     FingerJointSettings, FingerStyle, FirmwareSettingsIntegration, GcodeEditor, JigsawPuzzleMaker,
-    KeyDividerType, PuzzleParameters, SerialCommunicator, SerialParity, SettingsCategory, SettingsController,
-    SettingsDialog, SettingsManager, SettingsPersistence, TabbedBoxMaker, BUILD_DATE, VERSION,
+    KeyDividerType, PuzzleParameters, SerialCommunicator, SerialParity, SettingsCategory,
+    SettingsController, SettingsDialog, SettingsManager, SettingsPersistence,
     SpeedsFeedsCalculator, SpoilboardSurfacingGenerator, SpoilboardSurfacingParameters,
+    TabbedBoxMaker, BUILD_DATE, VERSION,
 };
-use gcodekit4_devicedb::{DeviceManager, DeviceUiController, DeviceProfileUiModel as DbDeviceProfile};
+use gcodekit4_devicedb::{
+    DeviceManager, DeviceProfileUiModel as DbDeviceProfile, DeviceUiController,
+};
 use gcodekit4_ui::EditorBridge;
 use slint::{Model, VecModel};
 use std::cell::RefCell;
@@ -353,11 +356,7 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
         canvas_height,
     );
     let (grid_data, grid_size) = if state.show_grid {
-        gcodekit4::designer::svg_renderer::render_grid(
-            &state.canvas,
-            canvas_width,
-            canvas_height,
-        )
+        gcodekit4::designer::svg_renderer::render_grid(&state.canvas, canvas_width, canvas_height)
     } else {
         (String::new(), 0.0)
     };
@@ -428,16 +427,26 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
                     gcodekit4::designer::pocket_operations::PocketStrategy::ContourParallel => 1,
                     gcodekit4::designer::pocket_operations::PocketStrategy::Adaptive => 2,
                 },
-                raster_angle: if let gcodekit4::designer::pocket_operations::PocketStrategy::Raster { angle, .. } = obj.pocket_strategy {
-                    angle as f32
-                } else {
-                    0.0
-                },
-                bidirectional: if let gcodekit4::designer::pocket_operations::PocketStrategy::Raster { bidirectional, .. } = obj.pocket_strategy {
-                    bidirectional
-                } else {
-                    true
-                },
+                raster_angle:
+                    if let gcodekit4::designer::pocket_operations::PocketStrategy::Raster {
+                        angle,
+                        ..
+                    } = obj.pocket_strategy
+                    {
+                        angle as f32
+                    } else {
+                        0.0
+                    },
+                bidirectional:
+                    if let gcodekit4::designer::pocket_operations::PocketStrategy::Raster {
+                        bidirectional,
+                        ..
+                    } = obj.pocket_strategy
+                    {
+                        bidirectional
+                    } else {
+                        true
+                    },
             }
         })
         .collect();
@@ -456,12 +465,16 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
             let (x1, y1, x2, y2) = obj.shape.bounding_box();
             let width = (x2 - x1).abs();
             let height = (y2 - y1).abs();
-            let radius = if let Some(c) = obj.shape.as_any().downcast_ref::<gcodekit4::designer::shapes::Circle>() {
+            let radius = if let Some(c) = obj
+                .shape
+                .as_any()
+                .downcast_ref::<gcodekit4::designer::shapes::Circle>()
+            {
                 c.radius
             } else {
                 0.0
             };
-            
+
             let shape_type = match obj.shape.shape_type() {
                 gcodekit4::ShapeType::Rectangle => 0,
                 gcodekit4::ShapeType::Circle => 1,
@@ -477,24 +490,36 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
             window.set_designer_selected_shape_h(height as f32);
             window.set_designer_selected_shape_type(shape_type);
             window.set_designer_selected_shape_radius(radius as f32);
-            
-            let is_pocket = obj.operation_type == gcodekit4::designer::shapes::OperationType::Pocket;
+
+            let is_pocket =
+                obj.operation_type == gcodekit4::designer::shapes::OperationType::Pocket;
             window.set_designer_selected_shape_is_pocket(is_pocket);
             window.set_designer_selected_shape_pocket_depth(obj.pocket_depth as f32);
             window.set_designer_selected_shape_step_down(obj.step_down as f32);
             window.set_designer_selected_shape_step_in(obj.step_in as f32);
-            
+
             let (strategy_idx, angle, bidir) = match obj.pocket_strategy {
-                gcodekit4::designer::pocket_operations::PocketStrategy::Raster { angle, bidirectional } => (0, angle as f32, bidirectional),
-                gcodekit4::designer::pocket_operations::PocketStrategy::ContourParallel => (1, 0.0, true),
+                gcodekit4::designer::pocket_operations::PocketStrategy::Raster {
+                    angle,
+                    bidirectional,
+                } => (0, angle as f32, bidirectional),
+                gcodekit4::designer::pocket_operations::PocketStrategy::ContourParallel => {
+                    (1, 0.0, true)
+                }
                 gcodekit4::designer::pocket_operations::PocketStrategy::Adaptive => (2, 0.0, true),
             };
             window.set_designer_selected_shape_pocket_strategy(strategy_idx);
             window.set_designer_selected_shape_raster_angle(angle);
             window.set_designer_selected_shape_bidirectional(bidir);
-            
-            if let Some(text) = obj.shape.as_any().downcast_ref::<gcodekit4::designer::shapes::TextShape>() {
-                window.set_designer_selected_shape_text_content(slint::SharedString::from(&text.text));
+
+            if let Some(text) = obj
+                .shape
+                .as_any()
+                .downcast_ref::<gcodekit4::designer::shapes::TextShape>()
+            {
+                window.set_designer_selected_shape_text_content(slint::SharedString::from(
+                    &text.text,
+                ));
                 window.set_designer_selected_shape_font_size(text.font_size as f32);
             } else {
                 window.set_designer_selected_shape_text_content(slint::SharedString::from(""));
@@ -518,6 +543,9 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
         window.set_designer_selected_shape_text_content(slint::SharedString::from(""));
         window.set_designer_selected_shape_font_size(12.0);
     }
+
+    // Update selection count for UI features (e.g., alignment menu)
+    window.set_designer_selected_count(state.selected_count() as i32);
 
     // Increment update counter to force UI re-render
     let mut ui_state = window.get_designer_state();
@@ -550,7 +578,6 @@ fn update_visible_lines(window: &MainWindow, bridge: &EditorBridge) {
 fn main() -> anyhow::Result<()> {
     // Initialize logging
     init_logging()?;
-
 
     let main_window = MainWindow::new().map_err(|e| anyhow::anyhow!("UI Error: {}", e))?;
 
@@ -851,9 +878,7 @@ fn main() -> anyhow::Result<()> {
     if let Err(e) = device_manager.load() {
         warn!("Failed to load device profiles: {}", e);
     }
-    let device_ui_controller = Rc::new(DeviceUiController::new(
-        device_manager.clone(),
-    ));
+    let device_ui_controller = Rc::new(DeviceUiController::new(device_manager.clone()));
 
     // Bind Device Manager callbacks
     {
@@ -861,8 +886,9 @@ fn main() -> anyhow::Result<()> {
         let window_weak = main_window.as_weak();
         main_window.on_load_device_profiles(move || {
             let profiles = controller.get_ui_profiles();
-            let slint_profiles: Vec<DeviceProfileUiModel> = profiles.iter().map(|p| {
-                DeviceProfileUiModel {
+            let slint_profiles: Vec<DeviceProfileUiModel> = profiles
+                .iter()
+                .map(|p| DeviceProfileUiModel {
                     id: p.id.clone().into(),
                     name: p.name.clone().into(),
                     description: p.description.clone().into(),
@@ -886,15 +912,15 @@ fn main() -> anyhow::Result<()> {
                     timeout_ms: p.timeout_ms.clone().into(),
                     auto_reconnect: p.auto_reconnect,
                     is_active: p.is_active,
-                }
-            }).collect();
-            
+                })
+                .collect();
+
             if let Some(window) = window_weak.upgrade() {
                 window.set_device_profiles(slint::ModelRc::new(VecModel::from(slint_profiles)));
             }
         });
     }
-    
+
     {
         let controller = device_ui_controller.clone();
         let window_weak = main_window.as_weak();
@@ -903,7 +929,7 @@ fn main() -> anyhow::Result<()> {
                 Ok(new_id) => {
                     if let Some(window) = window_weak.upgrade() {
                         window.invoke_load_device_profiles();
-                        
+
                         // Find the index of the new profile
                         let profiles = controller.get_ui_profiles();
                         if let Some(index) = profiles.iter().position(|p| p.id == new_id) {
@@ -956,11 +982,11 @@ fn main() -> anyhow::Result<()> {
                 auto_reconnect: profile.auto_reconnect,
                 is_active: profile.is_active,
             };
-            
+
             if let Err(e) = controller.update_profile_from_ui(db_profile) {
                 warn!("Failed to save profile: {}", e);
             }
-            
+
             // Reload profiles to update UI
             if let Some(window) = window_weak.upgrade() {
                 window.invoke_load_device_profiles();
@@ -1006,11 +1032,12 @@ fn main() -> anyhow::Result<()> {
                 } else {
                     Some(SettingsController::get_category_from_string(&category_str))
                 };
-                
+
                 let settings = controller.get_settings_for_ui(category);
-                
-                let slint_settings: Vec<SettingItem> = settings.iter().map(|s| {
-                    SettingItem {
+
+                let slint_settings: Vec<SettingItem> = settings
+                    .iter()
+                    .map(|s| SettingItem {
                         id: s.id.clone().into(),
                         name: s.name.clone().into(),
                         value: s.value.clone().into(),
@@ -1018,38 +1045,39 @@ fn main() -> anyhow::Result<()> {
                         category: s.category.clone().into(),
                         description: s.description.clone().into(),
                         options: slint::ModelRc::new(VecModel::from(
-                            s.options.iter().map(|o| o.clone().into()).collect::<Vec<slint::SharedString>>()
+                            s.options
+                                .iter()
+                                .map(|o| o.clone().into())
+                                .collect::<Vec<slint::SharedString>>(),
                         )),
                         current_index: s.current_index,
-                    }
-                }).collect();
-                
+                    })
+                    .collect();
+
                 window.set_current_settings(slint::ModelRc::new(VecModel::from(slint_settings)));
             }
         });
     }
-    
+
     {
         let controller = settings_controller.clone();
-        main_window.on_menu_settings_save(move || {
-            match controller.save() {
-                Ok(_) => warn!("Settings saved to file"),
-                Err(e) => warn!("Failed to save settings: {}", e),
-            }
+        main_window.on_menu_settings_save(move || match controller.save() {
+            Ok(_) => warn!("Settings saved to file"),
+            Err(e) => warn!("Failed to save settings: {}", e),
         });
     }
-    
+
     {
         let controller = settings_controller.clone();
         let window_weak = main_window.as_weak();
         main_window.on_menu_settings_restore_defaults(move || {
-             controller.restore_defaults();
-             if let Some(window) = window_weak.upgrade() {
-                 window.invoke_config_retrieve_settings();
-             }
+            controller.restore_defaults();
+            if let Some(window) = window_weak.upgrade() {
+                window.invoke_config_retrieve_settings();
+            }
         });
     }
-    
+
     {
         let controller = settings_controller.clone();
         let window_weak = main_window.as_weak();
@@ -1057,16 +1085,16 @@ fn main() -> anyhow::Result<()> {
             controller.update_setting(&id, &value);
             // Refresh UI
             if let Some(window) = window_weak.upgrade() {
-                 window.invoke_config_retrieve_settings();
+                window.invoke_config_retrieve_settings();
             }
         });
     }
-    
+
     {
         let window_weak = main_window.as_weak();
         main_window.on_settings_category_selected(move |_category| {
             if let Some(window) = window_weak.upgrade() {
-                 window.invoke_config_retrieve_settings();
+                window.invoke_config_retrieve_settings();
             }
         });
     }
@@ -1671,7 +1699,12 @@ fn main() -> anyhow::Result<()> {
                     let (tx, rx) = std::sync::mpsc::channel();
 
                     std::thread::spawn(move || {
-                        render_gcode_visualization_background_channel(content_clone, width as u32, height as u32, tx);
+                        render_gcode_visualization_background_channel(
+                            content_clone,
+                            width as u32,
+                            height as u32,
+                            tx,
+                        );
                     });
 
                     // Use Slint's invoke_from_event_loop to safely update UI from background thread
@@ -1702,7 +1735,7 @@ fn main() -> anyhow::Result<()> {
                                     window.set_visualizer_status(slint::SharedString::from(
                                         status_clone.clone(),
                                     ));
-                                    
+
                                     if let Some((vx, vy, vw, vh)) = viewbox_clone {
                                         window.set_visualizer_viewbox_x(vx);
                                         window.set_visualizer_viewbox_y(vy);
@@ -1732,7 +1765,9 @@ fn main() -> anyhow::Result<()> {
                                         );
                                     }
                                     if let Some(size) = grid_size {
-                                        window.set_visualizer_grid_size(slint::SharedString::from(format!("{}mm", size)));
+                                        window.set_visualizer_grid_size(slint::SharedString::from(
+                                            format!("{}mm", size),
+                                        ));
                                     }
                                 }
                             })
@@ -2105,11 +2140,11 @@ fn main() -> anyhow::Result<()> {
                 // Update UI state
                 window.set_can_undo(editor_bridge_undo.can_undo());
                 window.set_can_redo(editor_bridge_undo.can_redo());
-                
+
                 // Update viewport if cursor moved off-screen
                 let (start_line, _end_line) = editor_bridge_undo.viewport_range();
                 window.set_visible_start_line(start_line as i32);
-                
+
                 update_visible_lines(&window, &editor_bridge_undo);
 
                 // Update g-code content
@@ -2133,11 +2168,11 @@ fn main() -> anyhow::Result<()> {
                 // Update UI state
                 window.set_can_undo(editor_bridge_redo.can_undo());
                 window.set_can_redo(editor_bridge_redo.can_redo());
-                
+
                 // Update viewport if cursor moved off-screen
                 let (start_line, _end_line) = editor_bridge_redo.viewport_range();
                 window.set_visible_start_line(start_line as i32);
-                
+
                 update_visible_lines(&window, &editor_bridge_redo);
 
                 // Update g-code content
@@ -2283,7 +2318,7 @@ fn main() -> anyhow::Result<()> {
         // Handle line wrapping for arrow keys
         let mut line_0based = (line - 1).max(0) as usize;
         let mut col_0based = col - 1;
-        
+
         // If col is 0 or negative and there's a line above, move to end of previous line
         if col_0based < 0 && line_0based > 0 {
             line_0based -= 1;
@@ -2301,21 +2336,21 @@ fn main() -> anyhow::Result<()> {
                 }
             }
         }
-        
+
         let col_0based = col_0based.max(0) as usize;
         editor_bridge_cursor.set_cursor(line_0based, col_0based);
-        
+
         if let Some(window) = window_weak.upgrade() {
             // Use the values we calculated (with wrapping), not the clamped ones
             let display_line = (line_0based + 1) as i32;
             let display_col = (col_0based + 1) as i32;
             window.set_cursor_line(display_line);
             window.set_cursor_column(display_col);
-            
+
             // Update viewport to keep cursor visible
             let (start_line, _end_line) = editor_bridge_cursor.viewport_range();
             window.set_visible_start_line(start_line as i32);
-            
+
             // Update visible lines to show cursor
             update_visible_lines(&window, &editor_bridge_cursor);
         }
@@ -2335,21 +2370,21 @@ fn main() -> anyhow::Result<()> {
         } else {
             0
         };
-        
+
         // Move cursor to end of line (convert to 0-based cursor position)
         editor_bridge_end.set_cursor(line, line_end_col);
-        
+
         if let Some(window) = window_weak.upgrade() {
             // Get actual cursor position
             let (actual_line, actual_col) = editor_bridge_end.cursor_position();
             // Convert to 1-based for display
             window.set_cursor_line((actual_line + 1) as i32);
             window.set_cursor_column((actual_col + 1) as i32);
-            
+
             // Update viewport
             let (start_line, _end_line) = editor_bridge_end.viewport_range();
             window.set_visible_start_line(start_line as i32);
-            
+
             update_visible_lines(&window, &editor_bridge_end);
         }
     });
@@ -2360,17 +2395,17 @@ fn main() -> anyhow::Result<()> {
     main_window.on_ctrl_home_pressed(move || {
         // Move to first line, first column
         editor_bridge_ctrl_home.set_cursor(0, 0);
-        
+
         if let Some(window) = window_weak.upgrade() {
             // Get actual cursor position
             let (actual_line, actual_col) = editor_bridge_ctrl_home.cursor_position();
             // Convert to 1-based for display
             window.set_cursor_line((actual_line + 1) as i32);
             window.set_cursor_column((actual_col + 1) as i32);
-            
+
             // Update viewport to top
             window.set_visible_start_line(0);
-            
+
             update_visible_lines(&window, &editor_bridge_ctrl_home);
         }
     });
@@ -2382,7 +2417,7 @@ fn main() -> anyhow::Result<()> {
         // Get total lines and last line
         let line_count = editor_bridge_ctrl_end.line_count();
         let last_line = if line_count > 0 { line_count - 1 } else { 0 };
-        
+
         // Get the length of the last line
         let text = editor_bridge_ctrl_end.get_text();
         let lines: Vec<&str> = text.lines().collect();
@@ -2391,21 +2426,21 @@ fn main() -> anyhow::Result<()> {
         } else {
             0
         };
-        
+
         // Move cursor to end of last line
         editor_bridge_ctrl_end.set_cursor(last_line, last_col);
-        
+
         if let Some(window) = window_weak.upgrade() {
             // Get actual cursor position
             let (actual_line, actual_col) = editor_bridge_ctrl_end.cursor_position();
             // Convert to 1-based for display
             window.set_cursor_line((actual_line + 1) as i32);
             window.set_cursor_column((actual_col + 1) as i32);
-            
+
             // Update viewport to show cursor
             let (start_line, _end_line) = editor_bridge_ctrl_end.viewport_range();
             window.set_visible_start_line(start_line as i32);
-            
+
             update_visible_lines(&window, &editor_bridge_ctrl_end);
         }
     });
@@ -2443,11 +2478,11 @@ fn main() -> anyhow::Result<()> {
     let controller_clone = settings_controller.clone();
     main_window.on_menu_edit_preferences(move || {
         let ui_settings = controller_clone.get_settings_for_ui(Some(SettingsCategory::Controller));
-        
+
         let mut settings_items = Vec::new();
         for item in ui_settings {
             let options: Vec<slint::SharedString> = item.options.iter().map(|s| s.into()).collect();
-            
+
             settings_items.push(slint_generatedMainWindow::SettingItem {
                 id: item.id.into(),
                 name: item.name.into(),
@@ -2474,11 +2509,11 @@ fn main() -> anyhow::Result<()> {
     main_window.on_settings_category_selected(move |category_str| {
         let category = SettingsController::get_category_from_string(category_str.as_str());
         let ui_settings = controller_clone.get_settings_for_ui(Some(category));
-        
+
         let mut settings_items = Vec::new();
         for item in ui_settings {
             let options: Vec<slint::SharedString> = item.options.iter().map(|s| s.into()).collect();
-            
+
             settings_items.push(slint_generatedMainWindow::SettingItem {
                 id: item.id.into(),
                 name: item.name.into(),
@@ -2500,20 +2535,18 @@ fn main() -> anyhow::Result<()> {
     // Set up menu-settings-save callback
     let window_weak = main_window.as_weak();
     let controller_clone = settings_controller.clone();
-    main_window.on_menu_settings_save(move || {
-        match controller_clone.save() {
-            Ok(_) => {
-                if let Some(window) = window_weak.upgrade() {
-                    window.set_connection_status(slint::SharedString::from("Settings saved"));
-                }
+    main_window.on_menu_settings_save(move || match controller_clone.save() {
+        Ok(_) => {
+            if let Some(window) = window_weak.upgrade() {
+                window.set_connection_status(slint::SharedString::from("Settings saved"));
             }
-            Err(e) => {
-                if let Some(window) = window_weak.upgrade() {
-                    window.set_connection_status(slint::SharedString::from(format!(
-                        "Error saving settings: {}",
-                        e
-                    )));
-                }
+        }
+        Err(e) => {
+            if let Some(window) = window_weak.upgrade() {
+                window.set_connection_status(slint::SharedString::from(format!(
+                    "Error saving settings: {}",
+                    e
+                )));
             }
         }
     });
@@ -2565,14 +2598,12 @@ fn main() -> anyhow::Result<()> {
             window.set_gcode_focus_trigger(window.get_gcode_focus_trigger() + 1);
         }
     });
-    
+
     // Debug callback for key-pressed events from editor
-    main_window.on_key_pressed_event(move |_msg| {
-    });
-    
+    main_window.on_key_pressed_event(move |_msg| {});
+
     // Debug callback for editor clicked events
-    main_window.on_editor_clicked(move || {
-    });
+    main_window.on_editor_clicked(move || {});
 
     // Set up menu-view-machine callback
     let window_weak = main_window.as_weak();
@@ -3416,7 +3447,6 @@ fn main() -> anyhow::Result<()> {
 
             let filter_lower = filter_text.to_lowercase();
 
-
             for i in 0..settings_model.row_count() {
                 if let Some(setting) = settings_model.row_data(i) {
                     // Check category filter
@@ -3478,13 +3508,17 @@ fn main() -> anyhow::Result<()> {
                         tracing::warn!("Canvas too small, retrying refresh in 200ms");
                         // Retry one more time
                         let window_weak_retry = window.as_weak();
-                        slint::Timer::single_shot(std::time::Duration::from_millis(200), move || {
-                            if let Some(window) = window_weak_retry.upgrade() {
-                                let canvas_width = window.get_visualizer_canvas_width();
-                                let canvas_height = window.get_visualizer_canvas_height();
-                                window.invoke_refresh_visualization(canvas_width, canvas_height);
-                            }
-                        });
+                        slint::Timer::single_shot(
+                            std::time::Duration::from_millis(200),
+                            move || {
+                                if let Some(window) = window_weak_retry.upgrade() {
+                                    let canvas_width = window.get_visualizer_canvas_width();
+                                    let canvas_height = window.get_visualizer_canvas_height();
+                                    window
+                                        .invoke_refresh_visualization(canvas_width, canvas_height);
+                                }
+                            },
+                        );
                     } else {
                         window.invoke_refresh_visualization(canvas_width, canvas_height);
                     }
@@ -4161,7 +4195,6 @@ fn main() -> anyhow::Result<()> {
 
                 match result {
                     Ok(import_result) => {
-
                         if !import_result.errors.is_empty() {
                             tracing::warn!("Import errors:");
                             for error in &import_result.errors {
@@ -4450,6 +4483,72 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
+    // Designer: Align Horizontal Left callback
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_align_horizontal_left(move || {
+        let mut state = designer_mgr_clone.borrow_mut();
+        state.align_selected_horizontal_left();
+        if let Some(window) = window_weak.upgrade() {
+            update_designer_ui(&window, &mut state);
+        }
+    });
+
+    // Designer: Align Horizontal Center callback
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_align_horizontal_center(move || {
+        let mut state = designer_mgr_clone.borrow_mut();
+        state.align_selected_horizontal_center();
+        if let Some(window) = window_weak.upgrade() {
+            update_designer_ui(&window, &mut state);
+        }
+    });
+
+    // Designer: Align Horizontal Right callback
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_align_horizontal_right(move || {
+        let mut state = designer_mgr_clone.borrow_mut();
+        state.align_selected_horizontal_right();
+        if let Some(window) = window_weak.upgrade() {
+            update_designer_ui(&window, &mut state);
+        }
+    });
+
+    // Designer: Align Vertical Top callback
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_align_vertical_top(move || {
+        let mut state = designer_mgr_clone.borrow_mut();
+        state.align_selected_vertical_top();
+        if let Some(window) = window_weak.upgrade() {
+            update_designer_ui(&window, &mut state);
+        }
+    });
+
+    // Designer: Align Vertical Center callback
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_align_vertical_center(move || {
+        let mut state = designer_mgr_clone.borrow_mut();
+        state.align_selected_vertical_center();
+        if let Some(window) = window_weak.upgrade() {
+            update_designer_ui(&window, &mut state);
+        }
+    });
+
+    // Designer: Align Vertical Bottom callback
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_align_vertical_bottom(move || {
+        let mut state = designer_mgr_clone.borrow_mut();
+        state.align_selected_vertical_bottom();
+        if let Some(window) = window_weak.upgrade() {
+            update_designer_ui(&window, &mut state);
+        }
+    });
+
     // Designer: Clear Canvas callback
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
@@ -4469,19 +4568,19 @@ fn main() -> anyhow::Result<()> {
     main_window.on_invoke_designer_gcode_generated(move |gcode| {
         if let Some(window) = window_weak.upgrade() {
             let gcode_str = gcode.to_string();
-            
+
             window.set_designer_generated_gcode(gcode.clone());
             window.set_designer_gcode_generated(true);
-            
+
             // Load into editor and switch view
             editor_bridge_designer.load_text(&gcode_str);
             window.set_total_lines(editor_bridge_designer.line_count() as i32);
             update_visible_lines(&window, &editor_bridge_designer);
-            
+
             window.set_gcode_content(gcode);
             window.set_current_view(slint::SharedString::from("gcode-editor"));
             window.set_gcode_focus_trigger(window.get_gcode_focus_trigger() + 1);
-            
+
             window.set_connection_status(slint::SharedString::from(
                 "G-code generated and loaded into editor",
             ));
@@ -4495,10 +4594,10 @@ fn main() -> anyhow::Result<()> {
     main_window.on_designer_generate_toolpath(move || {
         if let Some(window) = window_weak.upgrade() {
             window.set_is_busy(true);
-            
+
             let designer_mgr_inner = designer_mgr_clone.clone();
             let window_weak_inner = window.as_weak();
-            
+
             // Clone state to offload to thread
             let mut state_clone = {
                 let state = designer_mgr_inner.borrow();
@@ -4508,7 +4607,7 @@ fn main() -> anyhow::Result<()> {
             std::thread::spawn(move || {
                 let gcode = state_clone.generate_gcode();
                 let gcode_shared = slint::SharedString::from(gcode);
-                
+
                 let _ = slint::invoke_from_event_loop(move || {
                     if let Some(window) = window_weak_inner.upgrade() {
                         window.invoke_invoke_designer_gcode_generated(gcode_shared);
@@ -4755,7 +4854,7 @@ fn main() -> anyhow::Result<()> {
 
         // Convert pixel coordinates to world coordinates
         let world_point = state.canvas.pixel_to_world(x as f64, y as f64);
-        
+
         let multi_select = *shift_pressed_clone.borrow();
         state.add_shape_at(world_point.x, world_point.y, multi_select);
 
@@ -4909,22 +5008,37 @@ fn main() -> anyhow::Result<()> {
 
     // Designer: Save shape properties
     // (x, y, w, h, radius, is_pocket, pocket_depth, text_content, font_size, step_down, step_in, pocket_strategy, raster_angle, bidirectional)
-    let pending_properties = Rc::new(RefCell::new((0.0f64, 0.0f64, 0.0f64, 0.0f64, 0.0f64, false, 0.0f64, String::new(), 12.0f64, 0.0f64, 0.0f64, 1, 0.0f64, true)));
+    let pending_properties = Rc::new(RefCell::new((
+        0.0f64,
+        0.0f64,
+        0.0f64,
+        0.0f64,
+        0.0f64,
+        false,
+        0.0f64,
+        String::new(),
+        12.0f64,
+        0.0f64,
+        0.0f64,
+        1,
+        0.0f64,
+        true,
+    )));
 
     let pending_clone = pending_properties.clone();
     main_window.on_designer_update_shape_property(move |prop_id: i32, value: f32| {
         let mut props = pending_clone.borrow_mut();
         match prop_id {
-            0 => props.0 = value as f64, // x
-            1 => props.1 = value as f64, // y
-            2 => props.2 = value as f64, // w
-            3 => props.3 = value as f64, // h
-            4 => props.4 = value as f64, // radius
-            5 => props.6 = value as f64, // pocket_depth
-            6 => props.8 = value as f64, // font_size
-            7 => props.9 = value as f64, // step_down
-            8 => props.10 = value as f64, // step_in
-            9 => props.11 = value as i32, // pocket_strategy
+            0 => props.0 = value as f64,   // x
+            1 => props.1 = value as f64,   // y
+            2 => props.2 = value as f64,   // w
+            3 => props.3 = value as f64,   // h
+            4 => props.4 = value as f64,   // radius
+            5 => props.6 = value as f64,   // pocket_depth
+            6 => props.8 = value as f64,   // font_size
+            7 => props.9 = value as f64,   // step_down
+            8 => props.10 = value as f64,  // step_in
+            9 => props.11 = value as i32,  // pocket_strategy
             10 => props.12 = value as f64, // raster_angle
             _ => {}
         }
@@ -4934,20 +5048,22 @@ fn main() -> anyhow::Result<()> {
     main_window.on_designer_update_shape_property_bool(move |prop_id: i32, value: bool| {
         let mut props = pending_clone_bool.borrow_mut();
         match prop_id {
-            0 => props.5 = value, // is_pocket
+            0 => props.5 = value,  // is_pocket
             1 => props.13 = value, // bidirectional
             _ => {}
         }
     });
 
     let pending_clone_string = pending_properties.clone();
-    main_window.on_designer_update_shape_property_string(move |prop_id: i32, value: slint::SharedString| {
-        let mut props = pending_clone_string.borrow_mut();
-        match prop_id {
-            0 => props.7 = value.to_string(), // text_content
-            _ => {}
-        }
-    });
+    main_window.on_designer_update_shape_property_string(
+        move |prop_id: i32, value: slint::SharedString| {
+            let mut props = pending_clone_string.borrow_mut();
+            match prop_id {
+                0 => props.7 = value.to_string(), // text_content
+                _ => {}
+            }
+        },
+    );
 
     let designer_mgr_clone2 = designer_mgr.clone();
     let window_weak2 = main_window.as_weak();
@@ -4960,9 +5076,12 @@ fn main() -> anyhow::Result<()> {
         state.set_selected_text_properties(&props.7, props.8);
         state.set_selected_step_down(props.9);
         state.set_selected_step_in(props.10);
-        
+
         let strategy = match props.11 {
-            0 => gcodekit4::designer::pocket_operations::PocketStrategy::Raster { angle: props.12, bidirectional: props.13 },
+            0 => gcodekit4::designer::pocket_operations::PocketStrategy::Raster {
+                angle: props.12,
+                bidirectional: props.13,
+            },
             1 => gcodekit4::designer::pocket_operations::PocketStrategy::ContourParallel,
             2 => gcodekit4::designer::pocket_operations::PocketStrategy::Adaptive,
             _ => gcodekit4::designer::pocket_operations::PocketStrategy::ContourParallel,
@@ -5045,7 +5164,6 @@ fn main() -> anyhow::Result<()> {
         let mut state = designer_mgr_clone.borrow_mut();
         state.toolpath_generator.set_step_in(step_in as f64);
     });
-
 
     // Tabbed Box Maker: Open dialog window
     let window_weak = main_window.as_weak();
@@ -5870,7 +5988,8 @@ fn main() -> anyhow::Result<()> {
 
     // Vector Image Engraver
     let window_weak = main_window.as_weak();
-    let dialog_holder_vector: Rc<RefCell<Option<VectorEngraverDialog>>> = Rc::new(RefCell::new(None));
+    let dialog_holder_vector: Rc<RefCell<Option<VectorEngraverDialog>>> =
+        Rc::new(RefCell::new(None));
     let editor_bridge_vector = editor_bridge.clone();
     main_window.on_generate_vector_engraving(move || {
         if let Some(main_win) = window_weak.upgrade() {
@@ -6170,32 +6289,40 @@ fn main() -> anyhow::Result<()> {
     let materials_backend_sf = materials_backend.clone();
     let tools_backend_sf = tools_backend.clone();
     let device_manager_sf = device_manager.clone();
-    
+
     main_window.on_load_speeds_feeds_data(move || {
         if let Some(window) = window_weak.upgrade() {
             // Load Materials
             let backend = materials_backend_sf.borrow();
             let materials = backend.get_all_materials();
-            let material_names: Vec<slint::SharedString> = materials.iter()
+            let material_names: Vec<slint::SharedString> = materials
+                .iter()
                 .map(|m| slint::SharedString::from(m.name.clone()))
                 .collect();
             window.set_sf_materials(slint::ModelRc::new(VecModel::from(material_names)));
-            
+
             // Load Tools
             let tool_backend = tools_backend_sf.borrow();
             let tools = tool_backend.get_all_tools();
-            let tool_names: Vec<slint::SharedString> = tools.iter()
-                .map(|t| slint::SharedString::from(format!("{} - {}mm {}", t.name, t.diameter, t.tool_type)))
+            let tool_names: Vec<slint::SharedString> = tools
+                .iter()
+                .map(|t| {
+                    slint::SharedString::from(format!(
+                        "{} - {}mm {}",
+                        t.name, t.diameter, t.tool_type
+                    ))
+                })
                 .collect();
             window.set_sf_tools(slint::ModelRc::new(VecModel::from(tool_names)));
-            
+
             // Load Devices
             let devices = device_manager_sf.get_all_profiles();
-            let device_names: Vec<slint::SharedString> = devices.iter()
+            let device_names: Vec<slint::SharedString> = devices
+                .iter()
                 .map(|d| slint::SharedString::from(d.name.clone()))
                 .collect();
             window.set_sf_devices(slint::ModelRc::new(VecModel::from(device_names)));
-            
+
             // Set defaults if empty
             if window.get_sf_selected_material_index() == -1 && !materials.is_empty() {
                 window.set_sf_selected_material_index(0);
@@ -6217,57 +6344,74 @@ fn main() -> anyhow::Result<()> {
             }
         }
     });
-    
+
     let window_weak = main_window.as_weak();
     let materials_backend_sf = materials_backend.clone();
     let tools_backend_sf = tools_backend.clone();
     let device_manager_sf = device_manager.clone();
-    
+
     main_window.on_calculate_speeds_feeds(move || {
         if let Some(window) = window_weak.upgrade() {
             let mat_idx = window.get_sf_selected_material_index();
             let tool_idx = window.get_sf_selected_tool_index();
             let dev_idx = window.get_sf_selected_device_index();
-            
+
             if mat_idx < 0 || tool_idx < 0 || dev_idx < 0 {
                 return;
             }
-            
+
             let mat_backend = materials_backend_sf.borrow();
             let materials = mat_backend.get_all_materials();
             let tool_backend = tools_backend_sf.borrow();
             let tools = tool_backend.get_all_tools();
             let devices = device_manager_sf.get_all_profiles();
-            
+
             if let (Some(material), Some(tool), Some(device)) = (
                 materials.get(mat_idx as usize),
                 tools.get(tool_idx as usize),
-                devices.get(dev_idx as usize)
+                devices.get(dev_idx as usize),
             ) {
                 let result = SpeedsFeedsCalculator::calculate(material, tool, device);
-                
+
                 window.set_sf_result_rpm(slint::SharedString::from(format!("{}", result.rpm)));
                 if let Some(unclamped) = result.unclamped_rpm {
-                    window.set_sf_result_unclamped_rpm(slint::SharedString::from(format!("{}", unclamped)));
+                    window.set_sf_result_unclamped_rpm(slint::SharedString::from(format!(
+                        "{}",
+                        unclamped
+                    )));
                 } else {
                     window.set_sf_result_unclamped_rpm(slint::SharedString::from(""));
                 }
-                
-                window.set_sf_result_feed(slint::SharedString::from(format!("{:.0}", result.feed_rate)));
+
+                window.set_sf_result_feed(slint::SharedString::from(format!(
+                    "{:.0}",
+                    result.feed_rate
+                )));
                 if let Some(unclamped) = result.unclamped_feed_rate {
-                    window.set_sf_result_unclamped_feed(slint::SharedString::from(format!("{:.0}", unclamped)));
+                    window.set_sf_result_unclamped_feed(slint::SharedString::from(format!(
+                        "{:.0}",
+                        unclamped
+                    )));
                 } else {
                     window.set_sf_result_unclamped_feed(slint::SharedString::from(""));
                 }
 
-                window.set_sf_result_surface_speed(slint::SharedString::from(format!("{:.1}", result.surface_speed)));
-                window.set_sf_result_chip_load(slint::SharedString::from(format!("{:.4}", result.chip_load)));
+                window.set_sf_result_surface_speed(slint::SharedString::from(format!(
+                    "{:.1}",
+                    result.surface_speed
+                )));
+                window.set_sf_result_chip_load(slint::SharedString::from(format!(
+                    "{:.4}",
+                    result.chip_load
+                )));
                 window.set_sf_result_source(slint::SharedString::from(result.source));
-                
+
                 if result.warnings.is_empty() {
                     window.set_sf_result_warnings(slint::SharedString::from(""));
                 } else {
-                    window.set_sf_result_warnings(slint::SharedString::from(result.warnings.join("\n")));
+                    window.set_sf_result_warnings(slint::SharedString::from(
+                        result.warnings.join("\n"),
+                    ));
                 }
             }
         }
@@ -6278,19 +6422,20 @@ fn main() -> anyhow::Result<()> {
     let device_manager_ss = device_manager.clone();
     let editor_bridge_ss = editor_bridge.clone();
     let tools_backend_ss = tools_backend.clone();
-    
+
     main_window.on_generate_spoilboard_surfacing(move || {
         if let Some(window) = window_weak.upgrade() {
             let dialog = SpoilboardSurfacingDialog::new().unwrap();
-            
+
             // Populate Devices
             let mut profiles = device_manager_ss.get_all_profiles();
             profiles.sort_by(|a, b| a.name.cmp(&b.name));
-            let device_names: Vec<slint::SharedString> = profiles.iter()
+            let device_names: Vec<slint::SharedString> = profiles
+                .iter()
                 .map(|p| slint::SharedString::from(p.name.clone()))
                 .collect();
             dialog.set_devices(slint::ModelRc::new(VecModel::from(device_names)));
-            
+
             // Set active device if available
             if let Some(active) = device_manager_ss.get_active_profile() {
                 if let Some(idx) = profiles.iter().position(|p| p.id == active.id) {
@@ -6301,22 +6446,26 @@ fn main() -> anyhow::Result<()> {
                     dialog.set_height_mm(slint::SharedString::from(format!("{:.1}", height)));
                 }
             }
-            
+
             // Populate Tool Categories
             let categories: Vec<String> = gcodekit4_core::data::tools::ToolType::all()
                 .iter()
                 .map(|t| t.to_string())
                 .collect();
-            
-            let category_names: Vec<slint::SharedString> = categories.iter()
+
+            let category_names: Vec<slint::SharedString> = categories
+                .iter()
                 .map(|c| slint::SharedString::from(c.as_str()))
                 .collect();
             dialog.set_tool_categories(slint::ModelRc::new(VecModel::from(category_names)));
-            
+
             // Default to Specialty if available, else Flat End Mill
-            let default_cat_idx = categories.iter().position(|c| c == "Specialty").unwrap_or(0);
+            let default_cat_idx = categories
+                .iter()
+                .position(|c| c == "Specialty")
+                .unwrap_or(0);
             dialog.set_selected_category_index(default_cat_idx as i32);
-            
+
             // Helper to populate tools based on category
             let categories_clone = categories.clone();
             let populate_tools = {
@@ -6328,29 +6477,51 @@ fn main() -> anyhow::Result<()> {
                             dlg.set_tools(slint::ModelRc::new(VecModel::from(vec![])));
                             return;
                         }
-                        
+
                         let category = &categories_clone[category_idx as usize];
-                        let tool_type = gcodekit4::ui::tools_manager_backend::string_to_tool_type(category);
-                        
+                        let tool_type =
+                            gcodekit4::ui::tools_manager_backend::string_to_tool_type(category);
+
                         if let Some(tt) = tool_type {
                             let backend = tools_backend.borrow();
                             let tools = backend.filter_by_type(tt);
-                            let tool_names: Vec<slint::SharedString> = tools.iter()
-                                .map(|t| slint::SharedString::from(format!("{} (D{:.1}mm)", t.name, t.diameter)))
+                            let tool_names: Vec<slint::SharedString> = tools
+                                .iter()
+                                .map(|t| {
+                                    slint::SharedString::from(format!(
+                                        "{} (D{:.1}mm)",
+                                        t.name, t.diameter
+                                    ))
+                                })
                                 .collect();
                             dlg.set_tools(slint::ModelRc::new(VecModel::from(tool_names)));
-                            
+
                             // Select first tool if available
                             if !tools.is_empty() {
                                 dlg.set_selected_tool_index(0);
                                 // Trigger tool selection update manually since we can't call callback directly easily
                                 // We'll just update the fields directly here
                                 let t = tools[0];
-                                dlg.set_tool_diameter(slint::SharedString::from(format!("{:.3}", t.diameter)));
-                                dlg.set_feed_rate(slint::SharedString::from(format!("{:.0}", t.params.feed_rate)));
-                                dlg.set_spindle_speed(slint::SharedString::from(format!("{}", t.params.rpm)));
-                                dlg.set_stepover(slint::SharedString::from(format!("{:.1}", t.params.stepover_percent)));
-                                dlg.set_cut_depth(slint::SharedString::from(format!("{:.3}", t.params.depth_per_pass)));
+                                dlg.set_tool_diameter(slint::SharedString::from(format!(
+                                    "{:.3}",
+                                    t.diameter
+                                )));
+                                dlg.set_feed_rate(slint::SharedString::from(format!(
+                                    "{:.0}",
+                                    t.params.feed_rate
+                                )));
+                                dlg.set_spindle_speed(slint::SharedString::from(format!(
+                                    "{}",
+                                    t.params.rpm
+                                )));
+                                dlg.set_stepover(slint::SharedString::from(format!(
+                                    "{:.1}",
+                                    t.params.stepover_percent
+                                )));
+                                dlg.set_cut_depth(slint::SharedString::from(format!(
+                                    "{:.3}",
+                                    t.params.depth_per_pass
+                                )));
                             } else {
                                 dlg.set_selected_tool_index(-1);
                             }
@@ -6358,10 +6529,10 @@ fn main() -> anyhow::Result<()> {
                     }
                 }
             };
-            
+
             // Initial population
             populate_tools(default_cat_idx as i32);
-            
+
             // Callbacks
             let dialog_weak = dialog.as_weak();
             let device_manager_cb = device_manager_ss.clone();
@@ -6377,12 +6548,12 @@ fn main() -> anyhow::Result<()> {
                     }
                 }
             });
-            
+
             let populate_tools_cb = populate_tools.clone();
             dialog.on_category_selected(move |idx| {
                 populate_tools_cb(idx);
             });
-            
+
             let dialog_weak = dialog.as_weak();
             let tools_backend_cb = tools_backend_ss.clone();
             let categories_clone_2 = categories.clone();
@@ -6391,25 +6562,42 @@ fn main() -> anyhow::Result<()> {
                     let cat_idx = dlg.get_selected_category_index();
                     if cat_idx >= 0 && idx >= 0 {
                         let category = &categories_clone_2[cat_idx as usize];
-                        if let Some(tt) = gcodekit4::ui::tools_manager_backend::string_to_tool_type(category) {
+                        if let Some(tt) =
+                            gcodekit4::ui::tools_manager_backend::string_to_tool_type(category)
+                        {
                             let backend = tools_backend_cb.borrow();
                             let tools = backend.filter_by_type(tt);
                             if let Some(t) = tools.get(idx as usize) {
-                                dlg.set_tool_diameter(slint::SharedString::from(format!("{:.3}", t.diameter)));
-                                dlg.set_feed_rate(slint::SharedString::from(format!("{:.0}", t.params.feed_rate)));
-                                dlg.set_spindle_speed(slint::SharedString::from(format!("{}", t.params.rpm)));
-                                dlg.set_stepover(slint::SharedString::from(format!("{:.1}", t.params.stepover_percent)));
-                                dlg.set_cut_depth(slint::SharedString::from(format!("{:.3}", t.params.depth_per_pass)));
+                                dlg.set_tool_diameter(slint::SharedString::from(format!(
+                                    "{:.3}",
+                                    t.diameter
+                                )));
+                                dlg.set_feed_rate(slint::SharedString::from(format!(
+                                    "{:.0}",
+                                    t.params.feed_rate
+                                )));
+                                dlg.set_spindle_speed(slint::SharedString::from(format!(
+                                    "{}",
+                                    t.params.rpm
+                                )));
+                                dlg.set_stepover(slint::SharedString::from(format!(
+                                    "{:.1}",
+                                    t.params.stepover_percent
+                                )));
+                                dlg.set_cut_depth(slint::SharedString::from(format!(
+                                    "{:.3}",
+                                    t.params.depth_per_pass
+                                )));
                             }
                         }
                     }
                 }
             });
-            
+
             let dialog_weak = dialog.as_weak();
             let window_weak_gen = window.as_weak();
             let _editor_bridge_gen = editor_bridge_ss.clone();
-            
+
             dialog.on_generate_gcode(move || {
                 if let Some(dlg) = dialog_weak.upgrade() {
                     // Parse parameters
@@ -6421,7 +6609,7 @@ fn main() -> anyhow::Result<()> {
                     let cut_depth = dlg.get_cut_depth().parse::<f64>().unwrap_or(0.5);
                     let stepover_percent = dlg.get_stepover().parse::<f64>().unwrap_or(40.0);
                     let safe_z = dlg.get_safe_z().parse::<f64>().unwrap_or(5.0);
-                    
+
                     let params = SpoilboardSurfacingParameters {
                         width,
                         height,
@@ -6432,10 +6620,10 @@ fn main() -> anyhow::Result<()> {
                         stepover_percent,
                         safe_z,
                     };
-                    
+
                     // Close dialog
                     dlg.hide().unwrap();
-                    
+
                     // Generate G-code
                     let generator = SpoilboardSurfacingGenerator::new(params);
                     match generator.generate() {
@@ -6445,12 +6633,12 @@ fn main() -> anyhow::Result<()> {
                                 win.invoke_load_editor_text(slint::SharedString::from(gcode));
                                 win.set_current_view(slint::SharedString::from("gcode-editor"));
                                 win.set_gcode_focus_trigger(win.get_gcode_focus_trigger() + 1);
-                                
+
                                 // Show success message
                                 let success_dialog = ErrorDialog::new().unwrap();
-                                success_dialog.set_error_message(
-                                    slint::SharedString::from("Spoilboard surfacing G-code generated successfully."),
-                                );
+                                success_dialog.set_error_message(slint::SharedString::from(
+                                    "Spoilboard surfacing G-code generated successfully.",
+                                ));
                                 let success_weak = success_dialog.as_weak();
                                 success_dialog.on_close_dialog(move || {
                                     if let Some(d) = success_weak.upgrade() {
@@ -6463,9 +6651,10 @@ fn main() -> anyhow::Result<()> {
                         Err(e) => {
                             if let Some(_win) = window_weak_gen.upgrade() {
                                 let error_dialog = ErrorDialog::new().unwrap();
-                                error_dialog.set_error_message(
-                                    slint::SharedString::from(format!("Failed to generate G-code: {}", e)),
-                                );
+                                error_dialog.set_error_message(slint::SharedString::from(format!(
+                                    "Failed to generate G-code: {}",
+                                    e
+                                )));
                                 let error_weak = error_dialog.as_weak();
                                 error_dialog.on_close_dialog(move || {
                                     if let Some(d) = error_weak.upgrade() {
@@ -6478,21 +6667,21 @@ fn main() -> anyhow::Result<()> {
                     }
                 }
             });
-            
+
             let dialog_weak_cancel = dialog.as_weak();
             dialog.on_cancel_dialog(move || {
                 if let Some(dlg) = dialog_weak_cancel.upgrade() {
                     dlg.hide().unwrap();
                 }
             });
-            
+
             dialog.show().unwrap();
         }
     });
     use std::sync::{Arc, Mutex};
     let zoom_scale = Arc::new(Mutex::new(1.0f32));
     let pan_offset = Arc::new(Mutex::new((0.0f32, 0.0f32)));
-    
+
     // Shared visualizer instance to persist parsed data
     use gcodekit4::visualizer::Visualizer2D;
     let visualizer = Arc::new(Mutex::new(Visualizer2D::new()));
@@ -6512,7 +6701,6 @@ fn main() -> anyhow::Result<()> {
         if let Some(window) = window_weak.upgrade() {
             let content = window.get_gcode_content();
             let _current_view = window.get_current_view();
-
 
             // Reset progress
             window.set_visualizer_progress(0.0);
@@ -6538,10 +6726,18 @@ fn main() -> anyhow::Result<()> {
                 };
                 let origin_data =
                     render_origin_to_path(&visualizer, canvas_width as u32, canvas_height as u32);
+                let (vb_x, vb_y, vb_w, vb_h) = visualizer.get_viewbox(canvas_width, canvas_height);
                 window.set_visualization_grid_data(slint::SharedString::from(grid_data));
-                window.set_visualizer_grid_size(slint::SharedString::from(format!("{}mm", grid_size)));
+                window.set_visualizer_grid_size(slint::SharedString::from(format!(
+                    "{}mm",
+                    grid_size
+                )));
                 window.set_visualizer_bounding_box_info(slint::SharedString::from(""));
                 window.set_visualization_origin_data(slint::SharedString::from(origin_data));
+                window.set_visualizer_viewbox_x(vb_x);
+                window.set_visualizer_viewbox_y(vb_y);
+                window.set_visualizer_viewbox_width(vb_w);
+                window.set_visualizer_viewbox_height(vb_h);
                 return;
             }
 
@@ -6574,74 +6770,122 @@ fn main() -> anyhow::Result<()> {
 
             std::thread::spawn(move || {
                 if let Err(e) = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                use gcodekit4::visualizer::{
-                    render_grid_to_path, render_origin_to_path, render_rapid_moves_to_path,
-                    render_toolpath_to_path,
-                };
-
-                let _ = tx.send((0.1, "Parsing G-code...".to_string(), None, None, None, None, None, None, None));
-
-                if let Ok(mut visualizer) = visualizer_thread.lock() {
-                    visualizer.show_grid = show_grid;
-
-                    visualizer.parse_gcode(&content_owned);
-
-                    // Apply zoom scale
-                    if let Ok(scale) = zoom_scale_render.lock() {
-                        visualizer.zoom_scale = *scale;
-                    }
-
-                    // Apply pan offsets
-                    if let Ok(offsets) = pan_offset_render.lock() {
-                        visualizer.x_offset = offsets.0;
-                        visualizer.y_offset = offsets.1;
-                    }
-
-                    let _ = tx.send((0.3, "Rendering...".to_string(), None, None, None, None, None, None, None));
-
-                    // Generate canvas path data
-                    let path_data =
-                        render_toolpath_to_path(&visualizer, canvas_width as u32, canvas_height as u32);
-                    let rapid_moves_data = render_rapid_moves_to_path(
-                        &visualizer,
-                        canvas_width as u32,
-                        canvas_height as u32,
-                    );
-                    let (grid_data, grid_size) = if show_grid {
-                        render_grid_to_path(&visualizer, canvas_width as u32, canvas_height as u32)
-                    } else {
-                        (String::new(), 0.0)
+                    use gcodekit4::visualizer::{
+                        render_grid_to_path, render_origin_to_path, render_rapid_moves_to_path,
+                        render_toolpath_to_path,
                     };
-                    let origin_data =
-                        render_origin_to_path(&visualizer, canvas_width as u32, canvas_height as u32);
 
-                    // Calculate bounding box info
-                    let bbox_info = if let Some((min_x, max_x, min_y, max_y)) = visualizer.get_cutting_bounds() {
-                        let width = max_x - min_x;
-                        let height = max_y - min_y;
-                        Some(format!("W: {:.1}mm H: {:.1}mm at X:{:.1} Y:{:.1}", width, height, min_x, min_y))
-                    } else {
-                        None
-                    };
-                    
-                    let viewbox = visualizer.get_viewbox(canvas_width, canvas_height);
+                    let _ = tx.send((
+                        0.1,
+                        "Parsing G-code...".to_string(),
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                    ));
 
-                    if !path_data.is_empty() || !rapid_moves_data.is_empty() || !grid_data.is_empty() {
+                    if let Ok(mut visualizer) = visualizer_thread.lock() {
+                        visualizer.show_grid = show_grid;
+
+                        visualizer.parse_gcode(&content_owned);
+
+                        // Apply zoom scale
+                        if let Ok(scale) = zoom_scale_render.lock() {
+                            visualizer.zoom_scale = *scale;
+                        }
+
+                        // Apply pan offsets
+                        if let Ok(offsets) = pan_offset_render.lock() {
+                            visualizer.x_offset = offsets.0;
+                            visualizer.y_offset = offsets.1;
+                        }
+
                         let _ = tx.send((
-                            1.0,
-                            "Complete".to_string(),
-                            Some(path_data),
-                            Some(rapid_moves_data),
-                            Some(grid_data),
-                            Some(origin_data),
-                            Some(grid_size),
-                            bbox_info,
-                            Some(viewbox),
+                            0.3,
+                            "Rendering...".to_string(),
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
                         ));
-                    } else {
-                        let _ = tx.send((1.0, "Error: no data".to_string(), None, None, None, None, None, None, None));
+
+                        // Generate canvas path data
+                        let path_data = render_toolpath_to_path(
+                            &visualizer,
+                            canvas_width as u32,
+                            canvas_height as u32,
+                        );
+                        let rapid_moves_data = render_rapid_moves_to_path(
+                            &visualizer,
+                            canvas_width as u32,
+                            canvas_height as u32,
+                        );
+                        let (grid_data, grid_size) = if show_grid {
+                            render_grid_to_path(
+                                &visualizer,
+                                canvas_width as u32,
+                                canvas_height as u32,
+                            )
+                        } else {
+                            (String::new(), 0.0)
+                        };
+                        let origin_data = render_origin_to_path(
+                            &visualizer,
+                            canvas_width as u32,
+                            canvas_height as u32,
+                        );
+
+                        // Calculate bounding box info
+                        let bbox_info = if let Some((min_x, max_x, min_y, max_y)) =
+                            visualizer.get_cutting_bounds()
+                        {
+                            let width = max_x - min_x;
+                            let height = max_y - min_y;
+                            Some(format!(
+                                "W: {:.1}mm H: {:.1}mm at X:{:.1} Y:{:.1}",
+                                width, height, min_x, min_y
+                            ))
+                        } else {
+                            None
+                        };
+
+                        let viewbox = visualizer.get_viewbox(canvas_width, canvas_height);
+
+                        if !path_data.is_empty()
+                            || !rapid_moves_data.is_empty()
+                            || !grid_data.is_empty()
+                        {
+                            let _ = tx.send((
+                                1.0,
+                                "Complete".to_string(),
+                                Some(path_data),
+                                Some(rapid_moves_data),
+                                Some(grid_data),
+                                Some(origin_data),
+                                Some(grid_size),
+                                bbox_info,
+                                Some(viewbox),
+                            ));
+                        } else {
+                            let _ = tx.send((
+                                1.0,
+                                "Error: no data".to_string(),
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                            ));
+                        }
                     }
-                }
                 })) {
                     tracing::error!("Render thread panicked: {:?}", e);
                 }
@@ -6697,15 +6941,21 @@ fn main() -> anyhow::Result<()> {
                                 ));
                             }
                             if let Some(size) = grid_size {
-                                window.set_visualizer_grid_size(slint::SharedString::from(format!("{}mm", size)));
+                                window.set_visualizer_grid_size(slint::SharedString::from(
+                                    format!("{}mm", size),
+                                ));
                             }
                             if let Some(info) = bbox_info_clone {
-                                window.set_visualizer_bounding_box_info(slint::SharedString::from(info));
+                                window.set_visualizer_bounding_box_info(slint::SharedString::from(
+                                    info,
+                                ));
                             } else if progress == 1.0 {
                                 // Clear if no info and finished
-                                window.set_visualizer_bounding_box_info(slint::SharedString::from(""));
+                                window.set_visualizer_bounding_box_info(slint::SharedString::from(
+                                    "",
+                                ));
                             }
-                            
+
                             if let Some((vx, vy, vw, vh)) = viewbox_clone {
                                 window.set_visualizer_viewbox_x(vx);
                                 window.set_visualizer_viewbox_y(vy);
@@ -6937,14 +7187,15 @@ fn main() -> anyhow::Result<()> {
                 if let Some(window) = window_weak_invoke.upgrade() {
                     window.invoke_set_cursor_blink_visible(visible);
                 }
-            }).ok();
+            })
+            .ok();
         }
     });
 
     main_window
         .show()
         .map_err(|e| anyhow::anyhow!("UI Show Error: {}", e))?;
-    
+
     main_window
         .run()
         .map_err(|e| anyhow::anyhow!("UI Runtime Error: {}", e))?;
@@ -6993,7 +7244,17 @@ fn render_gcode_visualization_background_channel(
         render_toolpath_to_path, Visualizer2D,
     };
 
-    let _ = tx.send((0.1, "Parsing G-code...".to_string(), None, None, None, None, None, None, None));
+    let _ = tx.send((
+        0.1,
+        "Parsing G-code...".to_string(),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+    ));
 
     // Parse G-code
     let mut visualizer = Visualizer2D::new();
@@ -7002,16 +7263,25 @@ fn render_gcode_visualization_background_channel(
     // Set default view to position origin at bottom-left
     visualizer.set_default_view(width as f32, height as f32);
 
-    let _ = tx.send((0.3, "Rendering...".to_string(), None, None, None, None, None, None, None));
+    let _ = tx.send((
+        0.3,
+        "Rendering...".to_string(),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+    ));
 
     // Generate canvas path data
     let path_data = render_toolpath_to_path(&visualizer, width, height);
     let rapid_moves_data = render_rapid_moves_to_path(&visualizer, width, height);
     let (grid_data, grid_size) = render_grid_to_path(&visualizer, width, height);
     let origin_data = render_origin_to_path(&visualizer, width, height);
-    
-    let viewbox = visualizer.get_viewbox(width as f32, height as f32);
 
+    let viewbox = visualizer.get_viewbox(width as f32, height as f32);
 
     if !path_data.is_empty() || !rapid_moves_data.is_empty() || !grid_data.is_empty() {
         let _ = tx.send((
@@ -7026,6 +7296,16 @@ fn render_gcode_visualization_background_channel(
             Some(viewbox),
         ));
     } else {
-        let _ = tx.send((1.0, "Error: no data".to_string(), None, None, None, None, None, None, None));
+        let _ = tx.send((
+            1.0,
+            "Error: no data".to_string(),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        ));
     }
 }

@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.37.3-alpha] - 2025-11-23
+
+### Added
+- **Designer**: Context menu now exposes `Align → Horizontal/Vertical` cascades with working Left/Center/Right/Top/Center/Bottom actions.
+- **Designer**: Alignment commands are wired through `MainWindow` callbacks into new `DesignerState` helpers so multi-select layouts snap precisely.
+
+### Fixed
+- **UI Shell**: Resolved tabbed-view regression that left every tab except Designer blank by ensuring all panels share the same visibility gating logic.
+- **Designer**: Corrected vertical alignment math so "Top" and "Bottom" pins map to the expected Y-extents.
+
 ## [0.37.2-alpha] - 2025-11-22
 
 ### Added

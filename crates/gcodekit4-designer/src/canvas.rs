@@ -1,10 +1,10 @@
 //! Canvas for drawing and manipulating shapes.
 
+use super::pocket_operations::PocketStrategy;
 use super::shapes::{
-    Circle, Ellipse, Line, Point, Rectangle, Shape, ShapeType, OperationType, TextShape, PathShape,
+    Circle, Ellipse, Line, OperationType, PathShape, Point, Rectangle, Shape, ShapeType, TextShape,
 };
 use super::viewport::Viewport;
-use super::pocket_operations::PocketStrategy;
 
 /// Canvas coordinates for drawing.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -180,7 +180,8 @@ impl Canvas {
         self.next_id += 1;
         // Create a closed PathShape from vertices
         let path_shape = PathShape::from_points(&vertices, true);
-        self.shapes.push(DrawingObject::new(id, Box::new(path_shape)));
+        self.shapes
+            .push(DrawingObject::new(id, Box::new(path_shape)));
         id
     }
 
@@ -224,7 +225,7 @@ impl Canvas {
                         self.selected_id = Some(id); // Update primary selection to most recent
                     } else if self.selected_id == Some(id) {
                         self.selected_id = None; // Deselected primary
-                        // Try to find another selected shape to be primary
+                                                 // Try to find another selected shape to be primary
                         if let Some(other) = self.shapes.iter().find(|o| o.selected) {
                             self.selected_id = Some(other.id);
                         }
@@ -429,59 +430,213 @@ impl Canvas {
     pub fn move_selected(&mut self, dx: f64, dy: f64) {
         if let Some(id) = self.selected_id {
             if let Some(obj) = self.shapes.iter_mut().find(|o| o.id == id) {
-                // Get current bounding box
-                let (x1, y1, x2, y2) = obj.shape.bounding_box();
-
-                // Replace the shape with a moved version
-                let shape = &*obj.shape;
-                let new_shape: Box<dyn Shape> = match shape.shape_type() {
-                    ShapeType::Rectangle => {
-                        let width = x2 - x1;
-                        let height = y2 - y1;
-                        Box::new(Rectangle::new(x1 + dx, y1 + dy, width, height))
-                    }
-                    ShapeType::Circle => {
-                        let center_x = (x1 + x2) / 2.0;
-                        let center_y = (y1 + y2) / 2.0;
-                        let radius = (x2 - x1) / 2.0;
-                        Box::new(Circle::new(
-                            Point::new(center_x + dx, center_y + dy),
-                            radius,
-                        ))
-                    }
-                    ShapeType::Line => Box::new(Line::new(
-                        Point::new(x1 + dx, y1 + dy),
-                        Point::new(x2 + dx, y2 + dy),
-                    )),
-                    ShapeType::Ellipse => {
-                        let center_x = (x1 + x2) / 2.0;
-                        let center_y = (y1 + y2) / 2.0;
-                        let rx = (x2 - x1) / 2.0;
-                        let ry = (y2 - y1) / 2.0;
-                        Box::new(Ellipse::new(
-                            Point::new(center_x + dx, center_y + dy),
-                            rx,
-                            ry,
-                        ))
-                    }
-                    ShapeType::Path => {
-                        if let Some(path_shape) = shape.as_any().downcast_ref::<PathShape>() {
-                            Box::new(path_shape.translate(dx, dy))
-                        } else {
-                            shape.clone_shape()
-                        }
-                    },
-                    ShapeType::Text => {
-                        if let Some(text) = shape.as_any().downcast_ref::<TextShape>() {
-                            Box::new(TextShape::new(text.text.clone(), text.x + dx, text.y + dy, text.font_size))
-                        } else {
-                            shape.clone_shape()
-                        }
-                    }
-                };
-                obj.shape = new_shape;
+                obj.shape = Canvas::translate_shape(&*obj.shape, dx, dy);
             }
         }
+    }
+
+    fn translate_shape(shape: &dyn Shape, dx: f64, dy: f64) -> Box<dyn Shape> {
+        let (x1, y1, x2, y2) = shape.bounding_box();
+        match shape.shape_type() {
+            ShapeType::Rectangle => {
+                let width = x2 - x1;
+                let height = y2 - y1;
+                Box::new(Rectangle::new(x1 + dx, y1 + dy, width, height))
+            }
+            ShapeType::Circle => {
+                let center_x = (x1 + x2) / 2.0;
+                let center_y = (y1 + y2) / 2.0;
+                let radius = (x2 - x1) / 2.0;
+                Box::new(Circle::new(
+                    Point::new(center_x + dx, center_y + dy),
+                    radius,
+                ))
+            }
+            ShapeType::Line => Box::new(Line::new(
+                Point::new(x1 + dx, y1 + dy),
+                Point::new(x2 + dx, y2 + dy),
+            )),
+            ShapeType::Ellipse => {
+                let center_x = (x1 + x2) / 2.0;
+                let center_y = (y1 + y2) / 2.0;
+                let rx = (x2 - x1) / 2.0;
+                let ry = (y2 - y1) / 2.0;
+                Box::new(Ellipse::new(
+                    Point::new(center_x + dx, center_y + dy),
+                    rx,
+                    ry,
+                ))
+            }
+            ShapeType::Path => {
+                if let Some(path_shape) = shape.as_any().downcast_ref::<PathShape>() {
+                    Box::new(path_shape.translate(dx, dy))
+                } else {
+                    shape.clone_shape()
+                }
+            }
+            ShapeType::Text => {
+                if let Some(text) = shape.as_any().downcast_ref::<TextShape>() {
+                    Box::new(TextShape::new(
+                        text.text.clone(),
+                        text.x + dx,
+                        text.y + dy,
+                        text.font_size,
+                    ))
+                } else {
+                    shape.clone_shape()
+                }
+            }
+        }
+    }
+
+    pub fn align_selected_left(&mut self) -> bool {
+        let mut min_x = f64::INFINITY;
+        for obj in self.shapes.iter().filter(|o| o.selected) {
+            let (x1, _, _, _) = obj.shape.bounding_box();
+            if x1 < min_x {
+                min_x = x1;
+            }
+        }
+        if !min_x.is_finite() {
+            return false;
+        }
+        let mut changed = false;
+        for obj in self.shapes.iter_mut().filter(|o| o.selected) {
+            let (x1, _, _, _) = obj.shape.bounding_box();
+            let dx = min_x - x1;
+            if dx.abs() > f64::EPSILON {
+                obj.shape = Canvas::translate_shape(&*obj.shape, dx, 0.0);
+                changed = true;
+            }
+        }
+        changed
+    }
+
+    pub fn align_selected_right(&mut self) -> bool {
+        let mut max_x = f64::NEG_INFINITY;
+        for obj in self.shapes.iter().filter(|o| o.selected) {
+            let (_, _, x2, _) = obj.shape.bounding_box();
+            if x2 > max_x {
+                max_x = x2;
+            }
+        }
+        if !max_x.is_finite() {
+            return false;
+        }
+        let mut changed = false;
+        for obj in self.shapes.iter_mut().filter(|o| o.selected) {
+            let (_, _, x2, _) = obj.shape.bounding_box();
+            let dx = max_x - x2;
+            if dx.abs() > f64::EPSILON {
+                obj.shape = Canvas::translate_shape(&*obj.shape, dx, 0.0);
+                changed = true;
+            }
+        }
+        changed
+    }
+
+    pub fn align_selected_center(&mut self) -> bool {
+        let mut min_x = f64::INFINITY;
+        let mut max_x = f64::NEG_INFINITY;
+        for obj in self.shapes.iter().filter(|o| o.selected) {
+            let (x1, _, x2, _) = obj.shape.bounding_box();
+            if x1 < min_x {
+                min_x = x1;
+            }
+            if x2 > max_x {
+                max_x = x2;
+            }
+        }
+        if !min_x.is_finite() || !max_x.is_finite() {
+            return false;
+        }
+        let target_center = (min_x + max_x) / 2.0;
+        let mut changed = false;
+        for obj in self.shapes.iter_mut().filter(|o| o.selected) {
+            let (x1, _, x2, _) = obj.shape.bounding_box();
+            let shape_center = (x1 + x2) / 2.0;
+            let dx = target_center - shape_center;
+            if dx.abs() > f64::EPSILON {
+                obj.shape = Canvas::translate_shape(&*obj.shape, dx, 0.0);
+                changed = true;
+            }
+        }
+        changed
+    }
+
+    pub fn align_selected_top(&mut self) -> bool {
+        let mut max_y = f64::NEG_INFINITY;
+        for obj in self.shapes.iter().filter(|o| o.selected) {
+            let (_, _, _, y2) = obj.shape.bounding_box();
+            if y2 > max_y {
+                max_y = y2;
+            }
+        }
+        if !max_y.is_finite() {
+            return false;
+        }
+        let mut changed = false;
+        for obj in self.shapes.iter_mut().filter(|o| o.selected) {
+            let (_, _, _, y2) = obj.shape.bounding_box();
+            let dy = max_y - y2;
+            if dy.abs() > f64::EPSILON {
+                obj.shape = Canvas::translate_shape(&*obj.shape, 0.0, dy);
+                changed = true;
+            }
+        }
+        changed
+    }
+
+    pub fn align_selected_bottom(&mut self) -> bool {
+        let mut min_y = f64::INFINITY;
+        for obj in self.shapes.iter().filter(|o| o.selected) {
+            let (_, y1, _, _) = obj.shape.bounding_box();
+            if y1 < min_y {
+                min_y = y1;
+            }
+        }
+        if !min_y.is_finite() {
+            return false;
+        }
+        let mut changed = false;
+        for obj in self.shapes.iter_mut().filter(|o| o.selected) {
+            let (_, y1, _, _) = obj.shape.bounding_box();
+            let dy = min_y - y1;
+            if dy.abs() > f64::EPSILON {
+                obj.shape = Canvas::translate_shape(&*obj.shape, 0.0, dy);
+                changed = true;
+            }
+        }
+        changed
+    }
+
+    pub fn align_selected_vertical_center(&mut self) -> bool {
+        let mut min_y = f64::INFINITY;
+        let mut max_y = f64::NEG_INFINITY;
+        for obj in self.shapes.iter().filter(|o| o.selected) {
+            let (_, y1, _, y2) = obj.shape.bounding_box();
+            if y1 < min_y {
+                min_y = y1;
+            }
+            if y2 > max_y {
+                max_y = y2;
+            }
+        }
+        if !min_y.is_finite() || !max_y.is_finite() {
+            return false;
+        }
+        let target_center = (min_y + max_y) / 2.0;
+        let mut changed = false;
+        for obj in self.shapes.iter_mut().filter(|o| o.selected) {
+            let (_, y1, _, y2) = obj.shape.bounding_box();
+            let shape_center = (y1 + y2) / 2.0;
+            let dy = target_center - shape_center;
+            if dy.abs() > f64::EPSILON {
+                obj.shape = Canvas::translate_shape(&*obj.shape, 0.0, dy);
+                changed = true;
+            }
+        }
+        changed
     }
 
     /// Resizes the selected shape. Handles: 0=TL, 1=TR, 2=BL, 3=BR, 4=Center (moves)
@@ -601,40 +756,54 @@ impl Canvas {
                                 Box::new(path_shape.translate(dx, dy))
                             } else {
                                 let (new_x1, new_y1, new_x2, new_y2) = match handle {
-                                    0 => (x1 + dx, y1 + dy, x2, y2),           // Top-left
-                                    1 => (x1, y1 + dy, x2 + dx, y2),           // Top-right
-                                    2 => (x1 + dx, y1, x2, y2 + dy),           // Bottom-left
-                                    3 => (x1, y1, x2 + dx, y2 + dy),           // Bottom-right
+                                    0 => (x1 + dx, y1 + dy, x2, y2), // Top-left
+                                    1 => (x1, y1 + dy, x2 + dx, y2), // Top-right
+                                    2 => (x1 + dx, y1, x2, y2 + dy), // Bottom-left
+                                    3 => (x1, y1, x2 + dx, y2 + dy), // Bottom-right
                                     _ => (x1, y1, x2, y2),
                                 };
                                 let width = x2 - x1;
                                 let height = y2 - y1;
                                 let new_width = (new_x2 - new_x1).abs();
                                 let new_height = (new_y2 - new_y1).abs();
-                                
-                                let sx = if width.abs() > 1e-6 { new_width / width } else { 1.0 };
-                                let sy = if height.abs() > 1e-6 { new_height / height } else { 1.0 };
-                                
+
+                                let sx = if width.abs() > 1e-6 {
+                                    new_width / width
+                                } else {
+                                    1.0
+                                };
+                                let sy = if height.abs() > 1e-6 {
+                                    new_height / height
+                                } else {
+                                    1.0
+                                };
+
                                 let center_x = (x1 + x2) / 2.0;
                                 let center_y = (y1 + y2) / 2.0;
-                                
-                                let scaled = path_shape.scale(sx, sy, Point::new(center_x, center_y));
-                                
+
+                                let scaled =
+                                    path_shape.scale(sx, sy, Point::new(center_x, center_y));
+
                                 let new_center_x = (new_x1 + new_x2) / 2.0;
                                 let new_center_y = (new_y1 + new_y2) / 2.0;
                                 let t_dx = new_center_x - center_x;
                                 let t_dy = new_center_y - center_y;
-                                
+
                                 Box::new(scaled.translate(t_dx, t_dy))
                             }
                         } else {
                             shape.clone_shape()
                         }
-                    },
+                    }
                     ShapeType::Text => {
                         if handle == 4 {
                             if let Some(text) = shape.as_any().downcast_ref::<TextShape>() {
-                                Box::new(TextShape::new(text.text.clone(), text.x + dx, text.y + dy, text.font_size))
+                                Box::new(TextShape::new(
+                                    text.text.clone(),
+                                    text.x + dx,
+                                    text.y + dy,
+                                    text.font_size,
+                                ))
                             } else {
                                 shape.clone_shape()
                             }
@@ -693,27 +862,40 @@ impl Canvas {
                     }
                     ShapeType::Path => {
                         if let Some(path_shape) = shape.as_any().downcast_ref::<PathShape>() {
-                            let sx = if width.abs() > 1e-6 { snapped_width / width } else { 1.0 };
-                            let sy = if height.abs() > 1e-6 { snapped_height / height } else { 1.0 };
-                            
+                            let sx = if width.abs() > 1e-6 {
+                                snapped_width / width
+                            } else {
+                                1.0
+                            };
+                            let sy = if height.abs() > 1e-6 {
+                                snapped_height / height
+                            } else {
+                                1.0
+                            };
+
                             let center_x = (x1 + x2) / 2.0;
                             let center_y = (y1 + y2) / 2.0;
-                            
+
                             let scaled = path_shape.scale(sx, sy, Point::new(center_x, center_y));
-                            
+
                             let new_center_x = snapped_x1 + snapped_width / 2.0;
                             let new_center_y = snapped_y1 + snapped_height / 2.0;
                             let t_dx = new_center_x - center_x;
                             let t_dy = new_center_y - center_y;
-                            
+
                             Box::new(scaled.translate(t_dx, t_dy))
                         } else {
                             shape.clone_shape()
                         }
-                    },
+                    }
                     ShapeType::Text => {
                         if let Some(text) = shape.as_any().downcast_ref::<TextShape>() {
-                            Box::new(TextShape::new(text.text.clone(), snapped_x1, snapped_y1, text.font_size))
+                            Box::new(TextShape::new(
+                                text.text.clone(),
+                                snapped_x1,
+                                snapped_y1,
+                                text.font_size,
+                            ))
                         } else {
                             shape.clone_shape()
                         }
@@ -730,5 +912,3 @@ impl Default for Canvas {
         Self::new()
     }
 }
-
-

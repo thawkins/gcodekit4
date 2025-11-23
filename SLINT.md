@@ -1,5 +1,12 @@
 ## Slint UI Research and Insights
 
+### Designer Alignment Cascade (2025-11-23)
+- Files: `crates/gcodekit4-ui/ui.slint`, `crates/gcodekit4-designer/ui/designer.slint`
+- The context menu now exposes nested `Align` entries that fan out to Horizontal (Left/Center/Right) and Vertical (Top/Center/Bottom) submenus.
+- Each submenu TouchArea calls dedicated callbacks (`align_horizontal_left`, `align_vertical_top`, etc.) that bubble up through `DesignerPanel` into `MainWindow`.
+- Backend alignment helpers in `Canvas` translate each selected shape so Left/Right pins use bounding-box min/max X, while Top/Bottom snap to max/min Y in screen coordinates.
+- `selected_count` drives the `align-enabled` property, so the menus only activate when at least two shapes are selected, preventing no-op commands.
+
 ### CustomTextEdit Component
 - Located in: `crates/gcodekit4-ui/ui/ui_components/custom_text_edit.slint`
 - Provides advanced text editing with:

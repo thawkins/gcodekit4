@@ -181,6 +181,7 @@ export component MainWindow inherits Window {
     in property <string> designer-canvas-shapes-data: "";
     in property <string> designer-canvas-selected-shapes-data: "";
     in property <string> designer-canvas-handles-data: "";
+    in property <int> designer-selected-count: 0;
     in property <float> designer-selected-shape-x: 0.0;
     in property <float> designer-selected-shape-y: 0.0;
     in property <float> designer-selected-shape-w: 0.0;
@@ -381,6 +382,12 @@ export component MainWindow inherits Window {
     callback designer-update-shape-property(int, float);    // property_id, value
     callback designer-update-shape-property-bool(int, bool); // property_id, value
     callback designer-update-shape-property-string(int, string); // property_id, value
+    callback designer-align-horizontal-left();
+    callback designer-align-horizontal-center();
+    callback designer-align-horizontal-right();
+    callback designer-align-vertical-top();
+    callback designer-align-vertical-center();
+    callback designer-align-vertical-bottom();
     callback designer-update-feed-rate(float);
     callback designer-update-spindle-speed(float);
     callback designer-update-tool-diameter(float);
@@ -424,13 +431,17 @@ export component MainWindow inherits Window {
     private property <int> console-scroll-ref: 0;
     private property <float> step-size: 1.0;
     private property <int> step-index: 1;
+    private property <int> designer-delete-trigger: 0;
+    private property <int> designer-delete-count: 0;
     
     // Private properties for dialogs
     private property <bool> about-dialog-visible: false;
     private property <bool> settings-dialog-visible: false;
     in-out property <string> settings-category: "controller";
+    
     show-delete-confirmation(count) => {
-        designer-panel.show_delete_confirmation(count);
+        designer-delete-count = count;
+        designer-delete-trigger += 1;
     }
 
     // Native menu bar with dark theme support
@@ -1232,8 +1243,7 @@ export component MainWindow inherits Window {
                 }
 
                 // Designer View
-                Rectangle {
-                    visible: current-view == "designer";
+                if current-view == "designer" : Rectangle {
                     vertical-stretch: 1;
                     horizontal-stretch: 1;
                     background: transparent;
@@ -1260,6 +1270,9 @@ export component MainWindow inherits Window {
                         canvas_shapes_data: root.designer-canvas-shapes-data;
                         canvas_selected_shapes_data: root.designer-canvas-selected-shapes-data;
                         canvas_handles_data: root.designer-canvas-handles-data;
+                        delete_confirmation_trigger: root.designer-delete-trigger;
+                        delete_confirmation_count: root.designer-delete-count;
+                        selected_count: root.designer-selected-count;
                         selected_shape_x: root.designer-selected-shape-x;
                         selected_shape_y: root.designer-selected-shape-y;
                         selected_shape_w: root.designer-selected-shape-w;
@@ -1364,6 +1377,25 @@ export component MainWindow inherits Window {
                         
                         confirm_delete => {
                             root.designer-confirm-delete();
+                        }
+                        
+                        align_horizontal_left => {
+                            root.designer-align-horizontal-left();
+                        }
+                        align_horizontal_center => {
+                            root.designer-align-horizontal-center();
+                        }
+                        align_horizontal_right => {
+                            root.designer-align-horizontal-right();
+                        }
+                        align_vertical_top => {
+                            root.designer-align-vertical-top();
+                        }
+                        align_vertical_center => {
+                            root.designer-align-vertical-center();
+                        }
+                        align_vertical_bottom => {
+                            root.designer-align-vertical-bottom();
                         }
                         
                         update_feed_rate(rate) => {

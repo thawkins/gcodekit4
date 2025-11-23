@@ -1,10 +1,17 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.37.2-alpha  
-**Last Updated**: 2025-11-22  
-**Status**: Visualizer Performance Optimization
+**Version**: 0.37.3-alpha  
+**Last Updated**: 2025-11-23  
+**Status**: Designer Alignment & Tab Reliability
 
-### Latest Release (v0.37.2-alpha) - Designer Improvements
+### Latest Release (v0.37.3-alpha) - Designer Alignment & Tab Reliability
+- ✅ **Tabbed Views Visible**
+  - Unified the conditional rendering logic so every tab (Visualizer, Device Console, etc.) shows its content consistently.
+- ✅ **Alignment Cascade**
+  - Added nested Align → Horizontal/Vertical menus with fully wired actions for Left/Center/Right and Top/Center/Bottom.
+  - Implemented backend helpers to snap selected shapes to shared extents or centers.
+
+### Previous Release (v0.37.2-alpha) - Designer Improvements
 - ✅ **Multiple Selection & Deletion**
   - Added support for selecting multiple shapes with Shift+Click.
   - Implemented confirmation dialog for bulk deletion.
