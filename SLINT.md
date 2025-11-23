@@ -309,3 +309,29 @@ Rectangle {
   - This ensures groups resize as a single unit, maintaining relative positions and proportions.
 - **UI**: Added "Grp" (Group) and "UGrp" (Ungroup) buttons to the designer toolbar.
 
+### Designer Copy/Paste (2025-11-23)
+- **Files**: `crates/gcodekit4-designer/src/designer_state.rs`, `canvas.rs`, `ui/designer.slint`, `src/main.rs`
+- **Clipboard**: Added `clipboard: Vec<DrawingObject>` to `DesignerState` to store copied shapes.
+- **Copy Logic**: `copy_selected` clones selected shapes into the clipboard.
+- **Paste Logic**: `paste_at_location` clones shapes from clipboard, translates them to the target location (centering on the click point), and assigns new IDs.
+- **Context Menu**:
+  - Updated `ContextMenu` in `designer.slint` to include "Copy" and "Paste" items.
+  - Added `has-selection` property to conditionally show Copy/Delete/Properties items.
+  - "Paste" is always shown.
+  - Right-clicking on empty space shows the context menu with only "Paste" enabled.
+  - Right-clicking on a shape shows the full menu.
+- **Integration**: Wired up callbacks through `DesignerPanel` and `MainWindow` to the backend.
+
+### Designer Undo/Redo (2025-11-23)
+- **Files**: `crates/gcodekit4-designer/src/designer_state.rs`, `canvas.rs`, `ui/designer.slint`, `src/main.rs`
+- **State Management**: Implemented `CanvasSnapshot` to clone the entire canvas state (`shapes`, `next_id`, `spatial_index`).
+- **History Stack**: Added `undo_stack` and `redo_stack` to `DesignerState`.
+- **Integration**:
+  - `save_history()` is called before any mutating operation in `DesignerState`.
+  - For continuous operations (drag/resize), `designer-interaction-start` callback is triggered on `PointerEventKind.down` to save state once at the beginning.
+  - `undo()` and `redo()` restore the snapshot and update the UI.
+- **UI**:
+  - Added Undo/Redo buttons to the toolbar, enabled/disabled based on stack state.
+  - Added keyboard shortcuts (Ctrl+Z, Ctrl+Shift+Z, Ctrl+Y) in `DesignerPanel` FocusScope.
+  - `DesignerState` struct in Slint updated to include `can_undo` and `can_redo` flags.
+

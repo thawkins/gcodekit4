@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.37.14-alpha] - 2025-11-23
+
+### Added
+- **Designer**: Added Copy and Paste functionality for shapes.
+  - Added "Copy" and "Paste" items to the shape context menu.
+  - Added "Paste" item to the empty space context menu.
+  - Supports copying single shapes, multiple selections, and groups.
+  - Pasting places shapes at the cursor location (context menu position).
+  - Preserves shape properties and relative positions.
+- **Designer**: Added Undo/Redo functionality.
+  - Implemented history stack for canvas state (shapes, groups, properties).
+  - Added Undo/Redo buttons to the designer toolbar.
+  - Added keyboard shortcuts: Ctrl+Z (Undo), Ctrl+Shift+Z (Redo), Ctrl+Y (Redo).
+  - History is saved before any modification (add, delete, move, resize, property change, etc.).
+  - History is cleared on New Design or Load File.
+
+### Changed
+- **UI**: Removed top padding from the main content area to eliminate whitespace above the TabBar.
+
 ## [0.37.13-alpha] - 2025-11-23
 
 ### Added

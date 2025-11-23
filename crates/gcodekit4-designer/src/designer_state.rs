@@ -5,6 +5,7 @@ use crate::{
     shapes::{OperationType, TextShape},
     Canvas, Circle, DrawingMode, Line, Point, Rectangle, ToolpathGenerator, ToolpathToGcode,
 };
+use crate::canvas::CanvasSnapshot;
 use gcodekit4_core::Units;
 
 /// Designer state for UI integration
@@ -18,6 +19,9 @@ pub struct DesignerState {
     pub is_modified: bool,
     pub design_name: String,
     pub show_grid: bool,
+    pub clipboard: Vec<crate::canvas::DrawingObject>,
+    undo_stack: Vec<CanvasSnapshot>,
+    redo_stack: Vec<CanvasSnapshot>,
 }
 
 impl DesignerState {
@@ -32,7 +36,56 @@ impl DesignerState {
             is_modified: false,
             design_name: "Untitled".to_string(),
             show_grid: true,
+            clipboard: Vec::new(),
+            undo_stack: Vec::new(),
+            redo_stack: Vec::new(),
         }
+    }
+
+    /// Saves current state to history
+    pub fn save_history(&mut self) {
+        self.undo_stack.push(self.canvas.get_snapshot());
+        self.redo_stack.clear();
+        // Limit stack size to 50
+        if self.undo_stack.len() > 50 {
+            self.undo_stack.remove(0);
+        }
+    }
+
+    /// Undo last change
+    pub fn undo(&mut self) {
+        if let Some(snapshot) = self.undo_stack.pop() {
+            self.redo_stack.push(self.canvas.get_snapshot());
+            self.canvas.restore_snapshot(snapshot);
+            self.gcode_generated = false;
+            self.is_modified = true;
+        }
+    }
+
+    /// Redo last undo
+    pub fn redo(&mut self) {
+        if let Some(snapshot) = self.redo_stack.pop() {
+            self.undo_stack.push(self.canvas.get_snapshot());
+            self.canvas.restore_snapshot(snapshot);
+            self.gcode_generated = false;
+            self.is_modified = true;
+        }
+    }
+
+    /// Check if undo is available
+    pub fn can_undo(&self) -> bool {
+        !self.undo_stack.is_empty()
+    }
+
+    /// Check if redo is available
+    pub fn can_redo(&self) -> bool {
+        !self.redo_stack.is_empty()
+    }
+
+    /// Clear history stacks
+    pub fn clear_history(&mut self) {
+        self.undo_stack.clear();
+        self.redo_stack.clear();
     }
 
     /// Toggle grid visibility
@@ -100,7 +153,10 @@ impl DesignerState {
 
     /// Deletes the selected shape(s).
     pub fn delete_selected(&mut self) {
-        self.canvas.remove_selected();
+        if self.canvas.selected_count() > 0 {
+            self.save_history();
+            self.canvas.remove_selected();
+        }
     }
 
     /// Get number of selected shapes
@@ -108,58 +164,122 @@ impl DesignerState {
         self.canvas.selected_count()
     }
 
+    /// Copies selected shapes to clipboard
+    pub fn copy_selected(&mut self) {
+        self.clipboard = self.canvas.shapes().iter()
+            .filter(|s| s.selected)
+            .cloned()
+            .collect();
+    }
+
+    /// Pastes shapes from clipboard at specified location
+    pub fn paste_at_location(&mut self, x: f64, y: f64) {
+        if self.clipboard.is_empty() {
+            return;
+        }
+        self.save_history();
+
+        // Calculate bounding box of clipboard items
+        let mut min_x = f64::INFINITY;
+        let mut min_y = f64::INFINITY;
+        let mut max_x = f64::NEG_INFINITY;
+        let mut max_y = f64::NEG_INFINITY;
+
+        for obj in &self.clipboard {
+            let (x1, y1, x2, y2) = obj.shape.bounding_box();
+            min_x = min_x.min(x1);
+            min_y = min_y.min(y1);
+            max_x = max_x.max(x2);
+            max_y = max_y.max(y2);
+        }
+
+        let center_x = (min_x + max_x) / 2.0;
+        let center_y = (min_y + max_y) / 2.0;
+
+        // Calculate offset to move center to (x, y)
+        let dx = x - center_x;
+        let dy = y - center_y;
+
+        self.canvas.paste_objects(&self.clipboard, dx, dy);
+        
+        self.is_modified = true;
+        self.gcode_generated = false;
+    }
+
     /// Align selected shapes by their left edges
     pub fn align_selected_horizontal_left(&mut self) {
+        self.save_history();
         if self.canvas.align_selected_left() {
             self.is_modified = true;
             self.gcode_generated = false;
+        } else {
+            // If no change, pop the history state we just pushed
+            self.undo_stack.pop();
         }
     }
 
     /// Align selected shapes by their horizontal centers
     pub fn align_selected_horizontal_center(&mut self) {
+        self.save_history();
         if self.canvas.align_selected_center() {
             self.is_modified = true;
             self.gcode_generated = false;
+        } else {
+            self.undo_stack.pop();
         }
     }
 
     /// Align selected shapes by their right edges
     pub fn align_selected_horizontal_right(&mut self) {
+        self.save_history();
         if self.canvas.align_selected_right() {
             self.is_modified = true;
             self.gcode_generated = false;
+        } else {
+            self.undo_stack.pop();
         }
     }
 
     /// Align selected shapes by their top edges
     pub fn align_selected_vertical_top(&mut self) {
+        self.save_history();
         if self.canvas.align_selected_top() {
             self.is_modified = true;
             self.gcode_generated = false;
+        } else {
+            self.undo_stack.pop();
         }
     }
 
     /// Align selected shapes by their vertical centers
     pub fn align_selected_vertical_center(&mut self) {
+        self.save_history();
         if self.canvas.align_selected_vertical_center() {
             self.is_modified = true;
             self.gcode_generated = false;
+        } else {
+            self.undo_stack.pop();
         }
     }
 
     /// Align selected shapes by their bottom edges
     pub fn align_selected_vertical_bottom(&mut self) {
+        self.save_history();
         if self.canvas.align_selected_bottom() {
             self.is_modified = true;
             self.gcode_generated = false;
+        } else {
+            self.undo_stack.pop();
         }
     }
 
     /// Clears all shapes from the canvas.
     pub fn clear_canvas(&mut self) {
-        self.canvas.clear();
-        self.gcode_generated = false;
+        if !self.canvas.shapes().is_empty() {
+            self.save_history();
+            self.canvas.clear();
+            self.gcode_generated = false;
+        }
     }
 
     /// Generates G-code from the current design.
@@ -312,22 +432,44 @@ impl DesignerState {
 
     /// Adds a test rectangle to the canvas.
     pub fn add_test_rectangle(&mut self) {
+        self.save_history();
         self.canvas.add_rectangle(10.0, 10.0, 50.0, 40.0);
     }
 
     /// Adds a test circle to the canvas.
     pub fn add_test_circle(&mut self) {
+        self.save_history();
         self.canvas.add_circle(Point::new(75.0, 75.0), 20.0);
     }
 
     /// Adds a test line to the canvas.
     pub fn add_test_line(&mut self) {
+        self.save_history();
         self.canvas
             .add_line(Point::new(10.0, 10.0), Point::new(100.0, 100.0));
     }
 
+    /// Groups the selected shapes.
+    pub fn group_selected(&mut self) {
+        self.save_history();
+        self.canvas.group_selected();
+        self.is_modified = true;
+        self.gcode_generated = false;
+    }
+
+    /// Ungroups the selected shapes.
+    pub fn ungroup_selected(&mut self) {
+        self.save_history();
+        self.canvas.ungroup_selected();
+        self.is_modified = true;
+        self.gcode_generated = false;
+    }
+
     /// Adds a shape to the canvas at the specified position based on current mode.
     pub fn add_shape_at(&mut self, x: f64, y: f64, multi_select: bool) {
+        if self.canvas.mode() != DrawingMode::Select {
+            self.save_history();
+        }
         match self.canvas.mode() {
             DrawingMode::Select => {
                 // Select mode - just select shape at position
@@ -384,6 +526,7 @@ impl DesignerState {
 
     /// Snaps the selected shape to whole millimeters
     pub fn snap_selected_to_mm(&mut self) {
+        self.save_history();
         self.canvas.snap_selected_to_mm();
     }
 
@@ -393,7 +536,7 @@ impl DesignerState {
     }
 
     pub fn set_selected_position_and_size(&mut self, x: f64, y: f64, w: f64, h: f64) {
-        self.canvas.set_selected_position_and_size_with_flags(x, y, w, h, true, true);
+        self.set_selected_position_and_size_with_flags(x, y, w, h, true, true);
     }
 
     pub fn set_selected_position_and_size_with_flags(
@@ -405,9 +548,12 @@ impl DesignerState {
         update_position: bool,
         update_size: bool,
     ) {
+        self.save_history();
         if self.canvas.set_selected_position_and_size_with_flags(x, y, w, h, update_position, update_size) {
             self.is_modified = true;
             self.gcode_generated = false;
+        } else {
+            self.undo_stack.pop();
         }
     }
 
@@ -464,6 +610,7 @@ impl DesignerState {
         self.design_name = design.metadata.name.clone();
         self.current_file_path = Some(path.as_ref().to_path_buf());
         self.is_modified = false;
+        self.clear_history();
 
         Ok(())
     }
@@ -476,6 +623,7 @@ impl DesignerState {
         self.current_file_path = None;
         self.is_modified = false;
         self.design_name = "Untitled".to_string();
+        self.clear_history();
     }
 
     /// Mark design as modified
@@ -501,6 +649,7 @@ impl DesignerState {
     }
 
     pub fn set_selected_pocket_properties(&mut self, is_pocket: bool, depth: f64) {
+        self.save_history();
         let mut changed = false;
         for obj in self.canvas.shapes_mut().iter_mut() {
             if !obj.selected {
@@ -520,10 +669,13 @@ impl DesignerState {
         if changed {
             self.is_modified = true;
             self.gcode_generated = false;
+        } else {
+            self.undo_stack.pop();
         }
     }
 
     pub fn set_selected_step_down(&mut self, step_down: f64) {
+        self.save_history();
         let mut changed = false;
         for obj in self.canvas.shapes_mut().iter_mut() {
             if !obj.selected {
@@ -537,10 +689,13 @@ impl DesignerState {
         if changed {
             self.is_modified = true;
             self.gcode_generated = false;
+        } else {
+            self.undo_stack.pop();
         }
     }
 
     pub fn set_selected_step_in(&mut self, step_in: f64) {
+        self.save_history();
         let mut changed = false;
         for obj in self.canvas.shapes_mut().iter_mut() {
             if !obj.selected {
@@ -554,13 +709,18 @@ impl DesignerState {
         if changed {
             self.is_modified = true;
             self.gcode_generated = false;
+        } else {
+            self.undo_stack.pop();
         }
     }
 
     pub fn set_selected_text_properties(&mut self, content: &str, font_size: f64) {
+        self.save_history();
         if self.canvas.set_selected_text_properties(content, font_size) {
             self.is_modified = true;
             self.gcode_generated = false;
+        } else {
+            self.undo_stack.pop();
         }
     }
 
@@ -568,6 +728,7 @@ impl DesignerState {
         &mut self,
         strategy: crate::pocket_operations::PocketStrategy,
     ) {
+        self.save_history();
         let mut changed = false;
         for obj in self.canvas.shapes_mut().iter_mut() {
             if !obj.selected {
@@ -581,6 +742,8 @@ impl DesignerState {
         if changed {
             self.is_modified = true;
             self.gcode_generated = false;
+        } else {
+            self.undo_stack.pop();
         }
     }
 }

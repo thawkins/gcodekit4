@@ -116,6 +116,8 @@ export struct DesignerState {
     pan_x: float,
     pan_y: float,
     selected_id: int,
+    can_undo: bool,
+    can_redo: bool,
 }
 
 component ToolButton inherits Rectangle {
@@ -535,9 +537,12 @@ component ContextMenu inherits Rectangle {
     in-out property <float> menu_x: 0;
     in-out property <float> menu_y: 0;
     in property <bool> align-enabled: false;
+    in property <bool> has-selection: false;
     
     callback menu_delete();
     callback menu_properties();
+    callback menu_copy();
+    callback menu_paste();
     callback align_horizontal_left();
     callback align_horizontal_center();
     callback align_horizontal_right();
@@ -549,10 +554,10 @@ component ContextMenu inherits Rectangle {
     private property <bool> horizontal_submenu_visible: false;
     private property <bool> vertical_submenu_visible: false;
     private property <length> item_height: 28px;
-    private property <length> align_item_y: root.item_height * 2;
+    private property <length> align_item_y: root.item_height * 4;
     
     width: 150px;
-    height: 90px;
+    height: (root.has-selection ? 5 * root.item_height : 1 * root.item_height) + 4px;
     x: root.menu_x * 1px;
     y: root.menu_y * 1px;
     background: white;
@@ -573,7 +578,53 @@ component ContextMenu inherits Rectangle {
         padding: 2px;
         spacing: 0px;
         
+        if root.has-selection : Rectangle {
+            height: root.item_height;
+            background: menu-item-copy.has-hover ? #e0e0e0 : transparent;
+            
+            HorizontalBox {
+                padding-left: 10px;
+                padding-right: 10px;
+                
+                Text {
+                    text: "Copy";
+                    vertical-alignment: center;
+                    font-size: 13px;
+                }
+            }
+            
+            menu-item-copy := TouchArea {
+                clicked => {
+                    root.show = false;
+                    root.menu_copy();
+                }
+            }
+        }
+
         Rectangle {
+            height: root.item_height;
+            background: menu-item-paste.has-hover ? #e0e0e0 : transparent;
+            
+            HorizontalBox {
+                padding-left: 10px;
+                padding-right: 10px;
+                
+                Text {
+                    text: "Paste";
+                    vertical-alignment: center;
+                    font-size: 13px;
+                }
+            }
+            
+            menu-item-paste := TouchArea {
+                clicked => {
+                    root.show = false;
+                    root.menu_paste();
+                }
+            }
+        }
+        
+        if root.has-selection : Rectangle {
             height: root.item_height;
             background: menu-item-1.has-hover ? #e0e0e0 : transparent;
             
@@ -596,7 +647,7 @@ component ContextMenu inherits Rectangle {
             }
         }
         
-        Rectangle {
+        if root.has-selection : Rectangle {
             height: root.item_height;
             background: menu-item-2.has-hover ? #e0e0e0 : transparent;
             
@@ -619,7 +670,7 @@ component ContextMenu inherits Rectangle {
             }
         }
         
-        Rectangle {
+        if root.has-selection : Rectangle {
             height: root.item_height;
             background: menu-item-3.has-hover && root.align-enabled ? #e0e0e0 : transparent;
             opacity: root.align-enabled ? 1.0 : 0.4;
@@ -973,6 +1024,11 @@ export component DesignerPanel inherits VerticalBox {
     callback align_vertical_top();
     callback align_vertical_center();
     callback align_vertical_bottom();
+    callback copy_selected();
+    callback paste_at_location(float, float);
+    callback undo();
+    callback redo();
+    callback designer-interaction-start();
     
     // File operation callbacks
     callback file_new();
@@ -1044,6 +1100,16 @@ export component DesignerPanel inherits VerticalBox {
                 root.shift_pressed = true;
                 set_shift_pressed(true);
                 accept
+            } else if event.text == "z" && event.modifiers.control {
+                if (event.modifiers.shift) {
+                    if (designer_state.can_redo) { root.redo(); }
+                } else {
+                    if (designer_state.can_undo) { root.undo(); }
+                }
+                accept
+            } else if event.text == "y" && event.modifiers.control {
+                if (designer_state.can_redo) { root.redo(); }
+                accept
             } else {
                 reject
             }
@@ -1087,6 +1153,26 @@ export component DesignerPanel inherits VerticalBox {
                     width: 50px;
                     height: 40px;
                     clicked => { file_open(); }
+                }
+            }
+            
+            HorizontalBox {
+                spacing: 2px;
+                padding: 2px;
+                
+                Button {
+                    text: "Undo";
+                    width: 50px;
+                    height: 40px;
+                    enabled: designer_state.can_undo;
+                    clicked => { root.undo(); }
+                }
+                Button {
+                    text: "Redo";
+                    width: 50px;
+                    height: 40px;
+                    enabled: designer_state.can_redo;
+                    clicked => { root.redo(); }
                 }
             }
             
@@ -1560,13 +1646,16 @@ export component DesignerPanel inherits VerticalBox {
                                     // Detect handle on press down
                                     pointer-event(event) => {
                                         if event.kind == PointerEventKind.down {
+                                            // Save history state at start of interaction
+                                            if event.button == PointerEventButton.left {
+                                                root.designer-interaction-start();
+                                            }
+
                                             // Handle right-click for context menu
                                             if event.button == PointerEventButton.right {
-                                                if designer_state.selected_id > 0 {
-                                                    root.context_menu_x = self.mouse-x / 1px;
-                                                    root.context_menu_y = self.mouse-y / 1px;
-                                                    root.context_menu_visible = true;
-                                                }
+                                                root.context_menu_x = self.mouse-x / 1px;
+                                                root.context_menu_y = self.mouse-y / 1px;
+                                                root.context_menu_visible = true;
                                                 return;
                                             }
                                             
@@ -1861,9 +1950,18 @@ export component DesignerPanel inherits VerticalBox {
         menu_x: root.context_menu_x;
         menu_y: root.context_menu_y;
         align-enabled: root.selected_count >= 2;
+        has-selection: root.selected_count > 0;
         
         menu_delete => {
             delete_selected();
+        }
+
+        menu_copy => {
+            root.copy_selected();
+        }
+
+        menu_paste => {
+            root.paste_at_location(root.context_menu_x, root.context_menu_y);
         }
         
         menu_properties => {

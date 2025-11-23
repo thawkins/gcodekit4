@@ -7,6 +7,14 @@ use super::shapes::{
 use super::spatial_index::{Bounds, SpatialIndex};
 use super::viewport::Viewport;
 
+/// Snapshot of canvas state for undo/redo
+#[derive(Clone)]
+pub struct CanvasSnapshot {
+    shapes: Vec<DrawingObject>,
+    next_id: u64,
+    spatial_index: SpatialIndex,
+}
+
 /// Canvas coordinates for drawing.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct CanvasPoint {
@@ -603,8 +611,85 @@ impl Canvas {
         changed
     }
 
+    /// Pastes objects onto the canvas with an offset.
+    /// Returns the IDs of the new objects.
+    pub fn paste_objects(&mut self, objects: &[DrawingObject], offset_x: f64, offset_y: f64) -> Vec<u64> {
+        let mut new_ids = Vec::new();
+        let mut group_map = std::collections::HashMap::new();
+
+        // Deselect all existing shapes first
+        for obj in self.shapes.iter_mut() {
+            obj.selected = false;
+        }
+        self.selected_id = None;
+
+        for obj in objects {
+            let id = self.next_id;
+            self.next_id += 1;
+
+            let mut new_shape = obj.shape.clone_shape();
+            new_shape = new_shape.translate(offset_x, offset_y);
+            let (min_x, min_y, max_x, max_y) = new_shape.bounding_box();
+
+            // Handle group ID mapping
+            let new_group_id = if let Some(old_gid) = obj.group_id {
+                if !group_map.contains_key(&old_gid) {
+                    let new_gid = self.next_id;
+                    self.next_id += 1;
+                    group_map.insert(old_gid, new_gid);
+                    Some(new_gid)
+                } else {
+                    Some(group_map[&old_gid])
+                }
+            } else {
+                None
+            };
+
+            let new_obj = DrawingObject {
+                id,
+                group_id: new_group_id,
+                shape: new_shape,
+                selected: true, // Select the new object
+                operation_type: obj.operation_type,
+                pocket_depth: obj.pocket_depth,
+                step_down: obj.step_down,
+                step_in: obj.step_in,
+                pocket_strategy: obj.pocket_strategy,
+            };
+
+            self.shapes.push(new_obj);
+            self.spatial_index.insert(id, &Bounds::new(min_x, min_y, max_x, max_y));
+            new_ids.push(id);
+        }
+        
+        // Update selected_id to the last pasted object if any
+        if let Some(last_id) = new_ids.last() {
+            self.selected_id = Some(*last_id);
+        }
+        
+        new_ids
+    }
+
     pub fn align_selected_left(&mut self) -> bool {
         self.align_selected(Alignment::Left)
+    }
+
+    pub fn get_snapshot(&self) -> CanvasSnapshot {
+        CanvasSnapshot {
+            shapes: self.shapes.clone(),
+            next_id: self.next_id,
+            spatial_index: self.spatial_index.clone(),
+        }
+    }
+
+    pub fn restore_snapshot(&mut self, snapshot: CanvasSnapshot) {
+        self.shapes = snapshot.shapes;
+        self.next_id = snapshot.next_id;
+        self.spatial_index = snapshot.spatial_index;
+        // Clear selection as it might refer to non-existent shapes or be confusing
+        // Alternatively, we could try to preserve selection if IDs still exist
+        // For now, let's clear it to be safe
+        self.selected_id = None; 
     }
 
     pub fn align_selected_right(&mut self) -> bool {

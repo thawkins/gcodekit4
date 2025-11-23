@@ -576,6 +576,8 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
     let mut ui_state = window.get_designer_state();
     let counter = ui_state.update_counter + 1;
     ui_state.update_counter = counter;
+    ui_state.can_undo = state.can_undo();
+    ui_state.can_redo = state.can_redo();
     window.set_designer_state(ui_state);
 }
 
@@ -806,6 +808,8 @@ fn main() -> anyhow::Result<()> {
         pan_y: 0.0,
         selected_id: 0,
         update_counter: 0,
+        can_undo: false,
+        can_redo: false,
     };
     main_window.set_designer_state(initial_designer_state);
     main_window.set_designer_show_grid(true); // Default to showing grid
@@ -852,6 +856,69 @@ fn main() -> anyhow::Result<()> {
             if let Some(window) = window_weak.upgrade() {
                 let mut state = designer_mgr.borrow_mut();
                 state.canvas.ungroup_selected();
+                update_designer_ui(&window, &mut state);
+            }
+        });
+    }
+
+    // Handle designer interaction start (save history)
+    {
+        let designer_mgr = designer_mgr.clone();
+        let window_weak = main_window.as_weak();
+        main_window.on_designer_interaction_start(move || {
+            if let Some(_window) = window_weak.upgrade() {
+                let mut state = designer_mgr.borrow_mut();
+                state.save_history();
+            }
+        });
+    }
+
+    // Handle designer undo
+    {
+        let designer_mgr = designer_mgr.clone();
+        let window_weak = main_window.as_weak();
+        main_window.on_designer_undo(move || {
+            if let Some(window) = window_weak.upgrade() {
+                let mut state = designer_mgr.borrow_mut();
+                state.undo();
+                update_designer_ui(&window, &mut state);
+            }
+        });
+    }
+
+    // Handle designer redo
+    {
+        let designer_mgr = designer_mgr.clone();
+        let window_weak = main_window.as_weak();
+        main_window.on_designer_redo(move || {
+            if let Some(window) = window_weak.upgrade() {
+                let mut state = designer_mgr.borrow_mut();
+                state.redo();
+                update_designer_ui(&window, &mut state);
+            }
+        });
+    }
+
+    // Handle designer copy selected
+    {
+        let designer_mgr = designer_mgr.clone();
+        let window_weak = main_window.as_weak();
+        main_window.on_designer_copy_selected(move || {
+            if let Some(_window) = window_weak.upgrade() {
+                let mut state = designer_mgr.borrow_mut();
+                state.copy_selected();
+            }
+        });
+    }
+
+    // Handle designer paste at location
+    {
+        let designer_mgr = designer_mgr.clone();
+        let window_weak = main_window.as_weak();
+        main_window.on_designer_paste_at_location(move |x, y| {
+            if let Some(window) = window_weak.upgrade() {
+                let mut state = designer_mgr.borrow_mut();
+                state.paste_at_location(x as f64, y as f64);
                 update_designer_ui(&window, &mut state);
             }
         });
@@ -4405,7 +4472,7 @@ fn main() -> anyhow::Result<()> {
                 pan_x: 0.0,
                 pan_y: 0.0,
                 selected_id: -1,
-                update_counter: 0,
+                update_counter: 0, can_undo: state.can_undo(), can_redo: state.can_redo(),
             });
         }
     });
@@ -4425,7 +4492,7 @@ fn main() -> anyhow::Result<()> {
                 pan_x: state.canvas.pan_offset().0 as f32,
                 pan_y: state.canvas.pan_offset().1 as f32,
                 selected_id: state.canvas.selected_id().unwrap_or(0) as i32,
-                update_counter: 0,
+                update_counter: 0, can_undo: state.can_undo(), can_redo: state.can_redo(),
             };
             window.set_designer_state(ui_state);
         }
@@ -4445,7 +4512,7 @@ fn main() -> anyhow::Result<()> {
                 pan_x: state.canvas.pan_offset().0 as f32,
                 pan_y: state.canvas.pan_offset().1 as f32,
                 selected_id: state.canvas.selected_id().unwrap_or(0) as i32,
-                update_counter: 0,
+                update_counter: 0, can_undo: state.can_undo(), can_redo: state.can_redo(),
             };
             window.set_designer_state(ui_state);
         }
@@ -4465,7 +4532,7 @@ fn main() -> anyhow::Result<()> {
                 pan_x: state.canvas.pan_offset().0 as f32,
                 pan_y: state.canvas.pan_offset().1 as f32,
                 selected_id: state.canvas.selected_id().unwrap_or(0) as i32,
-                update_counter: 0,
+                update_counter: 0, can_undo: state.can_undo(), can_redo: state.can_redo(),
             };
             window.set_designer_state(ui_state);
         }
@@ -4485,7 +4552,7 @@ fn main() -> anyhow::Result<()> {
                 pan_x: state.canvas.pan_offset().0 as f32,
                 pan_y: state.canvas.pan_offset().1 as f32,
                 selected_id: state.canvas.selected_id().unwrap_or(0) as i32,
-                update_counter: 0,
+                update_counter: 0, can_undo: state.can_undo(), can_redo: state.can_redo(),
             };
             window.set_designer_state(ui_state);
         }
@@ -5258,7 +5325,7 @@ fn main() -> anyhow::Result<()> {
                 pan_x: state.canvas.pan_offset().0 as f32,
                 pan_y: state.canvas.pan_offset().1 as f32,
                 selected_id: state.canvas.selected_id().unwrap_or(0) as i32,
-                update_counter: 0,
+                update_counter: 0, can_undo: state.can_undo(), can_redo: state.can_redo(),
             };
             window.set_designer_state(ui_state);
         }

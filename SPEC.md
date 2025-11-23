@@ -1,10 +1,22 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.37.13-alpha  
+**Version**: 0.37.14-alpha  
 **Last Updated**: 2025-11-23  
-**Status**: Designer Grouping & Fixes
+**Status**: Designer Copy/Paste & Undo/Redo
 
-### Latest Release (v0.37.13-alpha) - Designer Grouping & Fixes
+### Latest Release (v0.37.14-alpha) - Designer Copy/Paste & Undo/Redo
+- ✅ **Copy and Paste**
+  - Copy selected shapes to internal clipboard.
+  - Paste shapes at mouse cursor location.
+  - Supports single shapes, multiple selections, and groups.
+  - Context menu integration (Copy/Paste items).
+- ✅ **Undo/Redo**
+  - Full history stack for canvas operations (add, delete, move, resize, properties).
+  - Undo/Redo buttons in toolbar.
+  - Keyboard shortcuts (Ctrl+Z, Ctrl+Shift+Z, Ctrl+Y).
+  - History persistence during session, cleared on new/load.
+
+### Previous Release (v0.37.13-alpha) - Designer Grouping & Fixes
 - ✅ **Grouping Functionality**
   - Group/Ungroup shapes to manipulate them as a single unit.
   - Grouped shapes rendered in green with dotted bounding box.
