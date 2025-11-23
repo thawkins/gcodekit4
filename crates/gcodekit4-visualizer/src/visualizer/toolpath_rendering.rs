@@ -174,25 +174,12 @@ impl ArcSegment {
 
     /// Convert arc to line segments
     pub fn to_line_segments(&self) -> Vec<LineSegment> {
-        let mut segments = Vec::new();
-        let movement_type = self.meta.movement_type;
+        self.line_iter().collect()
+    }
 
-        let mut current = self.start;
-        let step = 1.0 / (self.segments as f32);
-
-        for i in 1..=self.segments {
-            let t = step * i as f32;
-            let next = self.interpolate_arc(t);
-
-            let mut segment = LineSegment::new(current, next, movement_type);
-            if let Some(feed_rate) = self.meta.feed_rate {
-                segment = segment.with_feed_rate(feed_rate);
-            }
-            segments.push(segment);
-            current = next;
-        }
-
-        segments
+    /// Iterate line segments lazily without allocations
+    pub fn line_iter(&self) -> ArcLineIterator<'_> {
+        ArcLineIterator::new(self)
     }
 
     /// Interpolate point on arc at parameter t (0.0 to 1.0)
@@ -220,6 +207,48 @@ impl ArcSegment {
         }
 
         angle_start + angle_diff * t
+    }
+}
+
+/// Iterator that lazily emits discretized line segments for an arc
+pub struct ArcLineIterator<'a> {
+    arc: &'a ArcSegment,
+    current_point: Vector3,
+    step: f32,
+    index: u32,
+}
+
+impl<'a> ArcLineIterator<'a> {
+    fn new(arc: &'a ArcSegment) -> Self {
+        Self {
+            arc,
+            current_point: arc.start,
+            step: 1.0 / arc.segments as f32,
+            index: 0,
+        }
+    }
+}
+
+impl<'a> Iterator for ArcLineIterator<'a> {
+    type Item = LineSegment;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index >= self.arc.segments {
+            return None;
+        }
+
+        self.index += 1;
+        let t = self.step * self.index as f32;
+        let next_point = self.arc.interpolate_arc(t);
+
+        let mut segment =
+            LineSegment::new(self.current_point, next_point, self.arc.meta.movement_type);
+        if let Some(feed_rate) = self.arc.meta.feed_rate {
+            segment = segment.with_feed_rate(feed_rate);
+        }
+
+        self.current_point = next_point;
+        Some(segment)
     }
 }
 
@@ -264,7 +293,7 @@ impl PathSegment {
     pub fn as_line_segments(&self) -> Vec<LineSegment> {
         match self {
             PathSegment::Line(line) => vec![line.clone()],
-            PathSegment::Arc(arc) => arc.to_line_segments(),
+            PathSegment::Arc(arc) => arc.line_iter().collect(),
         }
     }
 }
@@ -331,7 +360,7 @@ impl Toolpath {
             match segment {
                 PathSegment::Line(line) => visitor(line.clone()),
                 PathSegment::Arc(arc) => {
-                    for line in arc.to_line_segments() {
+                    for line in arc.line_iter() {
                         visitor(line);
                     }
                 }

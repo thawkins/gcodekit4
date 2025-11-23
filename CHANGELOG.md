@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.37.10-alpha] - 2025-11-23
+
+### Changed
+- **Visualizer**: Introduced `ArcLineIterator` so arcs emit line segments lazily instead of allocating intermediate vectors.
+- **Visualizer**: All segment helpers now reuse the iterator, keeping memory usage flat even when arcs are discretized multiple times.
+
 ## [0.37.9-alpha] - 2025-11-23
 
 ### Changed

@@ -1,5 +1,10 @@
 ## Slint UI Research and Insights
 
+### Visualizer ArcLineIterator (2025-11-23)
+- Files: `crates/gcodekit4-visualizer/src/visualizer/toolpath_rendering.rs`
+- Added `ArcLineIterator` to lazily emit arc polylines so Slint avoids per-frame Vec allocations.
+- `visit_line_segments` and `PathSegment::as_line_segments` now reuse the iterator, keeping render + metrics streaming-only.
+
 ### Visualizer Segment Visitor (2025-11-23)
 - Files: `crates/gcodekit4-visualizer/src/visualizer/toolpath_rendering.rs`
 - Added `visit_line_segments` so Slint canvases/metrics can stream discretized moves without allocating huge vectors.

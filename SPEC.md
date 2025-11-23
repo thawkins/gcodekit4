@@ -1,10 +1,16 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.37.9-alpha  
+**Version**: 0.37.10-alpha  
 **Last Updated**: 2025-11-23  
-**Status**: Visualizer Segment Visitor
+**Status**: Visualizer Arc Iterators
 
-### Latest Release (v0.37.9-alpha) - Visualizer Segment Visitor
+### Latest Release (v0.37.10-alpha) - Visualizer Arc Iterators
+- ✅ **ArcLineIterator**
+  - Lazily emits discretized line segments so arcs no longer allocate large vectors every time they are rendered.
+- ✅ **Visitor Integration**
+  - `PathSegment::as_line_segments` and `visit_line_segments` reuse the iterator, ensuring downstream consumers stay zero-allocation.
+
+### Previous Release (v0.37.9-alpha) - Visualizer Segment Visitor
 - ✅ **Streaming Line Visitor**
   - New `visit_line_segments` helper emits discretized moves without allocating a giant buffer.
 - ✅ **Metrics via Visitor**
