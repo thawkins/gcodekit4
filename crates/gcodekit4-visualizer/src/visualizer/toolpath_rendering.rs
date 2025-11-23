@@ -142,7 +142,7 @@ impl ArcSegment {
         // Also account for helical movement (Z change)
         let arc_len = self.radius * angle_diff.abs();
         let z_diff = (self.end.z - self.start.z).abs();
-        
+
         (arc_len.powi(2) + z_diff.powi(2)).sqrt()
     }
 
@@ -201,13 +201,63 @@ impl ArcSegment {
     }
 }
 
+/// Unified path segment representation
+#[derive(Debug, Clone)]
+pub enum PathSegment {
+    /// Linear movement segment
+    Line(LineSegment),
+    /// Arc movement segment
+    Arc(ArcSegment),
+}
+
+impl PathSegment {
+    pub fn start(&self) -> Vector3 {
+        match self {
+            PathSegment::Line(line) => line.start,
+            PathSegment::Arc(arc) => arc.start,
+        }
+    }
+
+    pub fn end(&self) -> Vector3 {
+        match self {
+            PathSegment::Line(line) => line.end,
+            PathSegment::Arc(arc) => arc.end,
+        }
+    }
+
+    pub fn length(&self) -> f32 {
+        match self {
+            PathSegment::Line(line) => line.length(),
+            PathSegment::Arc(arc) => arc.length(),
+        }
+    }
+
+    pub fn movement_type(&self) -> MovementType {
+        match self {
+            PathSegment::Line(line) => line.movement_type,
+            PathSegment::Arc(arc) => {
+                if arc.clockwise {
+                    MovementType::ArcClockwise
+                } else {
+                    MovementType::ArcCounterClockwise
+                }
+            }
+        }
+    }
+
+    pub fn as_line_segments(&self) -> Vec<LineSegment> {
+        match self {
+            PathSegment::Line(line) => vec![line.clone()],
+            PathSegment::Arc(arc) => arc.to_line_segments(),
+        }
+    }
+}
+
 /// Toolpath visualization data
 #[derive(Debug, Clone)]
 pub struct Toolpath {
-    /// Line segments
-    pub line_segments: Vec<LineSegment>,
-    /// Arc segments
-    pub arc_segments: Vec<ArcSegment>,
+    /// Ordered path segments (line or arc)
+    pub segments: Vec<PathSegment>,
     /// Current tool position
     pub current_position: Vector3,
     /// Start position
@@ -222,8 +272,7 @@ impl Toolpath {
     /// Create new toolpath
     pub fn new(start_position: Vector3) -> Self {
         Self {
-            line_segments: Vec::new(),
-            arc_segments: Vec::new(),
+            segments: Vec::new(),
             current_position: start_position,
             start_position,
             total_length: 0.0,
@@ -235,14 +284,14 @@ impl Toolpath {
     pub fn add_line_segment(&mut self, segment: LineSegment) {
         self.total_length += segment.length();
         self.current_position = segment.end;
-        self.line_segments.push(segment);
+        self.segments.push(PathSegment::Line(segment));
     }
 
     /// Add arc segment
     pub fn add_arc_segment(&mut self, segment: ArcSegment) {
         self.total_length += segment.length();
         self.current_position = segment.end;
-        self.arc_segments.push(segment);
+        self.segments.push(PathSegment::Arc(segment));
     }
 
     /// Update current position
@@ -252,9 +301,9 @@ impl Toolpath {
 
     /// Get all segments as line segments (arcs converted)
     pub fn get_all_line_segments(&self) -> Vec<LineSegment> {
-        let mut all_segments = self.line_segments.clone();
-        for arc in &self.arc_segments {
-            all_segments.extend(arc.to_line_segments());
+        let mut all_segments = Vec::new();
+        for segment in &self.segments {
+            all_segments.extend(segment.as_line_segments());
         }
         all_segments
     }
@@ -303,8 +352,7 @@ impl Toolpath {
 
     /// Clear all segments
     pub fn clear(&mut self) {
-        self.line_segments.clear();
-        self.arc_segments.clear();
+        self.segments.clear();
         self.current_position = self.start_position;
         self.total_length = 0.0;
         self.estimated_time = None;

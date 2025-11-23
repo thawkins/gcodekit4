@@ -24,7 +24,9 @@ pub use features::{
 };
 pub use setup::{Camera, CameraType, Color, Light, LightType, Renderer, Scene, Vector3};
 pub use toolpath_cache::ToolpathCache;
-pub use toolpath_rendering::{ArcSegment, LineSegment, MovementType, Toolpath, ToolpathStats};
+pub use toolpath_rendering::{
+    ArcSegment, LineSegment, MovementType, PathSegment, Toolpath, ToolpathStats,
+};
 pub use viewport::{Bounds, ViewportTransform};
 pub use visualizer_2d::{GCodeCommand, Point2D, Visualizer2D};
 

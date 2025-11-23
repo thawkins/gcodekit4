@@ -1,10 +1,16 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.37.6-alpha  
+**Version**: 0.37.7-alpha  
 **Last Updated**: 2025-11-23  
-**Status**: Visualizer Toolpath Cache
+**Status**: Visualizer Path Segments
 
-### Latest Release (v0.37.6-alpha) - Visualizer Toolpath Cache
+### Latest Release (v0.37.7-alpha) - Visualizer Path Segments
+- ✅ **Single PathSegment Enum**
+  - Replaced duplicate line/arc vectors with one ordered enum so iteration, stats, and rendering all share the same data.
+- ✅ **Segment Helpers**
+  - Added methods for length/movement/discretization to keep downstream code simple when converting arcs to polylines.
+
+### Previous Release (v0.37.6-alpha) - Visualizer Toolpath Cache
 - ✅ **Unified Toolpath Cache**
   - Parsing, command storage, and SVG regeneration now live in a single `ToolpathCache`, preventing double work when toggling between grid/origin renders.
 - ✅ **Accessor Cleanup**

@@ -1,5 +1,10 @@
 ## Slint UI Research and Insights
 
+### Visualizer PathSegment Enum (2025-11-23)
+- Files: `crates/gcodekit4-visualizer/src/visualizer/toolpath_rendering.rs`, `mod.rs`
+- Consolidated the separate line/arc vectors into a single `Vec<PathSegment>` so UI layers traverse one sequence when generating stats or bounding boxes.
+- Added helper methods on `PathSegment` to expose start/end, length, movement type, and discretized line approximations for arc rendering.
+
 ### Visualizer Toolpath Cache (2025-11-23)
 - Files: `crates/gcodekit4-visualizer/src/visualizer/toolpath_cache.rs`, `visualizer_2d.rs`, and `canvas_renderer.rs`
 - Added `ToolpathCache` to own the G-code hash, parsed command list, and SVG regeneration so we only rebuild paths when content changes.
