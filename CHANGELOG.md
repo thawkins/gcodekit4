@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.37.6-alpha] - 2025-11-23
+
+### Changed
+- **Visualizer**: Added a dedicated `ToolpathCache` that owns content hashing, parsed commands, and SVG regeneration so parsing and rendering stay in sync.
+- **Visualizer**: `Visualizer2D` now delegates toolpath access through the cache, simplifying `render_*_to_path` and ensuring we only re-tokenize G-code when the hash changes.
+
 ## [0.37.5-alpha] - 2025-11-23
 
 ### Changed

@@ -10,6 +10,7 @@ pub mod canvas_renderer;
 pub mod controls;
 pub mod features;
 pub mod setup;
+pub mod toolpath_cache;
 pub mod toolpath_rendering;
 pub mod viewport;
 pub mod visualizer_2d;
@@ -22,6 +23,7 @@ pub use features::{
     BoundingBox, GridConfig, MachineLimits, SceneFeatures, ToolMarker, WorkCoordinateSystem,
 };
 pub use setup::{Camera, CameraType, Color, Light, LightType, Renderer, Scene, Vector3};
+pub use toolpath_cache::ToolpathCache;
 pub use toolpath_rendering::{ArcSegment, LineSegment, MovementType, Toolpath, ToolpathStats};
 pub use viewport::{Bounds, ViewportTransform};
 pub use visualizer_2d::{GCodeCommand, Point2D, Visualizer2D};

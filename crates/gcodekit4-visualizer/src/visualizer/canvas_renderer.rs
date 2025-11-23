@@ -7,34 +7,34 @@ const GRID_MAJOR_STEP_MM: f32 = 10.0;
 
 /// Render toolpath as SVG path commands (cutting moves only)
 pub fn render_toolpath_to_path(visualizer: &Visualizer2D, _width: u32, _height: u32) -> String {
-    visualizer.cached_path.clone()
+    visualizer.toolpath_svg().to_string()
 }
 
 /// Render rapid moves (G0) as SVG path commands
 pub fn render_rapid_moves_to_path(visualizer: &Visualizer2D, _width: u32, _height: u32) -> String {
-    visualizer.cached_rapid_path.clone()
+    visualizer.rapid_svg().to_string()
 }
 
 /// Render grid as SVG path commands
 pub fn render_grid_to_path(visualizer: &Visualizer2D, width: u32, height: u32) -> (String, f32) {
     // Get the visible world bounds from the viewbox calculation
     let (vb_x, vb_y, vb_w, vb_h) = visualizer.get_viewbox(width as f32, height as f32);
-    
+
     // SVG coordinates:
     // Left = vb_x
     // Right = vb_x + vb_w
     // Top = vb_y
     // Bottom = vb_y + vb_h
-    
+
     // Convert back to World coordinates for grid calculation
     // World X = SVG X
     // World Y = -SVG Y
-    
+
     let world_left = vb_x;
     let world_right = vb_x + vb_w;
     let world_top = -vb_y;
     let world_bottom = -(vb_y + vb_h);
-    
+
     let min_y = world_bottom.min(world_top);
     let max_y = world_bottom.max(world_top);
     let world_width = world_right - world_left;
@@ -57,7 +57,7 @@ pub fn render_grid_to_path(visualizer: &Visualizer2D, width: u32, height: u32) -
     let num_x = ((end_x - start_x) / step).abs() as usize + 2;
     let num_y = ((end_y - start_y) / step).abs() as usize + 2;
     let mut path = String::with_capacity((num_x + num_y) * 50);
-    
+
     use std::fmt::Write;
 
     const MAX_ITERATIONS: usize = 100000;
@@ -73,7 +73,14 @@ pub fn render_grid_to_path(visualizer: &Visualizer2D, width: u32, height: u32) -
         // Actually, we want to cover the viewbox height.
         // Viewbox Y range is vb_y to vb_y + vb_h.
         // So we can just draw from vb_y to vb_y + vb_h.
-        let _ = write!(path, "M {:.2} {:.2} L {:.2} {:.2} ", x, vb_y, x, vb_y + vb_h);
+        let _ = write!(
+            path,
+            "M {:.2} {:.2} L {:.2} {:.2} ",
+            x,
+            vb_y,
+            x,
+            vb_y + vb_h
+        );
         x += step;
         iterations += 1;
     }
@@ -85,7 +92,14 @@ pub fn render_grid_to_path(visualizer: &Visualizer2D, width: u32, height: u32) -
         // Horizontal line at World Y = y
         // SVG Y = -y
         let svg_y = -y;
-        let _ = write!(path, "M {:.2} {:.2} L {:.2} {:.2} ", vb_x, svg_y, vb_x + vb_w, svg_y);
+        let _ = write!(
+            path,
+            "M {:.2} {:.2} L {:.2} {:.2} ",
+            vb_x,
+            svg_y,
+            vb_x + vb_w,
+            svg_y
+        );
         y += step;
         iterations += 1;
     }
@@ -96,7 +110,7 @@ pub fn render_grid_to_path(visualizer: &Visualizer2D, width: u32, height: u32) -
 /// Render origin marker at (0,0) as yellow cross
 pub fn render_origin_to_path(visualizer: &Visualizer2D, width: u32, height: u32) -> String {
     let (vb_x, vb_y, vb_w, vb_h) = visualizer.get_viewbox(width as f32, height as f32);
-    
+
     let mut path = String::with_capacity(100);
     use std::fmt::Write;
 

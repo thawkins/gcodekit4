@@ -1,5 +1,11 @@
 ## Slint UI Research and Insights
 
+### Visualizer Toolpath Cache (2025-11-23)
+- Files: `crates/gcodekit4-visualizer/src/visualizer/toolpath_cache.rs`, `visualizer_2d.rs`, and `canvas_renderer.rs`
+- Added `ToolpathCache` to own the G-code hash, parsed command list, and SVG regeneration so we only rebuild paths when content changes.
+- `render_toolpath_to_path`/`render_rapid_moves_to_path` now pull from the cache helpers instead of cloning struct fields.
+- `Visualizer2D` exposes `toolpath_svg()`, `rapid_svg()`, and `commands()` to keep renderers from poking at internal buffers.
+
 ### Visualizer Viewport Transform (2025-11-23)
 - Files: `crates/gcodekit4-visualizer/src/visualizer/viewport.rs`, `visualizer_2d.rs`, and `canvas_renderer.rs`
 - Introduced a shared `ViewportTransform` struct so viewbox math (zoom, pan, padding) is consistent for toolpaths, grids, and origin markers.

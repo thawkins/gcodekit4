@@ -1,10 +1,16 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.37.5-alpha  
+**Version**: 0.37.6-alpha  
 **Last Updated**: 2025-11-23  
-**Status**: Visualizer Viewport Consolidation
+**Status**: Visualizer Toolpath Cache
 
-### Latest Release (v0.37.5-alpha) - Visualizer Viewport Consolidation
+### Latest Release (v0.37.6-alpha) - Visualizer Toolpath Cache
+- ✅ **Unified Toolpath Cache**
+  - Parsing, command storage, and SVG regeneration now live in a single `ToolpathCache`, preventing double work when toggling between grid/origin renders.
+- ✅ **Accessor Cleanup**
+  - `Visualizer2D` exposes `toolpath_svg()` / `rapid_svg()` helpers so renderers never reach into internal strings directly.
+
+### Previous Release (v0.37.5-alpha) - Visualizer Viewport Consolidation
 - ✅ **Shared Viewport Math**
   - Added a `ViewportTransform` helper so zoom, pan, and padding calculations are centralized and reused across the 2D visualizer, grid renderer, and origin overlays.
 - ✅ **Reusable Bounds Accumulator**

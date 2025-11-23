@@ -1,10 +1,10 @@
 //! 2D G-Code Visualizer
 //! Parses G-Code toolpaths for canvas-based visualization
 
+use super::toolpath_cache::ToolpathCache;
 use super::viewport::{Bounds, ViewportTransform};
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
-use std::fmt::Write;
 use std::hash::{Hash, Hasher};
 
 const CANVAS_PADDING: f32 = 20.0;
@@ -105,7 +105,6 @@ impl CoordTransform {
 /// 2D Visualizer state
 #[derive(Debug, Clone)]
 pub struct Visualizer2D {
-    pub commands: Vec<GCodeCommand>,
     pub min_x: f32,
     pub max_x: f32,
     pub min_y: f32,
@@ -121,12 +120,7 @@ pub struct Visualizer2D {
     pub show_grid: bool,
     /// Scale factor: pixels per mm (default 1.0 = 1px:1mm)
     pub scale_factor: f32,
-    /// Cached SVG path data for toolpath (cutting moves)
-    pub cached_path: String,
-    /// Cached SVG path data for rapid moves
-    pub cached_rapid_path: String,
-    /// Hash of the parsed G-code content
-    pub content_hash: u64,
+    toolpath_cache: ToolpathCache,
     viewport: ViewportTransform,
 }
 
@@ -134,7 +128,6 @@ impl Visualizer2D {
     /// Create new 2D visualizer
     pub fn new() -> Self {
         Self {
-            commands: Vec::new(),
             min_x: -1000.0,
             max_x: 1000.0,
             min_y: -1000.0,
@@ -145,9 +138,7 @@ impl Visualizer2D {
             y_offset: 0.0,
             show_grid: true,
             scale_factor: DEFAULT_SCALE_FACTOR,
-            cached_path: String::new(),
-            cached_rapid_path: String::new(),
-            content_hash: 0,
+            toolpath_cache: ToolpathCache::new(),
             viewport: ViewportTransform::new(CANVAS_PADDING),
         }
     }
@@ -218,12 +209,11 @@ impl Visualizer2D {
         gcode.hash(&mut hasher);
         let new_hash = hasher.finish();
 
-        if self.content_hash == new_hash && !self.commands.is_empty() {
+        if !self.toolpath_cache.needs_update(new_hash) {
             return; // Already parsed this content
         }
-        self.content_hash = new_hash;
 
-        self.commands.clear();
+        let mut commands = Vec::new();
         let mut current_pos = Point2D::new(0.0, 0.0);
         let mut bounds = Bounds::new();
         let mut _g0_count = 0;
@@ -242,19 +232,43 @@ impl Visualizer2D {
                 match gcode_num {
                     0 => {
                         _g0_count += 1;
-                        self.parse_linear_move(line, &mut current_pos, &mut bounds, true);
+                        Self::parse_linear_move(
+                            &mut commands,
+                            line,
+                            &mut current_pos,
+                            &mut bounds,
+                            true,
+                        );
                     }
                     1 => {
                         _g1_count += 1;
-                        self.parse_linear_move(line, &mut current_pos, &mut bounds, false);
+                        Self::parse_linear_move(
+                            &mut commands,
+                            line,
+                            &mut current_pos,
+                            &mut bounds,
+                            false,
+                        );
                     }
                     2 => {
                         _g2_count += 1;
-                        self.parse_arc_move(line, &mut current_pos, &mut bounds, true);
+                        Self::parse_arc_move(
+                            &mut commands,
+                            line,
+                            &mut current_pos,
+                            &mut bounds,
+                            true,
+                        );
                     }
                     3 => {
                         _g3_count += 1;
-                        self.parse_arc_move(line, &mut current_pos, &mut bounds, false);
+                        Self::parse_arc_move(
+                            &mut commands,
+                            line,
+                            &mut current_pos,
+                            &mut bounds,
+                            false,
+                        );
                     }
                     _ => {}
                 }
@@ -265,94 +279,7 @@ impl Visualizer2D {
             bounds.finalize_with_padding(BOUNDS_PADDING_FACTOR);
         self.current_pos = current_pos;
 
-        self.regenerate_cache();
-    }
-
-    fn regenerate_cache(&mut self) {
-        // Toolpath (Cutting moves)
-        let mut path = String::with_capacity(self.commands.len() * 25);
-        let mut last_pos: Option<Point2D> = None;
-
-        for cmd in &self.commands {
-            match cmd {
-                GCodeCommand::Move { from, to, rapid } => {
-                    if *rapid {
-                        last_pos = None;
-                        continue;
-                    }
-
-                    if last_pos.is_none() {
-                        let _ = write!(path, "M {:.2} {:.2} ", from.x, -from.y);
-                    }
-                    let _ = write!(path, "L {:.2} {:.2} ", to.x, -to.y);
-                    last_pos = Some(*to);
-                }
-                GCodeCommand::Arc {
-                    from,
-                    to,
-                    center,
-                    clockwise,
-                } => {
-                    let radius = ((from.x - center.x).powi(2) + (from.y - center.y).powi(2)).sqrt();
-
-                    if last_pos.is_none() {
-                        let _ = write!(path, "M {:.2} {:.2} ", from.x, -from.y);
-                    }
-
-                    // Reflection across X axis reverses winding order.
-                    // So CW in G-code (Y up) becomes CCW in SVG (Y down).
-                    // If clockwise is true, we want sweep=0 (CCW) in SVG.
-                    let sweep = if *clockwise { 0 } else { 1 };
-
-                    // Large arc flag calculation
-                    let start_angle = (from.y - center.y).atan2(from.x - center.x);
-                    let end_angle = (to.y - center.y).atan2(to.x - center.x);
-                    let mut angle_diff = if *clockwise {
-                        start_angle - end_angle
-                    } else {
-                        end_angle - start_angle
-                    };
-
-                    // Normalize to [0, 2PI]
-                    use std::f32::consts::PI;
-                    while angle_diff < 0.0 {
-                        angle_diff += 2.0 * PI;
-                    }
-                    while angle_diff >= 2.0 * PI {
-                        angle_diff -= 2.0 * PI;
-                    }
-
-                    let large_arc = if angle_diff > PI { 1 } else { 0 };
-
-                    let _ = write!(
-                        path,
-                        "A {:.2} {:.2} 0 {} {} {:.2} {:.2} ",
-                        radius, radius, large_arc, sweep, to.x, -to.y
-                    );
-
-                    last_pos = Some(*to);
-                }
-            }
-        }
-        self.cached_path = path;
-
-        // Rapid moves
-        let mut rapid_path = String::with_capacity(self.commands.len() * 10);
-        for cmd in &self.commands {
-            if let GCodeCommand::Move {
-                from,
-                to,
-                rapid: true,
-            } = cmd
-            {
-                let _ = write!(
-                    rapid_path,
-                    "M {:.2} {:.2} L {:.2} {:.2} ",
-                    from.x, -from.y, to.x, -to.y
-                );
-            }
-        }
-        self.cached_rapid_path = rapid_path;
+        self.toolpath_cache.update(new_hash, commands);
     }
 
     /// Calculate viewbox for the current view state
@@ -370,7 +297,7 @@ impl Visualizer2D {
     }
 
     fn parse_linear_move(
-        &mut self,
+        commands: &mut Vec<GCodeCommand>,
         line: &str,
         current_pos: &mut Point2D,
         bounds: &mut Bounds,
@@ -407,7 +334,7 @@ impl Visualizer2D {
         // Only create a command if at least one axis changed
         if x_found || y_found {
             let to = Point2D::new(new_x, new_y);
-            self.commands.push(GCodeCommand::Move {
+            commands.push(GCodeCommand::Move {
                 from: *current_pos,
                 to,
                 rapid: is_rapid,
@@ -420,7 +347,7 @@ impl Visualizer2D {
     }
 
     fn parse_arc_move(
-        &mut self,
+        commands: &mut Vec<GCodeCommand>,
         line: &str,
         current_pos: &mut Point2D,
         bounds: &mut Bounds,
@@ -465,7 +392,7 @@ impl Visualizer2D {
             let to = Point2D::new(x, y);
             let center = Point2D::new(current_pos.x + i, current_pos.y + j);
 
-            self.commands.push(GCodeCommand::Arc {
+            commands.push(GCodeCommand::Arc {
                 from: *current_pos,
                 to,
                 center,
@@ -501,12 +428,24 @@ impl Visualizer2D {
 
     /// Get number of commands parsed
     pub fn get_command_count(&self) -> usize {
-        self.commands.len()
+        self.toolpath_cache.len()
     }
 
     /// Get bounds information
     pub fn get_bounds(&self) -> (f32, f32, f32, f32) {
         (self.min_x, self.max_x, self.min_y, self.max_y)
+    }
+
+    pub fn toolpath_svg(&self) -> &str {
+        self.toolpath_cache.toolpath_svg()
+    }
+
+    pub fn rapid_svg(&self) -> &str {
+        self.toolpath_cache.rapid_svg()
+    }
+
+    pub fn commands(&self) -> &[GCodeCommand] {
+        self.toolpath_cache.commands()
     }
 
     /// Increase zoom by 10%
@@ -559,7 +498,7 @@ impl Visualizer2D {
     pub fn fit_to_view(&mut self, canvas_width: f32, canvas_height: f32) {
         let mut bounds = Bounds::new();
 
-        for cmd in &self.commands {
+        for cmd in self.toolpath_cache.commands() {
             match cmd {
                 GCodeCommand::Move { to, rapid, .. } => {
                     if !rapid {
@@ -605,7 +544,7 @@ impl Visualizer2D {
         let mut bounds = Bounds::new();
         let mut has_cutting_moves = false;
 
-        for cmd in &self.commands {
+        for cmd in self.toolpath_cache.commands() {
             match cmd {
                 GCodeCommand::Move { to, rapid, .. } => {
                     if !*rapid {
@@ -629,7 +568,7 @@ impl Visualizer2D {
 
     /// Get the start point of the toolpath (for debugging/testing)
     pub fn get_start_point(&self) -> Option<Point2D> {
-        self.commands.first().map(|cmd| match cmd {
+        self.toolpath_cache.commands().first().map(|cmd| match cmd {
             GCodeCommand::Move { from, .. } => *from,
             GCodeCommand::Arc { from, .. } => *from,
         })
