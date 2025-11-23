@@ -1,10 +1,16 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.37.8-alpha  
+**Version**: 0.37.9-alpha  
 **Last Updated**: 2025-11-23  
-**Status**: Visualizer Movement Metadata
+**Status**: Visualizer Segment Visitor
 
-### Latest Release (v0.37.8-alpha) - Visualizer Movement Metadata
+### Latest Release (v0.37.9-alpha) - Visualizer Segment Visitor
+- ✅ **Streaming Line Visitor**
+  - New `visit_line_segments` helper emits discretized moves without allocating a giant buffer.
+- ✅ **Metrics via Visitor**
+  - Bounding box + stats now consume the visitor, keeping memory flat even on multi-million-line files.
+
+### Previous Release (v0.37.8-alpha) - Visualizer Movement Metadata
 - ✅ **MovementMeta Struct**
   - Centralizes movement type plus feed-rate state so line/arc segments share one source of truth.
 - ✅ **Arc Metadata Flow**

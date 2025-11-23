@@ -318,36 +318,58 @@ impl Toolpath {
     /// Get all segments as line segments (arcs converted)
     pub fn get_all_line_segments(&self) -> Vec<LineSegment> {
         let mut all_segments = Vec::new();
-        for segment in &self.segments {
-            all_segments.extend(segment.as_line_segments());
-        }
+        self.visit_line_segments(|segment| all_segments.push(segment));
         all_segments
+    }
+
+    /// Visit every line segment (arcs discretized on the fly)
+    pub fn visit_line_segments<F>(&self, mut visitor: F)
+    where
+        F: FnMut(LineSegment),
+    {
+        for segment in &self.segments {
+            match segment {
+                PathSegment::Line(line) => visitor(line.clone()),
+                PathSegment::Arc(arc) => {
+                    for line in arc.to_line_segments() {
+                        visitor(line);
+                    }
+                }
+            }
+        }
     }
 
     /// Calculate bounding box
     pub fn get_bounding_box(&self) -> Option<(Vector3, Vector3)> {
-        let all_segments = self.get_all_line_segments();
-        if all_segments.is_empty() {
-            return None;
+        let mut min: Option<Vector3> = None;
+        let mut max: Option<Vector3> = None;
+
+        self.visit_line_segments(|segment| {
+            for point in [segment.start, segment.end] {
+                min = Some(match min {
+                    Some(current) => Vector3::new(
+                        current.x.min(point.x),
+                        current.y.min(point.y),
+                        current.z.min(point.z),
+                    ),
+                    None => point,
+                });
+
+                max = Some(match max {
+                    Some(current) => Vector3::new(
+                        current.x.max(point.x),
+                        current.y.max(point.y),
+                        current.z.max(point.z),
+                    ),
+                    None => point,
+                });
+            }
+        });
+
+        match (min, max) {
+            (Some(min), Some(max)) => Some((min, max)),
+            _ => None,
         }
-
-        let mut min = all_segments[0].start;
-        let mut max = all_segments[0].start;
-
-        for segment in &all_segments {
-            min = Vector3::new(
-                min.x.min(segment.start.x).min(segment.end.x),
-                min.y.min(segment.start.y).min(segment.end.y),
-                min.z.min(segment.start.z).min(segment.end.z),
-            );
-            max = Vector3::new(
-                max.x.max(segment.start.x).max(segment.end.x),
-                max.y.max(segment.start.y).max(segment.end.y),
-                max.z.max(segment.start.z).max(segment.end.z),
-            );
-        }
-
-        Some((min, max))
     }
 
     /// Get center of bounding box
@@ -376,24 +398,32 @@ impl Toolpath {
 
     /// Get statistics
     pub fn get_statistics(&self) -> ToolpathStats {
-        let segments = self.get_all_line_segments();
-        let rapid_count = segments
-            .iter()
-            .filter(|s| s.meta.movement_type == MovementType::Rapid)
-            .count();
-        let feed_count = segments
-            .iter()
-            .filter(|s| s.meta.movement_type == MovementType::Feed)
-            .count();
+        let mut totals = SegmentTotals::default();
+
+        self.visit_line_segments(|segment| {
+            totals.total += 1;
+            match segment.meta.movement_type {
+                MovementType::Rapid => totals.rapid += 1,
+                MovementType::Feed => totals.feed += 1,
+                _ => {}
+            }
+        });
 
         ToolpathStats {
-            total_segments: segments.len(),
-            rapid_segments: rapid_count,
-            feed_segments: feed_count,
+            total_segments: totals.total,
+            rapid_segments: totals.rapid,
+            feed_segments: totals.feed,
             total_length: self.total_length,
             estimated_time: self.estimated_time,
         }
     }
+}
+
+#[derive(Default)]
+struct SegmentTotals {
+    total: usize,
+    rapid: usize,
+    feed: usize,
 }
 
 impl Default for Toolpath {

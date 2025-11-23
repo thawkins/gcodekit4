@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.37.9-alpha] - 2025-11-23
+
+### Changed
+- **Visualizer**: Added a `visit_line_segments` iterator so consumers can stream discretized moves without allocating a separate vector.
+- **Visualizer**: Bounding box + statistics computation now use the streaming visitor, dramatically reducing memory spikes on large files.
+
 ## [0.37.8-alpha] - 2025-11-23
 
 ### Changed

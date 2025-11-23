@@ -1,5 +1,10 @@
 ## Slint UI Research and Insights
 
+### Visualizer Segment Visitor (2025-11-23)
+- Files: `crates/gcodekit4-visualizer/src/visualizer/toolpath_rendering.rs`
+- Added `visit_line_segments` so Slint canvases/metrics can stream discretized moves without allocating huge vectors.
+- Bounding box + statistics now use the visitor, eliminating multi-MB clones when large G-code files load.
+
 ### Visualizer MovementMeta (2025-11-23)
 - Files: `crates/gcodekit4-visualizer/src/visualizer/toolpath_rendering.rs`
 - Added `MovementMeta` so line and arc segments share feed-rate + movement type data instead of duplicating fields.
