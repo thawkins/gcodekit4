@@ -1,10 +1,16 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.37.10-alpha  
+**Version**: 0.37.11-alpha  
 **Last Updated**: 2025-11-23  
-**Status**: Visualizer Arc Iterators
+**Status**: Visualizer Arc Geometry Cache
 
-### Latest Release (v0.37.10-alpha) - Visualizer Arc Iterators
+### Latest Release (v0.37.11-alpha) - Visualizer Arc Geometry Cache
+- ✅ **ArcAngles Cache**
+  - Precomputes arc start angle + delta so repeated interpolation skips redundant trig.
+- ✅ **Iterator/Length Integration**
+  - Arc iterators, interpolation, and length calculations now reuse cached spans for smoother rendering of dense arc paths.
+
+### Previous Release (v0.37.10-alpha) - Visualizer Arc Iterators
 - ✅ **ArcLineIterator**
   - Lazily emits discretized line segments so arcs no longer allocate large vectors every time they are rendered.
 - ✅ **Visitor Integration**

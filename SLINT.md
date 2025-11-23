@@ -1,5 +1,10 @@
 ## Slint UI Research and Insights
 
+### Visualizer Arc Geometry Cache (2025-11-23)
+- Files: `crates/gcodekit4-visualizer/src/visualizer/toolpath_rendering.rs`
+- Added `ArcAngles` cache so Slint doesn't recompute atan2/TAU math during every paint.
+- Arc iterators, interpolation, and length queries now reuse the cached span for consistent performance.
+
 ### Visualizer ArcLineIterator (2025-11-23)
 - Files: `crates/gcodekit4-visualizer/src/visualizer/toolpath_rendering.rs`
 - Added `ArcLineIterator` to lazily emit arc polylines so Slint avoids per-frame Vec allocations.

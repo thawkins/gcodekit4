@@ -112,6 +112,8 @@ pub struct ArcSegment {
     pub meta: MovementMeta,
     /// Number of line segments to approximate arc
     pub segments: u32,
+    /// Cached angular span for fast interpolation
+    angles: ArcAngles,
 }
 
 impl ArcSegment {
@@ -123,6 +125,7 @@ impl ArcSegment {
         } else {
             MovementType::ArcCounterClockwise
         };
+        let angles = ArcAngles::from_points(start, end, center, movement_type);
         Self {
             start,
             end,
@@ -130,6 +133,7 @@ impl ArcSegment {
             radius,
             meta: MovementMeta::new(movement_type),
             segments: 20,
+            angles,
         }
     }
 
@@ -145,24 +149,9 @@ impl ArcSegment {
         self
     }
 
-    fn is_clockwise(&self) -> bool {
-        self.meta.movement_type == MovementType::ArcClockwise
-    }
-
     /// Calculate arc length
     pub fn length(&self) -> f32 {
-        let start_dir = (self.start - self.center).normalize();
-        let end_dir = (self.end - self.center).normalize();
-
-        let angle_start = start_dir.y.atan2(start_dir.x);
-        let angle_end = end_dir.y.atan2(end_dir.x);
-
-        let mut angle_diff = angle_end - angle_start;
-        if self.is_clockwise() && angle_diff > 0.0 {
-            angle_diff -= std::f32::consts::TAU;
-        } else if !self.is_clockwise() && angle_diff < 0.0 {
-            angle_diff += std::f32::consts::TAU;
-        }
+        let angle_diff = self.angles.delta;
 
         // Arc length = radius * angle (in radians)
         // Also account for helical movement (Z change)
@@ -193,20 +182,45 @@ impl ArcSegment {
     }
 
     fn calculate_arc_angle(&self, t: f32) -> f32 {
-        let start_dir = (self.start - self.center).normalize();
-        let end_dir = (self.end - self.center).normalize();
+        self.angles.angle_at(t)
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+struct ArcAngles {
+    start: f32,
+    delta: f32,
+}
+
+impl ArcAngles {
+    fn from_points(
+        start: Vector3,
+        end: Vector3,
+        center: Vector3,
+        movement_type: MovementType,
+    ) -> Self {
+        let start_dir = (start - center).normalize();
+        let end_dir = (end - center).normalize();
 
         let angle_start = start_dir.y.atan2(start_dir.x);
         let angle_end = end_dir.y.atan2(end_dir.x);
 
+        let clockwise = movement_type == MovementType::ArcClockwise;
         let mut angle_diff = angle_end - angle_start;
-        if self.is_clockwise() && angle_diff > 0.0 {
+        if clockwise && angle_diff > 0.0 {
             angle_diff -= std::f32::consts::TAU;
-        } else if !self.is_clockwise() && angle_diff < 0.0 {
+        } else if !clockwise && angle_diff < 0.0 {
             angle_diff += std::f32::consts::TAU;
         }
 
-        angle_start + angle_diff * t
+        Self {
+            start: angle_start,
+            delta: angle_diff,
+        }
+    }
+
+    fn angle_at(&self, t: f32) -> f32 {
+        self.start + self.delta * t
     }
 }
 
