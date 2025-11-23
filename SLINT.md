@@ -1,5 +1,10 @@
 ## Slint UI Research and Insights
 
+### Visualizer MovementMeta (2025-11-23)
+- Files: `crates/gcodekit4-visualizer/src/visualizer/toolpath_rendering.rs`
+- Added `MovementMeta` so line and arc segments share feed-rate + movement type data instead of duplicating fields.
+- Arc discretization now simply clones metadata when producing `LineSegment`s, keeping direction + feed propagation consistent.
+
 ### Visualizer PathSegment Enum (2025-11-23)
 - Files: `crates/gcodekit4-visualizer/src/visualizer/toolpath_rendering.rs`, `mod.rs`
 - Consolidated the separate line/arc vectors into a single `Vec<PathSegment>` so UI layers traverse one sequence when generating stats or bounding boxes.

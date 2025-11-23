@@ -1,10 +1,16 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.37.7-alpha  
+**Version**: 0.37.8-alpha  
 **Last Updated**: 2025-11-23  
-**Status**: Visualizer Path Segments
+**Status**: Visualizer Movement Metadata
 
-### Latest Release (v0.37.7-alpha) - Visualizer Path Segments
+### Latest Release (v0.37.8-alpha) - Visualizer Movement Metadata
+- ✅ **MovementMeta Struct**
+  - Centralizes movement type plus feed-rate state so line/arc segments share one source of truth.
+- ✅ **Arc Metadata Flow**
+  - Arc discretization now reuses metadata for direction + feed propagation, eliminating manual branching.
+
+### Previous Release (v0.37.7-alpha) - Visualizer Path Segments
 - ✅ **Single PathSegment Enum**
   - Replaced duplicate line/arc vectors with one ordered enum so iteration, stats, and rendering all share the same data.
 - ✅ **Segment Helpers**

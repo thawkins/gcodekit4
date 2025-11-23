@@ -18,6 +18,29 @@ pub enum MovementType {
     ArcCounterClockwise,
 }
 
+/// Shared metadata for any movement segment
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct MovementMeta {
+    /// Segment classification
+    pub movement_type: MovementType,
+    /// Optional feed rate
+    pub feed_rate: Option<f32>,
+}
+
+impl MovementMeta {
+    pub fn new(movement_type: MovementType) -> Self {
+        Self {
+            movement_type,
+            feed_rate: None,
+        }
+    }
+
+    pub fn with_feed_rate(mut self, feed_rate: f32) -> Self {
+        self.feed_rate = Some(feed_rate);
+        self
+    }
+}
+
 /// Line segment in toolpath
 #[derive(Debug, Clone)]
 pub struct LineSegment {
@@ -25,10 +48,8 @@ pub struct LineSegment {
     pub start: Vector3,
     /// End point
     pub end: Vector3,
-    /// Movement type
-    pub movement_type: MovementType,
-    /// Feed rate (if applicable)
-    pub feed_rate: Option<f32>,
+    /// Movement meta
+    pub meta: MovementMeta,
     /// Segment color (override default)
     pub color: Option<Color>,
 }
@@ -39,15 +60,14 @@ impl LineSegment {
         Self {
             start,
             end,
-            movement_type,
-            feed_rate: None,
+            meta: MovementMeta::new(movement_type),
             color: None,
         }
     }
 
     /// Set feed rate
     pub fn with_feed_rate(mut self, feed_rate: f32) -> Self {
-        self.feed_rate = Some(feed_rate);
+        self.meta.feed_rate = Some(feed_rate);
         self
     }
 
@@ -67,7 +87,7 @@ impl LineSegment {
         if let Some(color) = self.color {
             color
         } else {
-            match self.movement_type {
+            match self.meta.movement_type {
                 MovementType::Rapid => Color::orange(),
                 MovementType::Feed => Color::new(0.0, 1.0, 0.0),
                 MovementType::ArcClockwise => Color::new(1.0, 0.0, 0.0),
@@ -88,10 +108,8 @@ pub struct ArcSegment {
     pub center: Vector3,
     /// Arc radius
     pub radius: f32,
-    /// Is clockwise arc
-    pub clockwise: bool,
-    /// Feed rate
-    pub feed_rate: Option<f32>,
+    /// Movement metadata (direction + feed rate)
+    pub meta: MovementMeta,
     /// Number of line segments to approximate arc
     pub segments: u32,
 }
@@ -100,20 +118,24 @@ impl ArcSegment {
     /// Create new arc segment
     pub fn new(start: Vector3, end: Vector3, center: Vector3, clockwise: bool) -> Self {
         let radius = start.subtract(center).magnitude();
+        let movement_type = if clockwise {
+            MovementType::ArcClockwise
+        } else {
+            MovementType::ArcCounterClockwise
+        };
         Self {
             start,
             end,
             center,
             radius,
-            clockwise,
-            feed_rate: None,
+            meta: MovementMeta::new(movement_type),
             segments: 20,
         }
     }
 
     /// Set feed rate
     pub fn with_feed_rate(mut self, feed_rate: f32) -> Self {
-        self.feed_rate = Some(feed_rate);
+        self.meta.feed_rate = Some(feed_rate);
         self
     }
 
@@ -121,6 +143,10 @@ impl ArcSegment {
     pub fn with_segments(mut self, segments: u32) -> Self {
         self.segments = segments.max(2);
         self
+    }
+
+    fn is_clockwise(&self) -> bool {
+        self.meta.movement_type == MovementType::ArcClockwise
     }
 
     /// Calculate arc length
@@ -132,9 +158,9 @@ impl ArcSegment {
         let angle_end = end_dir.y.atan2(end_dir.x);
 
         let mut angle_diff = angle_end - angle_start;
-        if self.clockwise && angle_diff > 0.0 {
+        if self.is_clockwise() && angle_diff > 0.0 {
             angle_diff -= std::f32::consts::TAU;
-        } else if !self.clockwise && angle_diff < 0.0 {
+        } else if !self.is_clockwise() && angle_diff < 0.0 {
             angle_diff += std::f32::consts::TAU;
         }
 
@@ -149,11 +175,7 @@ impl ArcSegment {
     /// Convert arc to line segments
     pub fn to_line_segments(&self) -> Vec<LineSegment> {
         let mut segments = Vec::new();
-        let movement_type = if self.clockwise {
-            MovementType::ArcClockwise
-        } else {
-            MovementType::ArcCounterClockwise
-        };
+        let movement_type = self.meta.movement_type;
 
         let mut current = self.start;
         let step = 1.0 / (self.segments as f32);
@@ -163,7 +185,7 @@ impl ArcSegment {
             let next = self.interpolate_arc(t);
 
             let mut segment = LineSegment::new(current, next, movement_type);
-            if let Some(feed_rate) = self.feed_rate {
+            if let Some(feed_rate) = self.meta.feed_rate {
                 segment = segment.with_feed_rate(feed_rate);
             }
             segments.push(segment);
@@ -191,9 +213,9 @@ impl ArcSegment {
         let angle_end = end_dir.y.atan2(end_dir.x);
 
         let mut angle_diff = angle_end - angle_start;
-        if self.clockwise && angle_diff > 0.0 {
+        if self.is_clockwise() && angle_diff > 0.0 {
             angle_diff -= std::f32::consts::TAU;
-        } else if !self.clockwise && angle_diff < 0.0 {
+        } else if !self.is_clockwise() && angle_diff < 0.0 {
             angle_diff += std::f32::consts::TAU;
         }
 
@@ -234,14 +256,8 @@ impl PathSegment {
 
     pub fn movement_type(&self) -> MovementType {
         match self {
-            PathSegment::Line(line) => line.movement_type,
-            PathSegment::Arc(arc) => {
-                if arc.clockwise {
-                    MovementType::ArcClockwise
-                } else {
-                    MovementType::ArcCounterClockwise
-                }
-            }
+            PathSegment::Line(line) => line.meta.movement_type,
+            PathSegment::Arc(arc) => arc.meta.movement_type,
         }
     }
 
@@ -363,11 +379,11 @@ impl Toolpath {
         let segments = self.get_all_line_segments();
         let rapid_count = segments
             .iter()
-            .filter(|s| s.movement_type == MovementType::Rapid)
+            .filter(|s| s.meta.movement_type == MovementType::Rapid)
             .count();
         let feed_count = segments
             .iter()
-            .filter(|s| s.movement_type == MovementType::Feed)
+            .filter(|s| s.meta.movement_type == MovementType::Feed)
             .count();
 
         ToolpathStats {
