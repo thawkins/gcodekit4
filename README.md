@@ -4,7 +4,7 @@ A modern, cross-platform G-Code sender and CNC machine controller written in Rus
 
 [![Build Status](https://github.com/thawkins/gcodekit4/workflows/CI/badge.svg)](https://github.com/thawkins/gcodekit4/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-0.37.4--alpha-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-0.37.5--alpha-brightgreen.svg)](CHANGELOG.md)
 
 ## Overview
 
@@ -137,6 +137,7 @@ This modular structure enables:
 - **Interactive Controls**: Zoom, pan, and fit-to-view with mouse interaction
 - **Color-Coded Paths**: Distinct colors for Rapid (G0) and Feed (G1/G2/G3) moves
 - **Performance**: Optimized rendering for large files
+- **Shared Viewport Engine**: A centralized `ViewportTransform` keeps zoom/pan math consistent across toolpaths, grids, and origin markers.
 
 ### 💬 Smart Device Console
 - **Command History**: Scrollable record of all device communications

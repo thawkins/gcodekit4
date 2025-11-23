@@ -1,10 +1,16 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.37.4-alpha  
+**Version**: 0.37.5-alpha  
 **Last Updated**: 2025-11-23  
-**Status**: Designer Bulk Property Editing
+**Status**: Visualizer Viewport Consolidation
 
-### Latest Release (v0.37.4-alpha) - Designer Bulk Property Editing
+### Latest Release (v0.37.5-alpha) - Visualizer Viewport Consolidation
+- ✅ **Shared Viewport Math**
+  - Added a `ViewportTransform` helper so zoom, pan, and padding calculations are centralized and reused across the 2D visualizer, grid renderer, and origin overlays.
+- ✅ **Reusable Bounds Accumulator**
+  - Moved the parser's bounding-box struct into the viewport module, clarifying how padding is applied before viewboxes are emitted.
+
+### Previous Release (v0.37.4-alpha) - Designer Bulk Property Editing
 - ✅ **Tabbed Views Visible**
   - Unified the conditional rendering logic so every tab (Visualizer, Device Console, etc.) shows its content consistently.
 - ✅ **Alignment Cascade**

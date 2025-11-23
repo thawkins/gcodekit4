@@ -1,9 +1,10 @@
 //! 2D G-Code Visualizer
 //! Parses G-Code toolpaths for canvas-based visualization
 
+use super::viewport::{Bounds, ViewportTransform};
+use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::fmt::Write;
-use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
 const CANVAS_PADDING: f32 = 20.0;
@@ -35,64 +36,6 @@ pub struct Point2D {
 impl Point2D {
     pub fn new(x: f32, y: f32) -> Self {
         Self { x, y }
-    }
-}
-
-/// Bounding box with validation
-#[derive(Debug, Clone, Copy)]
-struct Bounds {
-    min_x: f32,
-    max_x: f32,
-    min_y: f32,
-    max_y: f32,
-}
-
-impl Bounds {
-    fn new() -> Self {
-        Self {
-            min_x: f32::MAX,
-            max_x: f32::MIN,
-            min_y: f32::MAX,
-            max_y: f32::MIN,
-        }
-    }
-
-    fn update(&mut self, x: f32, y: f32) {
-        self.min_x = self.min_x.min(x);
-        self.max_x = self.max_x.max(x);
-        self.min_y = self.min_y.min(y);
-        self.max_y = self.max_y.max(y);
-    }
-
-    fn is_valid(&self) -> bool {
-        self.min_x != f32::MAX
-            && self.max_x != f32::MIN
-            && self.min_y != f32::MAX
-            && self.max_y != f32::MIN
-            && self.min_x.is_finite()
-            && self.max_x.is_finite()
-            && self.min_y.is_finite()
-            && self.max_y.is_finite()
-    }
-
-    fn finalize_with_padding(self, padding_factor: f32) -> (f32, f32, f32, f32) {
-        if !self.is_valid() {
-            return (0.0, 100.0, 0.0, 100.0);
-        }
-
-        let padding_x = (self.max_x - self.min_x) * padding_factor;
-        let padding_y = (self.max_y - self.min_y) * padding_factor;
-
-        // Always ensure (0,0) is at bottom-left by including it in bounds
-        let final_min_x = (self.min_x - padding_x).min(0.0);
-        let final_min_y = (self.min_y - padding_y).min(0.0);
-
-        (
-            final_min_x,
-            self.max_x + padding_x,
-            final_min_y,
-            self.max_y + padding_y,
-        )
     }
 }
 
@@ -184,6 +127,7 @@ pub struct Visualizer2D {
     pub cached_rapid_path: String,
     /// Hash of the parsed G-code content
     pub content_hash: u64,
+    viewport: ViewportTransform,
 }
 
 impl Visualizer2D {
@@ -204,24 +148,25 @@ impl Visualizer2D {
             cached_path: String::new(),
             cached_rapid_path: String::new(),
             content_hash: 0,
+            viewport: ViewportTransform::new(CANVAS_PADDING),
         }
     }
 
     /// Calculate and set offsets to position origin (0,0) at bottom-left of canvas
     pub fn set_default_view(&mut self, _canvas_width: f32, canvas_height: f32) {
-        // Target position: 5px from left, 5px from bottom
-        let target_x = 5.0;
-        let target_y = canvas_height - 5.0;
-        let padding = 20.0;
-        let effective_scale = self.zoom_scale * self.scale_factor;
-
-        // screen_x = (0 - min_x) * scale + padding + x_offset
-        // x_offset = target_x - ((0 - min_x) * scale + padding)
-        self.x_offset = target_x - ((0.0 - self.min_x) * effective_scale + padding);
-
-        // screen_y = height - ((0 - min_y) * scale + padding - y_offset)
-        // y_offset = (0 - min_y) * scale + padding - (height - target_y)
-        self.y_offset = (0.0 - self.min_y) * effective_scale + padding - (canvas_height - target_y);
+        let (x_offset, y_offset) = self.viewport.offsets_to_place_world_point(
+            self.min_x,
+            self.min_y,
+            self.zoom_scale,
+            self.scale_factor,
+            canvas_height,
+            0.0,
+            0.0,
+            5.0,
+            canvas_height - 5.0,
+        );
+        self.x_offset = x_offset;
+        self.y_offset = y_offset;
     }
 
     /// Toggle grid visibility
@@ -259,11 +204,11 @@ impl Visualizer2D {
         let end_idx = after_g
             .find(|c: char| !c.is_ascii_digit())
             .unwrap_or(after_g.len());
-        
+
         if end_idx == 0 {
             return None;
         }
-        
+
         after_g[..end_idx].parse::<u32>().ok()
     }
 
@@ -319,7 +264,7 @@ impl Visualizer2D {
         (self.min_x, self.max_x, self.min_y, self.max_y) =
             bounds.finalize_with_padding(BOUNDS_PADDING_FACTOR);
         self.current_pos = current_pos;
-        
+
         self.regenerate_cache();
     }
 
@@ -327,7 +272,7 @@ impl Visualizer2D {
         // Toolpath (Cutting moves)
         let mut path = String::with_capacity(self.commands.len() * 25);
         let mut last_pos: Option<Point2D> = None;
-        
+
         for cmd in &self.commands {
             match cmd {
                 GCodeCommand::Move { from, to, rapid } => {
@@ -335,25 +280,30 @@ impl Visualizer2D {
                         last_pos = None;
                         continue;
                     }
-                    
+
                     if last_pos.is_none() {
                         let _ = write!(path, "M {:.2} {:.2} ", from.x, -from.y);
                     }
                     let _ = write!(path, "L {:.2} {:.2} ", to.x, -to.y);
                     last_pos = Some(*to);
                 }
-                GCodeCommand::Arc { from, to, center, clockwise } => {
+                GCodeCommand::Arc {
+                    from,
+                    to,
+                    center,
+                    clockwise,
+                } => {
                     let radius = ((from.x - center.x).powi(2) + (from.y - center.y).powi(2)).sqrt();
-                    
+
                     if last_pos.is_none() {
                         let _ = write!(path, "M {:.2} {:.2} ", from.x, -from.y);
                     }
-                    
+
                     // Reflection across X axis reverses winding order.
                     // So CW in G-code (Y up) becomes CCW in SVG (Y down).
                     // If clockwise is true, we want sweep=0 (CCW) in SVG.
                     let sweep = if *clockwise { 0 } else { 1 };
-                    
+
                     // Large arc flag calculation
                     let start_angle = (from.y - center.y).atan2(from.x - center.x);
                     let end_angle = (to.y - center.y).atan2(to.x - center.x);
@@ -362,29 +312,44 @@ impl Visualizer2D {
                     } else {
                         end_angle - start_angle
                     };
-                    
+
                     // Normalize to [0, 2PI]
                     use std::f32::consts::PI;
-                    while angle_diff < 0.0 { angle_diff += 2.0 * PI; }
-                    while angle_diff >= 2.0 * PI { angle_diff -= 2.0 * PI; }
-                    
+                    while angle_diff < 0.0 {
+                        angle_diff += 2.0 * PI;
+                    }
+                    while angle_diff >= 2.0 * PI {
+                        angle_diff -= 2.0 * PI;
+                    }
+
                     let large_arc = if angle_diff > PI { 1 } else { 0 };
-                    
-                    let _ = write!(path, "A {:.2} {:.2} 0 {} {} {:.2} {:.2} ", 
-                        radius, radius, large_arc, sweep, to.x, -to.y);
-                        
+
+                    let _ = write!(
+                        path,
+                        "A {:.2} {:.2} 0 {} {} {:.2} {:.2} ",
+                        radius, radius, large_arc, sweep, to.x, -to.y
+                    );
+
                     last_pos = Some(*to);
                 }
             }
         }
         self.cached_path = path;
-        
+
         // Rapid moves
         let mut rapid_path = String::with_capacity(self.commands.len() * 10);
         for cmd in &self.commands {
-            if let GCodeCommand::Move { from, to, rapid: true } = cmd {
-                let _ = write!(rapid_path, "M {:.2} {:.2} L {:.2} {:.2} ", 
-                    from.x, -from.y, to.x, -to.y);
+            if let GCodeCommand::Move {
+                from,
+                to,
+                rapid: true,
+            } = cmd
+            {
+                let _ = write!(
+                    rapid_path,
+                    "M {:.2} {:.2} L {:.2} {:.2} ",
+                    from.x, -from.y, to.x, -to.y
+                );
             }
         }
         self.cached_rapid_path = rapid_path;
@@ -392,32 +357,16 @@ impl Visualizer2D {
 
     /// Calculate viewbox for the current view state
     pub fn get_viewbox(&self, width: f32, height: f32) -> (f32, f32, f32, f32) {
-        let scale = self.zoom_scale * self.scale_factor;
-        
-        // Calculate world coordinates of the viewport edges
-        // screen_x = (world_x - min_x) * scale + padding + offset
-        // world_x = (screen_x - padding - offset) / scale + min_x
-        
-        let left = (0.0 - CANVAS_PADDING - self.x_offset) / scale + self.min_x;
-        let right = (width - CANVAS_PADDING - self.x_offset) / scale + self.min_x;
-        
-        // screen_y = height - ((world_y - min_y) * scale + padding - offset)
-        // height - screen_y = (world_y - min_y) * scale + padding - offset
-        // world_y = (height - screen_y - padding + offset) / scale + min_y
-        
-        let bottom = (height - height - CANVAS_PADDING + self.y_offset) / scale + self.min_y; // screen_y = height
-        let top = (height - 0.0 - CANVAS_PADDING + self.y_offset) / scale + self.min_y; // screen_y = 0
-        
-        // Convert to SVG coordinates (Y flip)
-        // SVG X = World X
-        // SVG Y = -World Y
-        
-        let svg_min_x = left;
-        let svg_min_y = -top;
-        let svg_width = right - left;
-        let svg_height = top - bottom;
-        
-        (svg_min_x, svg_min_y, svg_width, svg_height)
+        self.viewport.viewbox(
+            self.min_x,
+            self.min_y,
+            self.zoom_scale,
+            self.scale_factor,
+            self.x_offset,
+            self.y_offset,
+            width,
+            height,
+        )
     }
 
     fn parse_linear_move(

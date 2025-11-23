@@ -1,5 +1,11 @@
 ## Slint UI Research and Insights
 
+### Visualizer Viewport Transform (2025-11-23)
+- Files: `crates/gcodekit4-visualizer/src/visualizer/viewport.rs`, `visualizer_2d.rs`, and `canvas_renderer.rs`
+- Introduced a shared `ViewportTransform` struct so viewbox math (zoom, pan, padding) is consistent for toolpaths, grids, and origin markers.
+- The parser's `Bounds` accumulator now lives alongside the viewport helper, ensuring we only pad/clip in one place before generating SVG output.
+- `Visualizer2D::set_default_view` and `get_viewbox` delegate to the helper, reducing duplicated algebra and making future scaling tweaks safer.
+
 ### Designer Bulk Properties (2025-11-23)
 - Files: `crates/gcodekit4-designer/ui/designer.slint`, `src/main.rs`, `crates/gcodekit4-designer/src/designer_state.rs`
 - The Properties dialog now tracks whether multiple shapes are selected, swaps the header text to "Multiple Shapes", hides X/Y controls, and only emits update callbacks for fields the user actually changed.
