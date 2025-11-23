@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.37.12-alpha] - 2025-11-23
+
+### Changed
+- **Visualizer**: Added analytic bounding boxes for arcs, removing discretization from fit/zoom calculations.
+- **Visualizer**: Toolpath bounding box queries now operate on segment metadata only, speeding up repeated view calculations.
+
 ## [0.37.11-alpha] - 2025-11-23
 
 ### Changed

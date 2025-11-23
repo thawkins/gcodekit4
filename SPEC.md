@@ -1,10 +1,16 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.37.11-alpha  
+**Version**: 0.37.12-alpha  
 **Last Updated**: 2025-11-23  
-**Status**: Visualizer Arc Geometry Cache
+**Status**: Visualizer Analytic Bounds
 
-### Latest Release (v0.37.11-alpha) - Visualizer Arc Geometry Cache
+### Latest Release (v0.37.12-alpha) - Visualizer Analytic Bounds
+- ✅ **Arc Bounding Boxes**
+  - Arcs expose analytic bounding boxes so fit/zoom never need to discretize geometry.
+- ✅ **Toolpath Bounding Cache**
+  - Toolpath bounds now derive directly from segment metadata, reducing repeated visitor work.
+
+### Previous Release (v0.37.11-alpha) - Visualizer Arc Geometry Cache
 - ✅ **ArcAngles Cache**
   - Precomputes arc start angle + delta so repeated interpolation skips redundant trig.
 - ✅ **Iterator/Length Integration**

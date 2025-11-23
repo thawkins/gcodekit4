@@ -4,7 +4,7 @@ A modern, cross-platform G-Code sender and CNC machine controller written in Rus
 
 [![Build Status](https://github.com/thawkins/gcodekit4/workflows/CI/badge.svg)](https://github.com/thawkins/gcodekit4/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-0.37.11--alpha-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-0.37.12--alpha-brightgreen.svg)](CHANGELOG.md)
 
 ## Overview
 
@@ -140,6 +140,7 @@ This modular structure enables:
 - **Shared Viewport Engine**: A centralized `ViewportTransform` keeps zoom/pan math consistent across toolpaths, grids, and origin markers.
 - **Toolpath Cache**: Parsing + SVG generation flow through a single cache so repeated renders skip redundant work.
 - **Unified Path Segments**: A single `PathSegment` enum (with shared `MovementMeta`, streaming visitors, lazy arc iterators, and cached arc geometry) powers both line and arc moves so stats/iteration stay fast and feed rates stay consistent.
+- **Analytical Bounds**: Bounding boxes are computed from segment metadata (including arcs), so zoom-to-fit and layout decisions never need to re-discretize toolpaths.
 
 ### 💬 Smart Device Console
 - **Command History**: Scrollable record of all device communications

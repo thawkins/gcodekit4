@@ -1,5 +1,10 @@
 ## Slint UI Research and Insights
 
+### Visualizer Analytic Bounds (2025-11-23)
+- Files: `crates/gcodekit4-visualizer/src/visualizer/toolpath_rendering.rs`
+- Added analytic bounding boxes for lines + arcs (cardinal checks) so zoom/fit never traverse discretized segments.
+- `Toolpath::get_bounding_box` now aggregates per-segment bounds, drastically reducing Slint layout work for big files.
+
 ### Visualizer Arc Geometry Cache (2025-11-23)
 - Files: `crates/gcodekit4-visualizer/src/visualizer/toolpath_rendering.rs`
 - Added `ArcAngles` cache so Slint doesn't recompute atan2/TAU math during every paint.

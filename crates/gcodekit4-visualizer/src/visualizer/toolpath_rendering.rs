@@ -5,6 +5,14 @@
 
 use crate::visualizer::setup::{Color, Vector3};
 
+const CARDINAL_ANGLES: [f32; 4] = [
+    0.0,
+    std::f32::consts::FRAC_PI_2,
+    std::f32::consts::PI,
+    std::f32::consts::FRAC_PI_2 * 3.0,
+];
+const ANGLE_EPSILON: f32 = 1e-4;
+
 /// Movement type for toolpath segments
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum MovementType {
@@ -95,6 +103,20 @@ impl LineSegment {
             }
         }
     }
+
+    pub fn bounding_box(&self) -> (Vector3, Vector3) {
+        let min = Vector3::new(
+            self.start.x.min(self.end.x),
+            self.start.y.min(self.end.y),
+            self.start.z.min(self.end.z),
+        );
+        let max = Vector3::new(
+            self.start.x.max(self.end.x),
+            self.start.y.max(self.end.y),
+            self.start.z.max(self.end.z),
+        );
+        (min, max)
+    }
 }
 
 /// Arc segment in toolpath
@@ -171,6 +193,30 @@ impl ArcSegment {
         ArcLineIterator::new(self)
     }
 
+    /// Compute bounding box analytically without discretization
+    pub fn bounding_box(&self) -> (Vector3, Vector3) {
+        let mut min_x = self.start.x.min(self.end.x);
+        let mut min_y = self.start.y.min(self.end.y);
+        let mut max_x = self.start.x.max(self.end.x);
+        let mut max_y = self.start.y.max(self.end.y);
+        let min_z = self.start.z.min(self.end.z);
+        let max_z = self.start.z.max(self.end.z);
+
+        for angle in CARDINAL_ANGLES {
+            if let Some(point) = self.point_on_arc_at_angle(angle) {
+                min_x = min_x.min(point.x);
+                min_y = min_y.min(point.y);
+                max_x = max_x.max(point.x);
+                max_y = max_y.max(point.y);
+            }
+        }
+
+        (
+            Vector3::new(min_x, min_y, min_z),
+            Vector3::new(max_x, max_y, max_z),
+        )
+    }
+
     /// Interpolate point on arc at parameter t (0.0 to 1.0)
     pub fn interpolate_arc(&self, t: f32) -> Vector3 {
         let angle = self.calculate_arc_angle(t);
@@ -179,6 +225,16 @@ impl ArcSegment {
             self.center.y + self.radius * angle.sin(),
             self.start.z + (self.end.z - self.start.z) * t,
         )
+    }
+
+    fn point_on_arc_at_angle(&self, angle: f32) -> Option<Vector3> {
+        self.angles.param_for_angle(angle).map(|t| {
+            Vector3::new(
+                self.center.x + self.radius * angle.cos(),
+                self.center.y + self.radius * angle.sin(),
+                self.start.z + (self.end.z - self.start.z) * t,
+            )
+        })
     }
 
     fn calculate_arc_angle(&self, t: f32) -> f32 {
@@ -222,6 +278,44 @@ impl ArcAngles {
     fn angle_at(&self, t: f32) -> f32 {
         self.start + self.delta * t
     }
+
+    fn param_for_angle(&self, angle: f32) -> Option<f32> {
+        if self.delta.abs() < f32::EPSILON {
+            return None;
+        }
+
+        if self.delta > 0.0 {
+            let rel = normalize_positive(angle - self.start);
+            if rel <= self.delta + ANGLE_EPSILON {
+                Some((rel / self.delta).clamp(0.0, 1.0))
+            } else {
+                None
+            }
+        } else {
+            let rel = normalize_negative(angle - self.start);
+            if rel >= self.delta - ANGLE_EPSILON {
+                Some((rel / self.delta).clamp(0.0, 1.0))
+            } else {
+                None
+            }
+        }
+    }
+}
+
+fn normalize_positive(angle: f32) -> f32 {
+    let mut value = angle % std::f32::consts::TAU;
+    if value < 0.0 {
+        value += std::f32::consts::TAU;
+    }
+    value
+}
+
+fn normalize_negative(angle: f32) -> f32 {
+    let mut value = angle % std::f32::consts::TAU;
+    if value > 0.0 {
+        value -= std::f32::consts::TAU;
+    }
+    value
 }
 
 /// Iterator that lazily emits discretized line segments for an arc
@@ -301,6 +395,13 @@ impl PathSegment {
         match self {
             PathSegment::Line(line) => line.meta.movement_type,
             PathSegment::Arc(arc) => arc.meta.movement_type,
+        }
+    }
+
+    pub fn bounding_box(&self) -> (Vector3, Vector3) {
+        match self {
+            PathSegment::Line(line) => line.bounding_box(),
+            PathSegment::Arc(arc) => arc.bounding_box(),
         }
     }
 
@@ -387,27 +488,26 @@ impl Toolpath {
         let mut min: Option<Vector3> = None;
         let mut max: Option<Vector3> = None;
 
-        self.visit_line_segments(|segment| {
-            for point in [segment.start, segment.end] {
-                min = Some(match min {
-                    Some(current) => Vector3::new(
-                        current.x.min(point.x),
-                        current.y.min(point.y),
-                        current.z.min(point.z),
-                    ),
-                    None => point,
-                });
+        for segment in &self.segments {
+            let (seg_min, seg_max) = segment.bounding_box();
+            min = Some(match min {
+                Some(current) => Vector3::new(
+                    current.x.min(seg_min.x),
+                    current.y.min(seg_min.y),
+                    current.z.min(seg_min.z),
+                ),
+                None => seg_min,
+            });
 
-                max = Some(match max {
-                    Some(current) => Vector3::new(
-                        current.x.max(point.x),
-                        current.y.max(point.y),
-                        current.z.max(point.z),
-                    ),
-                    None => point,
-                });
-            }
-        });
+            max = Some(match max {
+                Some(current) => Vector3::new(
+                    current.x.max(seg_max.x),
+                    current.y.max(seg_max.y),
+                    current.z.max(seg_max.z),
+                ),
+                None => seg_max,
+            });
+        }
 
         match (min, max) {
             (Some(min), Some(max)) => Some((min, max)),
