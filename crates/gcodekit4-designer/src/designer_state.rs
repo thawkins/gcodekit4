@@ -393,74 +393,112 @@ impl DesignerState {
     }
 
     pub fn set_selected_position_and_size(&mut self, x: f64, y: f64, w: f64, h: f64) {
+        self.set_selected_position_and_size_with_flags(x, y, w, h, true, true);
+    }
+
+    pub fn set_selected_position_and_size_with_flags(
+        &mut self,
+        x: f64,
+        y: f64,
+        w: f64,
+        h: f64,
+        update_position: bool,
+        update_size: bool,
+    ) {
         use crate::shapes::*;
 
-        if let Some(id) = self.canvas.selected_id() {
-            if let Some(obj) = self.canvas.shapes_mut().iter_mut().find(|o| o.id == id) {
-                let (old_x, old_y, old_x2, old_y2) = obj.shape.bounding_box();
-                let _old_w = old_x2 - old_x;
-                let _old_h = old_y2 - old_y;
+        let mut changed_any = false;
+        for obj in self.canvas.shapes_mut().iter_mut() {
+            if !obj.selected {
+                continue;
+            }
 
-                match obj.shape.shape_type() {
-                    crate::ShapeType::Rectangle => {
-                        obj.shape = Box::new(Rectangle::new(x, y, w, h));
+            let (old_x, old_y, old_x2, old_y2) = obj.shape.bounding_box();
+            let old_w = old_x2 - old_x;
+            let old_h = old_y2 - old_y;
+
+            let target_x = if update_position { x } else { old_x };
+            let target_y = if update_position { y } else { old_y };
+            let target_w = if update_size { w } else { old_w };
+            let target_h = if update_size { h } else { old_h };
+
+            match obj.shape.shape_type() {
+                crate::ShapeType::Rectangle => {
+                    obj.shape = Box::new(Rectangle::new(target_x, target_y, target_w, target_h));
+                    changed_any = true;
+                }
+                crate::ShapeType::Circle => {
+                    let radius = target_w.min(target_h) / 2.0;
+                    obj.shape = Box::new(Circle::new(
+                        Point::new(target_x + radius, target_y + radius),
+                        radius,
+                    ));
+                    changed_any = true;
+                }
+                crate::ShapeType::Line => {
+                    obj.shape = Box::new(Line::new(
+                        Point::new(target_x, target_y),
+                        Point::new(target_x + target_w, target_y + target_h),
+                    ));
+                    changed_any = true;
+                }
+                crate::ShapeType::Ellipse => {
+                    let center = Point::new(target_x + target_w / 2.0, target_y + target_h / 2.0);
+                    obj.shape = Box::new(Ellipse::new(center, target_w / 2.0, target_h / 2.0));
+                    changed_any = true;
+                }
+                crate::ShapeType::Path => {
+                    if let Some(path_shape) =
+                        obj.shape.as_any().downcast_ref::<crate::shapes::PathShape>()
+                    {
+                        let (path_x1, path_y1, path_x2, path_y2) = path_shape.bounding_box();
+                        let path_w = path_x2 - path_x1;
+                        let path_h = path_y2 - path_y1;
+
+                        let scale_x = if update_size && path_w.abs() > 1e-6 {
+                            target_w / path_w
+                        } else {
+                            1.0
+                        };
+                        let scale_y = if update_size && path_h.abs() > 1e-6 {
+                            target_h / path_h
+                        } else {
+                            1.0
+                        };
+
+                        let center_x = (path_x1 + path_x2) / 2.0;
+                        let center_y = (path_y1 + path_y2) / 2.0;
+
+                        let scaled =
+                            path_shape.scale(scale_x, scale_y, Point::new(center_x, center_y));
+
+                        let new_center_x = target_x + target_w / 2.0;
+                        let new_center_y = target_y + target_h / 2.0;
+
+                        let dx = new_center_x - center_x;
+                        let dy = new_center_y - center_y;
+
+                        obj.shape = Box::new(scaled.translate(dx, dy));
+                        changed_any = true;
                     }
-                    crate::ShapeType::Circle => {
-                        let radius = w.min(h) / 2.0;
-                        obj.shape =
-                            Box::new(Circle::new(Point::new(x + radius, y + radius), radius));
-                    }
-                    crate::ShapeType::Line => {
-                        obj.shape = Box::new(Line::new(Point::new(x, y), Point::new(x + w, y + h)));
-                    }
-                    crate::ShapeType::Ellipse => {
-                        let center = Point::new(x + w / 2.0, y + h / 2.0);
-                        obj.shape = Box::new(Ellipse::new(center, w / 2.0, h / 2.0));
-                    }
-                    crate::ShapeType::Path => {
-                        if let Some(path_shape) = obj
-                            .shape
-                            .as_any()
-                            .downcast_ref::<crate::shapes::PathShape>()
-                        {
-                            let (old_x, old_y, old_x2, old_y2) = path_shape.bounding_box();
-                            let old_w = old_x2 - old_x;
-                            let old_h = old_y2 - old_y;
-
-                            let scale_x = if old_w.abs() > 1e-6 { w / old_w } else { 1.0 };
-                            let scale_y = if old_h.abs() > 1e-6 { h / old_h } else { 1.0 };
-
-                            let center_x = (old_x + old_x2) / 2.0;
-                            let center_y = (old_y + old_y2) / 2.0;
-
-                            let scaled =
-                                path_shape.scale(scale_x, scale_y, Point::new(center_x, center_y));
-
-                            let new_center_x = x + w / 2.0;
-                            let new_center_y = y + h / 2.0;
-
-                            let dx = new_center_x - center_x;
-                            let dy = new_center_y - center_y;
-
-                            obj.shape = Box::new(scaled.translate(dx, dy));
-                        }
-                    }
-                    crate::ShapeType::Text => {
-                        if let Some(text) = obj
-                            .shape
-                            .as_any()
-                            .downcast_ref::<crate::shapes::TextShape>()
-                        {
-                            obj.shape = Box::new(crate::shapes::TextShape::new(
-                                text.text.clone(),
-                                x,
-                                y,
-                                text.font_size,
-                            ));
-                        }
+                }
+                crate::ShapeType::Text => {
+                    if let Some(text) = obj.shape.as_any().downcast_ref::<TextShape>() {
+                        obj.shape = Box::new(TextShape::new(
+                            text.text.clone(),
+                            target_x,
+                            target_y,
+                            text.font_size,
+                        ));
+                        changed_any = true;
                     }
                 }
             }
+        }
+
+        if changed_any {
+            self.is_modified = true;
+            self.gcode_generated = false;
         }
     }
 
@@ -554,47 +592,80 @@ impl DesignerState {
     }
 
     pub fn set_selected_pocket_properties(&mut self, is_pocket: bool, depth: f64) {
-        if let Some(id) = self.canvas.selected_id() {
-            if let Some(obj) = self.canvas.shapes_mut().iter_mut().find(|o| o.id == id) {
-                obj.operation_type = if is_pocket {
-                    OperationType::Pocket
-                } else {
-                    OperationType::Profile
-                };
-                obj.pocket_depth = depth;
+        let mut changed = false;
+        for obj in self.canvas.shapes_mut().iter_mut() {
+            if !obj.selected {
+                continue;
             }
+            let new_type = if is_pocket {
+                OperationType::Pocket
+            } else {
+                OperationType::Profile
+            };
+            if obj.operation_type != new_type || (obj.pocket_depth - depth).abs() > f64::EPSILON {
+                obj.operation_type = new_type;
+                obj.pocket_depth = depth;
+                changed = true;
+            }
+        }
+        if changed {
+            self.is_modified = true;
+            self.gcode_generated = false;
         }
     }
 
     pub fn set_selected_step_down(&mut self, step_down: f64) {
-        if let Some(id) = self.canvas.selected_id() {
-            if let Some(obj) = self.canvas.shapes_mut().iter_mut().find(|o| o.id == id) {
-                obj.step_down = step_down as f32;
+        let mut changed = false;
+        for obj in self.canvas.shapes_mut().iter_mut() {
+            if !obj.selected {
+                continue;
             }
+            if (obj.step_down as f64 - step_down).abs() > f64::EPSILON {
+                obj.step_down = step_down as f32;
+                changed = true;
+            }
+        }
+        if changed {
+            self.is_modified = true;
+            self.gcode_generated = false;
         }
     }
 
     pub fn set_selected_step_in(&mut self, step_in: f64) {
-        if let Some(id) = self.canvas.selected_id() {
-            if let Some(obj) = self.canvas.shapes_mut().iter_mut().find(|o| o.id == id) {
-                obj.step_in = step_in as f32;
+        let mut changed = false;
+        for obj in self.canvas.shapes_mut().iter_mut() {
+            if !obj.selected {
+                continue;
             }
+            if (obj.step_in as f64 - step_in).abs() > f64::EPSILON {
+                obj.step_in = step_in as f32;
+                changed = true;
+            }
+        }
+        if changed {
+            self.is_modified = true;
+            self.gcode_generated = false;
         }
     }
 
     pub fn set_selected_text_properties(&mut self, content: &str, font_size: f64) {
-        if let Some(id) = self.canvas.selected_id() {
-            if let Some(obj) = self.canvas.shapes_mut().iter_mut().find(|o| o.id == id) {
-                // We need to clone x, y because we borrow obj mutably
+        let mut changed = false;
+        for obj in self.canvas.shapes_mut().iter_mut() {
+            if !obj.selected {
+                continue;
+            }
+            if obj.shape.as_any().downcast_ref::<TextShape>().is_some() {
                 let (x, y) = {
                     let (x1, y1, _, _) = obj.shape.bounding_box();
                     (x1, y1)
                 };
-
-                if let Some(_) = obj.shape.as_any().downcast_ref::<TextShape>() {
-                    obj.shape = Box::new(TextShape::new(content.to_string(), x, y, font_size));
-                }
+                obj.shape = Box::new(TextShape::new(content.to_string(), x, y, font_size));
+                changed = true;
             }
+        }
+        if changed {
+            self.is_modified = true;
+            self.gcode_generated = false;
         }
     }
 
@@ -602,10 +673,19 @@ impl DesignerState {
         &mut self,
         strategy: crate::pocket_operations::PocketStrategy,
     ) {
-        if let Some(id) = self.canvas.selected_id() {
-            if let Some(obj) = self.canvas.shapes_mut().iter_mut().find(|o| o.id == id) {
-                obj.pocket_strategy = strategy;
+        let mut changed = false;
+        for obj in self.canvas.shapes_mut().iter_mut() {
+            if !obj.selected {
+                continue;
             }
+            if obj.pocket_strategy != strategy {
+                obj.pocket_strategy = strategy;
+                changed = true;
+            }
+        }
+        if changed {
+            self.is_modified = true;
+            self.gcode_generated = false;
         }
     }
 }

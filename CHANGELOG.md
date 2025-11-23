@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Designer**: Context menu now exposes `Align → Horizontal/Vertical` cascades with working Left/Center/Right/Top/Center/Bottom actions.
 - **Designer**: Alignment commands are wired through `MainWindow` callbacks into new `DesignerState` helpers so multi-select layouts snap precisely.
+- **Designer**: Properties dialog detects multi-selection, shows "Multiple Shapes" title, hides X/Y offsets, and applies non-positional edits (pocket settings, steps, text, etc.) across every selected shape in one shot.
 
 ### Fixed
 - **UI Shell**: Resolved tabbed-view regression that left every tab except Designer blank by ensuring all panels share the same visibility gating logic.

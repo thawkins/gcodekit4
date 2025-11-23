@@ -154,6 +154,7 @@ component ToolButton inherits Rectangle {
 component ShapePropertiesDialog inherits Dialog {
     in-out property <bool> show: false;
     in property <int> shape_type: 0;
+    in property <bool> multiple_selection: false;
     in-out property <float> corner_radius: 5.0;
     in-out property <float> shape_x: 0.0;
     in-out property <float> shape_y: 0.0;
@@ -181,12 +182,13 @@ component ShapePropertiesDialog inherits Dialog {
         spacing: 8px;
         
         Text {
-            text: (shape_type == 1 ? "Rectangle" : 
-                   shape_type == 2 ? "Circle" : 
-                   shape_type == 3 ? "Line" : 
-                   shape_type == 4 ? "Ellipse" : 
-                   shape_type == 5 ? "Polyline" : 
-                   shape_type == 6 ? "Text" : "Shape") + " properties";
+            text: multiple_selection ? "Multiple Shapes" : (
+                   (shape_type == 1 ? "Rectangle" : 
+                    shape_type == 2 ? "Circle" : 
+                    shape_type == 3 ? "Line" : 
+                    shape_type == 4 ? "Ellipse" : 
+                    shape_type == 5 ? "Polyline" : 
+                    shape_type == 6 ? "Text" : "Shape") + " properties");
             font-size: 16px;
             font-weight: 700;
         }
@@ -201,7 +203,7 @@ component ShapePropertiesDialog inherits Dialog {
                 alignment: start;
                 
                 // Position controls
-                HorizontalBox {
+                if !root.multiple_selection: HorizontalBox {
                     spacing: 8px;
                     alignment: start;
                     
@@ -230,7 +232,7 @@ component ShapePropertiesDialog inherits Dialog {
                     }
                 }
                 
-                HorizontalBox {
+                if !root.multiple_selection: HorizontalBox {
                     spacing: 8px;
                     alignment: start;
                     
@@ -913,6 +915,22 @@ export component DesignerPanel inherits VerticalBox {
     in property <float> selected_shape_font_size: 12.0;
     in property <int> delete_confirmation_trigger: 0;
     in property <int> delete_confirmation_count: 0;
+    
+    private property <bool> properties_multiple_selection: false;
+    private property <float> original_shape_x: 0.0;
+    private property <float> original_shape_y: 0.0;
+    private property <float> original_shape_w: 0.0;
+    private property <float> original_shape_h: 0.0;
+    private property <float> original_corner_radius: 0.0;
+    private property <bool> original_is_pocket: false;
+    private property <float> original_pocket_depth: 0.0;
+    private property <float> original_step_down: 0.0;
+    private property <float> original_step_in: 0.0;
+    private property <int> original_pocket_strategy: 1;
+    private property <float> original_raster_angle: 0.0;
+    private property <bool> original_bidirectional: true;
+    private property <string> original_text_content: "";
+    private property <float> original_font_size: 12.0;
     
     callback set_mode(int);
     callback zoom_in();
@@ -1803,6 +1821,7 @@ export component DesignerPanel inherits VerticalBox {
         }
         
         menu_properties => {
+            root.properties_multiple_selection = root.selected_count > 1;
             root.properties_dialog_visible = true;
             root.current_corner_radius = root.selected_shape_radius;
             root.current_shape_x = root.selected_shape_x;
@@ -1818,6 +1837,20 @@ export component DesignerPanel inherits VerticalBox {
             root.dialog_bidirectional = root.selected_shape_bidirectional;
             root.text_content = root.selected_shape_text_content;
             root.font_size = root.selected_shape_font_size;
+            root.original_shape_x = root.current_shape_x;
+            root.original_shape_y = root.current_shape_y;
+            root.original_shape_w = root.current_shape_w;
+            root.original_shape_h = root.current_shape_h;
+            root.original_corner_radius = root.current_corner_radius;
+            root.original_is_pocket = root.is_pocket;
+            root.original_pocket_depth = root.pocket_depth;
+            root.original_step_down = root.step_down;
+            root.original_step_in = root.dialog_step_in;
+            root.original_pocket_strategy = root.dialog_pocket_strategy;
+            root.original_raster_angle = root.dialog_raster_angle;
+            root.original_bidirectional = root.dialog_bidirectional;
+            root.original_text_content = root.text_content;
+            root.original_font_size = root.font_size;
         }
         align_horizontal_left => {
             root.align_horizontal_left();
@@ -1848,12 +1881,14 @@ export component DesignerPanel inherits VerticalBox {
         TouchArea {
             clicked => {
                 root.properties_dialog_visible = false;
+                root.properties_multiple_selection = false;
             }
         }
         
         ShapePropertiesDialog {
             show <=> root.properties_dialog_visible;
             shape_type: root.selected_shape_type;
+            multiple_selection: root.properties_multiple_selection;
             corner_radius <=> root.current_corner_radius;
             shape_x <=> root.current_shape_x;
             shape_y <=> root.current_shape_y;
@@ -1870,26 +1905,58 @@ export component DesignerPanel inherits VerticalBox {
             font_size <=> root.font_size;
             
             save_properties => {
-                update_shape_property(0, root.current_shape_x);
-                update_shape_property(1, root.current_shape_y);
-                update_shape_property(2, root.current_shape_w);
-                update_shape_property(3, root.current_shape_h);
-                update_shape_property(4, root.current_corner_radius);
-                update_shape_property_bool(0, root.is_pocket);
-                update_shape_property(5, root.pocket_depth);
-                update_shape_property(7, root.step_down);
-                update_shape_property(8, root.dialog_step_in);
-                update_shape_property(9, root.dialog_pocket_strategy * 1.0);
-                update_shape_property(10, root.dialog_raster_angle);
-                update_shape_property_bool(1, root.dialog_bidirectional);
-                update_shape_property_string(0, root.text_content);
-                update_shape_property(6, root.font_size);
+                let multiple = root.properties_multiple_selection;
+                let eps = 0.0001;
+                if !multiple {
+                    update_shape_property(0, root.current_shape_x);
+                    update_shape_property(1, root.current_shape_y);
+                }
+                let width_diff = root.current_shape_w - root.original_shape_w;
+                let height_diff = root.current_shape_h - root.original_shape_h;
+                let width_changed = width_diff > eps || width_diff < -eps;
+                let height_changed = height_diff > eps || height_diff < -eps;
+                if !multiple || width_changed || height_changed {
+                    update_shape_property(2, root.current_shape_w);
+                    update_shape_property(3, root.current_shape_h);
+                }
+                let pocket_depth_diff = root.pocket_depth - root.original_pocket_depth;
+                let pocket_depth_changed = pocket_depth_diff > eps || pocket_depth_diff < -eps;
+                if !multiple || root.is_pocket != root.original_is_pocket || pocket_depth_changed {
+                    update_shape_property_bool(0, root.is_pocket);
+                    update_shape_property(5, root.pocket_depth);
+                }
+                let step_down_diff = root.step_down - root.original_step_down;
+                if !multiple || step_down_diff > eps || step_down_diff < -eps {
+                    update_shape_property(7, root.step_down);
+                }
+                let step_in_diff = root.dialog_step_in - root.original_step_in;
+                if !multiple || step_in_diff > eps || step_in_diff < -eps {
+                    update_shape_property(8, root.dialog_step_in);
+                }
+                let strategy_changed = root.dialog_pocket_strategy != root.original_pocket_strategy;
+                let raster_diff = root.dialog_raster_angle - root.original_raster_angle;
+                let raster_changed = raster_diff > eps || raster_diff < -eps;
+                let bidirectional_changed = root.dialog_bidirectional != root.original_bidirectional;
+                if !multiple || strategy_changed || raster_changed || bidirectional_changed {
+                    update_shape_property(9, root.dialog_pocket_strategy * 1.0);
+                    update_shape_property(10, root.dialog_raster_angle);
+                    update_shape_property_bool(1, root.dialog_bidirectional);
+                }
+                let text_changed = !multiple || root.text_content != root.original_text_content;
+                let font_diff = root.font_size - root.original_font_size;
+                let font_changed = font_diff > eps || font_diff < -eps;
+                if text_changed || font_changed {
+                    update_shape_property_string(0, root.text_content);
+                    update_shape_property(6, root.font_size);
+                }
                 save_shape_properties();
                 root.properties_dialog_visible = false;
+                root.properties_multiple_selection = false;
             }
             
             cancel_properties => {
                 root.properties_dialog_visible = false;
+                root.properties_multiple_selection = false;
             }
         }
     }

@@ -19,6 +19,17 @@ use std::path::PathBuf;
 use std::rc::Rc;
 use tracing::warn;
 
+#[derive(Default, Clone, Copy)]
+struct PendingPropertyFlags {
+    position: bool,
+    size: bool,
+    pocket: bool,
+    step_down: bool,
+    step_in: bool,
+    text: bool,
+    pocket_strategy: bool,
+}
+
 slint::include_modules!();
 
 slint::slint! {
@@ -5024,42 +5035,91 @@ fn main() -> anyhow::Result<()> {
         0.0f64,
         true,
     )));
+    let pending_flags = Rc::new(RefCell::new(PendingPropertyFlags::default()));
 
     let pending_clone = pending_properties.clone();
+    let pending_flags_clone = pending_flags.clone();
     main_window.on_designer_update_shape_property(move |prop_id: i32, value: f32| {
         let mut props = pending_clone.borrow_mut();
+        let mut flags = pending_flags_clone.borrow_mut();
         match prop_id {
-            0 => props.0 = value as f64,   // x
-            1 => props.1 = value as f64,   // y
-            2 => props.2 = value as f64,   // w
-            3 => props.3 = value as f64,   // h
-            4 => props.4 = value as f64,   // radius
-            5 => props.6 = value as f64,   // pocket_depth
-            6 => props.8 = value as f64,   // font_size
-            7 => props.9 = value as f64,   // step_down
-            8 => props.10 = value as f64,  // step_in
-            9 => props.11 = value as i32,  // pocket_strategy
-            10 => props.12 = value as f64, // raster_angle
+            0 => {
+                props.0 = value as f64;
+                flags.position = true;
+            }
+            1 => {
+                props.1 = value as f64;
+                flags.position = true;
+            }
+            2 => {
+                props.2 = value as f64;
+                flags.size = true;
+            }
+            3 => {
+                props.3 = value as f64;
+                flags.size = true;
+            }
+            4 => {
+                props.4 = value as f64;
+                flags.size = true;
+            }
+            5 => {
+                props.6 = value as f64;
+                flags.pocket = true;
+            }
+            6 => {
+                props.8 = value as f64;
+                flags.text = true;
+            }
+            7 => {
+                props.9 = value as f64;
+                flags.step_down = true;
+            }
+            8 => {
+                props.10 = value as f64;
+                flags.step_in = true;
+            }
+            9 => {
+                props.11 = value as i32;
+                flags.pocket_strategy = true;
+            }
+            10 => {
+                props.12 = value as f64;
+                flags.pocket_strategy = true;
+            }
             _ => {}
         }
     });
 
     let pending_clone_bool = pending_properties.clone();
+    let pending_flags_bool = pending_flags.clone();
     main_window.on_designer_update_shape_property_bool(move |prop_id: i32, value: bool| {
         let mut props = pending_clone_bool.borrow_mut();
+        let mut flags = pending_flags_bool.borrow_mut();
         match prop_id {
-            0 => props.5 = value,  // is_pocket
-            1 => props.13 = value, // bidirectional
+            0 => {
+                props.5 = value;
+                flags.pocket = true;
+            }
+            1 => {
+                props.13 = value;
+                flags.pocket_strategy = true;
+            }
             _ => {}
         }
     });
 
     let pending_clone_string = pending_properties.clone();
+    let pending_flags_string = pending_flags.clone();
     main_window.on_designer_update_shape_property_string(
         move |prop_id: i32, value: slint::SharedString| {
             let mut props = pending_clone_string.borrow_mut();
+            let mut flags = pending_flags_string.borrow_mut();
             match prop_id {
-                0 => props.7 = value.to_string(), // text_content
+                0 => {
+                    props.7 = value.to_string(); // text_content
+                    flags.text = true;
+                }
                 _ => {}
             }
         },
@@ -5068,25 +5128,59 @@ fn main() -> anyhow::Result<()> {
     let designer_mgr_clone2 = designer_mgr.clone();
     let window_weak2 = main_window.as_weak();
     let pending_clone2 = pending_properties.clone();
+    let pending_flags_clone2 = pending_flags.clone();
     main_window.on_designer_save_shape_properties(move || {
         let props = pending_clone2.borrow();
         let mut state = designer_mgr_clone2.borrow_mut();
-        state.set_selected_position_and_size(props.0, props.1, props.2, props.3);
-        state.set_selected_pocket_properties(props.5, props.6);
-        state.set_selected_text_properties(&props.7, props.8);
-        state.set_selected_step_down(props.9);
-        state.set_selected_step_in(props.10);
+        let multi = state.selected_count() > 1;
+        let mut flags = pending_flags_clone2.borrow_mut();
+        if !multi {
+            flags.position = true;
+            flags.size = true;
+            flags.pocket = true;
+            flags.text = true;
+            flags.step_down = true;
+            flags.step_in = true;
+            flags.pocket_strategy = true;
+        }
 
-        let strategy = match props.11 {
-            0 => gcodekit4::designer::pocket_operations::PocketStrategy::Raster {
-                angle: props.12,
-                bidirectional: props.13,
-            },
-            1 => gcodekit4::designer::pocket_operations::PocketStrategy::ContourParallel,
-            2 => gcodekit4::designer::pocket_operations::PocketStrategy::Adaptive,
-            _ => gcodekit4::designer::pocket_operations::PocketStrategy::ContourParallel,
-        };
-        state.set_selected_pocket_strategy(strategy);
+        if flags.position || flags.size {
+            state.set_selected_position_and_size_with_flags(
+                props.0,
+                props.1,
+                props.2,
+                props.3,
+                flags.position,
+                flags.size,
+            );
+        }
+        if flags.pocket {
+            state.set_selected_pocket_properties(props.5, props.6);
+        }
+        if flags.text {
+            state.set_selected_text_properties(&props.7, props.8);
+        }
+        if flags.step_down {
+            state.set_selected_step_down(props.9);
+        }
+        if flags.step_in {
+            state.set_selected_step_in(props.10);
+        }
+
+        if flags.pocket_strategy {
+            let strategy = match props.11 {
+                0 => gcodekit4::designer::pocket_operations::PocketStrategy::Raster {
+                    angle: props.12,
+                    bidirectional: props.13,
+                },
+                1 => gcodekit4::designer::pocket_operations::PocketStrategy::ContourParallel,
+                2 => gcodekit4::designer::pocket_operations::PocketStrategy::Adaptive,
+                _ => gcodekit4::designer::pocket_operations::PocketStrategy::ContourParallel,
+            };
+            state.set_selected_pocket_strategy(strategy);
+        }
+
+        *flags = PendingPropertyFlags::default();
 
         if let Some(window) = window_weak2.upgrade() {
             update_designer_ui(&window, &mut state);
