@@ -1,15 +1,17 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.37.3-alpha  
+**Version**: 0.37.4-alpha  
 **Last Updated**: 2025-11-23  
-**Status**: Designer Alignment & Tab Reliability
+**Status**: Designer Bulk Property Editing
 
-### Latest Release (v0.37.3-alpha) - Designer Alignment & Tab Reliability
+### Latest Release (v0.37.4-alpha) - Designer Bulk Property Editing
 - ✅ **Tabbed Views Visible**
   - Unified the conditional rendering logic so every tab (Visualizer, Device Console, etc.) shows its content consistently.
 - ✅ **Alignment Cascade**
   - Added nested Align → Horizontal/Vertical menus with fully wired actions for Left/Center/Right and Top/Center/Bottom.
   - Implemented backend helpers to snap selected shapes to shared extents or centers.
+- ✅ **Multi-Shape Properties Dialog**
+  - Right-click → Properties now detects multi-selection, presents a "Multiple Shapes" title, hides X/Y inputs, and applies pocket/text/toolpath settings to all selected shapes without disturbing placement.
 
 ### Previous Release (v0.37.2-alpha) - Designer Improvements
 - ✅ **Multiple Selection & Deletion**

@@ -1,5 +1,12 @@
 ## Slint UI Research and Insights
 
+### Designer Bulk Properties (2025-11-23)
+- Files: `crates/gcodekit4-designer/ui/designer.slint`, `src/main.rs`, `crates/gcodekit4-designer/src/designer_state.rs`
+- The Properties dialog now tracks whether multiple shapes are selected, swaps the header text to "Multiple Shapes", hides X/Y controls, and only emits update callbacks for fields the user actually changed.
+- Rust side buffers pending values plus dirty flags so `designer_save_shape_properties` can selectively update each selected object without touching untouched attributes.
+- `DesignerState::set_selected_position_and_size_with_flags` (new helper) lets us skip per-shape translations for multi-update scenarios while still resizing when requested.
+- Step/pocket/text setters now iterate over every selected `DrawingObject`, marking the design dirty only when something actually changes.
+
 ### Designer Alignment Cascade (2025-11-23)
 - Files: `crates/gcodekit4-ui/ui.slint`, `crates/gcodekit4-designer/ui/designer.slint`
 - The context menu now exposes nested `Align` entries that fan out to Horizontal (Left/Center/Right) and Vertical (Top/Center/Bottom) submenus.
