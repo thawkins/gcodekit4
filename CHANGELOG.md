@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.37.15-alpha] - 2025-11-24
 
 ### Changed
+- **Layout**: Refactored Designer layout:
+  - Moved "Tool Setup" controls to Left Sidebar.
+  - Rearranged tool icons into 4-column grid.
+  - Fixed layout expansion issues using `HorizontalLayout`/`VerticalLayout` and strict width constraints.
+- **UI**: Removed redundant buttons (New, Save, Open, Undo, Redo, Zoom) from Designer and GCode Editor panels.
+- **Menu**: Added Zoom controls to View menu.
+- **Menu**: Added Export (GCode) and Import (DXF, SVG) submenus to File menu.
 - **Documentation**: Updated TOOLCHAIN.md with Tokei installation instructions and updated LLD documentation.
 - **Documentation**: Updated project statistics.
 

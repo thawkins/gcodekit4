@@ -6937,7 +6937,6 @@ fn main() -> anyhow::Result<()> {
             window.set_visualizer_progress(0.0);
 
             if content.is_empty() {
-                tracing::warn!("Content is empty, clearing paths");
                 // No G-code loaded, but still generate grid and origin
                 window.set_visualizer_status(slint::SharedString::from("Ready"));
                 window.set_visualization_path_data(slint::SharedString::from(""));

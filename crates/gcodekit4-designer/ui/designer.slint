@@ -973,8 +973,7 @@ component ContextMenu inherits Rectangle {
     }
 }
 
-export component DesignerPanel inherits VerticalBox {
-    spacing: 0px;
+export component DesignerPanel inherits Rectangle {
     horizontal-stretch: 1.0;
     vertical-stretch: 1.0;
     
@@ -1177,85 +1176,29 @@ export component DesignerPanel inherits VerticalBox {
             }
         }
         
-        HorizontalBox {
+        HorizontalLayout {
             spacing: 2px;
+            width: 100%;
+            height: 100%;
         
         // ═════════════════════════════════════════════
-        // LEFT SIDEBAR: Tool Icons in 2-Column Grid
+        // LEFT SIDEBAR: Tool Icons in 4-Column Grid
         // ═════════════════════════════════════════════
-        VerticalBox {
-            preferred-width: 110px;
+        Rectangle {
+            min-width: 210px;
+            max-width: 210px;
             horizontal-stretch: 0;
-            spacing: 0px;
-            alignment: start;
             
-            // File Operations Section (4 buttons in 2x2 grid)
-            HorizontalBox {
-                spacing: 2px;
-                padding: 2px;
-                
-                Button {
-                    text: "New";
-                    width: 50px;
-                    height: 40px;
-                    clicked => { file_new(); }
-                }
-                Button {
-                    text: "Open";
-                    width: 50px;
-                    height: 40px;
-                    clicked => { file_open(); }
-                }
-            }
+            VerticalLayout {
+                width: 100%;
+                height: 100%;
+                spacing: 0px;
+                alignment: start;
             
-            HorizontalBox {
-                spacing: 2px;
-                padding: 2px;
-                
-                Button {
-                    text: "Undo";
-                    width: 50px;
-                    height: 40px;
-                    enabled: designer_state.can_undo;
-                    clicked => { root.undo(); }
-                }
-                Button {
-                    text: "Redo";
-                    width: 50px;
-                    height: 40px;
-                    enabled: designer_state.can_redo;
-                    clicked => { root.redo(); }
-                }
-            }
+            // File Operations Section - REMOVED
             
-            HorizontalBox {
-                spacing: 2px;
-                padding-left: 2px;
-                padding-right: 2px;
-                padding-bottom: 2px;
-                
-                Button {
-                    text: "Save";
-                    width: 50px;
-                    height: 40px;
-                    clicked => { file_save(); }
-                }
-                Button {
-                    text: "Save As";
-                    width: 50px;
-                    height: 40px;
-                    clicked => { file_save_as(); }
-                }
-            }
-            
-            // Separator
-            Rectangle {
-                height: 1px;
-                background: #cccccc;
-            }
-            
-            // Drawing Tools Section (6 buttons in 2x3 grid)
-            HorizontalBox {
+            // Drawing Tools Section (7 buttons in 4-column grid)
+            HorizontalLayout {
                 spacing: 2px;
                 padding: 2px;
                 
@@ -1273,12 +1216,6 @@ export component DesignerPanel inherits VerticalBox {
                     tooltip: "Rectangle (R)";
                     clicked => { set_mode(1); }
                 }
-            }
-            
-            HorizontalBox {
-                spacing: 2px;
-                padding: 2px;
-                
                 ToolButton {
                     tool_id: 2;
                     current_mode: designer_state.mode;
@@ -1295,7 +1232,7 @@ export component DesignerPanel inherits VerticalBox {
                 }
             }
             
-            HorizontalBox {
+            HorizontalLayout {
                 spacing: 2px;
                 padding: 2px;
                 
@@ -1313,12 +1250,6 @@ export component DesignerPanel inherits VerticalBox {
                     tooltip: "Polyline (P)";
                     clicked => { set_mode(5); }
                 }
-            }
-            
-            HorizontalBox {
-                spacing: 2px;
-                padding: 2px;
-                
                 ToolButton {
                     tool_id: 6;
                     current_mode: designer_state.mode;
@@ -1326,7 +1257,7 @@ export component DesignerPanel inherits VerticalBox {
                     tooltip: "Text (T)";
                     clicked => { set_mode(6); }
                 }
-                Rectangle { width: 48px; height: 48px; } // Placeholder for removed tool
+                Rectangle { width: 48px; height: 48px; } // Placeholder
             }
             
             // Separator
@@ -1335,66 +1266,10 @@ export component DesignerPanel inherits VerticalBox {
                 background: #cccccc;
             }
             
-            // View Controls (4 buttons in 2x2 grid)
-            HorizontalBox {
-                spacing: 2px;
-                padding: 2px;
-                
-                Button {
-                    text: "+";
-                    width: 50px;
-                    height: 40px;
-                    clicked => { zoom_in(); }
-                }
-                Button {
-                    text: "-";
-                    width: 50px;
-                    height: 40px;
-                    clicked => { zoom_out(); }
-                }
-            }
-            
-            HorizontalBox {
-                spacing: 2px;
-                padding: 2px;
-                
-                Button {
-                    text: "⊡";
-                    width: 50px;
-                    height: 40px;
-                    clicked => { zoom_fit(); }
-                }
-                Button {
-                    text: "⌂";
-                    width: 50px;
-                    height: 40px;
-                    clicked => { reset_view(); }
-                }
-            }
-            
             // Separator
             Rectangle {
                 height: 1px;
                 background: #cccccc;
-            }
-            
-            // Edit Controls (2 buttons in 2x1 grid)
-            HorizontalBox {
-                spacing: 2px;
-                padding: 2px;
-                
-                Button {
-                    text: "✗";
-                    width: 50px;
-                    height: 40px;
-                    clicked => { delete_selected(); }
-                }
-                Button {
-                    text: "⊕";
-                    width: 50px;
-                    height: 40px;
-                    clicked => { clear_canvas(); }
-                }
             }
             
 
@@ -1405,47 +1280,156 @@ export component DesignerPanel inherits VerticalBox {
                 background: #cccccc;
             }
             
-            // Import/Export Controls (3 buttons in 2x2 grid, last empty)
-            HorizontalBox {
-                spacing: 2px;
-                padding: 2px;
-                
-                Button {
-                    text: "DXF";
-                    width: 50px;
-                    height: 40px;
-                    clicked => { import_dxf(); }
-                }
-                Button {
-                    text: "SVG";
-                    width: 50px;
-                    height: 40px;
-                    clicked => { import_svg(); }
-                }
+            // Separator
+            Rectangle {
+                height: 1px;
+                background: #cccccc;
             }
             
-            HorizontalBox {
-                spacing: 2px;
-                padding: 2px;
+
+            
+            // Tool Setup Controls (Copy)
+            VerticalLayout {
+                spacing: 6px;
+                padding: 6px;
                 
-                Button {
-                    text: "⇩";
-                    width: 50px;
-                    height: 40px;
-                    clicked => { export_design(); }
+                Text {
+                    text: "Tool Setup";
+                    font-weight: 700;
+                    font-size: 11px;
                 }
-                Rectangle { }
+                
+                HorizontalLayout {
+                    spacing: 2px;
+                    Text { 
+                        text: "Feed:"; 
+                        font-size: 11px;
+                        width: 40px;
+                        vertical-alignment: center;
+                    }
+                    CompactSpinBox { 
+                        value: root.feed_rate; 
+                        minimum: 0;
+                        maximum: 10000;
+                        step: 10;
+                        horizontal-stretch: 1;
+                        height: 22px;
+                        value-changed(v) => {
+                            root.feed_rate = v;
+                            root.update_feed_rate(v);
+                        }
+                    }
+                }
+                
+                HorizontalLayout {
+                    spacing: 2px;
+                    Text { 
+                        text: "Speed:"; 
+                        font-size: 11px;
+                        width: 40px;
+                        vertical-alignment: center;
+                    }
+                    CompactSpinBox { 
+                        value: root.spindle_speed;
+                        minimum: 0;
+                        maximum: 30000;
+                        step: 100;
+                        horizontal-stretch: 1;
+                        height: 22px;
+                        value-changed(v) => {
+                            root.spindle_speed = v;
+                            root.update_spindle_speed(v);
+                        }
+                    }
+                }
+                
+                HorizontalLayout {
+                    spacing: 2px;
+                    Text { 
+                        text: "Tool:"; 
+                        font-size: 11px;
+                        width: 40px;
+                        vertical-alignment: center;
+                    }
+                    CompactSpinBox { 
+                        value: root.tool_diameter;
+                        minimum: 0.1;
+                        maximum: 50;
+                        step: 0.1;
+                        horizontal-stretch: 1;
+                        height: 22px;
+                        value-changed(v) => {
+                            root.tool_diameter = v;
+                            root.update_tool_diameter(v);
+                        }
+                    }
+                }
+                
+                HorizontalLayout {
+                    spacing: 2px;
+                    Text { 
+                        text: "Depth:"; 
+                        font-size: 11px;
+                        width: 40px;
+                        vertical-alignment: center;
+                    }
+                    CompactSpinBox { 
+                        value: root.cut_depth;
+                        minimum: -50;
+                        maximum: 0;
+                        step: 0.1;
+                        horizontal-stretch: 1;
+                        height: 22px;
+                        value-changed(v) => {
+                            root.cut_depth = v;
+                            root.update_cut_depth(v);
+                        }
+                    }
+                }
+                
+                HorizontalLayout {
+                    spacing: 2px;
+                    Text { 
+                        text: "Step:"; 
+                        font-size: 11px;
+                        width: 40px;
+                        vertical-alignment: center;
+                    }
+                    CompactSpinBox { 
+                        value: root.step_in;
+                        minimum: 0.1;
+                        maximum: 50;
+                        step: 0.1;
+                        horizontal-stretch: 1;
+                        height: 22px;
+                        value-changed(v) => {
+                            root.step_in = v;
+                            root.update_step_in(v);
+                        }
+                    }
+                }
+                
+                CheckBox {
+                    text: "Grid";
+                    checked <=> root.show_grid;
+                    toggled => { root.toggle_grid(); }
+                }
             }
             
             // Spacer to push content to top
             VerticalBox { }
         }
+        }
         
         // ═════════════════════════════════════════════
         // CENTER: Canvas Area
         // ═════════════════════════════════════════════
-        VerticalBox {
+        Rectangle {
             horizontal-stretch: 1;
+            
+            VerticalBox {
+                width: 100%;
+                height: 100%;
             
             // Canvas Info Indicator
             Rectangle {
@@ -1770,14 +1754,19 @@ export component DesignerPanel inherits VerticalBox {
                 }
             }
         }
+        }
         
         // ═════════════════════════════════════════════
         // RIGHT SIDEBAR: Properties Panel (Scrollable)
         // ═════════════════════════════════════════════
-        ScrollView {
-            preferred-width: 160px;
+        Rectangle {
+            min-width: 160px;
             max-width: 160px;
             horizontal-stretch: 0;
+            
+            ScrollView {
+                width: 100%;
+                height: 100%;
             
             Rectangle {
                 background: #ecf0f1;
@@ -1923,61 +1912,13 @@ export component DesignerPanel inherits VerticalBox {
                         toggled => { root.toggle_grid(); }
                     }
                     
-                    HorizontalBox {
-                        spacing: 2px;
-                        padding: 0px;
-                        
-                        Button {
-                            text: "+";
-                            width: 30px;
-                            height: 24px;
-                            clicked => { root.zoom_in(); }
-                        }
-                        Button {
-                            text: "-";
-                            width: 30px;
-                            height: 24px;
-                            clicked => { root.zoom_out(); }
-                        }
-                        Button {
-                            text: "Fit";
-                            width: 30px;
-                            height: 24px;
-                            clicked => { root.zoom_fit(); }
-                        }
-                        Button {
-                            text: "Rst";
-                            width: 30px;
-                            height: 24px;
-                            clicked => { root.reset_view(); }
-                        }
-                    }
-                    
-                    Rectangle { height: 2px; }
-                    
-                    Text {
-                        text: "G-Code";
-                        font-weight: 700;
-                        font-size: 11px;
-                    }
-                    
-                    Button {
-                        text: "Generate";
-                        width: 100%;
-                        clicked => { generate_toolpath(); }
-                    }
-                    
-                    Text {
-                        text: gcode_generated ? "✓ Ready" : "⊘ None";
-                        font-size: 8px;
-                        color: gcode_generated ? #2ecc71 : #e74c3c;
-                        horizontal-alignment: center;
-                    }
                     
                     VerticalBox { }
                 }
             }
         }
+        }
+    }
     }
     
     // Context menu overlay (on top of everything)
@@ -2173,6 +2114,5 @@ export component DesignerPanel inherits VerticalBox {
                 root.delete_confirmation_visible = false;
             }
         }
-    }
     }
 }

@@ -228,6 +228,12 @@ Rectangle {
 
 ## UI Patterns (November 2025)
 
+### Layout Constraints (2025-11-24)
+- **Issue**: `VerticalBox` and `HorizontalBox` (from `std-widgets`) can cause unexpected layout expansion because they have internal padding and layout logic that may override parent constraints.
+- **Solution**: Use `VerticalLayout` and `HorizontalLayout` for strict layout control when precise sizing is needed.
+- **Sizing**: To prevent a sidebar from expanding when the window is resized, use `min-width` and `max-width` set to the same value (e.g., `min-width: 210px; max-width: 210px;`). Avoid using `width` alone if it conflicts with layout stretch properties.
+- **Borders**: `VerticalBox` and `HorizontalBox` do not support `border-width` or `border-color`. Wrap them in a `Rectangle` if borders are needed.
+
 ### Scrollable Tabs
 - Use `Flickable` to wrap content within a `TabWidget` tab to ensure content is accessible on smaller screens.
 - Example: `Tab { title: "General"; Flickable { ... } }`

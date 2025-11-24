@@ -509,6 +509,37 @@ export component MainWindow inherits Window {
                 }
             }
             MenuItem {
+                title: "----------------";
+                enabled: false;
+            }
+            Menu {
+                title: @tr("Export");
+                enabled: root.current-view == "designer";
+                MenuItem {
+                    title: @tr("G-Code");
+                    enabled: root.current-view == "designer" && root.designer-shapes.length > 0;
+                    activated => {
+                        root.designer-generate-toolpath();
+                    }
+                }
+            }
+            Menu {
+                title: @tr("Import");
+                enabled: root.current-view == "designer";
+                MenuItem {
+                    title: @tr("DXF");
+                    activated => {
+                        root.designer-import-dxf();
+                    }
+                }
+                MenuItem {
+                    title: @tr("SVG");
+                    activated => {
+                        root.designer-import-svg();
+                    }
+                }
+            }
+            MenuItem {
                 title: @tr("Exit");
                 activated => { root.menu-file-exit(); }
             }
@@ -518,6 +549,7 @@ export component MainWindow inherits Window {
             title: @tr("Edit");
             MenuItem {
                 title: @tr("Undo");
+                enabled: root.current-view == "designer" ? root.designer-state.can_undo : root.can-undo;
                 activated => {
                     if (root.current-view == "designer") {
                         root.designer-undo();
@@ -528,6 +560,7 @@ export component MainWindow inherits Window {
             }
             MenuItem {
                 title: @tr("Redo");
+                enabled: root.current-view == "designer" ? root.designer-state.can_redo : root.can-redo;
                 activated => {
                     if (root.current-view == "designer") {
                         root.designer-redo();
@@ -551,6 +584,54 @@ export component MainWindow inherits Window {
         
         Menu {
             title: @tr("View");
+            MenuItem {
+                title: @tr("Zoom In");
+                enabled: root.current-view == "designer" || root.current-view == "gcode-visualizer";
+                activated => {
+                    if (root.current-view == "designer") {
+                        root.designer-zoom-in();
+                    } else if (root.current-view == "gcode-visualizer") {
+                        root.zoom-in(root.visualizer-canvas-width, root.visualizer-canvas-height);
+                    }
+                }
+            }
+            MenuItem {
+                title: @tr("Zoom Out");
+                enabled: root.current-view == "designer" || root.current-view == "gcode-visualizer";
+                activated => {
+                    if (root.current-view == "designer") {
+                        root.designer-zoom-out();
+                    } else if (root.current-view == "gcode-visualizer") {
+                        root.zoom-out(root.visualizer-canvas-width, root.visualizer-canvas-height);
+                    }
+                }
+            }
+            MenuItem {
+                title: @tr("Fit to View");
+                enabled: root.current-view == "designer" || root.current-view == "gcode-visualizer";
+                activated => {
+                    if (root.current-view == "designer") {
+                        root.designer-zoom-fit();
+                    } else if (root.current-view == "gcode-visualizer") {
+                        root.fit-to-view(root.visualizer-canvas-width, root.visualizer-canvas-height);
+                    }
+                }
+            }
+            MenuItem {
+                title: @tr("Reset to Default");
+                enabled: root.current-view == "designer" || root.current-view == "gcode-visualizer";
+                activated => {
+                    if (root.current-view == "designer") {
+                        root.designer-reset-view();
+                    } else if (root.current-view == "gcode-visualizer") {
+                        root.reset-view(root.visualizer-canvas-width, root.visualizer-canvas-height);
+                    }
+                }
+            }
+            MenuItem {
+                title: "----------------";
+                enabled: false;
+            }
             MenuItem {
                 title: current-view == "gcode-editor" ? @tr("✓ G-Code Editor") : @tr("G-Code Editor");
                 activated => {
@@ -1025,18 +1106,6 @@ export component MainWindow inherits Window {
                     total-lines <=> root.total-lines;
                     visible-start-line <=> root.visible-start-line;
                     cursor-blink-visible: root.cursor-blink-visible;
-                    menu-file-new => {
-                        root.menu-file-new();
-                    }
-                    menu-file-open => {
-                        root.menu-file-open();
-                    }
-                    menu-file-save => {
-                        root.menu-file-save();
-                    }
-                    menu-file-save-as => {
-                        root.menu-file-save-as();
-                    }
                     menu-send-to-device => {
                         root.menu-send-to-device();
                     }

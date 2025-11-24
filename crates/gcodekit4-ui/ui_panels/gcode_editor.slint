@@ -36,10 +36,7 @@ export component GcodeEditorPanel inherits VerticalBox {
         editor-focus.focus();
     }
     
-    callback menu-file-new();
-    callback menu-file-open();
-    callback menu-file-save();
-    callback menu-file-save-as();
+    
     callback menu-send-to-device();
     callback menu-stop-transmission();
     callback menu-pause-transmission();
@@ -68,90 +65,6 @@ export component GcodeEditorPanel inherits VerticalBox {
         HorizontalBox {
             padding: 5px;
             spacing: 5px;
-            
-            // Undo button
-            Rectangle {
-                width: 80px;
-                height: 30px;
-                border-radius: 3px;
-                border-width: 1px;
-                border-color: #555555;
-                
-                undo-area := TouchArea {
-                    enabled: root.can-undo;
-                    clicked => {
-                        root.undo-requested();
-                    }
-                }
-                
-                background: undo-area.has-hover ? #3e3e42 : #333337;
-                
-                HorizontalBox {
-                    alignment: center;
-                    Text {
-                        text: "⎌ Undo";
-                        color: root.can-undo ? #ffffff : #666666;
-                        font-size: 12px;
-                    }
-                }
-            }
-            
-            // Redo button
-            Rectangle {
-                width: 80px;
-                height: 30px;
-                border-radius: 3px;
-                border-width: 1px;
-                border-color: #555555;
-                
-                redo-area := TouchArea {
-                    enabled: root.can-redo;
-                    clicked => {
-                        root.redo-requested();
-                    }
-                }
-                
-                background: redo-area.has-hover ? #3e3e42 : #333337;
-                
-                HorizontalBox {
-                    alignment: center;
-                    Text {
-                        text: "⎌ Redo";
-                        color: root.can-redo ? #ffffff : #666666;
-                        font-size: 12px;
-                    }
-                }
-            }
-            
-            Rectangle { width: 10px; }
-            
-            // File operation buttons
-            Button {
-                text: "New";
-                clicked => {
-                    root.menu-file-new();
-                }
-            }
-            Button {
-                text: "Open";
-                clicked => {
-                    root.menu-file-open();
-                }
-            }
-            Button {
-                text: "Save";
-                enabled: root.gcode-content != "";
-                clicked => {
-                    root.menu-file-save();
-                }
-            }
-            Button {
-                text: "Save As";
-                enabled: root.gcode-content != "";
-                clicked => {
-                    root.menu-file-save-as();
-                }
-            }
             
             Rectangle { width: 10px; }
             

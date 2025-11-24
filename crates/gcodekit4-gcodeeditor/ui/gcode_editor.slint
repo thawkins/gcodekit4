@@ -30,32 +30,6 @@ export component GcodeEditorPanel inherits VerticalBox {
                 spacing: 15px;
                 
                 Button {
-                    text: "New";
-                    clicked => {
-                        root.menu-file-new();
-                    }
-                }
-                Button {
-                    text: "Open File";
-                    clicked => {
-                        root.menu-file-open();
-                    }
-                }
-                Button {
-                    text: "Save";
-                    enabled: root.gcode-content != "" && root.gcode-filename != "untitled.gcode";
-                    clicked => {
-                        root.menu-file-save();
-                    }
-                }
-                Button {
-                    text: "Save As";
-                    enabled: root.gcode-content != "";
-                    clicked => {
-                        root.menu-file-save-as();
-                    }
-                }
-                Button {
                     text: "Send";
                     enabled: root.gcode-content != "";
                     clicked => {
