@@ -367,3 +367,8 @@ Rectangle {
 - **Structure**: Used `vertical-stretch: 0` on search/filter panels to prevent them from expanding unnecessarily.
 
 
+
+## Layout Insights (2025-11-24)
+- **HorizontalBox vs HorizontalLayout**: `HorizontalBox` adds implicit padding and spacing which can cause unexpected layout expansion, especially when nested or when children have flexible widths. Switching to `HorizontalLayout` provides more precise control.
+- **Sidebar Expansion**: To prevent a sidebar from expanding to fill the screen, use `width` or `max-width` constraints. Avoid `width: 100%` on children if the parent's width is not strictly constrained.
+- **FocusScope**: Ensure `FocusScope` is properly closed and doesn't accidentally wrap unintended elements.

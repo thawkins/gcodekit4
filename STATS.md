@@ -1,5 +1,5 @@
       125 ./src/lib.rs
-     7541 ./src/main.rs
+     7576 ./src/main.rs
        36 ./crates/gcodekit4-core/src/core/listener.rs
       116 ./crates/gcodekit4-core/src/core/event.rs
       211 ./crates/gcodekit4-core/src/core/message.rs
@@ -136,15 +136,6 @@
       425 ./crates/gcodekit4-ui/src/ui/firmware_integration.rs
        89 ./crates/gcodekit4-ui/src/ui/mod.rs
       196 ./crates/gcodekit4-ui/src/ui/state.rs
-      105 ./crates/gcodekit4-ui/src/ui_panels/gcode_editor.slint
-       89 ./crates/gcodekit4-ui/src/ui_panels/device_console.slint
-      529 ./crates/gcodekit4-ui/src/ui_panels/machine_control.slint
-      377 ./crates/gcodekit4-ui/src/ui_panels/config_settings.slint
-      210 ./crates/gcodekit4-ui/src/ui_panels/device_info.slint
-      208 ./crates/gcodekit4-ui/src/ui_panels/cam_tools.slint
-      684 ./crates/gcodekit4-ui/src/ui_panels/materials_manager.slint
-      572 ./crates/gcodekit4-ui/src/ui_panels/tools_manager.slint
-       71 ./crates/gcodekit4-ui/src/ui_panels/error_dialog.slint
         9 ./crates/gcodekit4-ui/src/testing/mod.rs
       492 ./crates/gcodekit4-ui/src/testing/project_completion.rs
        23 ./crates/gcodekit4-ui/src/lib.rs
@@ -153,17 +144,6 @@
       217 ./crates/gcodekit4-ui/src/editor/text_buffer.rs
       243 ./crates/gcodekit4-ui/src/editor/undo_manager.rs
       216 ./crates/gcodekit4-ui/src/editor/viewport.rs
-       89 ./crates/gcodekit4-ui/ui_panels/device_console.slint
-      529 ./crates/gcodekit4-ui/ui_panels/machine_control.slint
-      377 ./crates/gcodekit4-ui/ui_panels/config_settings.slint
-      210 ./crates/gcodekit4-ui/ui_panels/device_info.slint
-      229 ./crates/gcodekit4-ui/ui_panels/cam_tools.slint
-      716 ./crates/gcodekit4-ui/ui_panels/materials_manager.slint
-      572 ./crates/gcodekit4-ui/ui_panels/tools_manager.slint
-       71 ./crates/gcodekit4-ui/ui_panels/error_dialog.slint
-      314 ./crates/gcodekit4-ui/ui_panels/gcode_editor.slint
-      326 ./crates/gcodekit4-ui/ui/ui_components/settings_dialog.slint
-      598 ./crates/gcodekit4-ui/ui/ui_components/custom_text_edit.slint
       515 ./crates/gcodekit4-ui/ui/console_panel.rs
       646 ./crates/gcodekit4-ui/ui/file_management.rs
       205 ./crates/gcodekit4-ui/ui/progress_indicators.rs
@@ -206,7 +186,6 @@
        39 ./crates/gcodekit4-ui/tests/ui/state_test.rs
         0 ./crates/gcodekit4-ui/tests/ui_tests.rs
        10 ./crates/gcodekit4-ui/build.rs
-     2040 ./crates/gcodekit4-ui/ui.slint
       703 ./crates/gcodekit4-camtools/src/advanced_features.rs
        84 ./crates/gcodekit4-camtools/src/arc_expander.rs
       425 ./crates/gcodekit4-camtools/src/core_infrastructure.rs
@@ -249,19 +228,12 @@
         1 ./crates/gcodekit4-camtools/tests/generators_tests.rs
         1 ./crates/gcodekit4-camtools/tests/ui_tests.rs
         5 ./crates/gcodekit4-camtools/tests/lib.rs
-      342 ./crates/gcodekit4-camtools/ui/tabbed_box_dialog.slint
-      273 ./crates/gcodekit4-camtools/ui/jigsaw_puzzle_dialog.slint
-      447 ./crates/gcodekit4-camtools/ui/laser_engraver_dialog.slint
-      446 ./crates/gcodekit4-camtools/ui/vector_engraver_dialog.slint
-      177 ./crates/gcodekit4-camtools/ui/speeds_feeds_dialog.slint
-      219 ./crates/gcodekit4-camtools/ui/spoilboard_surfacing_dialog.slint
-      176 ./crates/gcodekit4-camtools/ui/spoilboard_grid_dialog.slint
       101 ./crates/gcodekit4-designer/src/mod.rs
-     1038 ./crates/gcodekit4-designer/src/canvas.rs
+     1049 ./crates/gcodekit4-designer/src/canvas.rs
       408 ./crates/gcodekit4-designer/src/adaptive.rs
       308 ./crates/gcodekit4-designer/src/arrays.rs
       191 ./crates/gcodekit4-designer/src/designer_editor_integration.rs
-      774 ./crates/gcodekit4-designer/src/designer_state.rs
+      779 ./crates/gcodekit4-designer/src/designer_state.rs
       289 ./crates/gcodekit4-designer/src/designer_visualizer_integration.rs
       260 ./crates/gcodekit4-designer/src/drilling_patterns.rs
       671 ./crates/gcodekit4-designer/src/dxf_parser.rs
@@ -330,13 +302,11 @@
       347 ./crates/gcodekit4-designer/tests/designer_phase3_cam_ops.rs
       153 ./crates/gcodekit4-designer/tests/designer_state_integration.rs
        12 ./crates/gcodekit4-designer/tests/io.rs
-     2118 ./crates/gcodekit4-designer/ui/designer.slint
       323 ./crates/gcodekit4-gcodeeditor/src/lib.rs
       212 ./crates/gcodekit4-gcodeeditor/src/slint_bridge.rs
       160 ./crates/gcodekit4-gcodeeditor/src/text_buffer.rs
       172 ./crates/gcodekit4-gcodeeditor/src/undo_manager.rs
       134 ./crates/gcodekit4-gcodeeditor/src/viewport.rs
-       79 ./crates/gcodekit4-gcodeeditor/ui/gcode_editor.slint
        32 ./crates/gcodekit4-gcodeeditor/tests/editor_state_test.rs
        43 ./crates/gcodekit4-gcodeeditor/tests/slint_bridge_test.rs
        79 ./crates/gcodekit4-gcodeeditor/tests/viewport_test.rs
@@ -361,7 +331,6 @@
       120 ./crates/gcodekit4-visualizer/src/visualizer/viewport.rs
       118 ./crates/gcodekit4-visualizer/src/visualizer/toolpath_cache.rs
        34 ./crates/gcodekit4-visualizer/src/lib.rs
-      371 ./crates/gcodekit4-visualizer/ui/gcode_visualizer.slint
       198 ./crates/gcodekit4-visualizer/tests/visualizer_coordinate_transforms.rs
       457 ./crates/gcodekit4-visualizer/tests/integration/phase7_integration.rs
         0 ./crates/gcodekit4-visualizer/tests/integration/mod.rs
@@ -372,7 +341,6 @@
       167 ./crates/gcodekit4-settings/src/controller.rs
       283 ./crates/gcodekit4-settings/src/persistence.rs
       308 ./crates/gcodekit4-settings/src/view_model.rs
-      295 ./crates/gcodekit4-settings/ui/settings_dialog.slint
        58 ./crates/gcodekit4-settings/tests/persistence_test.rs
        59 ./crates/gcodekit4-settings/tests/view_model_test.rs
         6 ./crates/gcodekit4-devicedb/src/traits.rs
@@ -380,10 +348,8 @@
       147 ./crates/gcodekit4-devicedb/src/manager.rs
       133 ./crates/gcodekit4-devicedb/src/model.rs
       164 ./crates/gcodekit4-devicedb/src/ui_integration.rs
-      379 ./crates/gcodekit4-devicedb/ui/device_manager.slint
        57 ./crates/gcodekit4-devicedb/tests/integration_tests.rs
       122 ./examples/custom_editor_demo.rs
-       64 ./examples/custom_editor_demo.slint
         5 ./target/debug/build/serde_core-e108151e08f4e286/out/private.rs
       102 ./target/debug/build/rav1e-4b4cdf0e11d83f8f/out/built.rs
         6 ./target/debug/build/serde-b5e02fa8eb95b4ca/out/private.rs
@@ -436,10 +402,10 @@
    225924 ./target/debug/build/gcodekit4-ui-0ce047bbc851552b/out/ui.rs
    225924 ./target/debug/build/gcodekit4-809fe9f41d9a254e/out/ui.rs
    225924 ./target/debug/build/gcodekit4-ui-039d91cc675f8916/out/ui.rs
-   221230 ./target/debug/build/gcodekit4-becf0b4cb08daecc/out/ui.rs
-   221230 ./target/debug/build/gcodekit4-ui-7fe67e19462e1ee9/out/ui.rs
-   221230 ./target/debug/build/gcodekit4-833f988419df3aca/out/ui.rs
-   221230 ./target/debug/build/gcodekit4-ui-b55a5b861a8e8da5/out/ui.rs
+   215749 ./target/debug/build/gcodekit4-becf0b4cb08daecc/out/ui.rs
+   215749 ./target/debug/build/gcodekit4-ui-7fe67e19462e1ee9/out/ui.rs
+   215749 ./target/debug/build/gcodekit4-833f988419df3aca/out/ui.rs
+   215749 ./target/debug/build/gcodekit4-ui-b55a5b861a8e8da5/out/ui.rs
         5 ./target/release/build/serde_core-013cae76489ee075/out/private.rs
       102 ./target/release/build/rav1e-c355222f215bfc4a/out/built.rs
         6 ./target/release/build/serde-59a80ebe3257f2f5/out/private.rs
@@ -467,4 +433,4 @@
       940 ./target/release/build/crunchy-8748f8dcbcb17100/out/lib.rs
    217064 ./target/release/build/gcodekit4-ui-2fadaa3f71d7a2d1/out/ui.rs
        18 ./build.rs
-  4667353 total
+  4631178 total

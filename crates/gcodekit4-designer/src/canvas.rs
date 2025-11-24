@@ -387,6 +387,17 @@ impl Canvas {
         self.selected_id = None;
     }
 
+    /// Selects all shapes.
+    pub fn select_all(&mut self) {
+        for obj in self.shapes.iter_mut() {
+            obj.selected = true;
+        }
+        // Set selected_id to the last one if any exist
+        if let Some(last) = self.shapes.last() {
+            self.selected_id = Some(last.id);
+        }
+    }
+
     /// Checks if point is inside currently selected shape
     pub fn is_point_in_selected(&self, point: &Point) -> bool {
         if let Some(id) = self.selected_id {

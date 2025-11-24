@@ -4832,11 +4832,30 @@ fn main() -> anyhow::Result<()> {
                                 for shape in design.shapes {
                                     state.canvas.add_shape(shape);
                                 }
+                                
+                                // Auto-fit to view after import
+                                state.zoom_fit();
+                                
                                 window.set_connection_status(slint::SharedString::from(format!(
                                     "SVG imported: {} shapes from {} layers",
                                     shape_count, layer_count
                                 )));
                                 update_designer_ui(&window, &mut state);
+                                
+                                // Update UI state with new zoom/pan values
+                                let ui_state = crate::DesignerState {
+                                    mode: state.canvas.mode() as i32,
+                                    zoom: state.canvas.zoom() as f32,
+                                    pan_x: state.canvas.pan_offset().0 as f32,
+                                    pan_y: state.canvas.pan_offset().1 as f32,
+                                    selected_id: state.canvas.selected_id().unwrap_or(0) as i32,
+                                    update_counter: 0, 
+                                    can_undo: state.can_undo(), 
+                                    can_redo: state.can_redo(), 
+                                    can_group: state.can_group(), 
+                                    can_ungroup: state.can_ungroup(),
+                                };
+                                window.set_designer_state(ui_state);
                             }
                             Err(e) => {
                                 window.set_connection_status(slint::SharedString::from(format!(
@@ -5144,6 +5163,22 @@ fn main() -> anyhow::Result<()> {
             // Update UI state with no selected shape
             let mut ui_state = window.get_designer_state();
             ui_state.selected_id = 0;
+            window.set_designer_state(ui_state);
+        }
+    });
+
+    // Designer: Select All callback
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_select_all(move || {
+        let mut state = designer_mgr_clone.borrow_mut();
+        state.select_all();
+        if let Some(window) = window_weak.upgrade() {
+            update_designer_ui(&window, &mut state);
+            
+            // Update UI state
+            let mut ui_state = window.get_designer_state();
+            ui_state.selected_id = state.canvas.selected_id().unwrap_or(0) as i32;
             window.set_designer_state(ui_state);
         }
     });

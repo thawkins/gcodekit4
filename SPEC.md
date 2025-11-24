@@ -1,6 +1,6 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.37.16-alpha  
+**Version**: 0.37.17-alpha  
 **Last Updated**: 2025-11-24  
 **Status**: Documentation Updates
 

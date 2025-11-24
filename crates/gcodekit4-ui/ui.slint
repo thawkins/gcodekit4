@@ -384,6 +384,7 @@ export component MainWindow inherits Window {
     callback designer-handle-drag(int, int, float, float);  // shape_id, handle_index, dx, dy
     callback designer-canvas-pan(float, float);             // dx, dy - pan the viewport
     callback designer-deselect-all();
+    callback designer-select-all();
     callback designer-set-shift-pressed(bool);              // Shift key state
     callback designer-save-shape-properties();              // Save all properties
     callback designer-update-shape-property(int, float);    // property_id, value
@@ -547,6 +548,13 @@ export component MainWindow inherits Window {
         
         Menu {
             title: @tr("Edit");
+            MenuItem {
+                title: @tr("Select All");
+                enabled: root.current-view == "designer" && root.designer-shapes.length > 0;
+                activated => {
+                    root.designer-select-all();
+                }
+            }
             MenuItem {
                 title: @tr("Undo");
                 enabled: root.current-view == "designer" ? root.designer-state.can_undo : root.can-undo;

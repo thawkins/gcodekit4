@@ -554,6 +554,11 @@ impl DesignerState {
         self.canvas.deselect_all();
     }
 
+    /// Selects all shapes.
+    pub fn select_all(&mut self) {
+        self.canvas.select_all();
+    }
+
     pub fn set_selected_position_and_size(&mut self, x: f64, y: f64, w: f64, h: f64) {
         self.set_selected_position_and_size_with_flags(x, y, w, h, true, true);
     }
