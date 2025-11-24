@@ -382,7 +382,7 @@ mod tests {
 
     #[test]
     fn test_file_operations_panel() {
-        let mut panel = FileOperationsPanel::new();
+        let panel = FileOperationsPanel::new();
         assert_eq!(panel.max_recent, 10);
         assert!(panel.selected_file.is_none());
     }
@@ -405,7 +405,7 @@ mod tests {
 
     #[test]
     fn test_file_size_formatting() {
-        let mut info = FileInfo {
+        let info = FileInfo {
             path: PathBuf::from("test.nc"),
             name: "test.nc".to_string(),
             size: 2048,

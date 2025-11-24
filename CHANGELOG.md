@@ -23,6 +23,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **UI**: Removed top padding from the main content area to eliminate whitespace above the TabBar.
+- **Designer**: Moved Group/Ungroup buttons to the context menu.
+  - "Group" is active when multiple items are selected and at least one is not in a group.
+  - "Ungroup" is active when any selected item is part of a group.
+- **Designer**: Reversed vertical drag-pan direction to match natural scrolling behavior.
+- **UI**: Renamed "Config" tab to "Device Config" and added it to View menu.
+- **UI**: Updated View menu structure (Machine Control, Machine Info, CAMTools, CNCTools).
+- **UI**: Standardized height (32px) and layout of controls in Materials Manager.
+- **UI**: Removed unused `MainMenu` component definition.
+- **UI**: Updated File menu with context-aware "New" action and label.
+- **UI**: Updated File menu "Open", "Save", and "Save As" actions to be context-aware for Designer.
+- **UI**: Added "Undo" and "Redo" to Edit menu with context-aware actions.
+- **UI**: Added confirmation dialogs for "New" action in GCode Editor and Designer to prevent accidental data loss.
+
+## [0.37.14] - 2025-11-24
+
+### Added
+- **Designer**: Added Copy/Paste functionality for shapes and groups.
+- **Designer**: Added Undo/Redo functionality with history stack.
+- **Designer**: Added "Group" and "Ungroup" context menu items.
+- **UI**: Added "Machine Info" view to the main menu.
+- **UI**: Added "CAMTools" and "CNCTools" to the main menu.
+- **UI**: Added confirmation dialogs for "New" action in GCode Editor and Designer.
+
+### Changed
+- **UI**: Renamed "Machine" menu to "Machine Control".
+- **UI**: Renamed "Config" tab to "Device Config".
+- **UI**: Standardized height and layout of controls in Materials Manager.
+- **UI**: Refactored Main Menu to use standard `MenuBar` component.
+- **UI**: Made File and Edit menus context-aware (switching between Designer and Editor actions).
+- **Designer**: Reversed vertical drag-pan direction.
 
 ## [0.37.13-alpha] - 2025-11-23
 

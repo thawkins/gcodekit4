@@ -17,7 +17,6 @@ import { DesignerPanel } from "../gcodekit4-designer/ui/designer.slint";
 import { CAMToolsPanel } from "ui_panels/cam_tools.slint";
 import { MaterialsManager, MaterialData } from "ui_panels/materials_manager.slint";
 import { ToolsManager, ToolData } from "ui_panels/tools_manager.slint";
-import { MainMenu } from "ui/ui_components/mainmenu.slint";
 import { SettingsDialog, SettingItem } from "../gcodekit4-settings/ui/settings_dialog.slint";
 import { DeviceManagerPanel, DeviceProfileUiModel } from "../gcodekit4-devicedb/ui/device_manager.slint";
 import { TabbedBoxDialog } from "../gcodekit4-camtools/ui/tabbed_box_dialog.slint";
@@ -57,10 +56,12 @@ export struct DesignerState {
     update_counter: int,
     can_undo: bool,
     can_redo: bool,
+    can_group: bool,
+    can_ungroup: bool,
 }
 
 export component MainWindow inherits Window {
-    title: "GCodeKit4 - Universal G-Code Sender";
+    title: "GCodeKit4 - GCode Toolkit for CNC/Laser Machines";
     
     // Busy cursor while processing
     in-out property <bool> is-busy: false;
@@ -460,16 +461,52 @@ export component MainWindow inherits Window {
         Menu {
             title: @tr("File");
             MenuItem {
+                title: root.current-view == "designer" ? "Design File" : "GCode File";
+                enabled: false;
+            }
+            MenuItem {
+                title: "----------------";
+                enabled: false;
+            }
+            MenuItem {
+                title: @tr("New");
+                activated => {
+                    if (root.current-view == "designer") {
+                        root.designer-file-new();
+                    } else {
+                        root.menu-file-new();
+                    }
+                }
+            }
+            MenuItem {
                 title: @tr("Open File");
-                activated => { root.menu-file-open(); }
+                activated => {
+                    if (root.current-view == "designer") {
+                        root.designer-file-open();
+                    } else {
+                        root.menu-file-open();
+                    }
+                }
             }
             MenuItem {
                 title: @tr("Save File");
-                activated => { root.menu-file-save(); }
+                activated => {
+                    if (root.current-view == "designer") {
+                        root.designer-file-save();
+                    } else {
+                        root.menu-file-save();
+                    }
+                }
             }
             MenuItem {
                 title: @tr("Save As");
-                activated => { root.menu-file-save-as(); }
+                activated => {
+                    if (root.current-view == "designer") {
+                        root.designer-file-save-as();
+                    } else {
+                        root.menu-file-save-as();
+                    }
+                }
             }
             MenuItem {
                 title: @tr("Exit");
@@ -479,6 +516,30 @@ export component MainWindow inherits Window {
         
         Menu {
             title: @tr("Edit");
+            MenuItem {
+                title: @tr("Undo");
+                activated => {
+                    if (root.current-view == "designer") {
+                        root.designer-undo();
+                    } else {
+                        root.undo-requested();
+                    }
+                }
+            }
+            MenuItem {
+                title: @tr("Redo");
+                activated => {
+                    if (root.current-view == "designer") {
+                        root.designer-redo();
+                    } else {
+                        root.redo-requested();
+                    }
+                }
+            }
+            MenuItem {
+                title: "----------------";
+                enabled: false;
+            }
             MenuItem {
                 title: @tr("Preferences");
                 activated => { 
@@ -504,11 +565,19 @@ export component MainWindow inherits Window {
                 }
             }
             MenuItem {
-                title: current-view == "machine" ? @tr("✓ Machine") : @tr("Machine");
+                title: current-view == "machine" ? @tr("✓ Machine Control") : @tr("Machine Control");
                 activated => {
                     if (current-view != "machine") {
                         current-view = "machine";
                         root.menu-view-machine();
+                    }
+                }
+            }
+            MenuItem {
+                title: current-view == "device-info" ? @tr("✓ Machine Info") : @tr("Machine Info");
+                activated => {
+                    if (current-view != "device-info") {
+                        current-view = "device-info";
                     }
                 }
             }
@@ -532,6 +601,13 @@ export component MainWindow inherits Window {
             }
 
             MenuItem {
+                title: current-view == "config-settings" ? @tr("✓ Device Config") : @tr("Device Config");
+                activated => {
+                    current-view = "config-settings";
+                }
+            }
+
+            MenuItem {
                 title: current-view == "gcode-visualizer" ? @tr("✓ Visualizer") : @tr("Visualizer");
                 activated => {
                     if (current-view != "gcode-visualizer") {
@@ -550,11 +626,28 @@ export component MainWindow inherits Window {
                 }
             }
             MenuItem {
+                title: current-view == "cam-tools" ? @tr("✓ CAMTools") : @tr("CAMTools");
+                activated => {
+                    if (current-view != "cam-tools") {
+                        current-view = "cam-tools";
+                    }
+                }
+            }
+            MenuItem {
                 title: current-view == "materials" ? @tr("✓ Materials") : @tr("Materials");
                 activated => {
                     if (current-view != "materials") {
                         current-view = "materials";
                         root.menu-view-materials();
+                    }
+                }
+            }
+            MenuItem {
+                title: current-view == "cnc-tools" ? @tr("✓ CNCTools") : @tr("CNCTools");
+                activated => {
+                    if (current-view != "cnc-tools") {
+                        current-view = "cnc-tools";
+                        root.load_tools();
                     }
                 }
             }
@@ -596,10 +689,10 @@ export component MainWindow inherits Window {
         
         // Main content area
         HorizontalBox {
-            spacing: 10px;
+            spacing: -20px;
             padding-left: 10px;
             padding-right: 10px;
-            padding-bottom: 10px;
+            padding-bottom: 0px;
             
             // Main content area - File and Viewer
             VerticalBox {
@@ -744,13 +837,13 @@ export component MainWindow inherits Window {
                         
                         // Config Tab
                         Rectangle {
-                            width: 100px;
+                            width: 130px;
                             height: 32px;
                             background: current-view == "config-settings" ? #34495e : #3d5470;
                             border-radius: 3px;
                             
                             Text {
-                                text: "⚙️ Config";
+                                text: "⚙️ Device Config";
                                 color: current-view == "config-settings" ? white : #bdc3c7;
                                 font-size: 12px;
                                 font-weight: current-view == "config-settings" ? 700 : 400;

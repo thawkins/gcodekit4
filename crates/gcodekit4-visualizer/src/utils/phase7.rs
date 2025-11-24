@@ -934,7 +934,7 @@ mod tests {
     // Task 122: Plugin System Tests
     #[test]
     fn test_plugin_registry() {
-        let mut registry = PluginRegistry::new();
+        let registry = PluginRegistry::new();
         assert_eq!(registry.list_plugins().len(), 0);
     }
 

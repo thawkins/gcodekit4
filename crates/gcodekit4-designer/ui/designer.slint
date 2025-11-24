@@ -118,6 +118,8 @@ export struct DesignerState {
     selected_id: int,
     can_undo: bool,
     can_redo: bool,
+    can_group: bool,
+    can_ungroup: bool,
 }
 
 component ToolButton inherits Rectangle {
@@ -538,11 +540,15 @@ component ContextMenu inherits Rectangle {
     in-out property <float> menu_y: 0;
     in property <bool> align-enabled: false;
     in property <bool> has-selection: false;
+    in property <bool> can-group: false;
+    in property <bool> can-ungroup: false;
     
     callback menu_delete();
     callback menu_properties();
     callback menu_copy();
     callback menu_paste();
+    callback menu_group();
+    callback menu_ungroup();
     callback align_horizontal_left();
     callback align_horizontal_center();
     callback align_horizontal_right();
@@ -557,7 +563,7 @@ component ContextMenu inherits Rectangle {
     private property <length> align_item_y: root.item_height * 4;
     
     width: 150px;
-    height: (root.has-selection ? 5 * root.item_height : 1 * root.item_height) + 4px;
+    height: (1 + (root.has-selection ? 4 : 0) + (root.can-group ? 1 : 0) + (root.can-ungroup ? 1 : 0)) * root.item_height + 4px;
     x: root.menu_x * 1px;
     y: root.menu_y * 1px;
     background: white;
@@ -624,6 +630,52 @@ component ContextMenu inherits Rectangle {
             }
         }
         
+        if root.can-group : Rectangle {
+            height: root.item_height;
+            background: menu-item-group.has-hover ? #e0e0e0 : transparent;
+            
+            HorizontalBox {
+                padding-left: 10px;
+                padding-right: 10px;
+                
+                Text {
+                    text: "Group";
+                    vertical-alignment: center;
+                    font-size: 13px;
+                }
+            }
+            
+            menu-item-group := TouchArea {
+                clicked => {
+                    root.show = false;
+                    root.menu_group();
+                }
+            }
+        }
+
+        if root.can-ungroup : Rectangle {
+            height: root.item_height;
+            background: menu-item-ungroup.has-hover ? #e0e0e0 : transparent;
+            
+            HorizontalBox {
+                padding-left: 10px;
+                padding-right: 10px;
+                
+                Text {
+                    text: "Ungroup";
+                    vertical-alignment: center;
+                    font-size: 13px;
+                }
+            }
+            
+            menu-item-ungroup := TouchArea {
+                clicked => {
+                    root.show = false;
+                    root.menu_ungroup();
+                }
+            }
+        }
+
         if root.has-selection : Rectangle {
             height: root.item_height;
             background: menu-item-1.has-hover ? #e0e0e0 : transparent;
@@ -1345,23 +1397,7 @@ export component DesignerPanel inherits VerticalBox {
                 }
             }
             
-            HorizontalBox {
-                spacing: 2px;
-                padding: 2px;
-                
-                Button {
-                    text: "Grp";
-                    width: 50px;
-                    height: 40px;
-                    clicked => { group_selected(); }
-                }
-                Button {
-                    text: "UGrp";
-                    width: 50px;
-                    height: 40px;
-                    clicked => { ungroup_selected(); }
-                }
-            }
+
             
             // Separator
             Rectangle {
@@ -1711,7 +1747,7 @@ export component DesignerPanel inherits VerticalBox {
                                                     root.drag_occurred = true;
                                                 } else if root.dragging_handle == -1 && designer_state.selected_id == 0 {
                                                     // No shape selected - pan the canvas
-                                                    canvas_pan(inc_dx, inc_dy);
+                                                    canvas_pan(inc_dx, -inc_dy);
                                                     root.drag_occurred = true;
                                                 }
                                                 root.drag_last_dx = total_dx;
@@ -1951,6 +1987,8 @@ export component DesignerPanel inherits VerticalBox {
         menu_y: root.context_menu_y;
         align-enabled: root.selected_count >= 2;
         has-selection: root.selected_count > 0;
+        can-group: designer_state.can_group;
+        can-ungroup: designer_state.can_ungroup;
         
         menu_delete => {
             delete_selected();
@@ -1962,6 +2000,14 @@ export component DesignerPanel inherits VerticalBox {
 
         menu_paste => {
             root.paste_at_location(root.context_menu_x, root.context_menu_y);
+        }
+
+        menu_group => {
+            root.group_selected();
+        }
+
+        menu_ungroup => {
+            root.ungroup_selected();
         }
         
         menu_properties => {

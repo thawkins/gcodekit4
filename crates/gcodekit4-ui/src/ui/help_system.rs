@@ -416,7 +416,7 @@ mod tests {
 
     #[test]
     fn test_tooltip_provider() {
-        let mut provider = TooltipProvider::default();
+        let provider = TooltipProvider::default();
         assert!(provider.get("connect_btn").is_some());
     }
 

@@ -3,7 +3,7 @@ use gcodekit4_designer::shapes::Point;
 
 #[test]
 fn test_viewport_creation() {
-    let vp = Viewport::new(800.0, 600.0);
+    let vp = Viewport::new(1200.0, 800.0);
     assert_eq!(vp.zoom(), 1.0);
     assert_eq!(vp.pan_x(), 5.0); // Initial margin
     assert_eq!(vp.pan_y(), 5.0); // Initial margin
@@ -11,7 +11,7 @@ fn test_viewport_creation() {
 
 #[test]
 fn test_pixel_to_world_origin_at_bottom_left() {
-    let vp = Viewport::new(800.0, 600.0);
+    let vp = Viewport::new(1200.0, 800.0);
     // With margin of 5px, pixel (5, 595) should map to world (0, 0)
     // pixel_y=595 is 5px from bottom of 600px canvas
     let world = vp.pixel_to_world(5.0, 595.0);
@@ -21,7 +21,7 @@ fn test_pixel_to_world_origin_at_bottom_left() {
 
 #[test]
 fn test_world_to_pixel_origin_at_bottom_left() {
-    let vp = Viewport::new(800.0, 600.0);
+    let vp = Viewport::new(1200.0, 800.0);
     // World (0, 0) should map to pixel (5, 595) with margin
     let (pixel_x, pixel_y) = vp.world_to_pixel(0.0, 0.0);
     assert!((pixel_x - 5.0).abs() < 0.01);
@@ -30,7 +30,7 @@ fn test_world_to_pixel_origin_at_bottom_left() {
 
 #[test]
 fn test_world_to_pixel_positive_y_goes_up() {
-    let vp = Viewport::new(800.0, 600.0);
+    let vp = Viewport::new(1200.0, 800.0);
     // Positive Y should go up the screen (lower pixel Y)
     let (_, py0) = vp.world_to_pixel(0.0, 0.0);
     let (_, py100) = vp.world_to_pixel(0.0, 100.0);
@@ -39,7 +39,7 @@ fn test_world_to_pixel_positive_y_goes_up() {
 
 #[test]
 fn test_world_to_pixel_positive_x_goes_right() {
-    let vp = Viewport::new(800.0, 600.0);
+    let vp = Viewport::new(1200.0, 800.0);
     // Positive X should go right (higher pixel X)
     let (px0, _) = vp.world_to_pixel(0.0, 0.0);
     let (px100, _) = vp.world_to_pixel(100.0, 0.0);
@@ -48,7 +48,7 @@ fn test_world_to_pixel_positive_x_goes_right() {
 
 #[test]
 fn test_pixel_to_world_with_zoom() {
-    let mut vp = Viewport::new(800.0, 600.0);
+    let mut vp = Viewport::new(1200.0, 800.0);
     vp.reset(); // Clear margin for simpler math
     vp.set_pan(0.0, 0.0); // Explicitly clear margin
     vp.set_zoom(2.0);
@@ -60,7 +60,7 @@ fn test_pixel_to_world_with_zoom() {
 
 #[test]
 fn test_roundtrip_conversion() {
-    let mut vp = Viewport::new(800.0, 600.0);
+    let mut vp = Viewport::new(1200.0, 800.0);
     vp.reset(); // Clear margin for simpler math
     vp.set_zoom(2.5);
     vp.set_pan(75.0, 125.0);
@@ -75,7 +75,7 @@ fn test_roundtrip_conversion() {
 
 #[test]
 fn test_zoom_constraints() {
-    let mut vp = Viewport::new(800.0, 600.0);
+    let mut vp = Viewport::new(1200.0, 800.0);
     vp.set_zoom(0.05); // Too small
     assert!(vp.zoom() > 0.05);
 
@@ -85,7 +85,7 @@ fn test_zoom_constraints() {
 
 #[test]
 fn test_zoom_in_out() {
-    let mut vp = Viewport::new(800.0, 600.0);
+    let mut vp = Viewport::new(1200.0, 800.0);
     let initial = vp.zoom();
     vp.zoom_in();
     assert!(vp.zoom() > initial);
@@ -96,7 +96,7 @@ fn test_zoom_in_out() {
 
 #[test]
 fn test_center_on_point() {
-    let mut vp = Viewport::new(800.0, 600.0);
+    let mut vp = Viewport::new(1200.0, 800.0);
     vp.set_zoom(1.0);
     vp.center_on(100.0, 200.0);
 
@@ -107,7 +107,7 @@ fn test_center_on_point() {
 
 #[test]
 fn test_fit_to_bounds() {
-    let mut vp = Viewport::new(800.0, 600.0);
+    let mut vp = Viewport::new(1200.0, 800.0);
     vp.fit_to_bounds(0.0, 0.0, 100.0, 100.0, 0.1);
 
     assert!(vp.zoom() > 1.0); // Should zoom in to fit small content
@@ -115,7 +115,7 @@ fn test_fit_to_bounds() {
 
 #[test]
 fn test_reset() {
-    let mut vp = Viewport::new(800.0, 600.0);
+    let mut vp = Viewport::new(1200.0, 800.0);
     vp.set_zoom(2.5);
     vp.set_pan(100.0, 200.0);
     vp.reset();

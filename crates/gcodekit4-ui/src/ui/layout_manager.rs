@@ -204,15 +204,15 @@ impl Layout {
         layout.panels.insert(
             PanelId::Editor,
             PanelState::new(PanelId::Editor, PanelLocation::Center)
-                .with_width(800.0)
-                .with_height(600.0),
+                .with_width(1200.0)
+                .with_height(800.0),
         );
 
         layout.panels.insert(
             PanelId::Visualizer,
             PanelState::new(PanelId::Visualizer, PanelLocation::Right)
-                .with_width(400.0)
-                .with_height(600.0),
+                .with_width(1200.0)
+                .with_height(800.0),
         );
 
         layout.panels.insert(
@@ -240,8 +240,8 @@ impl Layout {
         layout.panels.insert(
             PanelId::Visualizer,
             PanelState::new(PanelId::Visualizer, PanelLocation::Center)
-                .with_width(800.0)
-                .with_height(600.0),
+                .with_width(1200.0)
+                .with_height(800.0),
         );
 
         layout

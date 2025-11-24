@@ -533,7 +533,7 @@ impl Default for RecentFilesManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::Write;
+   
 
     #[test]
     fn test_file_encoding_detection() {
@@ -572,7 +572,7 @@ mod tests {
 
     #[test]
     fn test_recent_files_manager() {
-        let mut manager = RecentFilesManager::new(5);
+        let manager = RecentFilesManager::new(5);
         assert_eq!(manager.count(), 0);
 
         // Create temp files

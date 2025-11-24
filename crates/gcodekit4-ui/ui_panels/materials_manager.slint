@@ -115,14 +115,17 @@ export component MaterialsManager inherits Rectangle {
             // Search and filter controls
             GroupBox {
                 title: "Search & Filter";
+                vertical-stretch: 0;
                 
                 VerticalBox {
+                    alignment: start;
                     spacing: 8px;
                     
                     HorizontalBox {
                         spacing: 5px;
                         
                         LineEdit {
+                            height: 32px;
                             placeholder-text: "Search materials...";
                             text <=> search_query;
                             edited => {
@@ -133,6 +136,7 @@ export component MaterialsManager inherits Rectangle {
                         Button {
                             text: "🔍";
                             width: 40px;
+                            height: 32px;
                             clicked => {
                                 root.search_materials(search_query);
                             }
@@ -148,6 +152,7 @@ export component MaterialsManager inherits Rectangle {
                         }
                         
                         ComboBox {
+                            height: 32px;
                             model: ["All", "Wood", "Engineered Wood", "Plastic", 
                                     "Non-Ferrous Metal", "Ferrous Metal", "Composite", 
                                     "Stone & Ceramic"];
@@ -164,9 +169,11 @@ export component MaterialsManager inherits Rectangle {
             // Action buttons
             HorizontalBox {
                 spacing: 5px;
+                vertical-stretch: 0;
                 
                 Button {
                     text: "➕ New Material";
+                    height: 32px;
                     primary: true;
                     clicked => {
                         is_creating = true;
@@ -193,6 +200,7 @@ export component MaterialsManager inherits Rectangle {
                 
                 Button {
                     text: "🔄 Refresh";
+                    height: 32px;
                     clicked => {
                         root.load_materials();
                     }
@@ -300,6 +308,7 @@ export component MaterialsManager inherits Rectangle {
             
             if is_editing || is_creating: ScrollView {
                 VerticalBox {
+                    alignment: start;
                     spacing: 10px;
                     padding: 10px;
                     
@@ -321,6 +330,7 @@ export component MaterialsManager inherits Rectangle {
                         
                         Button {
                             text: "💾 Save";
+                            height: 32px;
                             primary: true;
                             clicked => {
                                 selected_material = {
@@ -355,6 +365,7 @@ export component MaterialsManager inherits Rectangle {
                         
                         Button {
                             text: "❌ Cancel";
+                            height: 32px;
                             clicked => {
                                 is_editing = false;
                                 is_creating = false;
@@ -363,6 +374,7 @@ export component MaterialsManager inherits Rectangle {
                         
                         if !is_creating && selected_material.custom: Button {
                             text: "🗑️ Delete";
+                            height: 32px;
                             clicked => {
                                 root.delete_material(selected_material.id);
                                 is_editing = false;
@@ -375,6 +387,7 @@ export component MaterialsManager inherits Rectangle {
                             title: "Basic Info";
                             
                             VerticalBox {
+                                alignment: start;
                                 spacing: 10px;
                                 padding: 10px;
                                 
@@ -387,6 +400,7 @@ export component MaterialsManager inherits Rectangle {
                                         vertical-alignment: center;
                                     }
                                     LineEdit {
+                                        height: 32px;
                                         placeholder-text: "unique_id";
                                         text <=> edit_id;
                                     }
@@ -401,6 +415,7 @@ export component MaterialsManager inherits Rectangle {
                                         vertical-alignment: center;
                                     }
                                     LineEdit {
+                                        height: 32px;
                                         placeholder-text: "Material name";
                                         text <=> edit_name;
                                     }
@@ -415,6 +430,7 @@ export component MaterialsManager inherits Rectangle {
                                         vertical-alignment: center;
                                     }
                                     ComboBox {
+                                        height: 32px;
                                         model: categories;
                                         current-value <=> edit_category;
                                     }
@@ -429,6 +445,7 @@ export component MaterialsManager inherits Rectangle {
                                         vertical-alignment: center;
                                     }
                                     LineEdit {
+                                        height: 32px;
                                         placeholder-text: "e.g., Hardwood, Alloy";
                                         text <=> edit_subcategory;
                                     }
@@ -452,6 +469,7 @@ export component MaterialsManager inherits Rectangle {
                             title: "Properties";
                             
                             VerticalBox {
+                                alignment: start;
                                 spacing: 10px;
                                 padding: 10px;
                                 
@@ -464,6 +482,7 @@ export component MaterialsManager inherits Rectangle {
                                         vertical-alignment: center;
                                     }
                                     LineEdit {
+                                        height: 32px;
                                         text: edit_density;
                                         input-type: decimal;
                                         edited => {
@@ -481,6 +500,7 @@ export component MaterialsManager inherits Rectangle {
                                         vertical-alignment: center;
                                     }
                                     SpinBox {
+                                        height: 32px;
                                         minimum: 1;
                                         maximum: 10;
                                         value <=> edit_machinability;
@@ -496,6 +516,7 @@ export component MaterialsManager inherits Rectangle {
                                         vertical-alignment: center;
                                     }
                                     LineEdit {
+                                        height: 32px;
                                         text: edit_tensile_strength;
                                         input-type: decimal;
                                         placeholder-text: "Optional";
@@ -514,6 +535,7 @@ export component MaterialsManager inherits Rectangle {
                                         vertical-alignment: center;
                                     }
                                     LineEdit {
+                                        height: 32px;
                                         text: edit_melting_point;
                                         input-type: decimal;
                                         placeholder-text: "Optional";
@@ -529,6 +551,7 @@ export component MaterialsManager inherits Rectangle {
                             title: "Machining";
                             
                             VerticalBox {
+                                alignment: start;
                                 spacing: 10px;
                                 padding: 10px;
                                 
@@ -541,6 +564,7 @@ export component MaterialsManager inherits Rectangle {
                                         vertical-alignment: center;
                                     }
                                     ComboBox {
+                                        height: 32px;
                                         model: chip_types;
                                         current-value <=> edit_chip_type;
                                     }
@@ -555,6 +579,7 @@ export component MaterialsManager inherits Rectangle {
                                         vertical-alignment: center;
                                     }
                                     ComboBox {
+                                        height: 32px;
                                         model: heat_sensitivities;
                                         current-value <=> edit_heat_sensitivity;
                                     }
@@ -569,6 +594,7 @@ export component MaterialsManager inherits Rectangle {
                                         vertical-alignment: center;
                                     }
                                     ComboBox {
+                                        height: 32px;
                                         model: abrasiveness_levels;
                                         current-value <=> edit_abrasiveness;
                                     }
@@ -583,6 +609,7 @@ export component MaterialsManager inherits Rectangle {
                                         vertical-alignment: center;
                                     }
                                     ComboBox {
+                                        height: 32px;
                                         model: surface_finishes;
                                         current-value <=> edit_surface_finish;
                                     }
@@ -594,6 +621,7 @@ export component MaterialsManager inherits Rectangle {
                             title: "Safety";
                             
                             VerticalBox {
+                                alignment: start;
                                 spacing: 10px;
                                 padding: 10px;
                                 
@@ -606,6 +634,7 @@ export component MaterialsManager inherits Rectangle {
                                         vertical-alignment: center;
                                     }
                                     ComboBox {
+                                        height: 32px;
                                         model: hazard_levels;
                                         current-value <=> edit_dust_hazard;
                                     }
@@ -620,6 +649,7 @@ export component MaterialsManager inherits Rectangle {
                                         vertical-alignment: center;
                                     }
                                     ComboBox {
+                                        height: 32px;
                                         model: hazard_levels;
                                         current-value <=> edit_fume_hazard;
                                     }
@@ -629,6 +659,7 @@ export component MaterialsManager inherits Rectangle {
                                 HorizontalBox {
                                     spacing: 8px;
                                     CheckBox {
+                                        height: 32px;
                                         text: "Coolant Required";
                                         checked <=> edit_coolant_required;
                                     }
@@ -662,6 +693,7 @@ export component MaterialsManager inherits Rectangle {
                             title: "Notes";
                             
                             VerticalBox {
+                                alignment: start;
                                 spacing: 10px;
                                 padding: 10px;
                                 

@@ -578,6 +578,8 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
     ui_state.update_counter = counter;
     ui_state.can_undo = state.can_undo();
     ui_state.can_redo = state.can_redo();
+    ui_state.can_group = state.can_group();
+    ui_state.can_ungroup = state.can_ungroup();
     window.set_designer_state(ui_state);
 }
 
@@ -809,7 +811,7 @@ fn main() -> anyhow::Result<()> {
         selected_id: 0,
         update_counter: 0,
         can_undo: false,
-        can_redo: false,
+        can_redo: false, can_group: false, can_ungroup: false,
     };
     main_window.set_designer_state(initial_designer_state);
     main_window.set_designer_show_grid(true); // Default to showing grid
@@ -1705,6 +1707,20 @@ fn main() -> anyhow::Result<()> {
     let window_weak = main_window.as_weak();
     main_window.on_menu_file_new(move || {
         if let Some(window) = window_weak.upgrade() {
+            let content = window.get_gcode_content();
+            if !content.is_empty() {
+                let should_clear = rfd::MessageDialog::new()
+                    .set_title("Clear Editor?")
+                    .set_description("The editor contains unsaved G-Code. Are you sure you want to clear it?")
+                    .set_buttons(rfd::MessageButtons::YesNo)
+                    .set_level(rfd::MessageLevel::Warning)
+                    .show();
+                
+                if should_clear != rfd::MessageDialogResult::Yes {
+                    return;
+                }
+            }
+            
             // Clear the editor content and reset filename
             window.set_gcode_filename(slint::SharedString::from("unknown.gcode"));
             window.invoke_clear_editor();
@@ -4472,7 +4488,7 @@ fn main() -> anyhow::Result<()> {
                 pan_x: 0.0,
                 pan_y: 0.0,
                 selected_id: -1,
-                update_counter: 0, can_undo: state.can_undo(), can_redo: state.can_redo(),
+                update_counter: 0, can_undo: state.can_undo(), can_redo: state.can_redo(), can_group: state.can_group(), can_ungroup: state.can_ungroup(),
             });
         }
     });
@@ -4492,7 +4508,7 @@ fn main() -> anyhow::Result<()> {
                 pan_x: state.canvas.pan_offset().0 as f32,
                 pan_y: state.canvas.pan_offset().1 as f32,
                 selected_id: state.canvas.selected_id().unwrap_or(0) as i32,
-                update_counter: 0, can_undo: state.can_undo(), can_redo: state.can_redo(),
+                update_counter: 0, can_undo: state.can_undo(), can_redo: state.can_redo(), can_group: state.can_group(), can_ungroup: state.can_ungroup(),
             };
             window.set_designer_state(ui_state);
         }
@@ -4512,7 +4528,7 @@ fn main() -> anyhow::Result<()> {
                 pan_x: state.canvas.pan_offset().0 as f32,
                 pan_y: state.canvas.pan_offset().1 as f32,
                 selected_id: state.canvas.selected_id().unwrap_or(0) as i32,
-                update_counter: 0, can_undo: state.can_undo(), can_redo: state.can_redo(),
+                update_counter: 0, can_undo: state.can_undo(), can_redo: state.can_redo(), can_group: state.can_group(), can_ungroup: state.can_ungroup(),
             };
             window.set_designer_state(ui_state);
         }
@@ -4532,7 +4548,7 @@ fn main() -> anyhow::Result<()> {
                 pan_x: state.canvas.pan_offset().0 as f32,
                 pan_y: state.canvas.pan_offset().1 as f32,
                 selected_id: state.canvas.selected_id().unwrap_or(0) as i32,
-                update_counter: 0, can_undo: state.can_undo(), can_redo: state.can_redo(),
+                update_counter: 0, can_undo: state.can_undo(), can_redo: state.can_redo(), can_group: state.can_group(), can_ungroup: state.can_ungroup(),
             };
             window.set_designer_state(ui_state);
         }
@@ -4552,7 +4568,7 @@ fn main() -> anyhow::Result<()> {
                 pan_x: state.canvas.pan_offset().0 as f32,
                 pan_y: state.canvas.pan_offset().1 as f32,
                 selected_id: state.canvas.selected_id().unwrap_or(0) as i32,
-                update_counter: 0, can_undo: state.can_undo(), can_redo: state.can_redo(),
+                update_counter: 0, can_undo: state.can_undo(), can_redo: state.can_redo(), can_group: state.can_group(), can_ungroup: state.can_ungroup(),
             };
             window.set_designer_state(ui_state);
         }
@@ -4854,6 +4870,20 @@ fn main() -> anyhow::Result<()> {
     let window_weak = main_window.as_weak();
     main_window.on_designer_file_new(move || {
         let mut state = designer_mgr_clone.borrow_mut();
+        
+        if state.canvas.shape_count() > 0 {
+            let should_clear = rfd::MessageDialog::new()
+                .set_title("Clear Design?")
+                .set_description("The design contains shapes. Are you sure you want to clear it?")
+                .set_buttons(rfd::MessageButtons::YesNo)
+                .set_level(rfd::MessageLevel::Warning)
+                .show();
+            
+            if should_clear != rfd::MessageDialogResult::Yes {
+                return;
+            }
+        }
+        
         state.new_design();
 
         if let Some(window) = window_weak.upgrade() {
@@ -5325,7 +5355,7 @@ fn main() -> anyhow::Result<()> {
                 pan_x: state.canvas.pan_offset().0 as f32,
                 pan_y: state.canvas.pan_offset().1 as f32,
                 selected_id: state.canvas.selected_id().unwrap_or(0) as i32,
-                update_counter: 0, can_undo: state.can_undo(), can_redo: state.can_redo(),
+                update_counter: 0, can_undo: state.can_undo(), can_redo: state.can_redo(), can_group: state.can_group(), can_ungroup: state.can_ungroup(),
             };
             window.set_designer_state(ui_state);
         }

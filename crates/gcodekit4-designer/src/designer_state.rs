@@ -82,6 +82,25 @@ impl DesignerState {
         !self.redo_stack.is_empty()
     }
 
+    /// Check if grouping is possible (at least 2 items selected, and at least one is not already in a group)
+    pub fn can_group(&self) -> bool {
+        let selected: Vec<_> = self.canvas.shapes().iter().filter(|s| s.selected).collect();
+        if selected.len() < 2 {
+            return false;
+        }
+        // "activate if there are selected items that do not have groupids"
+        // Interpreted as: at least one selected item is not in a group.
+        // If all are already grouped, maybe we shouldn't group them again?
+        // Or maybe we can merge groups?
+        // For now, let's follow the prompt's implication:
+        selected.iter().any(|s| s.group_id.is_none())
+    }
+
+    /// Check if ungrouping is possible (any selected item is in a group)
+    pub fn can_ungroup(&self) -> bool {
+        self.canvas.shapes().iter().filter(|s| s.selected).any(|s| s.group_id.is_some())
+    }
+
     /// Clear history stacks
     pub fn clear_history(&mut self) {
         self.undo_stack.clear();

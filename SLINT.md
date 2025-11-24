@@ -335,3 +335,29 @@ Rectangle {
   - Added keyboard shortcuts (Ctrl+Z, Ctrl+Shift+Z, Ctrl+Y) in `DesignerPanel` FocusScope.
   - `DesignerState` struct in Slint updated to include `can_undo` and `can_redo` flags.
 
+### Designer Context Menu Grouping (2025-11-23)
+- **Files**: `crates/gcodekit4-designer/ui/designer.slint`, `src/main.rs`, `crates/gcodekit4-designer/src/designer_state.rs`
+- **UI**: Removed "Grp" and "UGrp" buttons from the toolbar.
+- **Context Menu**: Added "Group" and "Ungroup" items to the right-click context menu.
+- **Logic**:
+  - `can_group`: Active if `selected_count >= 2` AND at least one selected item is not already in a group.
+  - `can_ungroup`: Active if any selected item is part of a group.
+  - State is calculated in `DesignerState` and passed to UI via `can_group` and `can_ungroup` flags.
+
+### Main Menu Refactoring (2025-11-23)
+- **Files**: `crates/gcodekit4-ui/ui.slint`, `crates/gcodekit4-ui/ui/ui_components/mainmenu.slint` (deleted)
+- **Consolidation**: Removed the separate `MainMenu` component definition which was a duplicate.
+- **Integration**: Replaced the custom `MainMenu` component usage in `ui.slint` with the standard `MenuBar` component, ensuring all menu items (Machine Control, Machine Info, CAMTools, CNCTools) were correctly migrated.
+- **Context Awareness**:
+  - **File Menu**: Added a dynamic label at the top ("GCode File" vs "Design File") based on the active tab.
+  - **New/Open/Save**: These actions now contextually switch between G-Code Editor operations and Designer operations depending on the active view.
+  - **Edit Menu**: Added "Undo" and "Redo" items that also switch context between global undo (not yet implemented) and Designer undo/redo.
+- **Safety**: Added confirmation dialogs to "New" actions in both G-Code Editor and Designer to prevent accidental data loss if content exists.
+
+### Materials Manager UI Polish (2025-11-23)
+- **Files**: `crates/gcodekit4-ui/ui_panels/materials_manager.slint`
+- **Standardization**: Enforced a consistent `32px` height for all input controls (LineEdit, ComboBox, Button, SpinBox) to match the rest of the application.
+- **Layout**: Fixed vertical spacing issues by using `alignment: start` in `VerticalBox` containers, ensuring controls pack neatly at the top rather than spreading out.
+- **Structure**: Used `vertical-stretch: 0` on search/filter panels to prevent them from expanding unnecessarily.
+
+

@@ -255,7 +255,7 @@ impl Viewport {
 
 impl Default for Viewport {
     fn default() -> Self {
-        Self::new(800.0, 600.0)
+        Self::new(1200.0, 800.0)
     }
 }
 

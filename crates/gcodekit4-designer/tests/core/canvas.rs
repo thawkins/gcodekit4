@@ -48,7 +48,7 @@ fn test_canvas_clear() {
 
 #[test]
 fn test_resize_handle_sequence() {
-    let mut canvas = Canvas::with_size(800.0, 600.0);
+    let mut canvas = Canvas::with_size(1200.0, 800.0);
     canvas.add_rectangle(0.0, 0.0, 100.0, 100.0);
     canvas.select_at(&Point::new(50.0, 50.0), false);
 

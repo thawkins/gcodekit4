@@ -127,7 +127,7 @@ impl Canvas {
             shapes: Vec::new(),
             next_id: 1,
             mode: DrawingMode::Select,
-            viewport: Viewport::new(800.0, 600.0),
+            viewport: Viewport::new(1200.0, 600.0),
             selected_id: None,
             spatial_index: SpatialIndex::default(),
         }
@@ -153,6 +153,11 @@ impl Canvas {
     /// Gets the current drawing mode.
     pub fn mode(&self) -> DrawingMode {
         self.mode
+    }
+
+    /// Returns the number of shapes on the canvas.
+    pub fn shape_count(&self) -> usize {
+        self.shapes.len()
     }
 
     /// Adds a rectangle to the canvas.
