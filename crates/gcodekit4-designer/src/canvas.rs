@@ -332,6 +332,58 @@ impl Canvas {
         self.selected_id
     }
 
+    /// Selects shapes within or intersecting the given rectangle.
+    /// If multi is true, adds to current selection.
+    /// If multi is false, clears other selections first.
+    pub fn select_in_rect(&mut self, x: f64, y: f64, width: f64, height: f64, multi: bool) {
+        if !multi {
+            for obj in self.shapes.iter_mut() {
+                obj.selected = false;
+            }
+            self.selected_id = None;
+        }
+
+        // Normalize rectangle
+        let (rx, rw) = if width < 0.0 { (x + width, -width) } else { (x, width) };
+        let (ry, rh) = if height < 0.0 { (y + height, -height) } else { (y, height) };
+        let rect_bounds = Bounds::new(rx, ry, rx + rw, ry + rh);
+
+        // Query spatial index for candidates
+        let candidates = self.spatial_index.query(&rect_bounds);
+        
+        let mut groups_to_select = Vec::new();
+
+        for obj in self.shapes.iter_mut() {
+            if candidates.contains(&obj.id) {
+                let (sx1, sy1, sx2, sy2) = obj.shape.bounding_box();
+                // Check for intersection
+                if sx1 < rx + rw && sx2 > rx && sy1 < ry + rh && sy2 > ry {
+                    obj.selected = true;
+                    if let Some(gid) = obj.group_id {
+                        if !groups_to_select.contains(&gid) {
+                            groups_to_select.push(gid);
+                        }
+                    }
+                    // If we just selected something and there was no primary selection, set it
+                    if self.selected_id.is_none() {
+                        self.selected_id = Some(obj.id);
+                    }
+                }
+            }
+        }
+        
+        // Select all members of intersected groups
+        if !groups_to_select.is_empty() {
+             for obj in self.shapes.iter_mut() {
+                if let Some(gid) = obj.group_id {
+                    if groups_to_select.contains(&gid) {
+                        obj.selected = true;
+                    }
+                }
+            }
+        }
+    }
+
     /// Gets the number of selected shapes.
     pub fn selected_count(&self) -> usize {
         self.shapes.iter().filter(|o| o.selected).count()

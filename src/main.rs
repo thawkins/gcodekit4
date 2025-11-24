@@ -5040,6 +5040,34 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
+    // Designer: Select in Rect callback
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_select_in_rect(move |x1: f32, y1: f32, x2: f32, y2: f32, multi: bool| {
+        let mut state = designer_mgr_clone.borrow_mut();
+        
+        // Convert pixel coordinates to world coordinates
+        let p1 = state.canvas.pixel_to_world(x1 as f64, y1 as f64);
+        let p2 = state.canvas.pixel_to_world(x2 as f64, y2 as f64);
+        
+        // Calculate world bounds
+        let min_x = p1.x.min(p2.x);
+        let min_y = p1.y.min(p2.y);
+        let width = (p1.x - p2.x).abs();
+        let height = (p1.y - p2.y).abs();
+        
+        state.select_in_rect(min_x, min_y, width, height, multi);
+        
+        if let Some(window) = window_weak.upgrade() {
+            update_designer_ui(&window, &mut state);
+            
+            // Update UI state with selected shape ID
+            let mut ui_state = window.get_designer_state();
+            ui_state.selected_id = state.canvas.selected_id().unwrap_or(0) as i32;
+            window.set_designer_state(ui_state);
+        }
+    });
+
     // Designer: Shape drag callback (move selected shape)
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
@@ -5071,6 +5099,7 @@ fn main() -> anyhow::Result<()> {
         let world_point = state.canvas.pixel_to_world(x as f64, y as f64);
 
         if let Some(selected_id) = state.canvas.selected_id() {
+            // First check handles of the primary selected object
             if let Some(obj) = state.canvas.shapes().iter().find(|o| o.id == selected_id) {
                 let (x1, y1, x2, y2) = obj.shape.bounding_box();
 
@@ -5104,6 +5133,16 @@ fn main() -> anyhow::Result<()> {
                     dragging_handle = 4; // Center (move handle)
                 }
             }
+            
+            // If not on a handle, check if we are on the body of ANY selected shape
+            if dragging_handle == -1 {
+                for obj in state.canvas.shapes().iter() {
+                    if obj.selected && obj.shape.contains_point(&world_point) {
+                        dragging_handle = 5; // Body (move)
+                        break;
+                    }
+                }
+            }
         }
 
         dragging_handle
@@ -5123,13 +5162,13 @@ fn main() -> anyhow::Result<()> {
         let mut world_dy = -(dy as f64) / viewport.zoom(); // Flip Y direction
 
         // If Shift is pressed and this is a MOVE (not resize), snap deltas to whole mm
-        if *shift_pressed_clone.borrow() && (handle == -1 || handle == 4) {
+        if *shift_pressed_clone.borrow() && (handle == -1 || handle == 4 || handle == 5) {
             world_dx = snap_to_mm(world_dx);
             world_dy = snap_to_mm(world_dy);
         }
 
-        if handle == -1 || handle == 4 {
-            // handle=-1 or handle=4 (center handle) means move the entire shape
+        if handle == -1 || handle == 4 || handle == 5 {
+            // handle=-1 or handle=4 (center handle) or handle=5 (body) means move the entire shape
             state.move_selected(world_dx, world_dy);
 
             // For moves, also snap the final position to whole mm if Shift is pressed

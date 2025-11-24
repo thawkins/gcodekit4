@@ -532,6 +532,13 @@ impl DesignerState {
         }
     }
 
+    /// Selects shapes within the given rectangle.
+    pub fn select_in_rect(&mut self, x: f64, y: f64, width: f64, height: f64, multi_select: bool) {
+        if self.canvas.mode() == DrawingMode::Select {
+            self.canvas.select_in_rect(x, y, width, height, multi_select);
+        }
+    }
+
     /// Moves the selected shape by (dx, dy).
     pub fn move_selected(&mut self, dx: f64, dy: f64) {
         self.canvas.move_selected(dx, dy);

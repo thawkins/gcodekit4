@@ -1036,6 +1036,14 @@ export component DesignerPanel inherits Rectangle {
     private property <string> original_text_content: "";
     private property <float> original_font_size: 12.0;
     
+    private property <bool> rubber_band_active: false;
+    private property <float> rubber_band_start_x: 0.0;
+    private property <float> rubber_band_start_y: 0.0;
+    private property <float> rubber_band_current_x: 0.0;
+    private property <float> rubber_band_current_y: 0.0;
+
+    callback select_in_rect(float, float, float, float, bool);
+
     callback set_mode(int);
     callback zoom_in();
     callback zoom_out();
@@ -1632,6 +1640,17 @@ export component DesignerPanel inherits Rectangle {
                                     viewbox-width: canvas-rect.width / 1px;
                                     viewbox-height: canvas-rect.height / 1px;
                                 }
+
+                                // Rubber band selection rectangle
+                                if root.rubber_band_active : Rectangle {
+                                    x: min(root.rubber_band_start_x, root.rubber_band_current_x) * 1px;
+                                    y: min(root.rubber_band_start_y, root.rubber_band_current_y) * 1px;
+                                    width: abs(root.rubber_band_current_x - root.rubber_band_start_x) * 1px;
+                                    height: abs(root.rubber_band_current_y - root.rubber_band_start_y) * 1px;
+                                    border-width: 1px;
+                                    border-color: #ffeb3b;
+                                    background: #ffeb3b30;
+                                }
                                 
                                 // Interactive layer on top of canvas
                                 TouchArea {
@@ -1641,7 +1660,7 @@ export component DesignerPanel inherits Rectangle {
                                         designer_state.mode == 0 ? (
                                             root.hovered_handle == 0 || root.hovered_handle == 2 ? ns-resize :
                                             root.hovered_handle == 1 || root.hovered_handle == 3 ? ew-resize :
-                                            root.dragging_shape_id >= 0 || (root.hovered_handle == 4 && designer_state.selected_id > 0) ? move :
+                                            root.dragging_shape_id >= 0 || ((root.hovered_handle == 4 || root.hovered_handle == 5) && designer_state.selected_id > 0) ? move :
                                             default
                                         ) :
                                         designer_state.mode == 1 ? crosshair :
@@ -1692,6 +1711,25 @@ export component DesignerPanel inherits Rectangle {
                                                 // Reset drag tracking for new press
                                                 root.drag_start_initialized = false;
                                             }
+                                        } else if event.kind == PointerEventKind.up {
+                                            // Handle release
+                                            if root.rubber_band_active {
+                                                let x1 = root.rubber_band_start_x;
+                                                let y1 = root.rubber_band_start_y;
+                                                let x2 = root.rubber_band_current_x;
+                                                let y2 = root.rubber_band_current_y;
+                                                
+                                                // Pass pixel coordinates to backend
+                                                root.select_in_rect(x1, y1, x2, y2, false);
+                                                root.rubber_band_active = false;
+                                            }
+
+                                            root.drag_last_dx = 0.0;
+                                            root.drag_last_dy = 0.0;
+                                            root.drag_start_initialized = false;
+                                            root.dragging_handle = -1;
+                                            root.dragging_shape_id = -1;
+                                            root.drag_occurred = false;
                                         }
                                     }
                                     
@@ -1712,38 +1750,50 @@ export component DesignerPanel inherits Rectangle {
                                                 root.drag_start_initialized = true;
                                                 root.drag_last_dx = 0.0;
                                                 root.drag_last_dy = 0.0;
-                                            }
-                                            
-                                            let total_dx = (self.mouse-x / 1px - root.drag_start_x);
-                                            let total_dy = (self.mouse-y / 1px - root.drag_start_y);
-                                            let inc_dx = total_dx - root.drag_last_dx;
-                                            let inc_dy = total_dy - root.drag_last_dy;
-                                            
-                                            if abs(inc_dx) > 0.5 || abs(inc_dy) > 0.5 {
-                                                if root.dragging_handle >= 0 && root.dragging_handle <= 3 {
-                                                    // Dragging a resize handle (0-3)
-                                                    // Use current selected_id, not cached dragging_shape_id
-                                                    handle_drag(designer_state.selected_id, root.dragging_handle, inc_dx, inc_dy);
-                                                    root.drag_occurred = true;
-                                                } else if root.dragging_handle == 4 || (root.dragging_handle == -1 && designer_state.selected_id > 0) {
-                                                    // Dragging the shape itself (move) - handle is -1 or 4 (center)
-                                                    handle_drag(designer_state.selected_id, root.dragging_handle, inc_dx, inc_dy);
-                                                    root.drag_occurred = true;
-                                                } else if root.dragging_handle == -1 && designer_state.selected_id == 0 {
-                                                    // No shape selected - pan the canvas
-                                                    canvas_pan(inc_dx, -inc_dy);
-                                                    root.drag_occurred = true;
+
+                                                // Check if we should start rubber band
+                                                if root.dragging_handle == -1 {
+                                                    if root.shift_pressed {
+                                                        root.rubber_band_active = true;
+                                                        root.rubber_band_start_x = root.drag_start_x;
+                                                        root.rubber_band_start_y = root.drag_start_y;
+                                                        root.rubber_band_current_x = root.drag_start_x;
+                                                        root.rubber_band_current_y = root.drag_start_y;
+                                                    }
                                                 }
-                                                root.drag_last_dx = total_dx;
-                                                root.drag_last_dy = total_dy;
                                             }
-                                        } else if !self.pressed {
-                                            // Reset when not pressed
-                                            root.drag_last_dx = 0.0;
-                                            root.drag_last_dy = 0.0;
-                                            root.drag_start_initialized = false;
-                                            root.dragging_handle = -1;
-                                            root.dragging_shape_id = -1;
+                                            
+                                            if root.rubber_band_active {
+                                                root.rubber_band_current_x = self.mouse-x / 1px;
+                                                root.rubber_band_current_y = self.mouse-y / 1px;
+                                                root.drag_occurred = true;
+                                            } else {
+                                                let total_dx = (self.mouse-x / 1px - root.drag_start_x);
+                                                let total_dy = (self.mouse-y / 1px - root.drag_start_y);
+                                                let inc_dx = total_dx - root.drag_last_dx;
+                                                let inc_dy = total_dy - root.drag_last_dy;
+                                                
+                                                if abs(inc_dx) > 0.5 || abs(inc_dy) > 0.5 {
+                                                    if root.dragging_handle >= 0 && root.dragging_handle <= 3 {
+                                                        // Dragging a resize handle (0-3)
+                                                        // Use current selected_id, not cached dragging_shape_id
+                                                        handle_drag(designer_state.selected_id, root.dragging_handle, inc_dx, inc_dy);
+                                                        root.drag_occurred = true;
+                                                    } else if root.dragging_handle == 4 || root.dragging_handle == 5 {
+                                                        // Dragging the shape itself (move) - handle is 4 (center) or 5 (body)
+                                                        handle_drag(designer_state.selected_id, root.dragging_handle, inc_dx, inc_dy);
+                                                        root.drag_occurred = true;
+                                                    } else if root.dragging_handle == -1 {
+                                                        // No shape selected - pan the canvas
+                                                        if !root.shift_pressed {
+                                                            canvas_pan(inc_dx, -inc_dy);
+                                                            root.drag_occurred = true;
+                                                        }
+                                                    }
+                                                    root.drag_last_dx = total_dx;
+                                                    root.drag_last_dy = total_dy;
+                                                }
+                                            }
                                         }
                                     }
                                 }

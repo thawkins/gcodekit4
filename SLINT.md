@@ -372,3 +372,62 @@ Rectangle {
 - **HorizontalBox vs HorizontalLayout**: `HorizontalBox` adds implicit padding and spacing which can cause unexpected layout expansion, especially when nested or when children have flexible widths. Switching to `HorizontalLayout` provides more precise control.
 - **Sidebar Expansion**: To prevent a sidebar from expanding to fill the screen, use `width` or `max-width` constraints. Avoid `width: 100%` on children if the parent's width is not strictly constrained.
 - **FocusScope**: Ensure `FocusScope` is properly closed and doesn't accidentally wrap unintended elements.
+
+### Designer Rubber Band Selection (2025-11-24)
+- **Files**: `crates/gcodekit4-designer/src/canvas.rs`, `crates/gcodekit4-designer/src/designer_state.rs`, `crates/gcodekit4-designer/ui/designer.slint`, `src/main.rs`
+- **Requirement**: Enable selecting multiple shapes by dragging a selection rectangle on empty space.
+- **Implementation**:
+  - **Canvas Logic**: Added `select_in_rect` method to `Canvas` and `DesignerState` which uses the spatial index to efficiently find shapes intersecting the selection bounds.
+  - **UI Logic**:
+    - Modified `TouchArea` in `designer.slint` to detect drags on empty space (when no handle is active and no shape is selected).
+    - Added visual feedback: A semi-transparent yellow rectangle is drawn during the drag operation.
+    - On mouse release, the selection rectangle coordinates are transformed from screen pixels to world coordinates (mm) and passed to the backend.
+  - **Coordinate Transformation**:
+    - Screen pixels are converted to world coordinates using the formula: `world = (screen / zoom) + pan_offset`.
+    - This ensures the selection works correctly regardless of zoom level or pan position.
+  - **Integration**: Added `designer-select-in-rect` callback chain from `DesignerPanel` to `MainWindow` to `main.rs`.
+
+### Rubber Band Selection Fixes (2025-11-24)
+- **Issue**: Rubber band rectangle persisted after release, and selection didn't work due to incorrect coordinate transformation.
+- **Fixes**:
+  - **Visual Glitch**: Moved the "release" logic from the `moved` callback (which requires mouse movement) to the `pointer-event` callback with `PointerEventKind.up`. This ensures the rubber band state is reset immediately upon mouse release.
+  - **Coordinate Transformation**: Changed the `select_in_rect` callback to pass raw pixel coordinates (start and end points) to the backend instead of pre-calculating world coordinates in Slint.
+  - **Backend Logic**: Updated `main.rs` to use `state.canvas.pixel_to_world` to transform the pixel coordinates. This correctly handles zoom, pan, and the Y-axis flip (screen Y down vs world Y up), ensuring the selection rectangle in world space matches what the user drew on screen.
+
+### Designer Interaction Refinement (2025-11-24)
+- **Requirement**: Change drag behavior on empty space:
+  - **Default (No Shift)**: Rubber band selection.
+  - **Shift Held**: Pan the canvas.
+- **Implementation**:
+  - **Shape Detection**: Updated `on_designer_detect_handle` in `main.rs` to return handle index `5` when the cursor is over a selected shape's body (using `contains_point`). This distinguishes "clicking on shape" from "clicking on background".
+  - **UI Logic**: Updated `designer.slint`:
+    - **Cursor**: Shows "move" cursor when hovering over shape body (handle 5).
+    - **Drag Start**:
+      - If handle is 4 (center) or 5 (body) -> Move shape.
+      - If handle is -1 (background) -> Check Shift key.
+        - If Shift is UP -> Start rubber band.
+        - If Shift is DOWN -> Pan canvas.
+  - **Backend**: Updated `on_designer_handle_drag` to accept handle index 5 as a valid move operation.
+- **Result**: Users can now rubber band select even when a shape is selected (by clicking background), and pan requires Shift, matching standard design tool conventions.
+
+### Rubber Band Group Selection (2025-11-24)
+- **Requirement**: When rubber band selection intersects any part of a group, the entire group should be selected.
+- **Implementation**:
+  - Modified `select_in_rect` in `crates/gcodekit4-designer/src/canvas.rs`.
+  - It now collects `group_id`s of all shapes that intersect the selection rectangle.
+  - After the initial intersection pass, it performs a second pass to select all shapes that belong to the collected `group_id`s.
+  - This ensures that even if only one member of a group is touched by the rubber band, all other members are also selected.
+
+### Group Dragging Fix (2025-11-24)
+- **Issue**: Dragging a multiple selection (including groups) failed if the click was on a shape that wasn't the "primary" selected ID.
+- **Fix**: Updated `on_designer_detect_handle` in `main.rs`.
+  - Previously, it only checked if the click was on the body of the *primary* selected shape.
+  - Now, if the click is not on a resize handle of the primary shape, it iterates through *all* selected shapes to check if the click is on any of their bodies.
+  - This ensures that clicking and dragging any part of a multiple selection correctly initiates a move operation for the entire selection.
+
+### Designer Interaction Update (2025-11-24)
+- **Requirement**: Revert drag behavior on empty space to prioritize panning, making rubber band selection require Shift.
+- **Implementation**:
+  - **Default (No Shift)**: Pan the canvas (restored original behavior).
+  - **Shift Held**: Start rubber band selection.
+  - This change was made to align with user preference for panning as the primary interaction on empty space.

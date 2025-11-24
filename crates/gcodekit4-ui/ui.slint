@@ -385,6 +385,7 @@ export component MainWindow inherits Window {
     callback designer-canvas-pan(float, float);             // dx, dy - pan the viewport
     callback designer-deselect-all();
     callback designer-select-all();
+    callback designer-select-in-rect(float, float, float, float, bool);
     callback designer-set-shift-pressed(bool);              // Shift key state
     callback designer-save-shape-properties();              // Save all properties
     callback designer-update-shape-property(int, float);    // property_id, value
@@ -1528,6 +1529,10 @@ export component MainWindow inherits Window {
                         
                         canvas_click(x, y) => {
                             root.designer-canvas-click(x, y);
+                        }
+
+                        select_in_rect(x, y, w, h, multi) => {
+                            root.designer-select-in-rect(x, y, w, h, multi);
                         }
                         
                         detect_handle(x, y) => {

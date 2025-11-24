@@ -1,10 +1,24 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.37.17-alpha  
+**Version**: 0.38.0-alpha  
 **Last Updated**: 2025-11-24  
-**Status**: Documentation Updates
+**Status**: Feature Release
 
-### Latest Release (v0.37.16-alpha) - Designer Layout Refactor
+### Latest Release (v0.38.0-alpha) - Rubber Band Selection
+- ✅ **Rubber Band Selection**
+  - Drag on empty space (with Shift) to select multiple shapes.
+  - Visual feedback with semi-transparent selection rectangle.
+  - Automatically selects entire groups if any part is touched.
+- ✅ **Interaction Refinement**
+  - Default drag on empty space (no Shift) now pans the canvas.
+  - Shift+Drag on empty space performs rubber band selection.
+  - Dragging on a shape body moves the selection.
+- ✅ **Bug Fixes**
+  - Fixed dragging of multiple selections/groups.
+  - Fixed visual glitches with selection rectangle.
+  - Fixed coordinate transformation for selection.
+
+### Previous Release (v0.37.16-alpha) - Designer Layout Refactor
 - ✅ **Copy and Paste**
   - Copy selected shapes to internal clipboard.
   - Paste shapes at mouse cursor location.
