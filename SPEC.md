@@ -1,10 +1,10 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.37.15-alpha  
+**Version**: 0.37.16-alpha  
 **Last Updated**: 2025-11-24  
 **Status**: Documentation Updates
 
-### Latest Release (v0.37.15-alpha) - Documentation Updates
+### Latest Release (v0.37.16-alpha) - Designer Layout Refactor
 - ✅ **Copy and Paste**
   - Copy selected shapes to internal clipboard.
   - Paste shapes at mouse cursor location.
