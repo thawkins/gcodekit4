@@ -1,10 +1,10 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.37.14-alpha  
-**Last Updated**: 2025-11-23  
-**Status**: Designer Copy/Paste & Undo/Redo
+**Version**: 0.37.15-alpha  
+**Last Updated**: 2025-11-24  
+**Status**: Documentation Updates
 
-### Latest Release (v0.37.14-alpha) - Designer Copy/Paste & Undo/Redo
+### Latest Release (v0.37.15-alpha) - Documentation Updates
 - ✅ **Copy and Paste**
   - Copy selected shapes to internal clipboard.
   - Paste shapes at mouse cursor location.

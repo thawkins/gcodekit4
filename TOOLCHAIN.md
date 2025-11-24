@@ -77,6 +77,22 @@ You should see output similar to:
 LLD 18.1.3 ...
 ```
 
+## Installing Tokei
+
+Tokei is a fast and accurate code statistics tool used to count lines of code in the project. It is required for updating the project statistics.
+
+### Install via Cargo
+
+```bash
+cargo install tokei
+```
+
+### Verify Installation
+
+```bash
+tokei --version
+```
+
 ## Configuring GCodeKit4 for Wild Linker
 
 The project is pre-configured to use the wild linker. The configuration is in `.cargo/config.toml`:
@@ -203,4 +219,4 @@ For issues related to:
 
 ---
 
-Last updated: 2025-11-16
+Last updated: 2025-11-24
