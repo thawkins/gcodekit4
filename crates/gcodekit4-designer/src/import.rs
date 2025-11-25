@@ -535,12 +535,23 @@ impl DxfImporter {
                     let mut builder = Path::builder();
                     let center = point(circle.center.x as f32, circle.center.y as f32);
                     let radius = circle.radius as f32;
-                    builder.add_ellipse(
+                    
+                    let start_point = center + lyon::math::vector(radius, 0.0);
+                    builder.begin(start_point);
+
+                    let arc_geom = Arc {
                         center,
-                        lyon::math::vector(radius, radius),
-                        lyon::math::Angle::radians(0.0),
-                        lyon::path::Winding::Positive,
-                    );
+                        radii: lyon::math::vector(radius, radius),
+                        x_rotation: lyon::math::Angle::radians(0.0),
+                        start_angle: lyon::math::Angle::radians(0.0),
+                        sweep_angle: lyon::math::Angle::radians(2.0 * std::f32::consts::PI),
+                    };
+
+                    arc_geom.for_each_cubic_bezier(&mut |ctrl| {
+                        builder.cubic_bezier_to(ctrl.ctrl1, ctrl.ctrl2, ctrl.to);
+                    });
+                    
+                    builder.close();
                     Some(builder.build())
                 }
                 DxfEntity::Arc(arc) => {

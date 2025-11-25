@@ -23,6 +23,7 @@ fn test_save_and_load() {
         height: 50.0,
         points: Vec::new(),
         selected: false,
+        use_custom_values: false,
         operation_type: "profile".to_string(),
         pocket_depth: 0.0,
         step_down: 0.0,

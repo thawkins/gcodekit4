@@ -155,6 +155,10 @@ export component MainWindow inherits Window {
     in-out property <float> visualizer-canvas-width: 800.0;
     in-out property <float> visualizer-canvas-height: 600.0;
     in-out property <string> visualization-path-data: "";
+    in-out property <string> visualization-g1-data: "";
+    in-out property <string> visualization-g2-data: "";
+    in-out property <string> visualization-g3-data: "";
+    in-out property <string> visualization-g4-data: "";
     in-out property <string> visualization-rapid-moves-data: "";
     in-out property <string> visualization-grid-data: "";
     in-out property <string> visualization-origin-data: "";
@@ -1367,11 +1371,19 @@ export component MainWindow inherits Window {
                     background: transparent;
 
                     visualizer-panel := GcodeVisualizerPanel {
+                        init => {
+                            // Trigger fit-to-view after a short delay to allow layout to settle
+                            fit-timer.running = true;
+                        }
                         width: 100%;
                         height: 100%;
                         gcode-filename <=> root.gcode-filename;
                         gcode-content <=> root.gcode-content;
                         visualization-path-data: root.visualization-path-data;
+                        visualization-g1-data: root.visualization-g1-data;
+                        visualization-g2-data: root.visualization-g2-data;
+                        visualization-g3-data: root.visualization-g3-data;
+                        visualization-g4-data: root.visualization-g4-data;
                         visualization-rapid-moves-data: root.visualization-rapid-moves-data;
                         visualization-grid-data: root.visualization-grid-data;
                         visualization-origin-data: root.visualization-origin-data;
@@ -1431,6 +1443,16 @@ export component MainWindow inherits Window {
                         
                         pan-by-mouse(dx, dy) => {
                             root.pan-by-mouse(dx, dy);
+                        }
+                    }
+
+                    // Timer to trigger fit-to-view on show
+                    fit-timer := Timer {
+                        interval: 50ms;
+                        running: false;
+                        triggered => {
+                            root.fit-to-view(visualizer-panel.canvas-width, visualizer-panel.canvas-height);
+                            self.running = false;
                         }
                     }
 

@@ -401,7 +401,13 @@ impl DxfParser {
                                 file.add_entity(DxfEntity::Arc(arc_entity));
                             }
                         }
-                        "LWPOLYLINE" | "POLYLINE" => {
+                        "LWPOLYLINE" => {
+                            i += 1;
+                            if let Ok(polyline_entity) = Self::parse_lwpolyline(&lines, &mut i) {
+                                file.add_entity(DxfEntity::Polyline(polyline_entity));
+                            }
+                        }
+                        "POLYLINE" => {
                             i += 1;
                             if let Ok(polyline_entity) = Self::parse_polyline(&lines, &mut i) {
                                 file.add_entity(DxfEntity::Polyline(polyline_entity));
@@ -558,8 +564,8 @@ impl DxfParser {
         })
     }
 
-    /// Parse a POLYLINE entity
-    fn parse_polyline(lines: &[&str], index: &mut usize) -> Result<DxfPolyline> {
+    /// Parse a LWPOLYLINE entity
+    fn parse_lwpolyline(lines: &[&str], index: &mut usize) -> Result<DxfPolyline> {
         let mut vertices = Vec::new();
         let mut closed = false;
         let mut layer = "0".to_string();
@@ -576,12 +582,12 @@ impl DxfParser {
 
             let value = lines[*index].trim();
 
+            if code == "0" {
+                *index -= 2; // Backtrack so main loop can handle next entity
+                break;
+            }
+
             match code {
-                "0" => {
-                    if value != "VERTEX" {
-                        break;
-                    }
-                }
                 "8" => layer = value.to_string(),
                 "62" => color = value.parse().unwrap_or(256),
                 "70" => {
@@ -601,6 +607,115 @@ impl DxfParser {
             }
 
             *index += 1;
+        }
+
+        Ok(DxfPolyline {
+            vertices,
+            closed,
+            layer,
+            color,
+        })
+    }
+
+    /// Parse a POLYLINE entity
+    fn parse_polyline(lines: &[&str], index: &mut usize) -> Result<DxfPolyline> {
+        let mut vertices = Vec::new();
+        let mut closed = false;
+        let mut layer = "0".to_string();
+        let mut color = 256u16;
+
+        // Parse POLYLINE header
+        while *index < lines.len() {
+            let code = lines[*index].trim();
+            *index += 1;
+
+            if *index >= lines.len() {
+                break;
+            }
+
+            let value = lines[*index].trim();
+
+            if code == "0" {
+                *index -= 1; // Backtrack to handle VERTEX or SEQEND
+                break;
+            }
+
+            match code {
+                "8" => layer = value.to_string(),
+                "62" => color = value.parse().unwrap_or(256),
+                "70" => {
+                    if let Ok(flags) = value.parse::<i32>() {
+                        closed = (flags & 1) != 0;
+                    }
+                }
+                // Ignore 10, 20, 30 in POLYLINE header
+                _ => {}
+            }
+
+            *index += 1;
+        }
+
+        // Parse VERTEX entities
+        loop {
+            if *index >= lines.len() {
+                break;
+            }
+
+            let code = lines[*index].trim();
+            *index += 1;
+            
+            if *index >= lines.len() {
+                break;
+            }
+            
+            let value = lines[*index].trim();
+            *index += 1;
+
+            if code != "0" {
+                continue;
+            }
+
+            if value == "SEQEND" {
+                break;
+            }
+
+            if value == "VERTEX" {
+                let mut current_x: Option<f64> = None;
+                
+                // Parse VERTEX body
+                while *index < lines.len() {
+                    let v_code = lines[*index].trim();
+                    
+                    if v_code == "0" {
+                        break; // End of VERTEX
+                    }
+                    
+                    *index += 1;
+                    if *index >= lines.len() { break; }
+                    
+                    let v_value = lines[*index].trim();
+                    *index += 1;
+
+                    match v_code {
+                        "10" => current_x = v_value.parse().ok(),
+                        "20" => {
+                            if let Some(x) = current_x {
+                                let y = v_value.parse().unwrap_or(0.0);
+                                vertices.push(Point::new(x, y));
+                                current_x = None;
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            } else {
+                // Found unexpected entity type inside POLYLINE sequence
+                // This shouldn't happen in valid DXF, but if it does, we should probably stop
+                // and let the main loop handle it.
+                // Backtrack and break
+                *index -= 2;
+                break;
+            }
         }
 
         Ok(DxfPolyline {

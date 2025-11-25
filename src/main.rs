@@ -7341,10 +7341,13 @@ fn main() -> anyhow::Result<()> {
             // Spawn rendering thread
             let content_owned = content.to_string();
 
-            // Message format: (progress, status, path_data, rapid_moves_data, grid_data, origin_data, grid_size, bbox_info, viewbox)
+            // Message format: (progress, status, g1_data, g2_data, g3_data, g4_data, rapid_moves_data, grid_data, origin_data, grid_size, bbox_info, viewbox)
             let (tx, rx) = std::sync::mpsc::channel::<(
                 f32,
                 String,
+                Option<String>,
+                Option<String>,
+                Option<String>,
                 Option<String>,
                 Option<String>,
                 Option<String>,
@@ -7367,12 +7370,15 @@ fn main() -> anyhow::Result<()> {
                 if let Err(e) = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                     use gcodekit4::visualizer::{
                         render_grid_to_path, render_origin_to_path, render_rapid_moves_to_path,
-                        render_toolpath_to_path,
+                        render_g1_to_path, render_g2_to_path, render_g3_to_path, render_g4_to_path,
                     };
 
                     let _ = tx.send((
                         0.1,
                         "Parsing G-code...".to_string(),
+                        None,
+                        None,
+                        None,
                         None,
                         None,
                         None,
@@ -7408,10 +7414,28 @@ fn main() -> anyhow::Result<()> {
                             None,
                             None,
                             None,
+                            None,
+                            None,
+                            None,
                         ));
 
                         // Generate canvas path data
-                        let path_data = render_toolpath_to_path(
+                        let g1_data = render_g1_to_path(
+                            &visualizer,
+                            canvas_width as u32,
+                            canvas_height as u32,
+                        );
+                        let g2_data = render_g2_to_path(
+                            &visualizer,
+                            canvas_width as u32,
+                            canvas_height as u32,
+                        );
+                        let g3_data = render_g3_to_path(
+                            &visualizer,
+                            canvas_width as u32,
+                            canvas_height as u32,
+                        );
+                        let g4_data = render_g4_to_path(
                             &visualizer,
                             canvas_width as u32,
                             canvas_height as u32,
@@ -7452,14 +7476,20 @@ fn main() -> anyhow::Result<()> {
 
                         let viewbox = visualizer.get_viewbox(canvas_width, canvas_height);
 
-                        if !path_data.is_empty()
+                        if !g1_data.is_empty()
+                            || !g2_data.is_empty()
+                            || !g3_data.is_empty()
+                            || !g4_data.is_empty()
                             || !rapid_moves_data.is_empty()
                             || !grid_data.is_empty()
                         {
                             let _ = tx.send((
                                 1.0,
                                 "Complete".to_string(),
-                                Some(path_data),
+                                Some(g1_data),
+                                Some(g2_data),
+                                Some(g3_data),
+                                Some(g4_data),
                                 Some(rapid_moves_data),
                                 Some(grid_data),
                                 Some(origin_data),
@@ -7471,6 +7501,9 @@ fn main() -> anyhow::Result<()> {
                             let _ = tx.send((
                                 1.0,
                                 "Error: no data".to_string(),
+                                None,
+                                None,
+                                None,
                                 None,
                                 None,
                                 None,
@@ -7491,7 +7524,10 @@ fn main() -> anyhow::Result<()> {
                 while let Ok((
                     progress,
                     status,
-                    path_data,
+                    g1_data,
+                    g2_data,
+                    g3_data,
+                    g4_data,
                     rapid_moves_data,
                     grid_data,
                     origin_data,
@@ -7502,7 +7538,10 @@ fn main() -> anyhow::Result<()> {
                 {
                     let window_handle = window_weak_render.clone();
                     let status_clone = status.clone();
-                    let path_clone = path_data.clone();
+                    let g1_clone = g1_data.clone();
+                    let g2_clone = g2_data.clone();
+                    let g3_clone = g3_data.clone();
+                    let g4_clone = g4_data.clone();
                     let rapid_moves_clone = rapid_moves_data.clone();
                     let grid_clone = grid_data.clone();
                     let origin_clone = origin_data.clone();
@@ -7519,8 +7558,17 @@ fn main() -> anyhow::Result<()> {
                             ));
 
                             // Set canvas path data if available
-                            if let Some(path) = path_clone {
-                                window.set_visualization_path_data(slint::SharedString::from(path));
+                            if let Some(path) = g1_clone {
+                                window.set_visualization_g1_data(slint::SharedString::from(path));
+                            }
+                            if let Some(path) = g2_clone {
+                                window.set_visualization_g2_data(slint::SharedString::from(path));
+                            }
+                            if let Some(path) = g3_clone {
+                                window.set_visualization_g3_data(slint::SharedString::from(path));
+                            }
+                            if let Some(path) = g4_clone {
+                                window.set_visualization_g4_data(slint::SharedString::from(path));
                             }
                             if let Some(rapid_moves) = rapid_moves_clone {
                                 window.set_visualization_rapid_moves_data(

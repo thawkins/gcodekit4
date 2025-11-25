@@ -458,3 +458,11 @@ Rectangle {
 ### View Management (2025-11-25)
 - **Auto-Fit on Open**: Opening the Designer panel now automatically triggers "Fit to View".
 - **Timing**: Used a `slint::Timer` with a 100ms delay to ensure the UI layout is settled and correct canvas dimensions are available before calculating the fit.
+
+### Visualizer Auto-Fit (2025-11-25)
+- **Requirement**: Automatically "Fit to View" when the Visualizer panel is displayed.
+- **Challenge**: The `init` callback of a component runs before the layout is fully calculated, meaning `canvas-width` and `canvas-height` might be incorrect (e.g., 0 or default).
+- **Solution**: Use a one-shot `Timer` in the `init` block.
+  - `init => { fit-timer.running = true; }`
+  - `fit-timer := Timer { interval: 50ms; running: false; triggered => { root.fit-to-view(...); self.running = false; } }`
+- **Result**: The timer delay allows the layout engine to perform a pass, ensuring correct dimensions are available when `fit-to-view` is called.

@@ -27,7 +27,7 @@ const _GRID_MAJOR_VISIBILITY_SCALE: f32 = 0.3;
 const _GRID_MINOR_VISIBILITY_SCALE: f32 = 1.5;
 
 /// 2D Point for visualization
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Point2D {
     pub x: f32,
     pub y: f32,
@@ -52,6 +52,10 @@ pub enum GCodeCommand {
         to: Point2D,
         center: Point2D,
         clockwise: bool,
+    },
+    Dwell {
+        pos: Point2D,
+        duration: f32,
     },
 }
 
@@ -270,6 +274,13 @@ impl Visualizer2D {
                             false,
                         );
                     }
+                    4 => {
+                        Self::parse_dwell(
+                            &mut commands,
+                            line,
+                            &mut current_pos,
+                        );
+                    }
                     _ => {}
                 }
             }
@@ -294,6 +305,30 @@ impl Visualizer2D {
             width,
             height,
         )
+    }
+
+    fn parse_dwell(
+        commands: &mut Vec<GCodeCommand>,
+        line: &str,
+        current_pos: &mut Point2D,
+    ) {
+        let mut duration = 0.0;
+        for part in line.split_whitespace() {
+            if part.len() < 2 { continue; }
+            let first_char = part.chars().next().unwrap();
+            match first_char {
+                'P' | 'X' => {
+                    if let Ok(val) = part[1..].parse::<f32>() {
+                        duration = val;
+                    }
+                }
+                _ => {}
+            }
+        }
+        commands.push(GCodeCommand::Dwell {
+            pos: *current_pos,
+            duration,
+        });
     }
 
     fn parse_linear_move(
@@ -444,6 +479,22 @@ impl Visualizer2D {
         self.toolpath_cache.rapid_svg()
     }
 
+    pub fn g1_svg(&self) -> &str {
+        self.toolpath_cache.g1_svg()
+    }
+
+    pub fn g2_svg(&self) -> &str {
+        self.toolpath_cache.g2_svg()
+    }
+
+    pub fn g3_svg(&self) -> &str {
+        self.toolpath_cache.g3_svg()
+    }
+
+    pub fn g4_svg(&self) -> &str {
+        self.toolpath_cache.g4_svg()
+    }
+
     pub fn commands(&self) -> &[GCodeCommand] {
         self.toolpath_cache.commands()
     }
@@ -508,6 +559,9 @@ impl Visualizer2D {
                 GCodeCommand::Arc { to, .. } => {
                     bounds.update(to.x, to.y);
                 }
+                GCodeCommand::Dwell { pos, .. } => {
+                    bounds.update(pos.x, pos.y);
+                }
             }
         }
 
@@ -556,6 +610,10 @@ impl Visualizer2D {
                     bounds.update(to.x, to.y);
                     has_cutting_moves = true;
                 }
+                GCodeCommand::Dwell { pos, .. } => {
+                    bounds.update(pos.x, pos.y);
+                    has_cutting_moves = true;
+                }
             }
         }
 
@@ -571,6 +629,7 @@ impl Visualizer2D {
         self.toolpath_cache.commands().first().map(|cmd| match cmd {
             GCodeCommand::Move { from, .. } => *from,
             GCodeCommand::Arc { from, .. } => *from,
+            GCodeCommand::Dwell { pos, .. } => *pos,
         })
     }
 }

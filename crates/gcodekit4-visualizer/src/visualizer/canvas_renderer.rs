@@ -15,6 +15,26 @@ pub fn render_rapid_moves_to_path(visualizer: &Visualizer2D, _width: u32, _heigh
     visualizer.rapid_svg().to_string()
 }
 
+/// Render G1 moves as SVG path commands
+pub fn render_g1_to_path(visualizer: &Visualizer2D, _width: u32, _height: u32) -> String {
+    visualizer.g1_svg().to_string()
+}
+
+/// Render G2 moves as SVG path commands
+pub fn render_g2_to_path(visualizer: &Visualizer2D, _width: u32, _height: u32) -> String {
+    visualizer.g2_svg().to_string()
+}
+
+/// Render G3 moves as SVG path commands
+pub fn render_g3_to_path(visualizer: &Visualizer2D, _width: u32, _height: u32) -> String {
+    visualizer.g3_svg().to_string()
+}
+
+/// Render G4 moves (dwells) as SVG path commands
+pub fn render_g4_to_path(visualizer: &Visualizer2D, _width: u32, _height: u32) -> String {
+    visualizer.g4_svg().to_string()
+}
+
 /// Render grid as SVG path commands
 pub fn render_grid_to_path(visualizer: &Visualizer2D, width: u32, height: u32) -> (String, f32) {
     // Get the visible world bounds from the viewbox calculation

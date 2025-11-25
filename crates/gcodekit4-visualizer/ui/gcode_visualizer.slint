@@ -12,6 +12,10 @@ export component GcodeVisualizerPanel inherits VerticalBox {
     in property <string> gcode-filename: "untitled.gcode";
     in property <string> gcode-content: "";
     in property <string> visualization-path-data: "";
+    in property <string> visualization-g1-data: "";
+    in property <string> visualization-g2-data: "";
+    in property <string> visualization-g3-data: "";
+    in property <string> visualization-g4-data: "";
     in property <string> visualization-rapid-moves-data: "";
     in property <string> visualization-grid-data: "";
     in property <string> visualization-origin-data: "";
@@ -325,8 +329,8 @@ export component GcodeVisualizerPanel inherits VerticalBox {
                             commands: root.visualization-rapid-moves-data;
                         }
                         
-                        // Toolpath layer (G1) - blue
-                        if root.visualization-path-data != "" : Path {
+                        // G1 layer - Yellow
+                        if root.visualization-g1-data != "" : Path {
                             viewbox-x: root.viewbox-x;
                             viewbox-y: root.viewbox-y;
                             viewbox-width: root.viewbox-width;
@@ -334,9 +338,51 @@ export component GcodeVisualizerPanel inherits VerticalBox {
                             width: 100%;
                             height: 100%;
                             fill: transparent;
-                            stroke: #ff0000;  // Bright red for testing
+                            stroke: #FFFF00;
                             stroke-width: 1px;
-                            commands: root.visualization-path-data;
+                            commands: root.visualization-g1-data;
+                        }
+
+                        // G2 layer - Green
+                        if root.visualization-g2-data != "" : Path {
+                            viewbox-x: root.viewbox-x;
+                            viewbox-y: root.viewbox-y;
+                            viewbox-width: root.viewbox-width;
+                            viewbox-height: root.viewbox-height;
+                            width: 100%;
+                            height: 100%;
+                            fill: transparent;
+                            stroke: #00FF00;
+                            stroke-width: 1px;
+                            commands: root.visualization-g2-data;
+                        }
+
+                        // G3 layer - Bright Red
+                        if root.visualization-g3-data != "" : Path {
+                            viewbox-x: root.viewbox-x;
+                            viewbox-y: root.viewbox-y;
+                            viewbox-width: root.viewbox-width;
+                            viewbox-height: root.viewbox-height;
+                            width: 100%;
+                            height: 100%;
+                            fill: transparent;
+                            stroke: #FF0000;
+                            stroke-width: 1px;
+                            commands: root.visualization-g3-data;
+                        }
+
+                        // G4 layer - Bright Blue
+                        if root.visualization-g4-data != "" : Path {
+                            viewbox-x: root.viewbox-x;
+                            viewbox-y: root.viewbox-y;
+                            viewbox-width: root.viewbox-width;
+                            viewbox-height: root.viewbox-height;
+                            width: 100%;
+                            height: 100%;
+                            fill: transparent;
+                            stroke: #0000FF;
+                            stroke-width: 1px;
+                            commands: root.visualization-g4-data;
                         }
                         
             // Mouse drag support for panning

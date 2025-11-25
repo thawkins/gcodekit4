@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.39.1-alpha] - 2025-11-25
+
+### Added
+- **Visualizer**: Added automatic "Fit to View" when switching to the Visualizer tab.
+  - Ensures the toolpath is immediately visible and centered without manual adjustment.
+  - Implemented using a one-shot timer to wait for layout stabilization.
+
+### Changed
+- **Visualizer**: Updated toolpath rendering colors for better visibility and distinction.
+  - **G1 (Linear Moves)**: Yellow (`#FFFF00`)
+  - **G2 (CW Arcs)**: Green (`#00FF00`)
+  - **G3 (CCW Arcs)**: Bright Red (`#FF0000`)
+  - **G4 (Dwell)**: Bright Blue (`#0000FF`) - Rendered as small circles.
+  - **Rapid Moves (G0)**: Dashed gray lines (unchanged).
+
+### Fixed
+- **DXF Import**: Fixed issue where extra vectors were drawn from the origin to the start of each shape.
+  - Root cause was incorrect backtracking index logic in the `POLYLINE` parser.
+  - Implemented separate parsing logic for `POLYLINE` (old style) and `LWPOLYLINE` entities.
+  - Added robust vertex parsing that correctly handles the `SEQEND` termination for `POLYLINE` entities.
+
 ## [0.39.0-alpha] - 2025-11-25
 
 ### Added
