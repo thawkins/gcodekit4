@@ -24,7 +24,7 @@ component CompactSpinBox inherits Rectangle {
             horizontal-stretch: 1;
             
             text-input := TextInput {
-                text: Math.round(value * 100.0) / 100.0;
+                text: value;
                 horizontal-alignment: center;
                 vertical-alignment: center;
                 font-size: 13px;
@@ -851,9 +851,6 @@ export component DesignerPanel inherits Rectangle {
             
             // File Operations Section - REMOVED
             
-            // Spacer above tool icons
-            Rectangle { height: 8px; }
-            
             // Drawing Tools Section (7 buttons in 4-column grid)
             HorizontalLayout {
                 spacing: 2px;
@@ -917,8 +914,11 @@ export component DesignerPanel inherits Rectangle {
                 Rectangle { width: 48px; height: 48px; } // Placeholder
             }
             
-            // Spacer below tool icons
-            Rectangle { height: 8px; }
+            // Separator
+            Rectangle {
+                height: 1px;
+                background: #cccccc;
+            }
             
             // Separator
             Rectangle {
@@ -926,8 +926,21 @@ export component DesignerPanel inherits Rectangle {
                 background: #cccccc;
             }
             
-            // Spacer below separator
-            Rectangle { height: 8px; }
+
+            
+            // Separator
+            Rectangle {
+                height: 1px;
+                background: #cccccc;
+            }
+            
+            // Separator
+            Rectangle {
+                height: 1px;
+                background: #cccccc;
+            }
+            
+
             
             // Tool Setup Controls (Copy)
             VerticalLayout {
@@ -1055,6 +1068,37 @@ export component DesignerPanel inherits Rectangle {
                     checked <=> root.show_grid;
                     toggled => { root.toggle_grid(); }
                 }
+                
+                Button {
+                    text: "Set Defaults";
+                    height: 30px;
+                    clicked => { 
+                        root.is_editing_defaults = true;
+                        root.edit_default_properties();
+                        root.properties_dialog_visible = true;
+                        root.is_pocket = root.selected_shape_is_pocket;
+                        root.pocket_depth = root.selected_shape_pocket_depth;
+                        root.step_down = root.selected_shape_step_down;
+                        root.dialog_step_in = root.selected_shape_step_in;
+                        root.dialog_pocket_strategy = root.selected_shape_pocket_strategy;
+                        root.dialog_raster_angle = root.selected_shape_raster_angle;
+                        root.dialog_bidirectional = root.selected_shape_bidirectional;
+                        root.dialog_use_custom_values = root.selected_shape_use_custom_values;
+                        root.text_content = root.selected_shape_text_content;
+                        root.font_size = root.selected_shape_font_size;
+                        
+                        root.original_is_pocket = root.is_pocket;
+                        root.original_pocket_depth = root.pocket_depth;
+                        root.original_step_down = root.step_down;
+                        root.original_step_in = root.dialog_step_in;
+                        root.original_pocket_strategy = root.dialog_pocket_strategy;
+                        root.original_raster_angle = root.dialog_raster_angle;
+                        root.original_bidirectional = root.dialog_bidirectional;
+                        root.original_use_custom_values = root.dialog_use_custom_values;
+                        root.original_text_content = root.text_content;
+                        root.original_font_size = root.font_size;
+                    }
+                }
             }
             
             // Spacer to push content to top
@@ -1132,10 +1176,10 @@ export component DesignerPanel inherits Rectangle {
                     
                     // Shape Indicator (X, Y, W, H) - shown only when shape is selected
                     if designer_state.selected_id > 0 : Text {
-                        text: "| Shape: X=" + Math.round(root.selected_shape_x * 100.0) / 100.0 + 
-                              " Y=" + Math.round(root.selected_shape_y * 100.0) / 100.0 +
-                              " W=" + Math.round(root.selected_shape_w * 100.0) / 100.0 +
-                              " H=" + Math.round(root.selected_shape_h * 100.0) / 100.0;
+                        text: "| Shape: X=" + Math.round(root.selected_shape_x * 10.0) / 10.0 + 
+                              " Y=" + Math.round(root.selected_shape_y * 10.0) / 10.0 +
+                              " W=" + Math.round(root.selected_shape_w * 10.0) / 10.0 +
+                              " H=" + Math.round(root.selected_shape_h * 10.0) / 10.0;
                         font-size: 13px;
                         color: #2980b9;
                         font-weight: 700;
@@ -1437,13 +1481,12 @@ export component DesignerPanel inherits Rectangle {
                 }
                     }
         }
-        }
 
         // ═════════════════════════════════════════════
         // RIGHT SIDEBAR: Properties Panel
         // ═════════════════════════════════════════════
         Rectangle {
-            width: 270px;
+            width: 200px;
             horizontal-stretch: 0;
             background: #ecf0f1;
             border-width: 1px;
@@ -1456,16 +1499,14 @@ export component DesignerPanel inherits Rectangle {
                     padding: 10px;
                     
                     Text { 
-                        text: root.selected_count > 0 ? 
-                              (root.selected_shape_type == 0 ? "Rectangle Properties" : 
-                               root.selected_shape_type == 1 ? "Circle Properties" : 
-                               root.selected_shape_type == 2 ? "Line Properties" : 
-                               root.selected_shape_type == 3 ? "Ellipse Properties" : 
-                               root.selected_shape_type == 4 ? "Path Properties" : 
-                               root.selected_shape_type == 6 ? "Text Properties" : "Shape Properties") 
-                              : "Design Properties"; 
+                        text: "Properties"; 
                         font-weight: 700; 
                         font-size: 14px; 
+                    }
+                    
+                    if root.selected_count == 0 : Text { 
+                        text: "No selection"; 
+                        color: #7f8c8d;
                     }
                     
                     if root.selected_count > 0 : VerticalBox {
@@ -1535,24 +1576,23 @@ export component DesignerPanel inherits Rectangle {
                                 }
                             }
                         }
-                    }
                         
-                    // CAM Operations
-                    Text { text: "CAM Operations"; font-weight: 700; font-size: 12px; }
-                    
-                    if root.selected_count > 0 : CheckBox { 
-                        text: "Use Custom Values"; 
-                        checked: root.selected_shape_use_custom_values;
-                        toggled => { root.update_shape_property_bool(2, self.checked); }
-                    }
-                    
-                    CheckBox { 
-                        text: "Pocket Operation"; 
-                        checked: root.selected_shape_is_pocket;
-                        toggled => { root.update_shape_property_bool(0, self.checked); }
-                    }
-                    
-                    if root.selected_shape_is_pocket : VerticalBox {
+                        // CAM Operations
+                        Text { text: "CAM Operations"; font-weight: 700; font-size: 12px; }
+                        
+                        CheckBox { 
+                            text: "Use Custom Values"; 
+                            checked: root.selected_shape_use_custom_values;
+                            toggled => { root.update_shape_property_bool(2, self.checked); }
+                        }
+                        
+                        CheckBox { 
+                            text: "Pocket Operation"; 
+                            checked: root.selected_shape_is_pocket;
+                            toggled => { root.update_shape_property_bool(0, self.checked); }
+                        }
+                        
+                        if root.selected_shape_is_pocket : VerticalBox {
                             spacing: 5px;
                             
                             HorizontalBox {
@@ -1614,8 +1654,10 @@ export component DesignerPanel inherits Rectangle {
                 }
             }
         }
+        }
         
 
+    }
     }
     
     // Context menu overlay (on top of everything)

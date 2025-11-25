@@ -879,3 +879,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Basic finger joint calculations
 - G-code export for laser cutting
 
+
+## [0.39.2-alpha] - 2025-11-25
+### Added
+- Persistent right-hand properties panel in Designer for immediate shape editing.
+- "Design Properties" view in properties panel when no shape is selected, allowing editing of default CAM settings.
+- Rounding of dimensional values to 2 decimal places in Designer UI.
+
+### Changed
+- Replaced modal Shape Properties dialog with persistent sidebar.
+- Increased Designer right sidebar width to 270px.
+- Improved Designer left sidebar layout with better spacing.
+- Removed "Set Defaults" button (functionality moved to properties panel).
+
+### Fixed
+- Fixed Designer layout issue where right panel would overlay the canvas.
+- Fixed compilation error in Designer UI regarding ComboBox type mismatch.
+- Fixed selection handle rendering symmetry for shapes with negative dimensions.

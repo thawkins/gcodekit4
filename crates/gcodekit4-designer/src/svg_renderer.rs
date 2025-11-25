@@ -182,10 +182,14 @@ pub fn render_selection_handles(canvas: &Canvas, _width: u32, _height: u32) -> S
     for shape_obj in canvas.shapes() {
         if shape_obj.selected {
             let (x1, y1, x2, y2) = shape_obj.shape.bounding_box();
-            min_x = min_x.min(x1);
-            min_y = min_y.min(y1);
-            max_x = max_x.max(x2);
-            max_y = max_y.max(y2);
+            // Normalize coordinates for min/max calculation
+            let (tx1, tx2) = if x1 < x2 { (x1, x2) } else { (x2, x1) };
+            let (ty1, ty2) = if y1 < y2 { (y1, y2) } else { (y2, y1) };
+            
+            min_x = min_x.min(tx1);
+            min_y = min_y.min(ty1);
+            max_x = max_x.max(tx2);
+            max_y = max_y.max(ty2);
             has_selected = true;
         }
     }

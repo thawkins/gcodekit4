@@ -553,19 +553,37 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
             }
         }
     } else {
-        // No shape selected - clear indicators
+        // No selection - show default properties
+        let obj = &state.default_properties_shape;
+        
+        // Set dummy values for transform (hidden in UI)
         window.set_designer_selected_shape_x(0.0);
         window.set_designer_selected_shape_y(0.0);
         window.set_designer_selected_shape_w(0.0);
         window.set_designer_selected_shape_h(0.0);
         window.set_designer_selected_shape_type(0);
-        window.set_designer_selected_shape_radius(5.0);
-        window.set_designer_selected_shape_is_pocket(false);
-        window.set_designer_selected_shape_pocket_depth(0.0);
-        window.set_designer_selected_shape_step_down(0.0);
-        window.set_designer_selected_shape_pocket_strategy(1);
-        window.set_designer_selected_shape_raster_angle(0.0);
-        window.set_designer_selected_shape_bidirectional(true);
+        window.set_designer_selected_shape_radius(0.0);
+
+        let is_pocket = obj.operation_type == gcodekit4::designer::shapes::OperationType::Pocket;
+        window.set_designer_selected_shape_is_pocket(is_pocket);
+        window.set_designer_selected_shape_pocket_depth(obj.pocket_depth as f32);
+        window.set_designer_selected_shape_step_down(obj.step_down as f32);
+        window.set_designer_selected_shape_step_in(obj.step_in as f32);
+
+        let (strategy_idx, angle, bidir) = match obj.pocket_strategy {
+            gcodekit4::designer::pocket_operations::PocketStrategy::Raster {
+                angle,
+                bidirectional,
+            } => (0, angle as f32, bidirectional),
+            gcodekit4::designer::pocket_operations::PocketStrategy::ContourParallel => {
+                (1, 0.0, true)
+            }
+            gcodekit4::designer::pocket_operations::PocketStrategy::Adaptive => (2, 0.0, true),
+        };
+        window.set_designer_selected_shape_pocket_strategy(strategy_idx);
+        window.set_designer_selected_shape_raster_angle(angle);
+        window.set_designer_selected_shape_bidirectional(bidir);
+        
         window.set_designer_selected_shape_text_content(slint::SharedString::from(""));
         window.set_designer_selected_shape_font_size(12.0);
     }
@@ -5459,235 +5477,130 @@ fn main() -> anyhow::Result<()> {
         *shift_pressed_clone.borrow_mut() = pressed;
     });
 
-    // Designer: Save shape properties
-    // (x, y, w, h, radius, is_pocket, pocket_depth, text_content, font_size, step_down, step_in, pocket_strategy, raster_angle, bidirectional)
-    let pending_properties = Rc::new(RefCell::new((
-        0.0f64,
-        0.0f64,
-        0.0f64,
-        0.0f64,
-        0.0f64,
-        false,
-        0.0f64,
-        String::new(),
-        12.0f64,
-        0.0f64,
-        0.0f64,
-        1,
-        0.0f64,
-        true,
-        false,
-    )));
-    let pending_flags = Rc::new(RefCell::new(PendingPropertyFlags::default()));
-
-    let pending_clone = pending_properties.clone();
-    let pending_flags_clone = pending_flags.clone();
+    // Designer: Update shape properties immediately
+    let designer_mgr_prop = designer_mgr.clone();
+    let window_weak_prop = main_window.as_weak();
     main_window.on_designer_update_shape_property(move |prop_id: i32, value: f32| {
-        let mut props = pending_clone.borrow_mut();
-        let mut flags = pending_flags_clone.borrow_mut();
-        match prop_id {
-            0 => {
-                props.0 = value as f64;
-                flags.position = true;
-            }
-            1 => {
-                props.1 = value as f64;
-                flags.position = true;
-            }
-            2 => {
-                props.2 = value as f64;
-                flags.size = true;
-            }
-            3 => {
-                props.3 = value as f64;
-                flags.size = true;
-            }
-            4 => {
-                props.4 = value as f64;
-                flags.size = true;
-            }
-            5 => {
-                props.6 = value as f64;
-                flags.pocket = true;
-            }
-            6 => {
-                props.8 = value as f64;
-                flags.text = true;
-            }
-            7 => {
-                props.9 = value as f64;
-                flags.step_down = true;
-            }
-            8 => {
-                props.10 = value as f64;
-                flags.step_in = true;
-            }
-            9 => {
-                props.11 = value as i32;
-                flags.pocket_strategy = true;
-            }
-            10 => {
-                props.12 = value as f64;
-                flags.pocket_strategy = true;
-            }
-            _ => {}
-        }
-    });
+        if let Some(window) = window_weak_prop.upgrade() {
+            let mut state = designer_mgr_prop.borrow_mut();
+            
+            // Get current values from state
+            let (cur_x, cur_y, cur_w, cur_h) = if let Some(id) = state.canvas.selected_id() {
+                if let Some(obj) = state.canvas.get_shape(id) {
+                    let (x1, y1, x2, y2) = obj.shape.bounding_box();
+                    (x1, y1, (x2-x1).abs(), (y2-y1).abs())
+                } else { (0.0, 0.0, 0.0, 0.0) }
+            } else { (0.0, 0.0, 0.0, 0.0) };
 
-    let pending_clone_bool = pending_properties.clone();
-    let pending_flags_bool = pending_flags.clone();
-    main_window.on_designer_update_shape_property_bool(move |prop_id: i32, value: bool| {
-        let mut props = pending_clone_bool.borrow_mut();
-        let mut flags = pending_flags_bool.borrow_mut();
-        match prop_id {
-            0 => {
-                props.5 = value;
-                flags.pocket = true;
-            }
-            1 => {
-                props.13 = value;
-                flags.pocket_strategy = true;
-            }
-            2 => {
-                props.14 = value;
-                flags.use_custom_values = true;
-            }
-            _ => {}
-        }
-    });
-
-    let pending_clone_string = pending_properties.clone();
-    let pending_flags_string = pending_flags.clone();
-    main_window.on_designer_update_shape_property_string(
-        move |prop_id: i32, value: slint::SharedString| {
-            let mut props = pending_clone_string.borrow_mut();
-            let mut flags = pending_flags_string.borrow_mut();
             match prop_id {
-                0 => {
-                    props.7 = value.to_string(); // text_content
-                    flags.text = true;
+                0 => state.set_selected_position_and_size_with_flags(value as f64, cur_y, cur_w, cur_h, true, false),
+                1 => state.set_selected_position_and_size_with_flags(cur_x, value as f64, cur_w, cur_h, true, false),
+                2 => state.set_selected_position_and_size_with_flags(cur_x, cur_y, value as f64, cur_h, false, true),
+                3 => state.set_selected_position_and_size_with_flags(cur_x, cur_y, cur_w, value as f64, false, true),
+                5 => {
+                    let is_pocket = state.canvas.shapes().find(|s| s.selected).map(|s| s.operation_type == gcodekit4::designer::shapes::OperationType::Pocket).unwrap_or(false);
+                    state.set_selected_pocket_properties(is_pocket, value as f64);
+                },
+                6 => {
+                    let content = if let Some(id) = state.canvas.selected_id() {
+                         if let Some(obj) = state.canvas.get_shape(id) {
+                             if let Some(text) = obj.shape.as_any().downcast_ref::<gcodekit4::designer::shapes::TextShape>() {
+                                 text.text.clone()
+                             } else { "".to_string() }
+                         } else { "".to_string() }
+                    } else { "".to_string() };
+                    state.set_selected_text_properties(content, value as f64);
+                },
+                7 => state.set_selected_step_down(value as f64),
+                8 => state.set_selected_step_in(value as f64),
+                9 => {
+                    let strategy = match value as i32 {
+                        0 => gcodekit4::designer::pocket_operations::PocketStrategy::Raster { angle: 0.0, bidirectional: true },
+                        1 => gcodekit4::designer::pocket_operations::PocketStrategy::ContourParallel,
+                        2 => gcodekit4::designer::pocket_operations::PocketStrategy::Adaptive,
+                        _ => gcodekit4::designer::pocket_operations::PocketStrategy::ContourParallel,
+                    };
+                    state.set_selected_pocket_strategy(strategy);
+                },
+                10 => {
+                    // Raster Angle - preserve bidirectional if possible
+                    let current_bidir = if let Some(id) = state.canvas.selected_id() {
+                        if let Some(obj) = state.canvas.get_shape(id) {
+                            if let gcodekit4::designer::pocket_operations::PocketStrategy::Raster { bidirectional, .. } = obj.pocket_strategy {
+                                bidirectional
+                            } else { true }
+                        } else { true }
+                    } else { true };
+                    
+                    let strategy = gcodekit4::designer::pocket_operations::PocketStrategy::Raster { 
+                        angle: value as f64, 
+                        bidirectional: current_bidir 
+                    };
+                    state.set_selected_pocket_strategy(strategy);
                 }
                 _ => {}
             }
-        },
-    );
-
-    let designer_mgr_clone2 = designer_mgr.clone();
-    let window_weak2 = main_window.as_weak();
-    let pending_clone2 = pending_properties.clone();
-    let pending_flags_clone2 = pending_flags.clone();
-    main_window.on_designer_save_shape_properties(move || {
-        let props = pending_clone2.borrow();
-        let mut state = designer_mgr_clone2.borrow_mut();
-        
-        // Check if editing defaults
-        let is_editing_defaults = if let Some(window) = window_weak2.upgrade() {
-             window.get_designer_is_editing_defaults()
-        } else {
-             false
-        };
-        
-        let mut flags = pending_flags_clone2.borrow_mut();
-        
-        if is_editing_defaults {
-             // Update default_properties_shape
-             let defaults = &mut state.default_properties_shape;
-             
-             if flags.pocket {
-                 defaults.operation_type = if props.5 { 
-                     gcodekit4_designer::shapes::OperationType::Pocket 
-                 } else { 
-                     gcodekit4_designer::shapes::OperationType::Profile 
-                 };
-                 defaults.pocket_depth = props.6;
-             }
-             if flags.step_down {
-                 defaults.step_down = props.9 as f32;
-             }
-             if flags.step_in {
-                 defaults.step_in = props.10 as f32;
-             }
-             if flags.pocket_strategy {
-                 let strategy_idx = props.11;
-                 let angle = props.12;
-                 let bidirectional = props.13;
-                 
-                 defaults.pocket_strategy = match strategy_idx {
-                     0 => gcodekit4_designer::pocket_operations::PocketStrategy::Raster { 
-                         angle: angle, 
-                         bidirectional 
-                     },
-                     1 => gcodekit4_designer::pocket_operations::PocketStrategy::ContourParallel,
-                     2 => gcodekit4_designer::pocket_operations::PocketStrategy::Adaptive,
-                     _ => gcodekit4_designer::pocket_operations::PocketStrategy::ContourParallel,
-                 };
-             }
-             if flags.use_custom_values {
-                 defaults.use_custom_values = props.14;
-             }
-             
-             // Reset flags
-             *flags = PendingPropertyFlags::default();
-             return;
-        }
-
-        let multi = state.selected_count() > 1;
-        if !multi {
-            flags.position = true;
-            flags.size = true;
-            flags.pocket = true;
-            flags.text = true;
-            flags.step_down = true;
-            flags.step_in = true;
-            flags.pocket_strategy = true;
-            flags.use_custom_values = true;
-        }
-
-        if flags.position || flags.size {
-            state.set_selected_position_and_size_with_flags(
-                props.0,
-                props.1,
-                props.2,
-                props.3,
-                flags.position,
-                flags.size,
-            );
-        }
-        if flags.pocket {
-            state.set_selected_pocket_properties(props.5, props.6);
-        }
-        if flags.text {
-            state.set_selected_text_properties(props.7.clone(), props.8);
-        }
-        if flags.step_down {
-            state.set_selected_step_down(props.9);
-        }
-        if flags.step_in {
-            state.set_selected_step_in(props.10);
-        }
-
-        if flags.pocket_strategy {
-            let strategy = match props.11 {
-                0 => gcodekit4::designer::pocket_operations::PocketStrategy::Raster {
-                    angle: props.12,
-                    bidirectional: props.13,
-                },
-                1 => gcodekit4::designer::pocket_operations::PocketStrategy::ContourParallel,
-                2 => gcodekit4::designer::pocket_operations::PocketStrategy::Adaptive,
-                _ => gcodekit4::designer::pocket_operations::PocketStrategy::ContourParallel,
-            };
-            state.set_selected_pocket_strategy(strategy);
-        }
-        if flags.use_custom_values {
-            state.set_selected_use_custom_values(props.14);
-        }
-
-        *flags = PendingPropertyFlags::default();
-
-        if let Some(window) = window_weak2.upgrade() {
             update_designer_ui(&window, &mut state);
         }
     });
+
+    let designer_mgr_bool = designer_mgr.clone();
+    let window_weak_bool = main_window.as_weak();
+    main_window.on_designer_update_shape_property_bool(move |prop_id: i32, value: bool| {
+        if let Some(window) = window_weak_bool.upgrade() {
+            let mut state = designer_mgr_bool.borrow_mut();
+            match prop_id {
+                0 => {
+                    let depth = state.canvas.shapes().find(|s| s.selected).map(|s| s.pocket_depth).unwrap_or(0.0);
+                    state.set_selected_pocket_properties(value, depth);
+                },
+                1 => {
+                    // Bidirectional - preserve angle if possible
+                    let current_angle = if let Some(id) = state.canvas.selected_id() {
+                        if let Some(obj) = state.canvas.get_shape(id) {
+                            if let gcodekit4::designer::pocket_operations::PocketStrategy::Raster { angle, .. } = obj.pocket_strategy {
+                                angle
+                            } else { 0.0 }
+                        } else { 0.0 }
+                    } else { 0.0 };
+                    
+                    let strategy = gcodekit4::designer::pocket_operations::PocketStrategy::Raster { 
+                        angle: current_angle, 
+                        bidirectional: value 
+                    };
+                    state.set_selected_pocket_strategy(strategy);
+                },
+                2 => state.set_selected_use_custom_values(value),
+                _ => {}
+            }
+            update_designer_ui(&window, &mut state);
+        }
+    });
+
+    let designer_mgr_string = designer_mgr.clone();
+    let window_weak_string = main_window.as_weak();
+    main_window.on_designer_update_shape_property_string(move |prop_id: i32, value: slint::SharedString| {
+        if let Some(window) = window_weak_string.upgrade() {
+            let mut state = designer_mgr_string.borrow_mut();
+            match prop_id {
+                0 => {
+                    let font_size = if let Some(id) = state.canvas.selected_id() {
+                         if let Some(obj) = state.canvas.get_shape(id) {
+                             if let Some(text) = obj.shape.as_any().downcast_ref::<gcodekit4::designer::shapes::TextShape>() {
+                                 text.font_size
+                             } else { 12.0 }
+                         } else { 12.0 }
+                    } else { 12.0 };
+                    state.set_selected_text_properties(value.to_string(), font_size);
+                },
+                _ => {}
+            }
+            update_designer_ui(&window, &mut state);
+        }
+    });
+
+    // Removed on_designer_save_shape_properties as updates are now immediate
+    main_window.on_designer_save_shape_properties(move || {});
 
     // Designer: Canvas pan callback (drag on empty canvas)
     let designer_mgr_clone = designer_mgr.clone();

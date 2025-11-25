@@ -466,3 +466,15 @@ Rectangle {
   - `init => { fit-timer.running = true; }`
   - `fit-timer := Timer { interval: 50ms; running: false; triggered => { root.fit-to-view(...); self.running = false; } }`
 - **Result**: The timer delay allows the layout engine to perform a pass, ensuring correct dimensions are available when `fit-to-view` is called.
+
+### Designer Properties Panel Refactor (2025-11-25)
+- **Persistent Panel**: Replaced the modal `ShapePropertiesDialog` with a persistent right-hand sidebar (270px fixed width).
+- **Immediate Updates**: Removed the "Save" button and `pending_properties` buffer. Changes to properties (Position, Size, CAM settings) are now applied immediately to the selected shape(s) via `update_shape_property` callbacks.
+- **Default Properties View**:
+  - When no shape is selected, the panel displays "Design Properties".
+  - Transform controls (X, Y, W, H) and "Use Custom Values" are hidden.
+  - Users can edit default CAM settings (Pocket Depth, Step Down, etc.) which apply to new shapes.
+- **Layout Fixes**:
+  - Ensured correct nesting of the Right Sidebar within the main `HorizontalLayout` to prevent it from overlaying the canvas.
+  - Fixed selection handle rendering symmetry by normalizing bounding box coordinates in `svg_renderer.rs`.
+  - Rounded dimensional values in the UI to 2 decimal places for cleaner display.
