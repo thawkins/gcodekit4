@@ -13,6 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added "Add" menu with DXF/SVG options (appends to canvas without clearing).
   - "Add" operations automatically group imported shapes for easier manipulation.
   - Both "Load" and "Add" operations now automatically "Fit to View" after completion.
+  - Added "Set Defaults" button to Designer sidebar to configure global shape properties (pocket depth, step down, etc.).
+    - Default properties are applied to all newly created shapes.
+    - Default properties are saved and loaded with the design file.
+    - Edit dialog for defaults hides geometry controls (X, Y, Width, Height).
+    - Added "Use Custom Values" checkbox to Shape Properties dialog.
+    - "Use Custom Values" is hidden in Default Properties dialog.
+    - New shapes are initialized with default properties but "Use Custom Values" is false.
+    - Fixed visibility of geometry controls in Default Properties dialog.
+    - Automatically "Fit to View" when opening the Designer panel.
 
 ### Changed
 - **Designer**: Improved group selection behavior.

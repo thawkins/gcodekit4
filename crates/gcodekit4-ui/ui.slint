@@ -45,6 +45,7 @@ export struct DesignerShape {
     pocket_strategy: int,
     raster_angle: float,
     bidirectional: bool,
+    use_custom_values: bool,
 }
 
 export struct DesignerState {
@@ -200,8 +201,10 @@ export component MainWindow inherits Window {
     in property <int> designer-selected-shape-pocket-strategy: 1;
     in property <float> designer-selected-shape-raster-angle: 0.0;
     in property <bool> designer-selected-shape-bidirectional: true;
+    in property <bool> designer-selected-shape-use-custom-values: false;
     in property <string> designer-selected-shape-text-content: "";
     in property <float> designer-selected-shape-font-size: 12.0;
+    in-out property <bool> designer-is-editing-defaults: false;
     
     // Materials Manager properties
     in-out property <[MaterialData]> materials: [];
@@ -414,6 +417,7 @@ export component MainWindow inherits Window {
     callback designer-file-save();
     callback designer-file-save-as();
     callback designer-toggle-grid();
+    callback designer-edit-default-properties();
     callback invoke-designer-gcode-generated(string);
     callback show-delete-confirmation(int);
     callback designer-confirm-delete();
@@ -1490,8 +1494,10 @@ export component MainWindow inherits Window {
                         selected_shape_pocket_strategy: root.designer-selected-shape-pocket-strategy;
                         selected_shape_raster_angle: root.designer-selected-shape-raster-angle;
                         selected_shape_bidirectional: root.designer-selected-shape-bidirectional;
+                        selected_shape_use_custom_values: root.designer-selected-shape-use-custom-values;
                         selected_shape_text_content: root.designer-selected-shape-text-content;
                         selected_shape_font_size: root.designer-selected-shape-font-size;
+                        is_editing_defaults <=> root.designer-is-editing-defaults;
                         
                         set_mode(m) => {
                             root.designer-set-mode(m);
@@ -1632,6 +1638,10 @@ export component MainWindow inherits Window {
 
                         designer-interaction-start => {
                             root.designer-interaction-start();
+                        }
+                        
+                        edit_default_properties => {
+                            root.designer-edit-default-properties();
                         }
                         
                         update_feed_rate(rate) => {

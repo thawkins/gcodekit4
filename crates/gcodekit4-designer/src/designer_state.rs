@@ -21,6 +21,7 @@ pub struct DesignerState {
     pub design_name: String,
     pub show_grid: bool,
     pub clipboard: Vec<crate::canvas::DrawingObject>,
+    pub default_properties_shape: crate::canvas::DrawingObject,
     undo_stack: Vec<DesignerCommand>,
     redo_stack: Vec<DesignerCommand>,
 }
@@ -38,6 +39,7 @@ impl DesignerState {
             design_name: "Untitled".to_string(),
             show_grid: true,
             clipboard: Vec::new(),
+            default_properties_shape: crate::canvas::DrawingObject::new(0, crate::shapes::Shape::Rectangle(crate::shapes::Rectangle::new(0.0, 0.0, 0.0, 0.0))),
             undo_stack: Vec::new(),
             redo_stack: Vec::new(),
         }
@@ -784,6 +786,28 @@ impl DesignerState {
         self.push_command(cmd);
     }
 
+    pub fn set_selected_use_custom_values(&mut self, use_custom: bool) {
+        let mut commands = Vec::new();
+        for obj in self.canvas.shapes_mut() {
+            if obj.selected {
+                let mut new_obj = obj.clone();
+                new_obj.use_custom_values = use_custom;
+                commands.push(DesignerCommand::ChangeProperty(ChangeProperty {
+                    id: obj.id,
+                    old_state: obj.clone(),
+                    new_state: new_obj,
+                }));
+            }
+        }
+        if !commands.is_empty() {
+            let cmd = DesignerCommand::CompositeCommand(CompositeCommand {
+                commands,
+                name: "Change Use Custom Values".to_string(),
+            });
+            self.push_command(cmd);
+        }
+    }
+
     /// Deselects all shapes.
     pub fn deselect_all(&mut self) {
         self.canvas.deselect_all();
@@ -844,6 +868,9 @@ impl DesignerState {
             design.shapes.push(DesignFile::from_drawing_object(obj));
         }
 
+        // Save default properties
+        design.default_properties = Some(DesignFile::from_drawing_object(&self.default_properties_shape));
+
         // Save to file
         design.save_to_file(&path)?;
 
@@ -874,6 +901,13 @@ impl DesignerState {
             if let Ok(obj) = DesignFile::to_drawing_object(shape_data, next_id) {
                 self.canvas.add_shape(obj.shape);
                 next_id += 1;
+            }
+        }
+
+        // Restore default properties
+        if let Some(default_props) = &design.default_properties {
+            if let Ok(obj) = DesignFile::to_drawing_object(default_props, 0) {
+                self.default_properties_shape = obj;
             }
         }
 

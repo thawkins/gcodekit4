@@ -28,6 +28,7 @@ struct PendingPropertyFlags {
     step_in: bool,
     text: bool,
     pocket_strategy: bool,
+    use_custom_values: bool,
 }
 
 slint::include_modules!();
@@ -471,6 +472,7 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
                     } else {
                         true
                     },
+                use_custom_values: obj.use_custom_values,
             }
         })
         .collect();
@@ -3615,12 +3617,27 @@ fn main() -> anyhow::Result<()> {
     });
 
     // Set up menu-view-designer callback (Phase 2)
-    let _designer_mgr_clone = designer_mgr.clone();
+    let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
     main_window.on_menu_view_designer(move || {
         if let Some(window) = window_weak.upgrade() {
             window.set_current_view(slint::SharedString::from("designer"));
             window.set_connection_status(slint::SharedString::from("Designer tool activated"));
+            
+            // Defer fit-to-view to allow layout to settle
+            let window_weak_timer = window.as_weak();
+            let designer_mgr_timer = designer_mgr_clone.clone();
+            slint::Timer::single_shot(std::time::Duration::from_millis(100), move || {
+                if let Some(window) = window_weak_timer.upgrade() {
+                    let mut state = designer_mgr_timer.borrow_mut();
+                    // First update to set correct viewport size from UI
+                    update_designer_ui(&window, &mut state);
+                    // Then fit to view
+                    state.zoom_fit();
+                    // Then update again to render with new zoom/pan
+                    update_designer_ui(&window, &mut state);
+                }
+            });
         }
     });
 
@@ -5114,6 +5131,45 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
+    // Designer: Edit Default Properties callback
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_edit_default_properties(move || {
+        let state = designer_mgr_clone.borrow();
+        if let Some(window) = window_weak.upgrade() {
+            let defaults = &state.default_properties_shape;
+            
+            window.set_designer_selected_shape_is_pocket(defaults.operation_type == gcodekit4_designer::shapes::OperationType::Pocket);
+            window.set_designer_selected_shape_pocket_depth(defaults.pocket_depth as f32);
+            window.set_designer_selected_shape_step_down(defaults.step_down);
+            window.set_designer_selected_shape_step_in(defaults.step_in);
+            
+            match defaults.pocket_strategy {
+                gcodekit4_designer::pocket_operations::PocketStrategy::Raster { angle, bidirectional } => {
+                    window.set_designer_selected_shape_pocket_strategy(0); // Raster
+                    window.set_designer_selected_shape_raster_angle(angle as f32);
+                    window.set_designer_selected_shape_bidirectional(bidirectional);
+                }
+                gcodekit4_designer::pocket_operations::PocketStrategy::ContourParallel => {
+                    window.set_designer_selected_shape_pocket_strategy(1); // Contour
+                    window.set_designer_selected_shape_raster_angle(0.0);
+                    window.set_designer_selected_shape_bidirectional(true);
+                }
+                gcodekit4_designer::pocket_operations::PocketStrategy::Adaptive => {
+                    window.set_designer_selected_shape_pocket_strategy(2); // Adaptive
+                    window.set_designer_selected_shape_raster_angle(0.0);
+                    window.set_designer_selected_shape_bidirectional(true);
+                }
+            }
+            
+            window.set_designer_selected_shape_text_content(slint::SharedString::from(""));
+            window.set_designer_selected_shape_font_size(12.0);
+            window.set_designer_selected_shape_use_custom_values(defaults.use_custom_values);
+            
+            window.set_designer_is_editing_defaults(true);
+        }
+    });
+
     // Designer: File Save callback
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
@@ -5420,6 +5476,7 @@ fn main() -> anyhow::Result<()> {
         1,
         0.0f64,
         true,
+        false,
     )));
     let pending_flags = Rc::new(RefCell::new(PendingPropertyFlags::default()));
 
@@ -5491,6 +5548,10 @@ fn main() -> anyhow::Result<()> {
                 props.13 = value;
                 flags.pocket_strategy = true;
             }
+            2 => {
+                props.14 = value;
+                flags.use_custom_values = true;
+            }
             _ => {}
         }
     });
@@ -5518,8 +5579,59 @@ fn main() -> anyhow::Result<()> {
     main_window.on_designer_save_shape_properties(move || {
         let props = pending_clone2.borrow();
         let mut state = designer_mgr_clone2.borrow_mut();
-        let multi = state.selected_count() > 1;
+        
+        // Check if editing defaults
+        let is_editing_defaults = if let Some(window) = window_weak2.upgrade() {
+             window.get_designer_is_editing_defaults()
+        } else {
+             false
+        };
+        
         let mut flags = pending_flags_clone2.borrow_mut();
+        
+        if is_editing_defaults {
+             // Update default_properties_shape
+             let defaults = &mut state.default_properties_shape;
+             
+             if flags.pocket {
+                 defaults.operation_type = if props.5 { 
+                     gcodekit4_designer::shapes::OperationType::Pocket 
+                 } else { 
+                     gcodekit4_designer::shapes::OperationType::Profile 
+                 };
+                 defaults.pocket_depth = props.6;
+             }
+             if flags.step_down {
+                 defaults.step_down = props.9 as f32;
+             }
+             if flags.step_in {
+                 defaults.step_in = props.10 as f32;
+             }
+             if flags.pocket_strategy {
+                 let strategy_idx = props.11;
+                 let angle = props.12;
+                 let bidirectional = props.13;
+                 
+                 defaults.pocket_strategy = match strategy_idx {
+                     0 => gcodekit4_designer::pocket_operations::PocketStrategy::Raster { 
+                         angle: angle, 
+                         bidirectional 
+                     },
+                     1 => gcodekit4_designer::pocket_operations::PocketStrategy::ContourParallel,
+                     2 => gcodekit4_designer::pocket_operations::PocketStrategy::Adaptive,
+                     _ => gcodekit4_designer::pocket_operations::PocketStrategy::ContourParallel,
+                 };
+             }
+             if flags.use_custom_values {
+                 defaults.use_custom_values = props.14;
+             }
+             
+             // Reset flags
+             *flags = PendingPropertyFlags::default();
+             return;
+        }
+
+        let multi = state.selected_count() > 1;
         if !multi {
             flags.position = true;
             flags.size = true;
@@ -5528,6 +5640,7 @@ fn main() -> anyhow::Result<()> {
             flags.step_down = true;
             flags.step_in = true;
             flags.pocket_strategy = true;
+            flags.use_custom_values = true;
         }
 
         if flags.position || flags.size {
@@ -5564,6 +5677,9 @@ fn main() -> anyhow::Result<()> {
                 _ => gcodekit4::designer::pocket_operations::PocketStrategy::ContourParallel,
             };
             state.set_selected_pocket_strategy(strategy);
+        }
+        if flags.use_custom_values {
+            state.set_selected_use_custom_values(props.14);
         }
 
         *flags = PendingPropertyFlags::default();

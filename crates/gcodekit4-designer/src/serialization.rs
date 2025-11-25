@@ -23,6 +23,8 @@ pub struct DesignFile {
     pub viewport: ViewportState,
     pub shapes: Vec<ShapeData>,
     #[serde(default)]
+    pub default_properties: Option<ShapeData>,
+    #[serde(default)]
     pub toolpath_params: ToolpathParameters,
 }
 
@@ -58,6 +60,8 @@ pub struct ShapeData {
     #[serde(default)]
     pub points: Vec<(f64, f64)>,
     pub selected: bool,
+    #[serde(default)]
+    pub use_custom_values: bool,
     #[serde(default)]
     pub operation_type: String,
     #[serde(default)]
@@ -132,6 +136,7 @@ impl DesignFile {
                 pan_y: 0.0,
             },
             shapes: Vec::new(),
+            default_properties: None,
             toolpath_params: ToolpathParameters::default(),
         }
     }
@@ -195,6 +200,7 @@ impl DesignFile {
             height,
             points: Vec::new(),
             selected: false,
+            use_custom_values: obj.use_custom_values,
             operation_type: match obj.operation_type {
                 OperationType::Profile => "profile".to_string(),
                 OperationType::Pocket => "pocket".to_string(),
@@ -268,6 +274,7 @@ impl DesignFile {
             shape,
             selected: data.selected,
             operation_type,
+            use_custom_values: data.use_custom_values,
             pocket_depth: data.pocket_depth,
             step_down: data.step_down,
             step_in: data.step_in,

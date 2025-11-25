@@ -444,3 +444,17 @@ Rectangle {
   - **Add**: Appends imported shapes to the existing design without clearing.
 - **Auto-Grouping**: "Add" operations automatically place imported shapes into a new group for easy manipulation.
 - **Auto-Fit**: Both "Load" and "Add" operations automatically execute "Fit to View" to ensure the design is visible.
+
+### Default Properties Management (2025-11-25)
+- **Requirement**: Allow users to set default properties (pocket depth, step down, etc.) for new shapes.
+- **Implementation**:
+  - **Virtual Shape**: Added a `default_properties_shape` to `DesignerState` which is not rendered but holds the default values.
+  - **UI**: Added "Set Defaults" button to the sidebar.
+  - **Dialog Reuse**: Reused `ShapePropertiesDialog` with a new `is_editing_defaults` property.
+  - **Conditional Visibility**: When `is_editing_defaults` is true, the dialog hides geometry controls (X, Y, W, H) and the "Use Custom Values" checkbox, showing only operation properties.
+  - **Persistence**: The virtual shape is serialized with the design file, preserving defaults across sessions.
+  - **Application**: `add_shape_at` applies these defaults to new shapes, but explicitly sets `use_custom_values` to `false` so they inherit future default changes unless overridden.
+
+### View Management (2025-11-25)
+- **Auto-Fit on Open**: Opening the Designer panel now automatically triggers "Fit to View".
+- **Timing**: Used a `slint::Timer` with a 100ms delay to ensure the UI layout is settled and correct canvas dimensions are available before calculating the fit.
