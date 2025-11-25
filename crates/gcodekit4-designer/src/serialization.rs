@@ -174,13 +174,13 @@ impl DesignFile {
             ShapeType::Text => "text",
         };
 
-        let (text_content, font_size) = if let Some(text_shape) = obj.shape.as_any().downcast_ref::<TextShape>() {
+        let (text_content, font_size) = if let Shape::Text(text_shape) = &obj.shape {
              (text_shape.text.clone(), text_shape.font_size)
         } else {
              (String::new(), 0.0)
         };
 
-        let path_data = if let Some(path_shape) = obj.shape.as_any().downcast_ref::<PathShape>() {
+        let path_data = if let Shape::Path(path_shape) = &obj.shape {
             path_shape.to_svg_path()
         } else {
             String::new()
@@ -211,21 +211,21 @@ impl DesignFile {
 
     /// Convert ShapeData to DrawingObject
     pub fn to_drawing_object(data: &ShapeData, next_id: i32) -> Result<DrawingObject> {
-        let shape: Box<dyn Shape> = match data.shape_type.as_str() {
-            "rectangle" => Box::new(Rectangle::new(data.x, data.y, data.width, data.height)),
+        let shape: Shape = match data.shape_type.as_str() {
+            "rectangle" => Shape::Rectangle(Rectangle::new(data.x, data.y, data.width, data.height)),
             "circle" => {
                 let radius = data.width.min(data.height) / 2.0;
                 let center = Point::new(data.x + radius, data.y + radius);
-                Box::new(Circle::new(center, radius))
+                Shape::Circle(Circle::new(center, radius))
             }
             "line" => {
                 let start = Point::new(data.x, data.y);
                 let end = Point::new(data.x + data.width, data.y + data.height);
-                Box::new(Line::new(start, end))
+                Shape::Line(Line::new(start, end))
             }
             "ellipse" => {
                 let center = Point::new(data.x + data.width / 2.0, data.y + data.height / 2.0);
-                Box::new(Ellipse::new(center, data.width / 2.0, data.height / 2.0))
+                Shape::Ellipse(Ellipse::new(center, data.width / 2.0, data.height / 2.0))
             }
             "polygon" | "polyline" => {
                 let center = Point::new(data.x + data.width / 2.0, data.y + data.height / 2.0);
@@ -238,9 +238,9 @@ impl DesignFile {
                     let y = center.y + radius * angle.sin();
                     vertices.push(Point::new(x, y));
                 }
-                Box::new(PathShape::from_points(&vertices, true))
+                Shape::Path(PathShape::from_points(&vertices, true))
             }
-            "text" => Box::new(TextShape::new(
+            "text" => Shape::Text(TextShape::new(
                 data.text_content.clone(),
                 data.x,
                 data.y,
@@ -248,10 +248,10 @@ impl DesignFile {
             )),
             "path" => {
                 if let Some(path_shape) = PathShape::from_svg_path(&data.path_data) {
-                    Box::new(path_shape)
+                    Shape::Path(path_shape)
                 } else {
                     // Fallback if path parsing fails
-                    Box::new(Rectangle::new(data.x, data.y, data.width, data.height))
+                    Shape::Rectangle(Rectangle::new(data.x, data.y, data.width, data.height))
                 }
             },
             _ => anyhow::bail!("Unknown shape type: {}", data.shape_type),

@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.39.0-alpha] - 2025-11-25
+
+### Added
+- **Designer**: Updated File menu for better import/load workflow.
+  - Renamed "Import" menu to "Load" (clears canvas before loading).
+  - Added "Add" menu with DXF/SVG options (appends to canvas without clearing).
+  - "Add" operations automatically group imported shapes for easier manipulation.
+  - Both "Load" and "Add" operations now automatically "Fit to View" after completion.
+
+### Changed
+- **Designer**: Improved group selection behavior.
+  - Clicking anywhere inside a group's composite bounding box now selects the entire group.
+  - Previously, users had to click on individual member shapes to select the group.
+- **Designer**: Enabled resize handles for all selection types (single, multiple, and groups).
+  - Resize handles now appear around the composite bounding box of the entire selection.
+  - Allows resizing multiple shapes or groups simultaneously.
+
+### Fixed
+- **Designer**: Fixed group drag behavior.
+  - Dragging anywhere inside a selected group's bounding box now moves the group.
+  - Previously, dragging in empty space within a group's bounding box would pan the canvas.
+- **Designer**: Fixed multiple selection drag behavior.
+  - Dragging anywhere inside the composite bounding box of a multiple selection now moves all selected shapes.
+  - Ensures consistent behavior for groups and multiple selections.
+- **Designer**: Fixed distortion when resizing groups of complex shapes (e.g., polylines).
+  - Resizing logic now correctly scales all shapes relative to the group's center instead of individually.
+
 ## [0.38.0-alpha] - 2025-11-24
 
 ### Added

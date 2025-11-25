@@ -1,0 +1,39 @@
+    Checking gcodekit4-designer v0.38.0-alpha (/home/thawkins/Projects/gcodekit4/crates/gcodekit4-designer)
+warning: unused import: `ShapeType`
+ --> crates/gcodekit4-designer/src/renderer.rs:9:21
+  |
+9 | use crate::{Canvas, ShapeType, font_manager};
+  |                     ^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `crate::shapes::ShapeType`
+   --> crates/gcodekit4-designer/src/svg_renderer.rs:323:9
+    |
+323 |     use crate::shapes::ShapeType;
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `Line`, `Rectangle`, and `TextShape`
+ --> crates/gcodekit4-designer/src/designer_state.rs:5:29
+  |
+5 |     shapes::{OperationType, TextShape},
+  |                             ^^^^^^^^^
+6 |     Canvas, Circle, DrawingMode, Line, Point, Rectangle, ToolpathGenerator, ToolpathToGcode,
+  |                                  ^^^^         ^^^^^^^^^
+
+warning: unused variable: `ellipse`
+   --> crates/gcodekit4-designer/src/renderer.rs:178:43
+    |
+178 |             crate::shapes::Shape::Ellipse(ellipse) => {
+    |                                           ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_ellipse`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `shape_type`
+   --> crates/gcodekit4-designer/src/svg_renderer.rs:326:9
+    |
+326 |     let shape_type = shape.shape_type();
+    |         ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_shape_type`
+
+warning: `gcodekit4-designer` (lib) generated 5 warnings (run `cargo fix --lib -p gcodekit4-designer` to apply 3 suggestions)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.61s

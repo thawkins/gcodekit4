@@ -2,11 +2,12 @@
 
 | Language | Files | Lines | Code | Comments | Blanks |
 |---|---|---|---|---|---|
-| Rust | 353 | 84201 | 69022 | 2779 | 12400 |
-| Markdown | 68 | 20069 | 0 | 15507 | 4562 |
+| Rust | 357 | 85246 | 69835 | 2860 | 12551 |
+| Markdown | 68 | 19687 | 0 | 15118 | 4569 |
 | JSON | 5 | 790 | 790 | 0 | 0 |
 | SVG | 10 | 588 | 565 | 7 | 16 |
-| TOML | 10 | 290 | 259 | 2 | 29 |
-| Plain Text | 5 | 1537 | 0 | 1435 | 102 |
+| TOML | 10 | 291 | 260 | 2 | 29 |
+| Plain Text | 19 | 3615 | 0 | 3285 | 330 |
 
-**Total**: 451 files, 107475 lines, 70636 code lines.
+**Total**: 469 files, 110217 lines, 71450 code lines.
+

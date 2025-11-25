@@ -1,0 +1,17 @@
+    Checking gcodekit4-designer v0.38.0-alpha (/home/thawkins/Projects/gcodekit4/crates/gcodekit4-designer)
+error: this file contains an unclosed delimiter
+    --> crates/gcodekit4-designer/src/canvas.rs:1171:3
+     |
+ 130 | impl Canvas {
+     |             - unclosed delimiter
+...
+ 820 |             if obj.selected {
+     |                             - this delimiter might not be properly closed...
+...
+ 907 |         }
+     |         - ...as it matches this but it has different indentation
+...
+1171 | }
+     |  ^
+
+error: could not compile `gcodekit4-designer` (lib) due to 1 previous error

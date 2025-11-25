@@ -39,31 +39,110 @@ pub enum ShapeType {
     Text,
 }
 
-/// Base trait for all drawable shapes.
-pub trait Shape: std::fmt::Debug + Send + Sync {
-    /// Gets the type of this shape.
-    fn shape_type(&self) -> ShapeType;
+/// Enum wrapper for all drawable shapes.
+#[derive(Debug, Clone)]
+pub enum Shape {
+    Rectangle(Rectangle),
+    Circle(Circle),
+    Line(Line),
+    Ellipse(Ellipse),
+    Path(PathShape),
+    Text(TextShape),
+}
 
-    /// Gets the bounding box of the shape as (min_x, min_y, max_x, max_y).
-    fn bounding_box(&self) -> (f64, f64, f64, f64);
+impl Shape {
+    pub fn shape_type(&self) -> ShapeType {
+        match self {
+            Shape::Rectangle(_) => ShapeType::Rectangle,
+            Shape::Circle(_) => ShapeType::Circle,
+            Shape::Line(_) => ShapeType::Line,
+            Shape::Ellipse(_) => ShapeType::Ellipse,
+            Shape::Path(_) => ShapeType::Path,
+            Shape::Text(_) => ShapeType::Text,
+        }
+    }
 
-    /// Checks if a point is inside or near the shape.
-    fn contains_point(&self, point: &Point) -> bool;
+    pub fn bounding_box(&self) -> (f64, f64, f64, f64) {
+        match self {
+            Shape::Rectangle(s) => s.bounding_box(),
+            Shape::Circle(s) => s.bounding_box(),
+            Shape::Line(s) => s.bounding_box(),
+            Shape::Ellipse(s) => s.bounding_box(),
+            Shape::Path(s) => s.bounding_box(),
+            Shape::Text(s) => s.bounding_box(),
+        }
+    }
 
-    /// Returns a clone of the shape as a trait object.
-    fn clone_shape(&self) -> Box<dyn Shape>;
+    pub fn contains_point(&self, point: &Point) -> bool {
+        match self {
+            Shape::Rectangle(s) => s.contains_point(point),
+            Shape::Circle(s) => s.contains_point(point),
+            Shape::Line(s) => s.contains_point(point),
+            Shape::Ellipse(s) => s.contains_point(point),
+            Shape::Path(s) => s.contains_point(point),
+            Shape::Text(s) => s.contains_point(point),
+        }
+    }
 
-    /// Translates the shape by (dx, dy).
-    fn translate(&self, dx: f64, dy: f64) -> Box<dyn Shape>;
+    pub fn translate(&mut self, dx: f64, dy: f64) {
+        match self {
+            Shape::Rectangle(s) => s.translate(dx, dy),
+            Shape::Circle(s) => s.translate(dx, dy),
+            Shape::Line(s) => s.translate(dx, dy),
+            Shape::Ellipse(s) => s.translate(dx, dy),
+            Shape::Path(s) => s.translate(dx, dy),
+            Shape::Text(s) => s.translate(dx, dy),
+        }
+    }
 
-    /// Resizes the shape using a handle.
-    fn resize(&self, handle: usize, dx: f64, dy: f64) -> Box<dyn Shape>;
+    pub fn resize(&mut self, handle: usize, dx: f64, dy: f64) {
+        match self {
+            Shape::Rectangle(s) => s.resize(handle, dx, dy),
+            Shape::Circle(s) => s.resize(handle, dx, dy),
+            Shape::Line(s) => s.resize(handle, dx, dy),
+            Shape::Ellipse(s) => s.resize(handle, dx, dy),
+            Shape::Path(s) => s.resize(handle, dx, dy),
+            Shape::Text(s) => s.resize(handle, dx, dy),
+        }
+    }
 
-    /// Scales the shape by (sx, sy) relative to a center point.
-    fn scale(&self, sx: f64, sy: f64, center: Point) -> Box<dyn Shape>;
+    pub fn scale(&mut self, sx: f64, sy: f64, center: Point) {
+        // For Circle -> Ellipse conversion, we might need to change the variant.
+        // This is tricky with &mut self if the type changes.
+        // We might need to replace `self` with a new variant.
+        // Let's handle special cases.
+        if let Shape::Circle(c) = self {
+             if (sx - sy).abs() > 1e-6 {
+                 // Convert to Ellipse
+                 let new_center_x = center.x + (c.center.x - center.x) * sx;
+                 let new_center_y = center.y + (c.center.y - center.y) * sy;
+                 let new_rx = c.radius * sx;
+                 let new_ry = c.radius * sy;
+                 *self = Shape::Ellipse(Ellipse::new(Point::new(new_center_x, new_center_y), new_rx, new_ry));
+                 return;
+             }
+        }
+        
+        match self {
+            Shape::Rectangle(s) => s.scale(sx, sy, center),
+            Shape::Circle(s) => s.scale(sx, sy, center),
+            Shape::Line(s) => s.scale(sx, sy, center),
+            Shape::Ellipse(s) => s.scale(sx, sy, center),
+            Shape::Path(s) => s.scale(sx, sy, center),
+            Shape::Text(s) => s.scale(sx, sy, center),
+        }
+    }
 
-    /// Downcast helper
-    fn as_any(&self) -> &dyn Any;
+    pub fn as_any(&self) -> &dyn Any {
+        match self {
+            Shape::Rectangle(s) => s,
+            Shape::Circle(s) => s,
+            Shape::Line(s) => s,
+            Shape::Ellipse(s) => s,
+            Shape::Path(s) => s,
+            Shape::Text(s) => s,
+        }
+    }
 }
 
 /// A rectangle defined by its top-left corner and dimensions.
@@ -76,17 +155,10 @@ pub struct Rectangle {
 }
 
 impl Rectangle {
-    /// Creates a new rectangle.
     pub fn new(x: f64, y: f64, width: f64, height: f64) -> Self {
-        Self {
-            x,
-            y,
-            width,
-            height,
-        }
+        Self { x, y, width, height }
     }
 
-    /// Gets the four corners of the rectangle.
     pub fn corners(&self) -> [Point; 4] {
         [
             Point::new(self.x, self.y),
@@ -95,41 +167,35 @@ impl Rectangle {
             Point::new(self.x, self.y + self.height),
         ]
     }
-}
 
-impl Shape for Rectangle {
-    fn shape_type(&self) -> ShapeType {
-        ShapeType::Rectangle
-    }
-
-    fn bounding_box(&self) -> (f64, f64, f64, f64) {
+    pub fn bounding_box(&self) -> (f64, f64, f64, f64) {
         (self.x, self.y, self.x + self.width, self.y + self.height)
     }
 
-    fn contains_point(&self, point: &Point) -> bool {
+    pub fn contains_point(&self, point: &Point) -> bool {
         point.x >= self.x
             && point.x <= self.x + self.width
             && point.y >= self.y
             && point.y <= self.y + self.height
     }
 
-    fn clone_shape(&self) -> Box<dyn Shape> {
-        Box::new(*self)
+    pub fn translate(&mut self, dx: f64, dy: f64) {
+        self.x += dx;
+        self.y += dy;
     }
 
-    fn translate(&self, dx: f64, dy: f64) -> Box<dyn Shape> {
-        Box::new(Rectangle::new(self.x + dx, self.y + dy, self.width, self.height))
-    }
-
-    fn scale(&self, sx: f64, sy: f64, center: Point) -> Box<dyn Shape> {
+    pub fn scale(&mut self, sx: f64, sy: f64, center: Point) {
         let new_width = self.width * sx;
         let new_height = self.height * sy;
         let new_x = center.x + (self.x - center.x) * sx;
         let new_y = center.y + (self.y - center.y) * sy;
-        Box::new(Rectangle::new(new_x, new_y, new_width, new_height))
+        self.x = new_x;
+        self.y = new_y;
+        self.width = new_width;
+        self.height = new_height;
     }
 
-    fn resize(&self, handle: usize, dx: f64, dy: f64) -> Box<dyn Shape> {
+    pub fn resize(&mut self, handle: usize, dx: f64, dy: f64) {
         let (x1, y1, x2, y2) = (self.x, self.y, self.x + self.width, self.y + self.height);
         let (new_x1, new_y1, new_x2, new_y2) = match handle {
             0 => (x1 + dx, y1 + dy, x2, y2),           // Top-left
@@ -140,18 +206,10 @@ impl Shape for Rectangle {
             _ => (x1, y1, x2, y2),
         };
 
-        let width = (new_x2 - new_x1).abs();
-        let height = (new_y2 - new_y1).abs();
-        Box::new(Rectangle::new(
-            new_x1.min(new_x2),
-            new_y1.min(new_y2),
-            width,
-            height,
-        ))
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
+        self.width = (new_x2 - new_x1).abs();
+        self.height = (new_y2 - new_y1).abs();
+        self.x = new_x1.min(new_x2);
+        self.y = new_y1.min(new_y2);
     }
 }
 
@@ -163,18 +221,11 @@ pub struct Circle {
 }
 
 impl Circle {
-    /// Creates a new circle.
     pub fn new(center: Point, radius: f64) -> Self {
         Self { center, radius }
     }
-}
 
-impl Shape for Circle {
-    fn shape_type(&self) -> ShapeType {
-        ShapeType::Circle
-    }
-
-    fn bounding_box(&self) -> (f64, f64, f64, f64) {
+    pub fn bounding_box(&self) -> (f64, f64, f64, f64) {
         (
             self.center.x - self.radius,
             self.center.y - self.radius,
@@ -183,70 +234,44 @@ impl Shape for Circle {
         )
     }
 
-    fn contains_point(&self, point: &Point) -> bool {
+    pub fn contains_point(&self, point: &Point) -> bool {
         self.center.distance_to(point) <= self.radius
     }
 
-    fn clone_shape(&self) -> Box<dyn Shape> {
-        Box::new(*self)
+    pub fn translate(&mut self, dx: f64, dy: f64) {
+        self.center.x += dx;
+        self.center.y += dy;
     }
 
-    fn translate(&self, dx: f64, dy: f64) -> Box<dyn Shape> {
-        Box::new(Circle::new(
-            Point::new(self.center.x + dx, self.center.y + dy),
-            self.radius,
-        ))
-    }
-
-    fn scale(&self, sx: f64, sy: f64, center: Point) -> Box<dyn Shape> {
+    pub fn scale(&mut self, sx: f64, sy: f64, center: Point) {
+        // Note: Uniform scaling only. Non-uniform scaling should convert to Ellipse in Shape::scale
         let new_center_x = center.x + (self.center.x - center.x) * sx;
         let new_center_y = center.y + (self.center.y - center.y) * sy;
-        
-        if (sx - sy).abs() < 1e-6 {
-            let new_radius = self.radius * sx;
-            Box::new(Circle::new(Point::new(new_center_x, new_center_y), new_radius))
-        } else {
-            let new_rx = self.radius * sx;
-            let new_ry = self.radius * sy;
-            Box::new(Ellipse::new(Point::new(new_center_x, new_center_y), new_rx, new_ry))
+        self.center.x = new_center_x;
+        self.center.y = new_center_y;
+        self.radius *= sx; // Assume uniform for now
+    }
+
+    pub fn resize(&mut self, handle: usize, dx: f64, dy: f64) {
+        match handle {
+            0 | 1 | 2 | 3 => {
+                // Adjust radius
+                // Simplified logic: just take average delta
+                let delta = match handle {
+                    0 => ((-dx) + (-dy)) / 2.0,
+                    1 => (dx + (-dy)) / 2.0,
+                    2 => ((-dx) + dy) / 2.0,
+                    3 => (dx + dy) / 2.0,
+                    _ => 0.0,
+                };
+                self.radius = (self.radius + delta).max(5.0);
+            }
+            4 => {
+                self.center.x += dx;
+                self.center.y += dy;
+            }
+            _ => {}
         }
-    }
-
-    fn resize(&self, handle: usize, dx: f64, dy: f64) -> Box<dyn Shape> {
-        let (new_cx, new_cy, new_r) = match handle {
-            0 => {
-                // Top-left: adjust radius by the average of dx and dy movement
-                // Moving handle away from center increases radius
-                let delta = ((-dx) + (-dy)) / 2.0;
-                let new_r = (self.radius + delta).max(5.0);
-                (self.center.x, self.center.y, new_r)
-            }
-            1 => {
-                // Top-right: adjust radius by the average of dx and dy movement
-                let delta = (dx + (-dy)) / 2.0;
-                let new_r = (self.radius + delta).max(5.0);
-                (self.center.x, self.center.y, new_r)
-            }
-            2 => {
-                // Bottom-left: adjust radius by the average of dx and dy movement
-                let delta = ((-dx) + dy) / 2.0;
-                let new_r = (self.radius + delta).max(5.0);
-                (self.center.x, self.center.y, new_r)
-            }
-            3 => {
-                // Bottom-right: adjust radius by the average of dx and dy movement
-                let delta = (dx + dy) / 2.0;
-                let new_r = (self.radius + delta).max(5.0);
-                (self.center.x, self.center.y, new_r)
-            }
-            4 => (self.center.x + dx, self.center.y + dy, self.radius), // Center (move)
-            _ => (self.center.x, self.center.y, self.radius),
-        };
-        Box::new(Circle::new(Point::new(new_cx, new_cy), new_r))
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
     }
 }
 
@@ -258,23 +283,15 @@ pub struct Line {
 }
 
 impl Line {
-    /// Creates a new line.
     pub fn new(start: Point, end: Point) -> Self {
         Self { start, end }
     }
 
-    /// Gets the length of the line.
     pub fn length(&self) -> f64 {
         self.start.distance_to(&self.end)
     }
-}
 
-impl Shape for Line {
-    fn shape_type(&self) -> ShapeType {
-        ShapeType::Line
-    }
-
-    fn bounding_box(&self) -> (f64, f64, f64, f64) {
+    pub fn bounding_box(&self) -> (f64, f64, f64, f64) {
         (
             self.start.x.min(self.end.x),
             self.start.y.min(self.end.y),
@@ -283,7 +300,7 @@ impl Shape for Line {
         )
     }
 
-    fn contains_point(&self, point: &Point) -> bool {
+    pub fn contains_point(&self, point: &Point) -> bool {
         let tolerance = 2.0;
         let dist_to_start = self.start.distance_to(point);
         let dist_to_end = self.end.distance_to(point);
@@ -292,45 +309,35 @@ impl Shape for Line {
         (dist_to_start + dist_to_end - line_length).abs() < tolerance
     }
 
-    fn clone_shape(&self) -> Box<dyn Shape> {
-        Box::new(*self)
+    pub fn translate(&mut self, dx: f64, dy: f64) {
+        self.start.x += dx;
+        self.start.y += dy;
+        self.end.x += dx;
+        self.end.y += dy;
     }
 
-    fn translate(&self, dx: f64, dy: f64) -> Box<dyn Shape> {
-        Box::new(Line::new(
-            Point::new(self.start.x + dx, self.start.y + dy),
-            Point::new(self.end.x + dx, self.end.y + dy),
-        ))
+    pub fn scale(&mut self, sx: f64, sy: f64, center: Point) {
+        self.start.x = center.x + (self.start.x - center.x) * sx;
+        self.start.y = center.y + (self.start.y - center.y) * sy;
+        self.end.x = center.x + (self.end.x - center.x) * sx;
+        self.end.y = center.y + (self.end.y - center.y) * sy;
     }
 
-    fn scale(&self, sx: f64, sy: f64, center: Point) -> Box<dyn Shape> {
-        let start_x = center.x + (self.start.x - center.x) * sx;
-        let start_y = center.y + (self.start.y - center.y) * sy;
-        let end_x = center.x + (self.end.x - center.x) * sx;
-        let end_y = center.y + (self.end.y - center.y) * sy;
-        Box::new(Line::new(Point::new(start_x, start_y), Point::new(end_x, end_y)))
-    }
-
-    fn resize(&self, handle: usize, dx: f64, dy: f64) -> Box<dyn Shape> {
-        let (new_x1, new_y1, new_x2, new_y2) = match handle {
-            0 => (self.start.x + dx, self.start.y + dy, self.end.x, self.end.y), // Move start
-            1 => (self.start.x, self.start.y, self.end.x + dx, self.end.y + dy), // Move end
-            4 => (
-                self.start.x + dx,
-                self.start.y + dy,
-                self.end.x + dx,
-                self.end.y + dy,
-            ), // Move both
-            _ => (self.start.x, self.start.y, self.end.x, self.end.y),
-        };
-        Box::new(Line::new(
-            Point::new(new_x1, new_y1),
-            Point::new(new_x2, new_y2),
-        ))
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
+    pub fn resize(&mut self, handle: usize, dx: f64, dy: f64) {
+        match handle {
+            0 => { // Start
+                self.start.x += dx;
+                self.start.y += dy;
+            }
+            1 => { // End
+                self.end.x += dx;
+                self.end.y += dy;
+            }
+            4 => { // Move
+                self.translate(dx, dy);
+            }
+            _ => {}
+        }
     }
 }
 
@@ -343,18 +350,11 @@ pub struct Ellipse {
 }
 
 impl Ellipse {
-    /// Creates a new ellipse with specified center and radii.
     pub fn new(center: Point, rx: f64, ry: f64) -> Self {
         Self { center, rx, ry }
     }
-}
 
-impl Shape for Ellipse {
-    fn shape_type(&self) -> ShapeType {
-        ShapeType::Ellipse
-    }
-
-    fn bounding_box(&self) -> (f64, f64, f64, f64) {
+    pub fn bounding_box(&self) -> (f64, f64, f64, f64) {
         (
             self.center.x - self.rx,
             self.center.y - self.ry,
@@ -363,67 +363,48 @@ impl Shape for Ellipse {
         )
     }
 
-    fn contains_point(&self, point: &Point) -> bool {
+    pub fn contains_point(&self, point: &Point) -> bool {
         let dx = point.x - self.center.x;
         let dy = point.y - self.center.y;
         (dx * dx) / (self.rx * self.rx) + (dy * dy) / (self.ry * self.ry) <= 1.0
     }
 
-    fn clone_shape(&self) -> Box<dyn Shape> {
-        Box::new(*self)
+    pub fn translate(&mut self, dx: f64, dy: f64) {
+        self.center.x += dx;
+        self.center.y += dy;
     }
 
-    fn translate(&self, dx: f64, dy: f64) -> Box<dyn Shape> {
-        Box::new(Ellipse::new(
-            Point::new(self.center.x + dx, self.center.y + dy),
-            self.rx,
-            self.ry,
-        ))
+    pub fn scale(&mut self, sx: f64, sy: f64, center: Point) {
+        self.center.x = center.x + (self.center.x - center.x) * sx;
+        self.center.y = center.y + (self.center.y - center.y) * sy;
+        self.rx *= sx;
+        self.ry *= sy;
     }
 
-    fn scale(&self, sx: f64, sy: f64, center: Point) -> Box<dyn Shape> {
-        let new_center_x = center.x + (self.center.x - center.x) * sx;
-        let new_center_y = center.y + (self.center.y - center.y) * sy;
-        let new_rx = self.rx * sx;
-        let new_ry = self.ry * sy;
-        Box::new(Ellipse::new(Point::new(new_center_x, new_center_y), new_rx, new_ry))
-    }
-
-    fn resize(&self, handle: usize, dx: f64, dy: f64) -> Box<dyn Shape> {
+    pub fn resize(&mut self, handle: usize, dx: f64, dy: f64) {
         let (x1, y1, x2, y2) = self.bounding_box();
-        let (new_cx, new_cy, new_rx, new_ry) = match handle {
-            0 => {
-                // Top-left: resize
-                let new_rx = ((self.center.x - (x1 + dx)) / 1.0).abs().max(5.0);
-                let new_ry = ((self.center.y - (y1 + dy)) / 1.0).abs().max(5.0);
-                (self.center.x, self.center.y, new_rx, new_ry)
+        match handle {
+            0 => { // Top-left
+                self.rx = ((self.center.x - (x1 + dx)) / 1.0).abs().max(5.0);
+                self.ry = ((self.center.y - (y1 + dy)) / 1.0).abs().max(5.0);
             }
-            1 => {
-                // Top-right: resize
-                let new_rx = ((self.center.x - (x2 + dx)) / 1.0).abs().max(5.0);
-                let new_ry = ((self.center.y - (y1 + dy)) / 1.0).abs().max(5.0);
-                (self.center.x, self.center.y, new_rx, new_ry)
+            1 => { // Top-right
+                self.rx = ((self.center.x - (x2 + dx)) / 1.0).abs().max(5.0);
+                self.ry = ((self.center.y - (y1 + dy)) / 1.0).abs().max(5.0);
             }
-            2 => {
-                // Bottom-left: resize
-                let new_rx = ((self.center.x - (x1 + dx)) / 1.0).abs().max(5.0);
-                let new_ry = ((self.center.y - (y2 + dy)) / 1.0).abs().max(5.0);
-                (self.center.x, self.center.y, new_rx, new_ry)
+            2 => { // Bottom-left
+                self.rx = ((self.center.x - (x1 + dx)) / 1.0).abs().max(5.0);
+                self.ry = ((self.center.y - (y2 + dy)) / 1.0).abs().max(5.0);
             }
-            3 => {
-                // Bottom-right: resize
-                let new_rx = ((self.center.x - (x2 + dx)) / 1.0).abs().max(5.0);
-                let new_ry = ((self.center.y - (y2 + dy)) / 1.0).abs().max(5.0);
-                (self.center.x, self.center.y, new_rx, new_ry)
+            3 => { // Bottom-right
+                self.rx = ((self.center.x - (x2 + dx)) / 1.0).abs().max(5.0);
+                self.ry = ((self.center.y - (y2 + dy)) / 1.0).abs().max(5.0);
             }
-            4 => (self.center.x + dx, self.center.y + dy, self.rx, self.ry), // Center (move)
-            _ => (self.center.x, self.center.y, self.rx, self.ry),
-        };
-        Box::new(Ellipse::new(Point::new(new_cx, new_cy), new_rx, new_ry))
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
+            4 => { // Center
+                self.translate(dx, dy);
+            }
+            _ => {}
+        }
     }
 }
 
@@ -454,7 +435,21 @@ impl PathShape {
         Self { path: builder.build() }
     }
 
-    pub fn translate(&self, dx: f64, dy: f64) -> Self {
+    pub fn bounding_box(&self) -> (f64, f64, f64, f64) {
+        let aabb = bounding_box(self.path.iter());
+        (aabb.min.x as f64, aabb.min.y as f64, aabb.max.x as f64, aabb.max.y as f64)
+    }
+
+    pub fn contains_point(&self, p: &Point) -> bool {
+        hit_test_path(
+            &point(p.x as f32, p.y as f32),
+            self.path.iter(),
+            FillRule::NonZero,
+            0.1
+        )
+    }
+
+    pub fn translate(&mut self, dx: f64, dy: f64) {
         let mut builder = Path::builder();
         for event in self.path.iter() {
             match event {
@@ -486,10 +481,10 @@ impl PathShape {
                 }
             }
         }
-        Self { path: builder.build() }
+        self.path = builder.build();
     }
 
-    pub fn scale(&self, sx: f64, sy: f64, center: Point) -> Self {
+    pub fn scale(&mut self, sx: f64, sy: f64, center: Point) {
         let mut builder = Path::builder();
         let transform = |p: lyon::math::Point| -> lyon::math::Point {
             let x = center.x + (p.x as f64 - center.x) * sx;
@@ -520,9 +515,58 @@ impl PathShape {
                 }
             }
         }
-        Self { path: builder.build() }
+        self.path = builder.build();
     }
 
+    pub fn resize(&mut self, handle: usize, dx: f64, dy: f64) {
+        if handle == 4 {
+            self.translate(dx, dy);
+            return;
+        }
+
+        let (x1, y1, x2, y2) = self.bounding_box();
+        let (new_x1, new_y1, new_x2, new_y2) = match handle {
+            0 => (x1 + dx, y1 + dy, x2, y2), // Top-left
+            1 => (x1, y1 + dy, x2 + dx, y2), // Top-right
+            2 => (x1 + dx, y1, x2, y2 + dy), // Bottom-left
+            3 => (x1, y1, x2 + dx, y2 + dy), // Bottom-right
+            _ => (x1, y1, x2, y2),
+        };
+        let width = x2 - x1;
+        let height = y2 - y1;
+        let new_width = (new_x2 - new_x1).abs();
+        let new_height = (new_y2 - new_y1).abs();
+
+        let sx = if width.abs() > 1e-6 {
+            new_width / width
+        } else {
+            1.0
+        };
+        let sy = if height.abs() > 1e-6 {
+            new_height / height
+        } else {
+            1.0
+        };
+
+        let center_x = (x1 + x2) / 2.0;
+        let center_y = (y1 + y2) / 2.0;
+
+        self.scale(sx, sy, Point::new(center_x, center_y));
+
+        let (final_x1, final_y1, final_x2, final_y2) = self.bounding_box();
+        let final_center_x = (final_x1 + final_x2) / 2.0;
+        let final_center_y = (final_y1 + final_y2) / 2.0;
+        
+        let target_center_x = (new_x1 + new_x2) / 2.0;
+        let target_center_y = (new_y1 + new_y2) / 2.0;
+        
+        let t_dx = target_center_x - final_center_x;
+        let t_dy = target_center_y - final_center_y;
+
+        self.translate(t_dx, t_dy);
+    }
+    
+    // SVG path helpers kept as is
     pub fn to_svg_path(&self) -> String {
         let mut path_str = String::new();
         for event in self.path.iter() {
@@ -810,86 +854,6 @@ impl PathShape {
     }
 }
 
-impl Shape for PathShape {
-    fn shape_type(&self) -> ShapeType {
-        ShapeType::Path
-    }
-
-    fn bounding_box(&self) -> (f64, f64, f64, f64) {
-        let aabb = bounding_box(self.path.iter());
-        (aabb.min.x as f64, aabb.min.y as f64, aabb.max.x as f64, aabb.max.y as f64)
-    }
-
-    fn contains_point(&self, p: &Point) -> bool {
-        hit_test_path(
-            &point(p.x as f32, p.y as f32),
-            self.path.iter(),
-            FillRule::NonZero,
-            0.1
-        )
-    }
-
-    fn clone_shape(&self) -> Box<dyn Shape> {
-        Box::new(self.clone())
-    }
-
-    fn translate(&self, dx: f64, dy: f64) -> Box<dyn Shape> {
-        Box::new(self.translate(dx, dy))
-    }
-
-    fn scale(&self, sx: f64, sy: f64, center: Point) -> Box<dyn Shape> {
-        Box::new(self.scale(sx, sy, center))
-    }
-
-    fn resize(&self, handle: usize, dx: f64, dy: f64) -> Box<dyn Shape> {
-        if handle == 4 {
-            return Box::new(self.translate(dx, dy));
-        }
-
-        let (x1, y1, x2, y2) = self.bounding_box();
-        let (new_x1, new_y1, new_x2, new_y2) = match handle {
-            0 => (x1 + dx, y1 + dy, x2, y2), // Top-left
-            1 => (x1, y1 + dy, x2 + dx, y2), // Top-right
-            2 => (x1 + dx, y1, x2, y2 + dy), // Bottom-left
-            3 => (x1, y1, x2 + dx, y2 + dy), // Bottom-right
-            _ => (x1, y1, x2, y2),
-        };
-        let width = x2 - x1;
-        let height = y2 - y1;
-        let new_width = (new_x2 - new_x1).abs();
-        let new_height = (new_y2 - new_y1).abs();
-
-        let sx = if width.abs() > 1e-6 {
-            new_width / width
-        } else {
-            1.0
-        };
-        let sy = if height.abs() > 1e-6 {
-            new_height / height
-        } else {
-            1.0
-        };
-
-        let center_x = (x1 + x2) / 2.0;
-        let center_y = (y1 + y2) / 2.0;
-
-        let scaled = self.scale(sx, sy, Point::new(center_x, center_y));
-
-        let new_center_x = (new_x1 + new_x2) / 2.0;
-        let new_center_y = (new_y1 + new_y2) / 2.0;
-        let t_dx = new_center_x - center_x;
-        let t_dy = new_center_y - center_y;
-
-        Box::new(scaled.translate(t_dx, t_dy))
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-}
-
-
-
 #[derive(Debug, Clone)]
 pub struct TextShape {
     pub text: String,
@@ -907,22 +871,11 @@ impl TextShape {
             font_size,
         }
     }
-}
 
-impl Shape for TextShape {
-    fn shape_type(&self) -> ShapeType {
-        ShapeType::Text
-    }
-
-    fn bounding_box(&self) -> (f64, f64, f64, f64) {
+    pub fn bounding_box(&self) -> (f64, f64, f64, f64) {
         let font = font_manager::get_font();
         let scale = Scale::uniform(self.font_size as f32);
         let v_metrics = font.v_metrics(scale);
-        
-        // We treat (x, y) as the top-left corner of the text box.
-        // Text layout usually starts at a baseline.
-        // ascent is the distance from baseline to top.
-        // So baseline y = self.y + v_metrics.ascent.
         
         let start = rt_point(self.x as f32, self.y as f32 + v_metrics.ascent);
         
@@ -951,7 +904,6 @@ impl Shape for TextShape {
         }
         
         if !has_bounds {
-             // Fallback for whitespace only
              let width = self.text.len() as f64 * self.font_size * 0.6;
              return (self.x, self.y, self.x + width, self.y + self.font_size);
         }
@@ -959,42 +911,29 @@ impl Shape for TextShape {
         (min_x as f64, min_y as f64, max_x as f64, max_y as f64)
     }
 
-    fn contains_point(&self, point: &Point) -> bool {
+    pub fn contains_point(&self, point: &Point) -> bool {
         let (min_x, min_y, max_x, max_y) = self.bounding_box();
         point.x >= min_x && point.x <= max_x && point.y >= min_y && point.y <= max_y
     }
 
-    fn clone_shape(&self) -> Box<dyn Shape> {
-        Box::new(self.clone())
+    pub fn translate(&mut self, dx: f64, dy: f64) {
+        self.x += dx;
+        self.y += dy;
     }
 
-    fn translate(&self, dx: f64, dy: f64) -> Box<dyn Shape> {
-        Box::new(TextShape::new(
-            self.text.clone(),
-            self.x + dx,
-            self.y + dy,
-            self.font_size,
-        ))
-    }
-
-    fn scale(&self, sx: f64, sy: f64, center: Point) -> Box<dyn Shape> {
+    pub fn scale(&mut self, sx: f64, sy: f64, center: Point) {
         let new_x = center.x + (self.x - center.x) * sx;
         let new_y = center.y + (self.y - center.y) * sy;
         let avg_scale = (sx + sy) / 2.0;
-        let new_font_size = self.font_size * avg_scale;
-        Box::new(TextShape::new(self.text.clone(), new_x, new_y, new_font_size))
+        self.font_size *= avg_scale;
+        self.x = new_x;
+        self.y = new_y;
     }
 
-    fn resize(&self, handle: usize, dx: f64, dy: f64) -> Box<dyn Shape> {
+    pub fn resize(&mut self, handle: usize, dx: f64, dy: f64) {
         if handle == 4 {
-            return self.translate(dx, dy);
+            self.translate(dx, dy);
         }
-        // Text resizing not fully implemented (would require font size change)
-        self.clone_shape()
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
     }
 }
 

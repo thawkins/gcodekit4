@@ -15,7 +15,7 @@ fn test_designer_workflow_rectangle() {
     let rect_id = canvas.add_rectangle(10.0, 10.0, 50.0, 30.0);
 
     // Verify the rectangle was added
-    assert_eq!(canvas.shapes().len(), 1);
+    assert_eq!(canvas.shape_count(), 1);
     assert!(canvas.selected_id().is_none());
 
     // Select the rectangle
@@ -34,7 +34,7 @@ fn test_designer_workflow_circle() {
     let circle_id = canvas.add_circle(Point::new(50.0, 50.0), 20.0);
 
     // Verify the circle was added
-    assert_eq!(canvas.shapes().len(), 1);
+    assert_eq!(canvas.shape_count(), 1);
 
     // Select the circle
     let select_point = Point::new(50.0, 50.0);
@@ -140,7 +140,7 @@ fn test_canvas_multi_shapes() {
     let circle_id = canvas.add_circle(Point::new(25.0, 25.0), 5.0);
     let line_id = canvas.add_line(Point::new(50.0, 0.0), Point::new(50.0, 50.0));
 
-    assert_eq!(canvas.shapes().len(), 3);
+    assert_eq!(canvas.shape_count(), 3);
 
     // Select each shape
     assert_eq!(canvas.select_at(&Point::new(5.0, 5.0), false), Some(rect_id));
@@ -149,7 +149,7 @@ fn test_canvas_multi_shapes() {
 
     // Remove the selected shape (line)
     assert!(canvas.remove_shape(line_id));
-    assert_eq!(canvas.shapes().len(), 2);
+    assert_eq!(canvas.shape_count(), 2);
     assert_eq!(canvas.selected_id(), None); // Removed selected shape
 }
 

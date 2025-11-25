@@ -5,7 +5,7 @@ use gcodekit4_designer::shapes::Point;
 #[test]
 fn test_designer_state_new() {
     let state = DesignerState::new();
-    assert_eq!(state.canvas.shapes().len(), 0);
+    assert_eq!(state.canvas.shape_count(), 0);
     assert!(!state.gcode_generated);
 }
 

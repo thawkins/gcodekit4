@@ -126,7 +126,7 @@ pub fn render_shapes(canvas: &Canvas, _width: u32, _height: u32) -> String {
             continue;
         }
 
-        let shape_path = render_shape_trait(&*shape_obj.shape, viewport);
+        let shape_path = render_shape_trait(&shape_obj.shape, viewport);
         path.push_str(&shape_path);
     }
 
@@ -145,7 +145,7 @@ pub fn render_selected_shapes(canvas: &Canvas, _width: u32, _height: u32) -> Str
             continue;
         }
 
-        let shape_path = render_shape_trait(&*shape_obj.shape, viewport);
+        let shape_path = render_shape_trait(&shape_obj.shape, viewport);
         path.push_str(&shape_path);
     }
 
@@ -159,7 +159,7 @@ pub fn render_grouped_shapes(canvas: &Canvas, _width: u32, _height: u32) -> Stri
 
     for shape_obj in canvas.shapes() {
         if shape_obj.group_id.is_some() {
-            let shape_path = render_shape_trait(&*shape_obj.shape, viewport);
+            let shape_path = render_shape_trait(&shape_obj.shape, viewport);
             path.push_str(&shape_path);
         }
     }
@@ -317,17 +317,16 @@ pub fn render_group_bounding_box(canvas: &Canvas, _width: u32, _height: u32) -> 
 
 /// Render a single shape as SVG path (trait object version)
 fn render_shape_trait(
-    shape: &dyn crate::shapes::Shape,
+    shape: &crate::shapes::Shape,
     viewport: &crate::viewport::Viewport,
 ) -> String {
-    use crate::shapes::ShapeType;
+
 
     // Get shape type and bounding box
-    let shape_type = shape.shape_type();
     let (x1, y1, x2, y2) = shape.bounding_box();
 
-    match shape_type {
-        ShapeType::Rectangle => {
+    match shape {
+        crate::shapes::Shape::Rectangle(_) => {
             let (sx1, sy1) = viewport.world_to_pixel(x1, y1);
             let (sx2, sy2) = viewport.world_to_pixel(x2, y2);
 
@@ -336,7 +335,7 @@ fn render_shape_trait(
                 sx1, sy1, sx2, sy1, sx2, sy2, sx1, sy2
             )
         }
-        ShapeType::Circle => {
+        crate::shapes::Shape::Circle(_) => {
             let center_x = (x1 + x2) / 2.0;
             let center_y = (y1 + y2) / 2.0;
             let radius = ((x2 - x1) / 2.0).abs();
@@ -356,13 +355,13 @@ fn render_shape_trait(
                 screen_radius, screen_radius, cx + screen_radius, cy
             )
         }
-        ShapeType::Line => {
+        crate::shapes::Shape::Line(_) => {
             let (sx1, sy1) = viewport.world_to_pixel(x1, y1);
             let (sx2, sy2) = viewport.world_to_pixel(x2, y2);
 
             format!("M {} {} L {} {} ", sx1, sy1, sx2, sy2)
         }
-        ShapeType::Ellipse => {
+        crate::shapes::Shape::Ellipse(_) => {
             let center_x = (x1 + x2) / 2.0;
             let center_y = (y1 + y2) / 2.0;
             let rx = ((x2 - x1) / 2.0).abs();
@@ -384,73 +383,55 @@ fn render_shape_trait(
                 screen_rx, screen_ry, cx + screen_rx, cy
             )
         }
-        ShapeType::Text => {
-            if let Some(text_shape) = shape.as_any().downcast_ref::<crate::shapes::TextShape>() {
-                let font = font_manager::get_font();
-                let scale = Scale::uniform(text_shape.font_size as f32);
-                let v_metrics = font.v_metrics(scale);
-                
-                let start = rt_point(text_shape.x as f32, text_shape.y as f32 + v_metrics.ascent);
-                
-                let mut builder = SvgPathBuilder {
-                    path: String::new(),
-                    viewport: viewport.clone(),
-                };
-                
-                for glyph in font.layout(&text_shape.text, scale, start) {
-                    glyph.build_outline(&mut builder);
-                }
-                
-                builder.path
-            } else {
-                // Fallback
-                let (sx1, sy1) = viewport.world_to_pixel(x1, y1);
-                let (sx2, sy2) = viewport.world_to_pixel(x2, y2);
-
-                format!(
-                    "M {} {} L {} {} L {} {} L {} {} Z ",
-                    sx1, sy1, sx2, sy1, sx2, sy2, sx1, sy2
-                )
+        crate::shapes::Shape::Text(text_shape) => {
+            let font = font_manager::get_font();
+            let scale = Scale::uniform(text_shape.font_size as f32);
+            let v_metrics = font.v_metrics(scale);
+            
+            let start = rt_point(text_shape.x as f32, text_shape.y as f32 + v_metrics.ascent);
+            
+            let mut builder = SvgPathBuilder {
+                path: String::new(),
+                viewport: viewport.clone(),
+            };
+            
+            for glyph in font.layout(&text_shape.text, scale, start) {
+                glyph.build_outline(&mut builder);
             }
+            
+            builder.path
         }
-        ShapeType::Path => {
-            if let Some(path_shape) = shape.as_any().downcast_ref::<crate::shapes::PathShape>() {
-                let mut path_str = String::new();
-                for event in path_shape.path.iter() {
-                    match event {
-                        lyon::path::Event::Begin { at } => {
-                            let (sx, sy) = viewport.world_to_pixel(at.x as f64, at.y as f64);
-                            path_str.push_str(&format!("M {} {} ", sx, sy));
-                        }
-                        lyon::path::Event::Line { from: _, to } => {
-                            let (sx, sy) = viewport.world_to_pixel(to.x as f64, to.y as f64);
-                            path_str.push_str(&format!("L {} {} ", sx, sy));
-                        }
-                        lyon::path::Event::Quadratic { from: _, ctrl, to } => {
-                            let (cx, cy) = viewport.world_to_pixel(ctrl.x as f64, ctrl.y as f64);
-                            let (sx, sy) = viewport.world_to_pixel(to.x as f64, to.y as f64);
-                            path_str.push_str(&format!("Q {} {} {} {} ", cx, cy, sx, sy));
-                        }
-                        lyon::path::Event::Cubic { from: _, ctrl1, ctrl2, to } => {
-                            let (c1x, c1y) = viewport.world_to_pixel(ctrl1.x as f64, ctrl1.y as f64);
-                            let (c2x, c2y) = viewport.world_to_pixel(ctrl2.x as f64, ctrl2.y as f64);
-                            let (sx, sy) = viewport.world_to_pixel(to.x as f64, to.y as f64);
-                            path_str.push_str(&format!("C {} {} {} {} {} {} ", c1x, c1y, c2x, c2y, sx, sy));
-                        }
-                        lyon::path::Event::End { last: _, first: _, close } => {
-                            if close {
-                                path_str.push_str("Z ");
-                            }
+        crate::shapes::Shape::Path(path_shape) => {
+            let mut path_str = String::new();
+            for event in path_shape.path.iter() {
+                match event {
+                    lyon::path::Event::Begin { at } => {
+                        let (sx, sy) = viewport.world_to_pixel(at.x as f64, at.y as f64);
+                        path_str.push_str(&format!("M {} {} ", sx, sy));
+                    }
+                    lyon::path::Event::Line { from: _, to } => {
+                        let (sx, sy) = viewport.world_to_pixel(to.x as f64, to.y as f64);
+                        path_str.push_str(&format!("L {} {} ", sx, sy));
+                    }
+                    lyon::path::Event::Quadratic { from: _, ctrl, to } => {
+                        let (cx, cy) = viewport.world_to_pixel(ctrl.x as f64, ctrl.y as f64);
+                        let (sx, sy) = viewport.world_to_pixel(to.x as f64, to.y as f64);
+                        path_str.push_str(&format!("Q {} {} {} {} ", cx, cy, sx, sy));
+                    }
+                    lyon::path::Event::Cubic { from: _, ctrl1, ctrl2, to } => {
+                        let (c1x, c1y) = viewport.world_to_pixel(ctrl1.x as f64, ctrl1.y as f64);
+                        let (c2x, c2y) = viewport.world_to_pixel(ctrl2.x as f64, ctrl2.y as f64);
+                        let (sx, sy) = viewport.world_to_pixel(to.x as f64, to.y as f64);
+                        path_str.push_str(&format!("C {} {} {} {} {} {} ", c1x, c1y, c2x, c2y, sx, sy));
+                    }
+                    lyon::path::Event::End { last: _, first: _, close } => {
+                        if close {
+                            path_str.push_str("Z ");
                         }
                     }
                 }
-                path_str
-            } else {
-                // Fallback
-                let (sx1, sy1) = viewport.world_to_pixel(x1, y1);
-                let (sx2, sy2) = viewport.world_to_pixel(x2, y2);
-                format!("M {} {} L {} {} L {} {} L {} {} Z ", sx1, sy1, sx2, sy1, sx2, sy2, sx1, sy2)
             }
+            path_str
         }
     }
 }

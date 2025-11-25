@@ -431,3 +431,16 @@ Rectangle {
   - **Default (No Shift)**: Pan the canvas (restored original behavior).
   - **Shift Held**: Start rubber band selection.
   - This change was made to align with user preference for panning as the primary interaction on empty space.
+
+### Group Interaction Improvements (2025-11-25)
+- **Group Selection**: Clicking anywhere inside a group's composite bounding box now selects the entire group, treating it as a solid object.
+- **Group Dragging**: Dragging anywhere inside the composite bounding box of a selected group (or multiple selection) moves the entire selection.
+- **Resize Handles**: Resize handles (corners and center) are now displayed around the composite bounding box of *any* selection (single shape, multiple shapes, or groups).
+- **Group Resizing**: Fixed distortion issue when resizing complex groups (like polylines) by ensuring scaling is applied relative to the group's center, preserving relative positions and proportions.
+
+### File Menu Workflow (2025-11-25)
+- **Load vs Add**:
+  - **Load**: Clears the canvas before importing (standard "Open" behavior).
+  - **Add**: Appends imported shapes to the existing design without clearing.
+- **Auto-Grouping**: "Add" operations automatically place imported shapes into a new group for easy manipulation.
+- **Auto-Fit**: Both "Load" and "Add" operations automatically execute "Fit to View" to ensure the design is visible.

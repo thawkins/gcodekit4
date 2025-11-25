@@ -1,0 +1,127 @@
+    Checking gcodekit4-designer v0.38.0-alpha (/home/thawkins/Projects/gcodekit4/crates/gcodekit4-designer)
+warning: unused import: `ShapeType`
+ --> crates/gcodekit4-designer/src/renderer.rs:9:21
+  |
+9 | use crate::{Canvas, ShapeType, font_manager};
+  |                     ^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `crate::shapes::ShapeType`
+   --> crates/gcodekit4-designer/src/svg_renderer.rs:323:9
+    |
+323 |     use crate::shapes::ShapeType;
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `Line`, `Rectangle`, and `TextShape`
+ --> crates/gcodekit4-designer/src/designer_state.rs:5:29
+  |
+5 |     shapes::{OperationType, TextShape},
+  |                             ^^^^^^^^^
+6 |     Canvas, Circle, DrawingMode, Line, Point, Rectangle, ToolpathGenerator, ToolpathToGcode,
+  |                                  ^^^^         ^^^^^^^^^
+
+error[E0599]: no method named `push` found for struct `HashMap` in the current scope
+   --> crates/gcodekit4-designer/src/canvas.rs:746:25
+    |
+746 |             self.shapes.push(new_obj);
+    |                         ^^^^ method not found in `HashMap<u64, DrawingObject>`
+
+error[E0599]: no method named `iter` found for opaque type `impl Iterator<Item = &DrawingObject>` in the current scope
+   --> crates/gcodekit4-designer/src/designer_state.rs:87:53
+    |
+ 87 |         let selected: Vec<_> = self.canvas.shapes().iter().filter(|s| s.selected).collect();
+    |                                                     ^^^^
+    |
+help: there is a method `filter` with a similar name, but with different arguments
+   --> /home/thawkins/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/iter/traits/iterator.rs:892:5
+    |
+892 | /     fn filter<P>(self, predicate: P) -> Filter<Self, P>
+893 | |     where
+894 | |         Self: Sized,
+895 | |         P: FnMut(&Self::Item) -> bool,
+    | |______________________________________^
+
+error[E0599]: no method named `iter` found for opaque type `impl Iterator<Item = &DrawingObject>` in the current scope
+   --> crates/gcodekit4-designer/src/designer_state.rs:101:30
+    |
+101 |         self.canvas.shapes().iter().filter(|s| s.selected).any(|s| s.group_id.is_some())
+    |                              ^^^^
+    |
+help: there is a method `filter` with a similar name, but with different arguments
+   --> /home/thawkins/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/iter/traits/iterator.rs:892:5
+    |
+892 | /     fn filter<P>(self, predicate: P) -> Filter<Self, P>
+893 | |     where
+894 | |         Self: Sized,
+895 | |         P: FnMut(&Self::Item) -> bool,
+    | |______________________________________^
+
+error[E0599]: no method named `iter` found for opaque type `impl Iterator<Item = &DrawingObject>` in the current scope
+   --> crates/gcodekit4-designer/src/designer_state.rs:188:47
+    |
+188 |         self.clipboard = self.canvas.shapes().iter()
+    |                                               ^^^^
+    |
+help: there is a method `filter` with a similar name, but with different arguments
+   --> /home/thawkins/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/iter/traits/iterator.rs:892:5
+    |
+892 | /     fn filter<P>(self, predicate: P) -> Filter<Self, P>
+893 | |     where
+894 | |         Self: Sized,
+895 | |         P: FnMut(&Self::Item) -> bool,
+    | |______________________________________^
+
+error[E0599]: no method named `is_empty` found for opaque type `impl Iterator<Item = &DrawingObject>` in the current scope
+   --> crates/gcodekit4-designer/src/designer_state.rs:297:34
+    |
+297 |         if !self.canvas.shapes().is_empty() {
+    |                                  ^^^^^^^^ method not found in `impl Iterator<Item = &DrawingObject>`
+
+error[E0599]: no method named `is_empty` found for opaque type `impl Iterator<Item = &DrawingObject>` in the current scope
+   --> crates/gcodekit4-designer/src/designer_state.rs:413:54
+    |
+413 |         self.gcode_generated = !self.canvas.shapes().is_empty();
+    |                                                      ^^^^^^^^ method not found in `impl Iterator<Item = &DrawingObject>`
+
+error[E0599]: no method named `iter_mut` found for opaque type `impl Iterator<Item = &mut DrawingObject>` in the current scope
+   --> crates/gcodekit4-designer/src/designer_state.rs:670:45
+    |
+670 |         for obj in self.canvas.shapes_mut().iter_mut() {
+    |                                             ^^^^^^^^ method not found in `impl Iterator<Item = &mut DrawingObject>`
+
+error[E0599]: no method named `iter_mut` found for opaque type `impl Iterator<Item = &mut DrawingObject>` in the current scope
+   --> crates/gcodekit4-designer/src/designer_state.rs:696:45
+    |
+696 |         for obj in self.canvas.shapes_mut().iter_mut() {
+    |                                             ^^^^^^^^ method not found in `impl Iterator<Item = &mut DrawingObject>`
+
+error[E0599]: no method named `iter_mut` found for opaque type `impl Iterator<Item = &mut DrawingObject>` in the current scope
+   --> crates/gcodekit4-designer/src/designer_state.rs:716:45
+    |
+716 |         for obj in self.canvas.shapes_mut().iter_mut() {
+    |                                             ^^^^^^^^ method not found in `impl Iterator<Item = &mut DrawingObject>`
+
+error[E0599]: no method named `iter_mut` found for opaque type `impl Iterator<Item = &mut DrawingObject>` in the current scope
+   --> crates/gcodekit4-designer/src/designer_state.rs:749:45
+    |
+749 |         for obj in self.canvas.shapes_mut().iter_mut() {
+    |                                             ^^^^^^^^ method not found in `impl Iterator<Item = &mut DrawingObject>`
+
+warning: unused variable: `ellipse`
+   --> crates/gcodekit4-designer/src/renderer.rs:178:43
+    |
+178 |             crate::shapes::Shape::Ellipse(ellipse) => {
+    |                                           ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_ellipse`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `shape_type`
+   --> crates/gcodekit4-designer/src/svg_renderer.rs:326:9
+    |
+326 |     let shape_type = shape.shape_type();
+    |         ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_shape_type`
+
+For more information about this error, try `rustc --explain E0599`.
+warning: `gcodekit4-designer` (lib) generated 5 warnings
+error: could not compile `gcodekit4-designer` (lib) due to 10 previous errors; 5 warnings emitted

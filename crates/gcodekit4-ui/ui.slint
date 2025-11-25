@@ -377,6 +377,8 @@ export component MainWindow inherits Window {
     callback designer-generate-toolpath();
     callback designer-import-dxf();
     callback designer-import-svg();
+    callback designer-add-dxf();
+    callback designer-add-svg();
     callback designer-export-design();
     callback designer-canvas-click(float, float);
     callback designer-detect-handle(float, float) -> int;  // x, y - returns handle index
@@ -526,7 +528,7 @@ export component MainWindow inherits Window {
                 }
             }
             Menu {
-                title: @tr("Import");
+                title: @tr("Load");
                 enabled: root.current-view == "designer";
                 MenuItem {
                     title: @tr("DXF");
@@ -538,6 +540,22 @@ export component MainWindow inherits Window {
                     title: @tr("SVG");
                     activated => {
                         root.designer-import-svg();
+                    }
+                }
+            }
+            Menu {
+                title: @tr("Add");
+                enabled: root.current-view == "designer";
+                MenuItem {
+                    title: @tr("DXF");
+                    activated => {
+                        root.designer-add-dxf();
+                    }
+                }
+                MenuItem {
+                    title: @tr("SVG");
+                    activated => {
+                        root.designer-add-svg();
                     }
                 }
             }

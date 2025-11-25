@@ -423,7 +423,6 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
     let shapes: Vec<crate::DesignerShape> = state
         .canvas
         .shapes()
-        .iter()
         .map(|obj| {
             let (x1, y1, x2, y2) = obj.shape.bounding_box();
             let shape_type = match obj.shape.shape_type() {
@@ -486,7 +485,7 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
 
     // Update shape indicator with selected shape info
     if let Some(id) = state.canvas.selected_id() {
-        if let Some(obj) = state.canvas.shapes().iter().find(|o| o.id == id) {
+        if let Some(obj) = state.canvas.shapes().find(|o| o.id == id) {
             let (x1, y1, x2, y2) = obj.shape.bounding_box();
             let width = (x2 - x1).abs();
             let height = (y2 - y1).abs();
@@ -870,7 +869,7 @@ fn main() -> anyhow::Result<()> {
         main_window.on_designer_interaction_start(move || {
             if let Some(_window) = window_weak.upgrade() {
                 let mut state = designer_mgr.borrow_mut();
-                state.save_history();
+                // History is automatically saved by command pattern
             }
         });
     }
@@ -4596,7 +4595,7 @@ fn main() -> anyhow::Result<()> {
                 update_designer_ui(&window, &mut state);
                 window.set_connection_status(slint::SharedString::from(format!(
                     "Shapes: {}",
-                    state.canvas.shapes().len()
+                    state.canvas.shape_count()
                 )));
             }
         }
@@ -4612,7 +4611,7 @@ fn main() -> anyhow::Result<()> {
             update_designer_ui(&window, &mut state);
             window.set_connection_status(slint::SharedString::from(format!(
                 "Shapes: {}",
-                state.canvas.shapes().len()
+                state.canvas.shape_count()
             )));
         }
     });
@@ -4771,9 +4770,14 @@ fn main() -> anyhow::Result<()> {
                             match importer.import_string(&content) {
                                 Ok(design) => {
                                     let mut state = designer_mgr_clone.borrow_mut();
+                                    state.canvas.clear();
                                     for shape in design.shapes {
                                         state.canvas.add_shape(shape);
                                     }
+                                    
+                                    // Auto-fit to view
+                                    state.zoom_fit();
+
                                     window.set_connection_status(slint::SharedString::from(
                                         format!(
                                             "DXF imported: {} entities from {} layers",
@@ -4782,6 +4786,21 @@ fn main() -> anyhow::Result<()> {
                                         ),
                                     ));
                                     update_designer_ui(&window, &mut state);
+
+                                    // Update UI state with new zoom/pan values
+                                    let ui_state = crate::DesignerState {
+                                        mode: state.canvas.mode() as i32,
+                                        zoom: state.canvas.zoom() as f32,
+                                        pan_x: state.canvas.pan_offset().0 as f32,
+                                        pan_y: state.canvas.pan_offset().1 as f32,
+                                        selected_id: state.canvas.selected_id().unwrap_or(0) as i32,
+                                        update_counter: 0, 
+                                        can_undo: state.can_undo(), 
+                                        can_redo: state.can_redo(), 
+                                        can_group: state.can_group(), 
+                                        can_ungroup: state.can_ungroup(),
+                                    };
+                                    window.set_designer_state(ui_state);
                                 }
                                 Err(e) => {
                                     window.set_connection_status(slint::SharedString::from(
@@ -4829,6 +4848,7 @@ fn main() -> anyhow::Result<()> {
                                 let shape_count = design.shapes.len();
                                 let layer_count = design.layer_count;
                                 let mut state = designer_mgr_clone.borrow_mut();
+                                state.canvas.clear();
                                 for shape in design.shapes {
                                     state.canvas.add_shape(shape);
                                 }
@@ -4838,6 +4858,158 @@ fn main() -> anyhow::Result<()> {
                                 
                                 window.set_connection_status(slint::SharedString::from(format!(
                                     "SVG imported: {} shapes from {} layers",
+                                    shape_count, layer_count
+                                )));
+                                update_designer_ui(&window, &mut state);
+                                
+                                // Update UI state with new zoom/pan values
+                                let ui_state = crate::DesignerState {
+                                    mode: state.canvas.mode() as i32,
+                                    zoom: state.canvas.zoom() as f32,
+                                    pan_x: state.canvas.pan_offset().0 as f32,
+                                    pan_y: state.canvas.pan_offset().1 as f32,
+                                    selected_id: state.canvas.selected_id().unwrap_or(0) as i32,
+                                    update_counter: 0, 
+                                    can_undo: state.can_undo(), 
+                                    can_redo: state.can_redo(), 
+                                    can_group: state.can_group(), 
+                                    can_ungroup: state.can_ungroup(),
+                                };
+                                window.set_designer_state(ui_state);
+                            }
+                            Err(e) => {
+                                window.set_connection_status(slint::SharedString::from(format!(
+                                    "SVG import failed: {}",
+                                    e
+                                )));
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        window.set_connection_status(slint::SharedString::from(format!(
+                            "Failed to read file: {}",
+                            e
+                        )));
+                    }
+                }
+            }
+        }
+    });
+
+    // Designer: Add DXF callback
+    let window_weak = main_window.as_weak();
+    let designer_mgr_clone = designer_mgr.clone();
+    main_window.on_designer_add_dxf(move || {
+        use gcodekit4::designer::{DxfImporter, DxfParser};
+        use rfd::FileDialog;
+
+        if let Some(path) = FileDialog::new()
+            .add_filter("DXF Files", &["dxf"])
+            .set_title("Add DXF File")
+            .pick_file()
+        {
+            if let Some(window) = window_weak.upgrade() {
+                match std::fs::read_to_string(&path) {
+                    Ok(content) => match DxfParser::parse(&content) {
+                        Ok(dxf_file) => {
+                            let importer = DxfImporter::new(1.0, 0.0, 0.0);
+                            match importer.import_string(&content) {
+                                Ok(design) => {
+                                    let mut state = designer_mgr_clone.borrow_mut();
+                                    let group_id = state.canvas.generate_id();
+                                    for shape in design.shapes {
+                                        let id = state.canvas.add_shape(shape);
+                                        if let Some(obj) = state.canvas.get_shape_mut(id) {
+                                            obj.group_id = Some(group_id);
+                                        }
+                                    }
+                                    
+                                    // Auto-fit to view
+                                    state.zoom_fit();
+
+                                    window.set_connection_status(slint::SharedString::from(
+                                        format!(
+                                            "DXF added: {} entities from {} layers",
+                                            dxf_file.entity_count(),
+                                            dxf_file.layer_names().len()
+                                        ),
+                                    ));
+                                    update_designer_ui(&window, &mut state);
+
+                                    // Update UI state with new zoom/pan values
+                                    let ui_state = crate::DesignerState {
+                                        mode: state.canvas.mode() as i32,
+                                        zoom: state.canvas.zoom() as f32,
+                                        pan_x: state.canvas.pan_offset().0 as f32,
+                                        pan_y: state.canvas.pan_offset().1 as f32,
+                                        selected_id: state.canvas.selected_id().unwrap_or(0) as i32,
+                                        update_counter: 0, 
+                                        can_undo: state.can_undo(), 
+                                        can_redo: state.can_redo(), 
+                                        can_group: state.can_group(), 
+                                        can_ungroup: state.can_ungroup(),
+                                    };
+                                    window.set_designer_state(ui_state);
+                                }
+                                Err(e) => {
+                                    window.set_connection_status(slint::SharedString::from(
+                                        format!("DXF import failed: {}", e),
+                                    ));
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            window.set_connection_status(slint::SharedString::from(format!(
+                                "DXF parse error: {}",
+                                e
+                            )));
+                        }
+                    },
+                    Err(e) => {
+                        window.set_connection_status(slint::SharedString::from(format!(
+                            "Failed to read file: {}",
+                            e
+                        )));
+                    }
+                }
+            }
+        }
+    });
+
+    // Designer: Add SVG callback
+    let window_weak = main_window.as_weak();
+    let designer_mgr_clone = designer_mgr.clone();
+    main_window.on_designer_add_svg(move || {
+        use gcodekit4::designer::SvgImporter;
+        use rfd::FileDialog;
+
+        if let Some(path) = FileDialog::new()
+            .add_filter("SVG Files", &["svg"])
+            .set_title("Add SVG File")
+            .pick_file()
+        {
+            if let Some(window) = window_weak.upgrade() {
+                match std::fs::read_to_string(&path) {
+                    Ok(content) => {
+                        let importer = SvgImporter::new(1.0, 0.0, 0.0);
+                        match importer.import_string(&content) {
+                            Ok(design) => {
+                                let shape_count = design.shapes.len();
+                                let layer_count = design.layer_count;
+                                let mut state = designer_mgr_clone.borrow_mut();
+                                let group_id = state.canvas.generate_id();
+                                for shape in design.shapes {
+                                    let id = state.canvas.add_shape(shape);
+                                    if let Some(obj) = state.canvas.get_shape_mut(id) {
+                                        obj.group_id = Some(group_id);
+                                    }
+                                }
+                                
+                                // Auto-fit to view
+                                state.zoom_fit();
+                                
+                                window.set_connection_status(slint::SharedString::from(format!(
+                                    "SVG added: {} shapes from {} layers",
                                     shape_count, layer_count
                                 )));
                                 update_designer_ui(&window, &mut state);
@@ -5035,7 +5207,7 @@ fn main() -> anyhow::Result<()> {
 
             window.set_connection_status(slint::SharedString::from(format!(
                 "Shapes: {}",
-                state.canvas.shapes().len()
+                state.canvas.shape_count()
             )));
         }
     });
@@ -5098,49 +5270,52 @@ fn main() -> anyhow::Result<()> {
         // Convert pixel coordinates to world coordinates
         let world_point = state.canvas.pixel_to_world(x as f64, y as f64);
 
-        if let Some(selected_id) = state.canvas.selected_id() {
-            // First check handles of the primary selected object
-            if let Some(obj) = state.canvas.shapes().iter().find(|o| o.id == selected_id) {
+        // Calculate composite bounding box of all selected shapes
+        let mut min_x = f64::INFINITY;
+        let mut min_y = f64::INFINITY;
+        let mut max_x = f64::NEG_INFINITY;
+        let mut max_y = f64::NEG_INFINITY;
+        let mut has_selected = false;
+
+        for obj in state.canvas.shapes() {
+            if obj.selected {
+                has_selected = true;
                 let (x1, y1, x2, y2) = obj.shape.bounding_box();
-
-                // Handle size in world coordinates (scaled by zoom)
-                let viewport = state.canvas.viewport();
-                let handle_size = 8.0 / viewport.zoom();
-
-                let cx = (x1 + x2) / 2.0;
-                let cy = (y1 + y2) / 2.0;
-
-                // Check each handle position
-                if (world_point.x - x1).abs() < handle_size
-                    && (world_point.y - y1).abs() < handle_size
-                {
-                    dragging_handle = 0; // Top-left
-                } else if (world_point.x - x2).abs() < handle_size
-                    && (world_point.y - y1).abs() < handle_size
-                {
-                    dragging_handle = 1; // Top-right
-                } else if (world_point.x - x1).abs() < handle_size
-                    && (world_point.y - y2).abs() < handle_size
-                {
-                    dragging_handle = 2; // Bottom-left
-                } else if (world_point.x - x2).abs() < handle_size
-                    && (world_point.y - y2).abs() < handle_size
-                {
-                    dragging_handle = 3; // Bottom-right
-                } else if (world_point.x - cx).abs() < handle_size
-                    && (world_point.y - cy).abs() < handle_size
-                {
-                    dragging_handle = 4; // Center (move handle)
-                }
+                min_x = min_x.min(x1);
+                min_y = min_y.min(y1);
+                max_x = max_x.max(x2);
+                max_y = max_y.max(y2);
             }
+        }
+
+        if has_selected {
+            // Handle size in world coordinates (scaled by zoom)
+            let viewport = state.canvas.viewport();
+            let handle_size = 12.0 / viewport.zoom(); // Increased from 8.0 for easier cursor positioning
+            let center_handle_size = handle_size * 1.25;
             
-            // If not on a handle, check if we are on the body of ANY selected shape
+            let cx = (min_x + max_x) / 2.0;
+            let cy = (min_y + max_y) / 2.0;
+
+            // PRIORITY 1: Check resize handles (0-4) around composite box
+            // We check this first so handles are accessible even if inside the selection bounding box
+            if (world_point.x - min_x).abs() < handle_size && (world_point.y - min_y).abs() < handle_size {
+                dragging_handle = 0; // TL
+            } else if (world_point.x - max_x).abs() < handle_size && (world_point.y - min_y).abs() < handle_size {
+                dragging_handle = 1; // TR
+            } else if (world_point.x - min_x).abs() < handle_size && (world_point.y - max_y).abs() < handle_size {
+                dragging_handle = 2; // BL
+            } else if (world_point.x - max_x).abs() < handle_size && (world_point.y - max_y).abs() < handle_size {
+                dragging_handle = 3; // BR
+            } else if (world_point.x - cx).abs() < center_handle_size && (world_point.y - cy).abs() < center_handle_size {
+                dragging_handle = 4; // Center
+            }
+
+            // PRIORITY 2: Check if inside the composite bounding box of the selection
+            // This allows moving multiple selected shapes (or groups) by dragging anywhere in their combined bounds
             if dragging_handle == -1 {
-                for obj in state.canvas.shapes().iter() {
-                    if obj.selected && obj.shape.contains_point(&world_point) {
-                        dragging_handle = 5; // Body (move)
-                        break;
-                    }
+                if world_point.x >= min_x && world_point.x <= max_x && world_point.y >= min_y && world_point.y <= max_y {
+                    dragging_handle = 5; // Body (move)
                 }
             }
         }
@@ -5369,7 +5544,7 @@ fn main() -> anyhow::Result<()> {
             state.set_selected_pocket_properties(props.5, props.6);
         }
         if flags.text {
-            state.set_selected_text_properties(&props.7, props.8);
+            state.set_selected_text_properties(props.7.clone(), props.8);
         }
         if flags.step_down {
             state.set_selected_step_down(props.9);

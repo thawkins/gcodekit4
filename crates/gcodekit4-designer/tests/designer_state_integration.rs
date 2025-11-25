@@ -16,7 +16,7 @@ fn test_designer_state_complete_workflow() {
         Point::new(100.0, 100.0),
     );
 
-    assert_eq!(state.canvas.shapes().len(), 3);
+    assert_eq!(state.canvas.shape_count(), 3);
 
     // Test drawing modes
     state.set_mode(0); // Select
@@ -34,7 +34,7 @@ fn test_designer_state_complete_workflow() {
 
     // Test deletion
     state.delete_selected();
-    assert_eq!(state.canvas.shapes().len(), 2);
+    assert_eq!(state.canvas.shape_count(), 2);
 
     // Test G-code generation
     let gcode = state.generate_gcode();
@@ -55,7 +55,7 @@ fn test_designer_state_complete_workflow() {
 
     // Test clear
     state.clear_canvas();
-    assert_eq!(state.canvas.shapes().len(), 0);
+    assert_eq!(state.canvas.shape_count(), 0);
     assert!(!state.gcode_generated);
 }
 
@@ -67,7 +67,7 @@ fn test_designer_state_rectangle_workflow() {
     state.set_mode(1); // Rectangle mode
     state.canvas.add_rectangle(10.0, 10.0, 100.0, 50.0);
 
-    assert_eq!(state.canvas.shapes().len(), 1);
+    assert_eq!(state.canvas.shape_count(), 1);
 
     // Generate G-code
     let gcode = state.generate_gcode();
@@ -89,7 +89,7 @@ fn test_designer_state_multi_shape_design() {
             .add_rectangle((i as f64) * 20.0, 0.0, 15.0, 15.0);
     }
 
-    assert_eq!(state.canvas.shapes().len(), 5);
+    assert_eq!(state.canvas.shape_count(), 5);
 
     // Generate G-code for all shapes
     let gcode = state.generate_gcode();
@@ -124,7 +124,7 @@ fn test_designer_state_polyline_update() {
     
     // Verify it's a PathShape
     if let Some(id) = state.canvas.selected_id() {
-        if let Some(obj) = state.canvas.shapes().iter().find(|o| o.id == id) {
+        if let Some(obj) = state.canvas.shapes().find(|o| o.id == id) {
             if let Some(path) = obj.shape.as_any().downcast_ref::<PathShape>() {
                 let (x1, _y1, x2, _y2) = path.bounding_box();
                 assert!((x1 - 0.0).abs() < 0.1);
@@ -140,7 +140,7 @@ fn test_designer_state_polyline_update() {
     
     // Verify it moved
     if let Some(id) = state.canvas.selected_id() {
-        if let Some(obj) = state.canvas.shapes().iter().find(|o| o.id == id) {
+        if let Some(obj) = state.canvas.shapes().find(|o| o.id == id) {
             if let Some(path) = obj.shape.as_any().downcast_ref::<PathShape>() {
                 let (x1, y1, _x2, _y2) = path.bounding_box();
                 assert!((x1 - 10.0).abs() < 0.1);

@@ -4,15 +4,18 @@ use super::pocket_operations::PocketStrategy;
 use super::shapes::{
     Circle, Ellipse, Line, OperationType, PathShape, Point, Rectangle, Shape, ShapeType, TextShape,
 };
-use super::spatial_index::{Bounds, SpatialIndex};
+use super::spatial_index::Bounds;
 use super::viewport::Viewport;
+use crate::shape_store::ShapeStore;
+use crate::selection_manager::SelectionManager;
+use crate::spatial_manager::SpatialManager;
+
 
 /// Snapshot of canvas state for undo/redo
 #[derive(Clone)]
 pub struct CanvasSnapshot {
-    shapes: Vec<DrawingObject>,
-    next_id: u64,
-    spatial_index: SpatialIndex,
+    shape_store: ShapeStore,
+    spatial_manager: SpatialManager,
 }
 
 /// Canvas coordinates for drawing.
@@ -57,7 +60,7 @@ pub enum DrawingMode {
 pub struct DrawingObject {
     pub id: u64,
     pub group_id: Option<u64>,
-    pub shape: Box<dyn Shape>,
+    pub shape: Shape,
     pub selected: bool,
     pub operation_type: OperationType,
     pub pocket_depth: f64,
@@ -68,7 +71,7 @@ pub struct DrawingObject {
 
 impl DrawingObject {
     /// Creates a new drawing object.
-    pub fn new(id: u64, shape: Box<dyn Shape>) -> Self {
+    pub fn new(id: u64, shape: Shape) -> Self {
         Self {
             id,
             group_id: None,
@@ -88,7 +91,7 @@ impl Clone for DrawingObject {
         Self {
             id: self.id,
             group_id: self.group_id,
-            shape: self.shape.clone_shape(),
+            shape: self.shape.clone(),
             selected: self.selected,
             operation_type: self.operation_type,
             pocket_depth: self.pocket_depth,
@@ -99,49 +102,51 @@ impl Clone for DrawingObject {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-enum Alignment {
+pub enum Alignment {
     Left,
-    Right,
     CenterHorizontal,
+    Right,
     Top,
-    Bottom,
     CenterVertical,
+    Bottom,
 }
 
 /// Canvas state managing shapes and drawing operations.
 #[derive(Debug, Clone)]
 pub struct Canvas {
-    shapes: Vec<DrawingObject>,
-    next_id: u64,
+    pub shape_store: ShapeStore,
+    pub selection_manager: SelectionManager,
+    pub spatial_manager: SpatialManager,
     mode: DrawingMode,
     viewport: Viewport,
-    selected_id: Option<u64>,
-    spatial_index: SpatialIndex,
+    // Deprecated fields kept for compatibility if needed, but we should remove them
+    // shapes: HashMap<u64, DrawingObject>,
+    // draw_order: Vec<u64>,
+    // next_id: u64,
+    // selected_id: Option<u64>,
+    // spatial_index: SpatialIndex,
 }
 
 impl Canvas {
     /// Creates a new canvas.
     pub fn new() -> Self {
         Self {
-            shapes: Vec::new(),
-            next_id: 1,
+            shape_store: ShapeStore::new(),
+            selection_manager: SelectionManager::new(),
+            spatial_manager: SpatialManager::new(),
             mode: DrawingMode::Select,
             viewport: Viewport::new(1200.0, 600.0),
-            selected_id: None,
-            spatial_index: SpatialIndex::default(),
         }
     }
 
     /// Creates a canvas with specified dimensions.
     pub fn with_size(width: f64, height: f64) -> Self {
         Self {
-            shapes: Vec::new(),
-            next_id: 1,
+            shape_store: ShapeStore::new(),
+            selection_manager: SelectionManager::new(),
+            spatial_manager: SpatialManager::new(),
             mode: DrawingMode::Select,
             viewport: Viewport::new(width, height),
-            selected_id: None,
-            spatial_index: SpatialIndex::default(),
         }
     }
 
@@ -156,99 +161,102 @@ impl Canvas {
     }
 
     /// Returns the number of shapes on the canvas.
+    /// Returns the number of shapes on the canvas.
     pub fn shape_count(&self) -> usize {
-        self.shapes.len()
+        self.shape_store.len()
+    }
+
+    /// Generates a new unique ID.
+    pub fn generate_id(&mut self) -> u64 {
+        self.shape_store.generate_id()
+    }
+
+    /// Gets a reference to a shape by ID.
+    pub fn get_shape(&self, id: u64) -> Option<&DrawingObject> {
+        self.shape_store.get(id)
     }
 
     /// Adds a rectangle to the canvas.
     pub fn add_rectangle(&mut self, x: f64, y: f64, width: f64, height: f64) -> u64 {
-        let id = self.next_id;
-        self.next_id += 1;
+        let id = self.shape_store.generate_id();
         let rect = Rectangle::new(x, y, width, height);
         let (min_x, min_y, max_x, max_y) = rect.bounding_box();
-        self.shapes.push(DrawingObject::new(id, Box::new(rect)));
-        self.spatial_index.insert(id, &Bounds::new(min_x, min_y, max_x, max_y));
+        self.shape_store.insert(id, DrawingObject::new(id, Shape::Rectangle(rect)));
+        self.spatial_manager.insert_bounds(id, &Bounds::new(min_x, min_y, max_x, max_y));
         id
     }
 
     /// Adds a circle to the canvas.
     pub fn add_circle(&mut self, center: Point, radius: f64) -> u64 {
-        let id = self.next_id;
-        self.next_id += 1;
+        let id = self.shape_store.generate_id();
         let circle = Circle::new(center, radius);
         let (min_x, min_y, max_x, max_y) = circle.bounding_box();
-        self.shapes.push(DrawingObject::new(id, Box::new(circle)));
-        self.spatial_index.insert(id, &Bounds::new(min_x, min_y, max_x, max_y));
+        self.shape_store.insert(id, DrawingObject::new(id, Shape::Circle(circle)));
+        self.spatial_manager.insert_bounds(id, &Bounds::new(min_x, min_y, max_x, max_y));
         id
     }
 
     /// Adds a generic shape to the canvas.
-    pub fn add_shape(&mut self, shape: Box<dyn Shape>) -> u64 {
-        let id = self.next_id;
-        self.next_id += 1;
+    pub fn add_shape(&mut self, shape: Shape) -> u64 {
+        let id = self.shape_store.generate_id();
         let (min_x, min_y, max_x, max_y) = shape.bounding_box();
-        self.shapes.push(DrawingObject::new(id, shape));
-        self.spatial_index.insert(id, &Bounds::new(min_x, min_y, max_x, max_y));
+        self.shape_store.insert(id, DrawingObject::new(id, shape));
+        self.spatial_manager.insert_bounds(id, &Bounds::new(min_x, min_y, max_x, max_y));
         id
     }
 
     /// Adds a line to the canvas.
     pub fn add_line(&mut self, start: Point, end: Point) -> u64 {
-        let id = self.next_id;
-        self.next_id += 1;
+        let id = self.shape_store.generate_id();
         let line = Line::new(start, end);
         let (min_x, min_y, max_x, max_y) = line.bounding_box();
-        self.shapes.push(DrawingObject::new(id, Box::new(line)));
-        self.spatial_index.insert(id, &Bounds::new(min_x, min_y, max_x, max_y));
+        self.shape_store.insert(id, DrawingObject::new(id, Shape::Line(line)));
+        self.spatial_manager.insert_bounds(id, &Bounds::new(min_x, min_y, max_x, max_y));
         id
     }
 
     /// Adds an ellipse to the canvas.
     pub fn add_ellipse(&mut self, center: Point, rx: f64, ry: f64) -> u64 {
-        let id = self.next_id;
-        self.next_id += 1;
+        let id = self.shape_store.generate_id();
         let ellipse = Ellipse::new(center, rx, ry);
         let (min_x, min_y, max_x, max_y) = ellipse.bounding_box();
-        self.shapes.push(DrawingObject::new(id, Box::new(ellipse)));
-        self.spatial_index.insert(id, &Bounds::new(min_x, min_y, max_x, max_y));
+        self.shape_store.insert(id, DrawingObject::new(id, Shape::Ellipse(ellipse)));
+        self.spatial_manager.insert_bounds(id, &Bounds::new(min_x, min_y, max_x, max_y));
         id
     }
 
     /// Adds a polyline to the canvas.
     pub fn add_polyline(&mut self, vertices: Vec<Point>) -> u64 {
-        let id = self.next_id;
-        self.next_id += 1;
+        let id = self.shape_store.generate_id();
         // Create a closed PathShape from vertices
         let path_shape = PathShape::from_points(&vertices, true);
         let (min_x, min_y, max_x, max_y) = path_shape.bounding_box();
-        self.shapes
-            .push(DrawingObject::new(id, Box::new(path_shape)));
-        self.spatial_index.insert(id, &Bounds::new(min_x, min_y, max_x, max_y));
+        self.shape_store
+            .insert(id, DrawingObject::new(id, Shape::Path(path_shape)));
+        self.spatial_manager.insert_bounds(id, &Bounds::new(min_x, min_y, max_x, max_y));
         id
     }
 
     /// Adds a text shape to the canvas.
     pub fn add_text(&mut self, text: String, x: f64, y: f64, font_size: f64) -> u64 {
-        let id = self.next_id;
-        self.next_id += 1;
+        let id = self.shape_store.generate_id();
         let shape = TextShape::new(text, x, y, font_size);
         let (min_x, min_y, max_x, max_y) = shape.bounding_box();
-        self.shapes.push(DrawingObject::new(id, Box::new(shape)));
-        self.spatial_index.insert(id, &Bounds::new(min_x, min_y, max_x, max_y));
+        self.shape_store.insert(id, DrawingObject::new(id, Shape::Text(shape)));
+        self.spatial_manager.insert_bounds(id, &Bounds::new(min_x, min_y, max_x, max_y));
         id
     }
 
     /// Groups the selected shapes.
     pub fn group_selected(&mut self) {
-        let selected_count = self.shapes.iter().filter(|o| o.selected).count();
+        let selected_count = self.selection_manager.selected_count(&self.shape_store);
         if selected_count < 2 {
             return;
         }
 
-        let group_id = self.next_id;
-        self.next_id += 1;
+        let group_id = self.shape_store.generate_id();
 
-        for obj in self.shapes.iter_mut() {
+        for obj in self.shape_store.iter_mut() {
             if obj.selected {
                 obj.group_id = Some(group_id);
             }
@@ -257,7 +265,7 @@ impl Canvas {
 
     /// Ungroups the selected shapes.
     pub fn ungroup_selected(&mut self) {
-        for obj in self.shapes.iter_mut() {
+        for obj in self.shape_store.iter_mut() {
             if obj.selected {
                 obj.group_id = None;
             }
@@ -268,192 +276,98 @@ impl Canvas {
     /// If multi is true, toggles selection of the shape at point while keeping others.
     /// If multi is false, clears other selections and selects the shape at point.
     pub fn select_at(&mut self, point: &Point, multi: bool) -> Option<u64> {
-        let mut found_id = None;
-        let mut found_group_id = None;
-
-        // Query spatial index for candidates
-        let candidates = self.spatial_index.query_point(point.x, point.y);
-        
-        // Find the shape at the point (topmost first)
-        // We iterate in reverse to find topmost, but only check candidates
-        for obj in self.shapes.iter_mut().rev() {
-            if candidates.contains(&obj.id) {
-                if obj.shape.contains_point(point) {
-                    found_id = Some(obj.id);
-                    found_group_id = obj.group_id;
-                    break;
-                }
-            }
-        }
-
-        if !multi {
-            // Deselect all shapes first if not in multi-select mode
-            for obj in self.shapes.iter_mut() {
-                obj.selected = false;
-            }
-            self.selected_id = None;
-        }
-
-        if let Some(id) = found_id {
-            // Determine which IDs to select (single shape or whole group)
-            let ids_to_select: Vec<u64> = if let Some(gid) = found_group_id {
-                self.shapes.iter().filter(|o| o.group_id == Some(gid)).map(|o| o.id).collect()
-            } else {
-                vec![id]
-            };
-
-            // If multi-select, check if we should toggle off (only if all are already selected)
-            let all_selected = ids_to_select.iter().all(|&sid| {
-                self.shapes.iter().find(|o| o.id == sid).map(|o| o.selected).unwrap_or(false)
-            });
-
-            let should_select = if multi { !all_selected } else { true };
-
-            for sid in ids_to_select {
-                if let Some(obj) = self.shapes.iter_mut().find(|o| o.id == sid) {
-                    obj.selected = should_select;
-                }
-            }
-
-            if should_select {
-                self.selected_id = Some(id); // Set primary to the clicked one
-            } else if self.selected_id == Some(id) {
-                 self.selected_id = None;
-                 // Try to find another selected shape
-                 if let Some(other) = self.shapes.iter().find(|o| o.selected) {
-                     self.selected_id = Some(other.id);
-                 }
-            }
-        } else if !multi {
-            // Clicked on empty space without shift -> deselect all
-            self.selected_id = None;
-        }
-
-        self.selected_id
+        self.selection_manager.select_at(&mut self.shape_store, self.spatial_manager.inner(), point, multi)
     }
 
     /// Selects shapes within or intersecting the given rectangle.
     /// If multi is true, adds to current selection.
     /// If multi is false, clears other selections first.
     pub fn select_in_rect(&mut self, x: f64, y: f64, width: f64, height: f64, multi: bool) {
-        if !multi {
-            for obj in self.shapes.iter_mut() {
-                obj.selected = false;
-            }
-            self.selected_id = None;
-        }
-
-        // Normalize rectangle
-        let (rx, rw) = if width < 0.0 { (x + width, -width) } else { (x, width) };
-        let (ry, rh) = if height < 0.0 { (y + height, -height) } else { (y, height) };
-        let rect_bounds = Bounds::new(rx, ry, rx + rw, ry + rh);
-
-        // Query spatial index for candidates
-        let candidates = self.spatial_index.query(&rect_bounds);
-        
-        let mut groups_to_select = Vec::new();
-
-        for obj in self.shapes.iter_mut() {
-            if candidates.contains(&obj.id) {
-                let (sx1, sy1, sx2, sy2) = obj.shape.bounding_box();
-                // Check for intersection
-                if sx1 < rx + rw && sx2 > rx && sy1 < ry + rh && sy2 > ry {
-                    obj.selected = true;
-                    if let Some(gid) = obj.group_id {
-                        if !groups_to_select.contains(&gid) {
-                            groups_to_select.push(gid);
-                        }
-                    }
-                    // If we just selected something and there was no primary selection, set it
-                    if self.selected_id.is_none() {
-                        self.selected_id = Some(obj.id);
-                    }
-                }
-            }
-        }
-        
-        // Select all members of intersected groups
-        if !groups_to_select.is_empty() {
-             for obj in self.shapes.iter_mut() {
-                if let Some(gid) = obj.group_id {
-                    if groups_to_select.contains(&gid) {
-                        obj.selected = true;
-                    }
-                }
-            }
-        }
+        self.selection_manager.select_in_rect(&mut self.shape_store, self.spatial_manager.inner(), x, y, width, height, multi);
     }
 
     /// Gets the number of selected shapes.
     pub fn selected_count(&self) -> usize {
-        self.shapes.iter().filter(|o| o.selected).count()
+        self.selection_manager.selected_count(&self.shape_store)
     }
 
     /// Removes all selected shapes.
     pub fn remove_selected(&mut self) {
-        for obj in self.shapes.iter().filter(|o| o.selected) {
-            let (min_x, min_y, max_x, max_y) = obj.shape.bounding_box();
-            self.spatial_index.remove(obj.id, &super::spatial_index::Bounds::new(min_x, min_y, max_x, max_y));
-        }
-        self.shapes.retain(|obj| !obj.selected);
-        self.selected_id = None;
+        self.selection_manager.remove_selected(&mut self.shape_store, self.spatial_manager.inner_mut());
     }
 
     /// Gets all shapes on the canvas.
-    pub fn shapes(&self) -> &[DrawingObject] {
-        &self.shapes
+    pub fn shapes(&self) -> impl Iterator<Item = &DrawingObject> {
+        self.shape_store.iter()
     }
 
     /// Returns a mutable reference to the shapes array.
-    pub fn shapes_mut(&mut self) -> &mut [DrawingObject] {
-        &mut self.shapes
+    pub fn shapes_mut(&mut self) -> impl Iterator<Item = &mut DrawingObject> {
+        self.shape_store.iter_mut()
     }
 
     /// Gets the selected shape ID.
     pub fn selected_id(&self) -> Option<u64> {
-        self.selected_id
+        self.selection_manager.selected_id()
     }
 
     /// Removes a shape by ID.
     pub fn remove_shape(&mut self, id: u64) -> bool {
-        if let Some(pos) = self.shapes.iter().position(|obj| obj.id == id) {
-            let obj = &self.shapes[pos];
+        self.remove_shape_return(id).is_some()
+    }
+
+    /// Removes a shape and returns it (used for undo/redo).
+    pub fn remove_shape_return(&mut self, id: u64) -> Option<DrawingObject> {
+        if let Some(obj) = self.shape_store.remove(id) {
             let (min_x, min_y, max_x, max_y) = obj.shape.bounding_box();
-            self.spatial_index.remove(id, &super::spatial_index::Bounds::new(min_x, min_y, max_x, max_y));
+            self.spatial_manager.remove_bounds(id, &Bounds::new(min_x, min_y, max_x, max_y));
             
-            self.shapes.remove(pos);
-            if self.selected_id == Some(id) {
-                self.selected_id = None;
+            if self.selection_manager.selected_id() == Some(id) {
+                self.selection_manager.set_selected_id(None);
             }
-            true
+            Some(obj)
         } else {
-            false
+            None
         }
+    }
+
+    /// Restores a shape (used for undo/redo).
+    pub fn restore_shape(&mut self, obj: DrawingObject) {
+        let id = obj.id;
+        let (min_x, min_y, max_x, max_y) = obj.shape.bounding_box();
+        self.spatial_manager.insert_bounds(id, &Bounds::new(min_x, min_y, max_x, max_y));
+        self.shape_store.insert(id, obj);
+    }
+
+    /// Gets a mutable reference to a shape by ID.
+    pub fn get_shape_mut(&mut self, id: u64) -> Option<&mut DrawingObject> {
+        self.shape_store.get_mut(id)
+    }
+
+    /// Removes an item from the spatial index.
+    pub fn remove_from_index(&mut self, id: u64, bounds: &Bounds) {
+        self.spatial_manager.remove_bounds(id, bounds);
+    }
+
+    /// Inserts an item into the spatial index.
+    pub fn insert_into_index(&mut self, id: u64, bounds: &Bounds) {
+        self.spatial_manager.insert_bounds(id, bounds);
     }
 
     /// Deselects all shapes.
     pub fn deselect_all(&mut self) {
-        for obj in self.shapes.iter_mut() {
-            obj.selected = false;
-        }
-        self.selected_id = None;
+        self.selection_manager.deselect_all(&mut self.shape_store);
     }
 
     /// Selects all shapes.
     pub fn select_all(&mut self) {
-        for obj in self.shapes.iter_mut() {
-            obj.selected = true;
-        }
-        // Set selected_id to the last one if any exist
-        if let Some(last) = self.shapes.last() {
-            self.selected_id = Some(last.id);
-        }
+        self.selection_manager.select_all(&mut self.shape_store);
     }
 
     /// Checks if point is inside currently selected shape
     pub fn is_point_in_selected(&self, point: &Point) -> bool {
-        if let Some(id) = self.selected_id {
-            if let Some(obj) = self.shapes.iter().find(|o| o.id == id) {
+        if let Some(id) = self.selection_manager.selected_id() {
+            if let Some(obj) = self.shape_store.get(id) {
                 return obj.shape.contains_point(point);
             }
         }
@@ -532,7 +446,7 @@ impl Canvas {
 
     /// Fits the canvas to show all shapes with padding.
     pub fn fit_all_shapes(&mut self) {
-        if self.shapes.is_empty() {
+        if self.shape_store.is_empty() {
             self.viewport.reset();
             return;
         }
@@ -542,7 +456,7 @@ impl Canvas {
         let mut max_x = f64::NEG_INFINITY;
         let mut max_y = f64::NEG_INFINITY;
 
-        for obj in &self.shapes {
+        for obj in self.shape_store.iter() {
             let (x1, y1, x2, y2) = obj.shape.bounding_box();
             min_x = min_x.min(x1);
             min_y = min_y.min(y1);
@@ -580,46 +494,52 @@ impl Canvas {
 
     /// Clears all shapes from the canvas.
     pub fn clear(&mut self) {
-        self.shapes.clear();
-        self.selected_id = None;
-        self.next_id = 1;
-        self.spatial_index.clear();
+        self.shape_store.clear();
+        self.selection_manager.set_selected_id(None);
+        self.spatial_manager.clear();
     }
 
     /// Moves the selected shape by (dx, dy).
     pub fn move_selected(&mut self, dx: f64, dy: f64) {
         let mut updates = Vec::new();
         
-        for obj in self.shapes.iter_mut().filter(|o| o.selected) {
-            let (old_x1, old_y1, old_x2, old_y2) = obj.shape.bounding_box();
-            
-            obj.shape = obj.shape.translate(dx, dy);
-            
-            let (new_x1, new_y1, new_x2, new_y2) = obj.shape.bounding_box();
-            updates.push((obj.id, super::spatial_index::Bounds::new(old_x1, old_y1, old_x2, old_y2), super::spatial_index::Bounds::new(new_x1, new_y1, new_x2, new_y2)));
+        for obj in self.shape_store.iter_mut() {
+            if obj.selected {
+                let (old_x1, old_y1, old_x2, old_y2) = obj.shape.bounding_box();
+                
+                obj.shape.translate(dx, dy);
+                
+                let (new_x1, new_y1, new_x2, new_y2) = obj.shape.bounding_box();
+                updates.push((obj.id, Bounds::new(old_x1, old_y1, old_x2, old_y2), Bounds::new(new_x1, new_y1, new_x2, new_y2)));
+            }
         }
         
         for (id, old_bounds, new_bounds) in updates {
-            self.spatial_index.remove(id, &old_bounds);
-            self.spatial_index.insert(id, &new_bounds);
+            self.spatial_manager.remove_bounds(id, &old_bounds);
+            self.spatial_manager.insert_bounds(id, &new_bounds);
         }
     }
 
-    fn align_selected(&mut self, alignment: Alignment) -> bool {
+    /// Calculates the deltas (dx, dy) required to align each selected shape according to the specified alignment.
+    /// Returns a vector of (shape_id, dx, dy) for each selected shape that needs to move.
+    pub fn calculate_alignment_deltas(&self, alignment: Alignment) -> Vec<(u64, f64, f64)> {
+        let selected: Vec<_> = self.shape_store.iter().filter(|o| o.selected).collect();
+        if selected.is_empty() { return Vec::new(); }
+
         // 1. Calculate target value
         let target = match alignment {
             Alignment::Left => {
-                self.shapes.iter().filter(|o| o.selected)
+                selected.iter()
                     .map(|o| o.shape.bounding_box().0)
                     .fold(f64::INFINITY, f64::min)
             },
             Alignment::Right => {
-                self.shapes.iter().filter(|o| o.selected)
+                selected.iter()
                     .map(|o| o.shape.bounding_box().2)
                     .fold(f64::NEG_INFINITY, f64::max)
             },
             Alignment::CenterHorizontal => {
-                let (min_x, max_x) = self.shapes.iter().filter(|o| o.selected)
+                let (min_x, max_x) = selected.iter()
                     .fold((f64::INFINITY, f64::NEG_INFINITY), |(min, max), o| {
                         let (x1, _, x2, _) = o.shape.bounding_box();
                         (min.min(x1), max.max(x2))
@@ -627,17 +547,17 @@ impl Canvas {
                 if min_x.is_infinite() { f64::INFINITY } else { (min_x + max_x) / 2.0 }
             },
             Alignment::Top => {
-                self.shapes.iter().filter(|o| o.selected)
+                selected.iter()
                     .map(|o| o.shape.bounding_box().3)
                     .fold(f64::NEG_INFINITY, f64::max)
             },
             Alignment::Bottom => {
-                self.shapes.iter().filter(|o| o.selected)
+                selected.iter()
                     .map(|o| o.shape.bounding_box().1)
                     .fold(f64::INFINITY, f64::min)
             },
             Alignment::CenterVertical => {
-                let (min_y, max_y) = self.shapes.iter().filter(|o| o.selected)
+                let (min_y, max_y) = selected.iter()
                     .fold((f64::INFINITY, f64::NEG_INFINITY), |(min, max), o| {
                         let (_, y1, _, y2) = o.shape.bounding_box();
                         (min.min(y1), max.max(y2))
@@ -646,12 +566,11 @@ impl Canvas {
             },
         };
 
-        if target.is_infinite() { return false; }
+        if target.is_infinite() { return Vec::new(); }
 
-        let mut changed = false;
-        let mut updates = Vec::new();
+        let mut deltas = Vec::new();
 
-        for obj in self.shapes.iter_mut().filter(|o| o.selected) {
+        for obj in selected {
             let (x1, y1, x2, y2) = obj.shape.bounding_box();
             let (dx, dy) = match alignment {
                 Alignment::Left => (target - x1, 0.0),
@@ -663,20 +582,11 @@ impl Canvas {
             };
 
             if dx.abs() > f64::EPSILON || dy.abs() > f64::EPSILON {
-                obj.shape = obj.shape.translate(dx, dy);
-                changed = true;
-                
-                let (new_x1, new_y1, new_x2, new_y2) = obj.shape.bounding_box();
-                updates.push((obj.id, super::spatial_index::Bounds::new(x1, y1, x2, y2), super::spatial_index::Bounds::new(new_x1, new_y1, new_x2, new_y2)));
+                deltas.push((obj.id, dx, dy));
             }
         }
 
-        for (id, old_bounds, new_bounds) in updates {
-            self.spatial_index.remove(id, &old_bounds);
-            self.spatial_index.insert(id, &new_bounds);
-        }
-
-        changed
+        deltas
     }
 
     /// Pastes objects onto the canvas with an offset.
@@ -685,25 +595,19 @@ impl Canvas {
         let mut new_ids = Vec::new();
         let mut group_map = std::collections::HashMap::new();
 
-        // Deselect all existing shapes first
-        for obj in self.shapes.iter_mut() {
-            obj.selected = false;
-        }
-        self.selected_id = None;
+        self.selection_manager.deselect_all(&mut self.shape_store);
 
         for obj in objects {
-            let id = self.next_id;
-            self.next_id += 1;
+            let id = self.shape_store.generate_id();
 
-            let mut new_shape = obj.shape.clone_shape();
-            new_shape = new_shape.translate(offset_x, offset_y);
+            let mut new_shape = obj.shape.clone();
+            new_shape.translate(offset_x, offset_y);
             let (min_x, min_y, max_x, max_y) = new_shape.bounding_box();
 
             // Handle group ID mapping
             let new_group_id = if let Some(old_gid) = obj.group_id {
                 if !group_map.contains_key(&old_gid) {
-                    let new_gid = self.next_id;
-                    self.next_id += 1;
+                    let new_gid = self.shape_store.generate_id();
                     group_map.insert(old_gid, new_gid);
                     Some(new_gid)
                 } else {
@@ -725,60 +629,20 @@ impl Canvas {
                 pocket_strategy: obj.pocket_strategy,
             };
 
-            self.shapes.push(new_obj);
-            self.spatial_index.insert(id, &Bounds::new(min_x, min_y, max_x, max_y));
+            self.shape_store.insert(id, new_obj);
+            self.spatial_manager.insert_bounds(id, &Bounds::new(min_x, min_y, max_x, max_y));
             new_ids.push(id);
         }
         
         // Update selected_id to the last pasted object if any
         if let Some(last_id) = new_ids.last() {
-            self.selected_id = Some(*last_id);
+            self.selection_manager.set_selected_id(Some(*last_id));
         }
         
         new_ids
     }
 
-    pub fn align_selected_left(&mut self) -> bool {
-        self.align_selected(Alignment::Left)
-    }
 
-    pub fn get_snapshot(&self) -> CanvasSnapshot {
-        CanvasSnapshot {
-            shapes: self.shapes.clone(),
-            next_id: self.next_id,
-            spatial_index: self.spatial_index.clone(),
-        }
-    }
-
-    pub fn restore_snapshot(&mut self, snapshot: CanvasSnapshot) {
-        self.shapes = snapshot.shapes;
-        self.next_id = snapshot.next_id;
-        self.spatial_index = snapshot.spatial_index;
-        // Clear selection as it might refer to non-existent shapes or be confusing
-        // Alternatively, we could try to preserve selection if IDs still exist
-        // For now, let's clear it to be safe
-        self.selected_id = None; 
-    }
-
-    pub fn align_selected_right(&mut self) -> bool {
-        self.align_selected(Alignment::Right)
-    }
-
-    pub fn align_selected_center(&mut self) -> bool {
-        self.align_selected(Alignment::CenterHorizontal)
-    }
-
-    pub fn align_selected_top(&mut self) -> bool {
-        self.align_selected(Alignment::Top)
-    }
-
-    pub fn align_selected_bottom(&mut self) -> bool {
-        self.align_selected(Alignment::Bottom)
-    }
-
-    pub fn align_selected_vertical_center(&mut self) -> bool {
-        self.align_selected(Alignment::CenterVertical)
-    }
 
     /// Resizes the selected shape. Handles: 0=TL, 1=TR, 2=BL, 3=BR, 4=Center (moves)
     pub fn resize_selected(&mut self, handle: usize, dx: f64, dy: f64) {
@@ -789,7 +653,7 @@ impl Canvas {
         let mut max_y = f64::NEG_INFINITY;
         let mut has_selected = false;
 
-        for obj in self.shapes.iter().filter(|o| o.selected) {
+        for obj in self.shape_store.iter().filter(|o| o.selected) {
             let (x1, y1, x2, y2) = obj.shape.bounding_box();
             min_x = min_x.min(x1);
             min_y = min_y.min(y1);
@@ -833,33 +697,36 @@ impl Canvas {
         let new_center_x = (new_min_x + new_max_x) / 2.0;
         let new_center_y = (new_min_y + new_max_y) / 2.0;
         
-        let t_dx = new_center_x - center_x;
-        let t_dy = new_center_y - center_y;
-
         let mut updates = Vec::new();
 
-        for obj in self.shapes.iter_mut().filter(|o| o.selected) {
-            let (old_x1, old_y1, old_x2, old_y2) = obj.shape.bounding_box();
-            
-            // Scale then translate
-            let scaled = obj.shape.scale(sx, sy, Point::new(center_x, center_y));
-            obj.shape = scaled.translate(t_dx, t_dy);
-            
-            let (new_x1, new_y1, new_x2, new_y2) = obj.shape.bounding_box();
-            updates.push((obj.id, super::spatial_index::Bounds::new(old_x1, old_y1, old_x2, old_y2), super::spatial_index::Bounds::new(new_x1, new_y1, new_x2, new_y2)));
+        for obj in self.shape_store.iter_mut() {
+            if obj.selected {
+                let (old_x1, old_y1, old_x2, old_y2) = obj.shape.bounding_box();
+                
+                // Scale relative to the center of the SELECTION bounding box
+                obj.shape.scale(sx, sy, Point::new(center_x, center_y));
+                
+                // Translate to new center
+                let t_dx = new_center_x - center_x;
+                let t_dy = new_center_y - center_y;
+                obj.shape.translate(t_dx, t_dy);
+                
+                let (new_x1, new_y1, new_x2, new_y2) = obj.shape.bounding_box();
+                updates.push((obj.id, Bounds::new(old_x1, old_y1, old_x2, old_y2), Bounds::new(new_x1, new_y1, new_x2, new_y2)));
+            }
         }
         
         for (id, old_bounds, new_bounds) in updates {
-            self.spatial_index.remove(id, &old_bounds);
-            self.spatial_index.insert(id, &new_bounds);
+            self.spatial_manager.remove_bounds(id, &old_bounds);
+            self.spatial_manager.insert_bounds(id, &new_bounds);
         }
     }
 
-    /// Snaps the selected shape's position to whole millimeters
-    pub fn snap_selected_to_mm(&mut self) {
+    /// Calculates the snapped shapes without modifying the canvas.
+    pub fn calculate_snapped_shapes(&self) -> Vec<(u64, DrawingObject)> {
         let mut updates = Vec::new();
         
-        for obj in self.shapes.iter_mut().filter(|o| o.selected) {
+        for obj in self.shape_store.iter().filter(|o| o.selected) {
             let (x1, y1, x2, y2) = obj.shape.bounding_box();
             let width = x2 - x1;
             let height = y2 - y1;
@@ -871,9 +738,100 @@ impl Canvas {
             let snapped_height = (height + 0.5).floor();
 
             // Replace the shape with snapped position and dimensions
-            let shape = &*obj.shape;
-            let new_shape: Box<dyn Shape> = match shape.shape_type() {
-                ShapeType::Rectangle => Box::new(Rectangle::new(
+            let shape = &obj.shape;
+            let new_shape: Shape = match shape {
+                Shape::Rectangle(_) => Shape::Rectangle(Rectangle::new(
+                    snapped_x1,
+                    snapped_y1,
+                    snapped_width,
+                    snapped_height,
+                )),
+                Shape::Circle(_) => {
+                    let radius = snapped_width / 2.0;
+                    Shape::Circle(Circle::new(
+                        Point::new(snapped_x1 + radius, snapped_y1 + radius),
+                        radius,
+                    ))
+                }
+                Shape::Line(_) => Shape::Line(Line::new(
+                    Point::new(snapped_x1, snapped_y1),
+                    Point::new(snapped_x1 + snapped_width, snapped_y1 + snapped_height),
+                )),
+                Shape::Ellipse(_) => {
+                    let center = Point::new(snapped_x1 + snapped_width / 2.0, snapped_y1 + snapped_height / 2.0);
+                    Shape::Ellipse(Ellipse::new(center, snapped_width / 2.0, snapped_height / 2.0))
+                }
+                Shape::Path(path_shape) => {
+                    let (path_x1, path_y1, path_x2, path_y2) = path_shape.bounding_box();
+                    let path_w = path_x2 - path_x1;
+                    let path_h = path_y2 - path_y1;
+
+                    let scale_x = if path_w.abs() > 1e-6 {
+                        snapped_width / path_w
+                    } else {
+                        1.0
+                    };
+                    let scale_y = if path_h.abs() > 1e-6 {
+                        snapped_height / path_h
+                    } else {
+                        1.0
+                    };
+
+                    let center_x = (path_x1 + path_x2) / 2.0;
+                    let center_y = (path_y1 + path_y2) / 2.0;
+
+                    let mut scaled = path_shape.clone();
+                    scaled.scale(scale_x, scale_y, Point::new(center_x, center_y));
+
+                    let new_center_x = snapped_x1 + snapped_width / 2.0;
+                    let new_center_y = snapped_y1 + snapped_height / 2.0;
+
+                    let dx = new_center_x - center_x;
+                    let dy = new_center_y - center_y;
+
+                    scaled.translate(dx, dy);
+                    Shape::Path(scaled)
+                }
+                Shape::Text(text) => Shape::Text(TextShape::new(
+                    text.text.clone(),
+                    snapped_x1,
+                    snapped_y1,
+                    text.font_size, // Keep font size? Or scale it?
+                    // Original code kept font size but moved position?
+                    // Original code used `ShapeType::Text` match arm which was missing in `snap_selected_to_mm`?
+                    // Wait, `snap_selected_to_mm` in `canvas.rs` had `ShapeType::Text`?
+                    // Let's check.
+                )),
+            };
+            
+            let mut new_obj = obj.clone();
+            new_obj.shape = new_shape;
+            updates.push((obj.id, new_obj));
+        }
+        
+        updates
+    }
+
+    /// Snaps the selected shape's position to whole millimeters
+    pub fn snap_selected_to_mm(&mut self) {
+        let mut updates = Vec::new();
+        
+        for obj in self.shape_store.iter_mut() {
+            if obj.selected {
+                let (x1, y1, x2, y2) = obj.shape.bounding_box();
+                let width = x2 - x1;
+                let height = y2 - y1;
+
+            // Snap the top-left corner and dimensions to whole mm
+            let snapped_x1 = (x1 + 0.5).floor();
+            let snapped_y1 = (y1 + 0.5).floor();
+            let snapped_width = (width + 0.5).floor();
+            let snapped_height = (height + 0.5).floor();
+
+            // Replace the shape with snapped position and dimensions
+            let shape = &obj.shape;
+            let new_shape: Shape = match shape.shape_type() {
+                ShapeType::Rectangle => Shape::Rectangle(Rectangle::new(
                     snapped_x1,
                     snapped_y1,
                     snapped_width,
@@ -881,19 +839,19 @@ impl Canvas {
                 )),
                 ShapeType::Circle => {
                     let radius = snapped_width / 2.0;
-                    Box::new(Circle::new(
+                    Shape::Circle(Circle::new(
                         Point::new(snapped_x1 + radius, snapped_y1 + radius),
                         radius,
                     ))
                 }
-                ShapeType::Line => Box::new(Line::new(
+                ShapeType::Line => Shape::Line(Line::new(
                     Point::new(snapped_x1, snapped_y1),
                     Point::new(snapped_x1 + snapped_width, snapped_y1 + snapped_height),
                 )),
                 ShapeType::Ellipse => {
                     let rx = snapped_width / 2.0;
                     let ry = snapped_height / 2.0;
-                    Box::new(Ellipse::new(
+                    Shape::Ellipse(Ellipse::new(
                         Point::new(snapped_x1 + rx, snapped_y1 + ry),
                         rx,
                         ry,
@@ -915,42 +873,133 @@ impl Canvas {
                         let center_x = (x1 + x2) / 2.0;
                         let center_y = (y1 + y2) / 2.0;
 
-                        let scaled = path_shape.scale(sx, sy, Point::new(center_x, center_y));
+                        let mut new_path_shape = path_shape.clone();
+                        new_path_shape.scale(sx, sy, Point::new(center_x, center_y));
 
                         let new_center_x = snapped_x1 + snapped_width / 2.0;
                         let new_center_y = snapped_y1 + snapped_height / 2.0;
                         let t_dx = new_center_x - center_x;
                         let t_dy = new_center_y - center_y;
 
-                        Box::new(scaled.translate(t_dx, t_dy))
+                        new_path_shape.translate(t_dx, t_dy);
+                        Shape::Path(new_path_shape)
                     } else {
-                        shape.clone_shape()
+                        shape.clone()
                     }
                 }
                 ShapeType::Text => {
                     if let Some(text) = shape.as_any().downcast_ref::<TextShape>() {
-                        Box::new(TextShape::new(
+                        Shape::Text(TextShape::new(
                             text.text.clone(),
                             snapped_x1,
                             snapped_y1,
                             text.font_size,
                         ))
                     } else {
-                        shape.clone_shape()
+                        shape.clone()
                     }
                 }
             };
             obj.shape = new_shape;
             
             let (new_x1, new_y1, new_x2, new_y2) = obj.shape.bounding_box();
-            updates.push((obj.id, super::spatial_index::Bounds::new(x1, y1, x2, y2), super::spatial_index::Bounds::new(new_x1, new_y1, new_x2, new_y2)));
-        }
-        
-        for (id, old_bounds, new_bounds) in updates {
-            self.spatial_index.remove(id, &old_bounds);
-            self.spatial_index.insert(id, &new_bounds);
+            updates.push((obj.id, Bounds::new(x1, y1, x2, y2), Bounds::new(new_x1, new_y1, new_x2, new_y2)));
         }
     }
+        
+        for (id, old_bounds, new_bounds) in updates {
+            self.spatial_manager.remove_bounds(id, &old_bounds);
+            self.spatial_manager.insert_bounds(id, &new_bounds);
+        }
+    }
+    /// Calculates position and size updates without modifying the canvas.
+    pub fn calculate_position_and_size_updates(
+        &self,
+        x: f64,
+        y: f64,
+        w: f64,
+        h: f64,
+        update_position: bool,
+        update_size: bool,
+    ) -> Vec<(u64, DrawingObject)> {
+        use crate::shapes::*;
+
+        let mut updates = Vec::new();
+        
+        for obj in self.shape_store.iter().filter(|o| o.selected) {
+            let (old_x, old_y, old_x2, old_y2) = obj.shape.bounding_box();
+            let old_w = old_x2 - old_x;
+            let old_h = old_y2 - old_y;
+
+            let target_x = if update_position { x } else { old_x };
+            let target_y = if update_position { y } else { old_y };
+            let target_w = if update_size { w } else { old_w };
+            let target_h = if update_size { h } else { old_h };
+
+            let new_shape = match &obj.shape {
+                Shape::Rectangle(_) => Shape::Rectangle(Rectangle::new(target_x, target_y, target_w, target_h)),
+                Shape::Circle(_) => {
+                    let radius = target_w.min(target_h) / 2.0;
+                    Shape::Circle(Circle::new(
+                        Point::new(target_x + radius, target_y + radius),
+                        radius,
+                    ))
+                }
+                Shape::Line(_) => Shape::Line(Line::new(
+                    Point::new(target_x, target_y),
+                    Point::new(target_x + target_w, target_y + target_h),
+                )),
+                Shape::Ellipse(_) => {
+                    let center = Point::new(target_x + target_w / 2.0, target_y + target_h / 2.0);
+                    Shape::Ellipse(Ellipse::new(center, target_w / 2.0, target_h / 2.0))
+                }
+                Shape::Path(path_shape) => {
+                    let (path_x1, path_y1, path_x2, path_y2) = path_shape.bounding_box();
+                    let path_w = path_x2 - path_x1;
+                    let path_h = path_y2 - path_y1;
+
+                    let scale_x = if update_size && path_w.abs() > 1e-6 {
+                        target_w / path_w
+                    } else {
+                        1.0
+                    };
+                    let scale_y = if update_size && path_h.abs() > 1e-6 {
+                        target_h / path_h
+                    } else {
+                        1.0
+                    };
+
+                    let center_x = (path_x1 + path_x2) / 2.0;
+                    let center_y = (path_y1 + path_y2) / 2.0;
+
+                    let mut scaled = path_shape.clone();
+                    scaled.scale(scale_x, scale_y, Point::new(center_x, center_y));
+
+                    let new_center_x = target_x + target_w / 2.0;
+                    let new_center_y = target_y + target_h / 2.0;
+
+                    let dx = new_center_x - center_x;
+                    let dy = new_center_y - center_y;
+
+                    scaled.translate(dx, dy);
+                    Shape::Path(scaled)
+                }
+                Shape::Text(text) => Shape::Text(TextShape::new(
+                    text.text.clone(),
+                    target_x,
+                    target_y,
+                    text.font_size,
+                )),
+            };
+            
+            let mut new_obj = obj.clone();
+            new_obj.shape = new_shape;
+            updates.push((obj.id, new_obj));
+        }
+        
+        updates
+    }
+
     pub fn set_selected_position_and_size_with_flags(
         &mut self,
         x: f64,
@@ -965,7 +1014,7 @@ impl Canvas {
         let mut changed_any = false;
         let mut updates = Vec::new();
         
-        for obj in self.shapes.iter_mut() {
+        for obj in self.shape_store.iter_mut() {
             if !obj.selected {
                 continue;
             }
@@ -981,19 +1030,19 @@ impl Canvas {
 
             match obj.shape.shape_type() {
                 crate::ShapeType::Rectangle => {
-                    obj.shape = Box::new(Rectangle::new(target_x, target_y, target_w, target_h));
+                    obj.shape = Shape::Rectangle(Rectangle::new(target_x, target_y, target_w, target_h));
                     changed_any = true;
                 }
                 crate::ShapeType::Circle => {
                     let radius = target_w.min(target_h) / 2.0;
-                    obj.shape = Box::new(Circle::new(
+                    obj.shape = Shape::Circle(Circle::new(
                         Point::new(target_x + radius, target_y + radius),
                         radius,
                     ));
                     changed_any = true;
                 }
                 crate::ShapeType::Line => {
-                    obj.shape = Box::new(Line::new(
+                    obj.shape = Shape::Line(Line::new(
                         Point::new(target_x, target_y),
                         Point::new(target_x + target_w, target_y + target_h),
                     ));
@@ -1001,7 +1050,7 @@ impl Canvas {
                 }
                 crate::ShapeType::Ellipse => {
                     let center = Point::new(target_x + target_w / 2.0, target_y + target_h / 2.0);
-                    obj.shape = Box::new(Ellipse::new(center, target_w / 2.0, target_h / 2.0));
+                    obj.shape = Shape::Ellipse(Ellipse::new(center, target_w / 2.0, target_h / 2.0));
                     changed_any = true;
                 }
                 crate::ShapeType::Path => {
@@ -1026,8 +1075,8 @@ impl Canvas {
                         let center_x = (path_x1 + path_x2) / 2.0;
                         let center_y = (path_y1 + path_y2) / 2.0;
 
-                        let scaled =
-                            path_shape.scale(scale_x, scale_y, Point::new(center_x, center_y));
+                        let mut scaled = path_shape.clone();
+                        scaled.scale(scale_x, scale_y, Point::new(center_x, center_y));
 
                         let new_center_x = target_x + target_w / 2.0;
                         let new_center_y = target_y + target_h / 2.0;
@@ -1035,13 +1084,14 @@ impl Canvas {
                         let dx = new_center_x - center_x;
                         let dy = new_center_y - center_y;
 
-                        obj.shape = Box::new(scaled.translate(dx, dy));
+                        scaled.translate(dx, dy);
+                        obj.shape = Shape::Path(scaled);
                         changed_any = true;
                     }
                 }
                 crate::ShapeType::Text => {
                     if let Some(text) = obj.shape.as_any().downcast_ref::<TextShape>() {
-                        obj.shape = Box::new(TextShape::new(
+                        obj.shape = Shape::Text(TextShape::new(
                             text.text.clone(),
                             target_x,
                             target_y,
@@ -1054,22 +1104,39 @@ impl Canvas {
             
             if changed_any {
                 let (new_x1, new_y1, new_x2, new_y2) = obj.shape.bounding_box();
-                updates.push((obj.id, super::spatial_index::Bounds::new(old_x, old_y, old_x2, old_y2), super::spatial_index::Bounds::new(new_x1, new_y1, new_x2, new_y2)));
+                updates.push((obj.id, Bounds::new(old_x, old_y, old_x2, old_y2), Bounds::new(new_x1, new_y1, new_x2, new_y2)));
             }
         }
         
         for (id, old_bounds, new_bounds) in updates {
-            self.spatial_index.remove(id, &old_bounds);
-            self.spatial_index.insert(id, &new_bounds);
+            self.spatial_manager.remove_bounds(id, &old_bounds);
+            self.spatial_manager.insert_bounds(id, &new_bounds);
         }
         
         changed_any
     }
+    /// Calculates text property updates without modifying the canvas.
+    pub fn calculate_text_property_updates(&self, content: &str, font_size: f64) -> Vec<(u64, DrawingObject)> {
+        let mut updates = Vec::new();
+        
+        for obj in self.shape_store.iter().filter(|o| o.selected) {
+            if let Some(text) = obj.shape.as_any().downcast_ref::<TextShape>() {
+                let (x, y) = (text.x, text.y);
+                
+                let mut new_obj = obj.clone();
+                new_obj.shape = Shape::Text(TextShape::new(content.to_string(), x, y, font_size));
+                updates.push((obj.id, new_obj));
+            }
+        }
+        
+        updates
+    }
+
     pub fn set_selected_text_properties(&mut self, content: &str, font_size: f64) -> bool {
         let mut changed = false;
         let mut updates = Vec::new();
         
-        for obj in self.shapes.iter_mut() {
+        for obj in self.shape_store.iter_mut() {
             if !obj.selected {
                 continue;
             }
@@ -1077,20 +1144,24 @@ impl Canvas {
                 let (old_x1, old_y1, old_x2, old_y2) = obj.shape.bounding_box();
                 let (x, y) = (text.x, text.y);
                 
-                obj.shape = Box::new(TextShape::new(content.to_string(), x, y, font_size));
+                obj.shape = Shape::Text(TextShape::new(content.to_string(), x, y, font_size));
                 changed = true;
                 
                 let (new_x1, new_y1, new_x2, new_y2) = obj.shape.bounding_box();
-                updates.push((obj.id, super::spatial_index::Bounds::new(old_x1, old_y1, old_x2, old_y2), super::spatial_index::Bounds::new(new_x1, new_y1, new_x2, new_y2)));
+                updates.push((obj.id, Bounds::new(old_x1, old_y1, old_x2, old_y2), Bounds::new(new_x1, new_y1, new_x2, new_y2)));
             }
         }
         
         for (id, old_bounds, new_bounds) in updates {
-            self.spatial_index.remove(id, &old_bounds);
-            self.spatial_index.insert(id, &new_bounds);
+            self.spatial_manager.remove_bounds(id, &old_bounds);
+            self.spatial_manager.insert_bounds(id, &new_bounds);
         }
         
         changed
+    }
+
+    pub fn set_selected_id(&mut self, id: Option<u64>) {
+        self.selection_manager.set_selected_id(id);
     }
 }
 

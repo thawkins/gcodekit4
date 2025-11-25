@@ -1,4 +1,4 @@
-use gcodekit4_designer::canvas::{Canvas, DrawingMode};
+use gcodekit4_designer::canvas::Canvas;
 use gcodekit4_designer::shapes::Point;
 
 #[test]
@@ -7,7 +7,7 @@ fn test_canvas_add_shapes() {
     let rect_id = canvas.add_rectangle(0.0, 0.0, 10.0, 10.0);
     let circle_id = canvas.add_circle(Point::new(20.0, 20.0), 5.0);
 
-    assert_eq!(canvas.shapes().len(), 2);
+    assert_eq!(canvas.shape_count(), 2);
     assert_ne!(rect_id, circle_id);
 }
 
@@ -42,7 +42,7 @@ fn test_canvas_clear() {
     canvas.add_rectangle(0.0, 0.0, 10.0, 10.0);
     canvas.clear();
 
-    assert_eq!(canvas.shapes().len(), 0);
+    assert_eq!(canvas.shape_count(), 0);
     assert_eq!(canvas.selected_id(), None);
 }
 
@@ -53,19 +53,22 @@ fn test_resize_handle_sequence() {
     canvas.select_at(&Point::new(50.0, 50.0), false);
 
     // Verify initial state
-    let shape = &canvas.shapes()[0];
+    let shapes: Vec<_> = canvas.shapes().collect();
+    let shape = &shapes[0];
     let (x1, y1, x2, y2) = shape.shape.bounding_box();
     assert_eq!((x1, y1, x2, y2), (0.0, 0.0, 100.0, 100.0));
 
     // Drag bottom-left handle down by 20
     canvas.resize_selected(2, 0.0, 20.0);
-    let shape = &canvas.shapes()[0];
+    let shapes: Vec<_> = canvas.shapes().collect();
+    let shape = &shapes[0];
     let (x1, y1, x2, y2) = shape.shape.bounding_box();
     assert_eq!((x1, y1, x2, y2), (0.0, 0.0, 100.0, 120.0));
 
     // Drag center handle by (10, 10)
     canvas.resize_selected(4, 10.0, 10.0);
-    let shape = &canvas.shapes()[0];
+    let shapes: Vec<_> = canvas.shapes().collect();
+    let shape = &shapes[0];
     let (x1, y1, x2, y2) = shape.shape.bounding_box();
     // Expected: center was at (50, 60), moving by (10, 10) should give (60, 70)
     // Which means rect should be at (10, 10, 110, 130)

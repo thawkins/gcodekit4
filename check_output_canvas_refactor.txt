@@ -1,0 +1,1277 @@
+    Checking gcodekit4-designer v0.38.0-alpha (/home/thawkins/Projects/gcodekit4/crates/gcodekit4-designer)
+error[E0609]: no field `draw_order` on type `&Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:434:14
+    |
+434 |         self.draw_order.iter().filter_map(|id| self.shapes.get(id))
+    |              ^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0615]: attempted to take value of method `shapes` on type `&Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:434:53
+    |
+434 |         self.draw_order.iter().filter_map(|id| self.shapes.get(id))
+    |                                                     ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+434 |         self.draw_order.iter().filter_map(|id| self.shapes().get(id))
+    |                                                           ++
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:439:14
+    |
+439 |         self.shapes.values_mut()
+    |              ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+439 |         self.shapes().values_mut()
+    |                    ++
+
+error[E0615]: attempted to take value of method `shapes` on type `&Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:168:14
+    |
+168 |         self.shapes.len()
+    |              ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+168 |         self.shapes().len()
+    |                    ++
+
+error[E0609]: no field `next_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:173:23
+    |
+173 |         let id = self.next_id;
+    |                       ^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `next_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:174:14
+    |
+174 |         self.next_id += 1;
+    |              ^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0615]: attempted to take value of method `shapes` on type `&Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:180:14
+    |
+180 |         self.shapes.get(&id)
+    |              ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+180 |         self.shapes().get(&id)
+    |                    ++
+
+error[E0609]: no field `next_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:185:23
+    |
+185 |         let id = self.next_id;
+    |                       ^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `next_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:186:14
+    |
+186 |         self.next_id += 1;
+    |              ^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:189:14
+    |
+189 |         self.shapes.insert(id, DrawingObject::new(id, Shape::Rectangle(rect)));
+    |              ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+189 |         self.shapes().insert(id, DrawingObject::new(id, Shape::Rectangle(rect)));
+    |                    ++
+
+error[E0609]: no field `draw_order` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:190:14
+    |
+190 |         self.draw_order.push(id);
+    |              ^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `spatial_index` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:191:14
+    |
+191 |         self.spatial_index.insert(id, &Bounds::new(min_x, min_y, max_x, max_y));
+    |              ^^^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `next_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:197:23
+    |
+197 |         let id = self.next_id;
+    |                       ^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `next_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:198:14
+    |
+198 |         self.next_id += 1;
+    |              ^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:201:14
+    |
+201 |         self.shapes.insert(id, DrawingObject::new(id, Shape::Circle(circle)));
+    |              ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+201 |         self.shapes().insert(id, DrawingObject::new(id, Shape::Circle(circle)));
+    |                    ++
+
+error[E0609]: no field `draw_order` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:202:14
+    |
+202 |         self.draw_order.push(id);
+    |              ^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `spatial_index` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:203:14
+    |
+203 |         self.spatial_index.insert(id, &Bounds::new(min_x, min_y, max_x, max_y));
+    |              ^^^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `next_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:209:23
+    |
+209 |         let id = self.next_id;
+    |                       ^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `next_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:210:14
+    |
+210 |         self.next_id += 1;
+    |              ^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:212:14
+    |
+212 |         self.shapes.insert(id, DrawingObject::new(id, shape));
+    |              ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+212 |         self.shapes().insert(id, DrawingObject::new(id, shape));
+    |                    ++
+
+error[E0609]: no field `draw_order` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:213:14
+    |
+213 |         self.draw_order.push(id);
+    |              ^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `spatial_index` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:214:14
+    |
+214 |         self.spatial_index.insert(id, &Bounds::new(min_x, min_y, max_x, max_y));
+    |              ^^^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `next_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:220:23
+    |
+220 |         let id = self.next_id;
+    |                       ^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `next_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:221:14
+    |
+221 |         self.next_id += 1;
+    |              ^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:224:14
+    |
+224 |         self.shapes.insert(id, DrawingObject::new(id, Shape::Line(line)));
+    |              ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+224 |         self.shapes().insert(id, DrawingObject::new(id, Shape::Line(line)));
+    |                    ++
+
+error[E0609]: no field `draw_order` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:225:14
+    |
+225 |         self.draw_order.push(id);
+    |              ^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `spatial_index` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:226:14
+    |
+226 |         self.spatial_index.insert(id, &Bounds::new(min_x, min_y, max_x, max_y));
+    |              ^^^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `next_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:232:23
+    |
+232 |         let id = self.next_id;
+    |                       ^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `next_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:233:14
+    |
+233 |         self.next_id += 1;
+    |              ^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:236:14
+    |
+236 |         self.shapes.insert(id, DrawingObject::new(id, Shape::Ellipse(ellipse)));
+    |              ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+236 |         self.shapes().insert(id, DrawingObject::new(id, Shape::Ellipse(ellipse)));
+    |                    ++
+
+error[E0609]: no field `draw_order` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:237:14
+    |
+237 |         self.draw_order.push(id);
+    |              ^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `spatial_index` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:238:14
+    |
+238 |         self.spatial_index.insert(id, &Bounds::new(min_x, min_y, max_x, max_y));
+    |              ^^^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `next_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:244:23
+    |
+244 |         let id = self.next_id;
+    |                       ^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `next_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:245:14
+    |
+245 |         self.next_id += 1;
+    |              ^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:249:14
+    |
+249 |         self.shapes
+    |              ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+249 |         self.shapes()
+    |                    ++
+
+error[E0609]: no field `draw_order` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:251:14
+    |
+251 |         self.draw_order.push(id);
+    |              ^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `spatial_index` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:252:14
+    |
+252 |         self.spatial_index.insert(id, &Bounds::new(min_x, min_y, max_x, max_y));
+    |              ^^^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `next_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:258:23
+    |
+258 |         let id = self.next_id;
+    |                       ^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `next_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:259:14
+    |
+259 |         self.next_id += 1;
+    |              ^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:262:14
+    |
+262 |         self.shapes.insert(id, DrawingObject::new(id, Shape::Text(shape)));
+    |              ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+262 |         self.shapes().insert(id, DrawingObject::new(id, Shape::Text(shape)));
+    |                    ++
+
+error[E0609]: no field `draw_order` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:263:14
+    |
+263 |         self.draw_order.push(id);
+    |              ^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `spatial_index` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:264:14
+    |
+264 |         self.spatial_index.insert(id, &Bounds::new(min_x, min_y, max_x, max_y));
+    |              ^^^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:270:35
+    |
+270 |         let selected_count = self.shapes.values().filter(|o| o.selected).count();
+    |                                   ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+270 |         let selected_count = self.shapes().values().filter(|o| o.selected).count();
+    |                                         ++
+
+error[E0609]: no field `next_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:275:29
+    |
+275 |         let group_id = self.next_id;
+    |                             ^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `next_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:276:14
+    |
+276 |         self.next_id += 1;
+    |              ^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:278:25
+    |
+278 |         for obj in self.shapes.values_mut() {
+    |                         ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+278 |         for obj in self.shapes().values_mut() {
+    |                               ++
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:287:25
+    |
+287 |         for obj in self.shapes.values_mut() {
+    |                         ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+287 |         for obj in self.shapes().values_mut() {
+    |                               ++
+
+error[E0609]: no field `spatial_index` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:302:31
+    |
+302 |         let candidates = self.spatial_index.query_point(point.x, point.y);
+    |                               ^^^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `draw_order` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:306:24
+    |
+306 |         for id in self.draw_order.iter().rev() {
+    |                        ^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:307:37
+    |
+307 |             if let Some(obj) = self.shapes.get(id) {
+    |                                     ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+307 |             if let Some(obj) = self.shapes().get(id) {
+    |                                           ++
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:320:29
+    |
+320 |             for obj in self.shapes.values_mut() {
+    |                             ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+320 |             for obj in self.shapes().values_mut() {
+    |                                   ++
+
+error[E0615]: attempted to take value of method `selected_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:323:18
+    |
+323 |             self.selected_id = None;
+    |                  ^^^^^^^^^^^ method, not a field
+    |
+    = help: methods are immutable and cannot be assigned to
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:329:22
+    |
+329 |                 self.shapes.values().filter(|o| o.group_id == Some(gid)).map(|o| o.id).collect()
+    |                      ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+329 |                 self.shapes().values().filter(|o| o.group_id == Some(gid)).map(|o| o.id).collect()
+    |                            ++
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:336:22
+    |
+336 |                 self.shapes.get(&sid).map(|o| o.selected).unwrap_or(false)
+    |                      ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+336 |                 self.shapes().get(&sid).map(|o| o.selected).unwrap_or(false)
+    |                            ++
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:342:41
+    |
+342 |                 if let Some(obj) = self.shapes.get_mut(&sid) {
+    |                                         ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+342 |                 if let Some(obj) = self.shapes().get_mut(&sid) {
+    |                                               ++
+
+error[E0615]: attempted to take value of method `selected_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:348:22
+    |
+348 |                 self.selected_id = Some(id); // Set primary to the clicked one
+    |                      ^^^^^^^^^^^ method, not a field
+    |
+    = help: methods are immutable and cannot be assigned to
+
+error[E0615]: attempted to take value of method `selected_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:349:28
+    |
+349 |             } else if self.selected_id == Some(id) {
+    |                            ^^^^^^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+349 |             } else if self.selected_id() == Some(id) {
+    |                                       ++
+
+error[E0615]: attempted to take value of method `selected_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:350:23
+    |
+350 |                  self.selected_id = None;
+    |                       ^^^^^^^^^^^ method, not a field
+    |
+    = help: methods are immutable and cannot be assigned to
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:352:44
+    |
+352 |                  if let Some(other) = self.shapes.values().find(|o| o.selected) {
+    |                                            ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+352 |                  if let Some(other) = self.shapes().values().find(|o| o.selected) {
+    |                                                  ++
+
+error[E0615]: attempted to take value of method `selected_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:353:27
+    |
+353 |                      self.selected_id = Some(other.id);
+    |                           ^^^^^^^^^^^ method, not a field
+    |
+    = help: methods are immutable and cannot be assigned to
+
+error[E0615]: attempted to take value of method `selected_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:358:18
+    |
+358 |             self.selected_id = None;
+    |                  ^^^^^^^^^^^ method, not a field
+    |
+    = help: methods are immutable and cannot be assigned to
+
+error[E0615]: attempted to take value of method `selected_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:361:14
+    |
+361 |         self.selected_id
+    |              ^^^^^^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+361 |         self.selected_id()
+    |                         ++
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:369:29
+    |
+369 |             for obj in self.shapes.values_mut() {
+    |                             ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+369 |             for obj in self.shapes().values_mut() {
+    |                                   ++
+
+error[E0615]: attempted to take value of method `selected_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:372:18
+    |
+372 |             self.selected_id = None;
+    |                  ^^^^^^^^^^^ method, not a field
+    |
+    = help: methods are immutable and cannot be assigned to
+
+error[E0609]: no field `spatial_index` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:381:31
+    |
+381 |         let candidates = self.spatial_index.query(&rect_bounds);
+    |                               ^^^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:385:25
+    |
+385 |         for obj in self.shapes.values_mut() {
+    |                         ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+385 |         for obj in self.shapes().values_mut() {
+    |                               ++
+
+error[E0615]: attempted to take value of method `selected_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:397:29
+    |
+397 |                     if self.selected_id.is_none() {
+    |                             ^^^^^^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+397 |                     if self.selected_id().is_none() {
+    |                                        ++
+
+error[E0615]: attempted to take value of method `selected_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:398:30
+    |
+398 |                         self.selected_id = Some(obj.id);
+    |                              ^^^^^^^^^^^ method, not a field
+    |
+    = help: methods are immutable and cannot be assigned to
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:406:30
+    |
+406 |              for obj in self.shapes.values_mut() {
+    |                              ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+406 |              for obj in self.shapes().values_mut() {
+    |                                    ++
+
+error[E0615]: attempted to take value of method `shapes` on type `&Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:418:14
+    |
+418 |         self.shapes.values().filter(|o| o.selected).count()
+    |              ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+418 |         self.shapes().values().filter(|o| o.selected).count()
+    |                    ++
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:423:25
+    |
+423 |         for obj in self.shapes.values().filter(|o| o.selected) {
+    |                         ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+423 |         for obj in self.shapes().values().filter(|o| o.selected) {
+    |                               ++
+
+error[E0609]: no field `spatial_index` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:425:18
+    |
+425 |             self.spatial_index.remove(obj.id, &super::spatial_index::Bounds::new(min_x, min_y, max_x, max_y));
+    |                  ^^^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:427:14
+    |
+427 |         self.shapes.retain(|_, obj| !obj.selected);
+    |              ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+427 |         self.shapes().retain(|_, obj| !obj.selected);
+    |                    ++
+
+error[E0609]: no field `draw_order` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:428:14
+    |
+428 |         self.draw_order.retain(|id| self.shapes.contains_key(id));
+    |              ^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:428:42
+    |
+428 |         self.draw_order.retain(|id| self.shapes.contains_key(id));
+    |                                          ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+428 |         self.draw_order.retain(|id| self.shapes().contains_key(id));
+    |                                                ++
+
+error[E0615]: attempted to take value of method `selected_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:429:14
+    |
+429 |         self.selected_id = None;
+    |              ^^^^^^^^^^^ method, not a field
+    |
+    = help: methods are immutable and cannot be assigned to
+
+error[E0615]: attempted to take value of method `selected_id` on type `&Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:444:14
+    |
+444 |         self.selected_id
+    |              ^^^^^^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+444 |         self.selected_id()
+    |                         ++
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:454:33
+    |
+454 |         if let Some(obj) = self.shapes.remove(&id) {
+    |                                 ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+454 |         if let Some(obj) = self.shapes().remove(&id) {
+    |                                       ++
+
+error[E0609]: no field `spatial_index` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:456:18
+    |
+456 |             self.spatial_index.remove(id, &super::spatial_index::Bounds::new(min_x, min_y, max_x, max_y));
+    |                  ^^^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `draw_order` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:458:37
+    |
+458 |             if let Some(pos) = self.draw_order.iter().position(|&x| x == id) {
+    |                                     ^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `draw_order` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:459:22
+    |
+459 |                 self.draw_order.remove(pos);
+    |                      ^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0615]: attempted to take value of method `selected_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:461:21
+    |
+461 |             if self.selected_id == Some(id) {
+    |                     ^^^^^^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+461 |             if self.selected_id() == Some(id) {
+    |                                ++
+
+error[E0615]: attempted to take value of method `selected_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:462:22
+    |
+462 |                 self.selected_id = None;
+    |                      ^^^^^^^^^^^ method, not a field
+    |
+    = help: methods are immutable and cannot be assigned to
+
+error[E0609]: no field `spatial_index` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:474:14
+    |
+474 |         self.spatial_index.insert(id, &super::spatial_index::Bounds::new(min_x, min_y, max_x, max_y));
+    |              ^^^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:475:14
+    |
+475 |         self.shapes.insert(id, obj);
+    |              ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+475 |         self.shapes().insert(id, obj);
+    |                    ++
+
+error[E0609]: no field `draw_order` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:476:14
+    |
+476 |         self.draw_order.push(id);
+    |              ^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:481:14
+    |
+481 |         self.shapes.get_mut(&id)
+    |              ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+481 |         self.shapes().get_mut(&id)
+    |                    ++
+
+error[E0609]: no field `spatial_index` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:486:14
+    |
+486 |         self.spatial_index.remove(id, bounds);
+    |              ^^^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `spatial_index` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:491:14
+    |
+491 |         self.spatial_index.insert(id, bounds);
+    |              ^^^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:496:25
+    |
+496 |         for obj in self.shapes.values_mut() {
+    |                         ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+496 |         for obj in self.shapes().values_mut() {
+    |                               ++
+
+error[E0615]: attempted to take value of method `selected_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:499:14
+    |
+499 |         self.selected_id = None;
+    |              ^^^^^^^^^^^ method, not a field
+    |
+    = help: methods are immutable and cannot be assigned to
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:504:25
+    |
+504 |         for obj in self.shapes.values_mut() {
+    |                         ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+504 |         for obj in self.shapes().values_mut() {
+    |                               ++
+
+error[E0609]: no field `draw_order` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:508:38
+    |
+508 |         if let Some(&last_id) = self.draw_order.last() {
+    |                                      ^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0615]: attempted to take value of method `selected_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:509:18
+    |
+509 |             self.selected_id = Some(last_id);
+    |                  ^^^^^^^^^^^ method, not a field
+    |
+    = help: methods are immutable and cannot be assigned to
+
+error[E0615]: attempted to take value of method `selected_id` on type `&Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:515:32
+    |
+515 |         if let Some(id) = self.selected_id {
+    |                                ^^^^^^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+515 |         if let Some(id) = self.selected_id() {
+    |                                           ++
+
+error[E0615]: attempted to take value of method `shapes` on type `&Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:516:37
+    |
+516 |             if let Some(obj) = self.shapes.get(&id) {
+    |                                     ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+516 |             if let Some(obj) = self.shapes().get(&id) {
+    |                                           ++
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:595:17
+    |
+595 |         if self.shapes.is_empty() {
+    |                 ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+595 |         if self.shapes().is_empty() {
+    |                       ++
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:605:25
+    |
+605 |         for obj in self.shapes.values() {
+    |                         ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+605 |         for obj in self.shapes().values() {
+    |                               ++
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:643:14
+    |
+643 |         self.shapes.clear();
+    |              ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+643 |         self.shapes().clear();
+    |                    ++
+
+error[E0609]: no field `draw_order` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:644:14
+    |
+644 |         self.draw_order.clear();
+    |              ^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0615]: attempted to take value of method `selected_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:645:14
+    |
+645 |         self.selected_id = None;
+    |              ^^^^^^^^^^^ method, not a field
+    |
+    = help: methods are immutable and cannot be assigned to
+
+error[E0609]: no field `next_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:646:14
+    |
+646 |         self.next_id = 1;
+    |              ^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `spatial_index` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:647:14
+    |
+647 |         self.spatial_index.clear();
+    |              ^^^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:654:25
+    |
+654 |         for obj in self.shapes.values_mut().filter(|o| o.selected) {
+    |                         ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+654 |         for obj in self.shapes().values_mut().filter(|o| o.selected) {
+    |                               ++
+
+error[E0609]: no field `spatial_index` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:664:18
+    |
+664 |             self.spatial_index.remove(id, &old_bounds);
+    |                  ^^^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `spatial_index` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:665:18
+    |
+665 |             self.spatial_index.insert(id, &new_bounds);
+    |                  ^^^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0615]: attempted to take value of method `shapes` on type `&Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:672:37
+    |
+672 |         let selected: Vec<_> = self.shapes.values().filter(|o| o.selected).collect();
+    |                                     ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+672 |         let selected: Vec<_> = self.shapes().values().filter(|o| o.selected).collect();
+    |                                           ++
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:745:25
+    |
+745 |         for obj in self.shapes.values_mut() {
+    |                         ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+745 |         for obj in self.shapes().values_mut() {
+    |                               ++
+
+error[E0615]: attempted to take value of method `selected_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:748:14
+    |
+748 |         self.selected_id = None;
+    |              ^^^^^^^^^^^ method, not a field
+    |
+    = help: methods are immutable and cannot be assigned to
+
+error[E0609]: no field `next_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:751:27
+    |
+751 |             let id = self.next_id;
+    |                           ^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `next_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:752:18
+    |
+752 |             self.next_id += 1;
+    |                  ^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `next_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:761:40
+    |
+761 |                     let new_gid = self.next_id;
+    |                                        ^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `next_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:762:26
+    |
+762 |                     self.next_id += 1;
+    |                          ^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:784:18
+    |
+784 |             self.shapes.insert(id, new_obj);
+    |                  ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+784 |             self.shapes().insert(id, new_obj);
+    |                        ++
+
+error[E0609]: no field `draw_order` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:785:18
+    |
+785 |             self.draw_order.push(id);
+    |                  ^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `spatial_index` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:786:18
+    |
+786 |             self.spatial_index.insert(id, &Bounds::new(min_x, min_y, max_x, max_y));
+    |                  ^^^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0615]: attempted to take value of method `selected_id` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:792:18
+    |
+792 |             self.selected_id = Some(*last_id);
+    |                  ^^^^^^^^^^^ method, not a field
+    |
+    = help: methods are immutable and cannot be assigned to
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:809:25
+    |
+809 |         for obj in self.shapes.values().filter(|o| o.selected) {
+    |                         ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+809 |         for obj in self.shapes().values().filter(|o| o.selected) {
+    |                               ++
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:858:25
+    |
+858 |         for obj in self.shapes.values_mut().filter(|o| o.selected) {
+    |                         ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+858 |         for obj in self.shapes().values_mut().filter(|o| o.selected) {
+    |                               ++
+
+error[E0609]: no field `spatial_index` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:871:18
+    |
+871 |             self.spatial_index.remove(id, &old_bounds);
+    |                  ^^^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `spatial_index` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:872:18
+    |
+872 |             self.spatial_index.insert(id, &new_bounds);
+    |                  ^^^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0615]: attempted to take value of method `shapes` on type `&Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:880:25
+    |
+880 |         for obj in self.shapes.values().filter(|o| o.selected) {
+    |                         ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+880 |         for obj in self.shapes().values().filter(|o| o.selected) {
+    |                               ++
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+   --> crates/gcodekit4-designer/src/canvas.rs:970:25
+    |
+970 |         for obj in self.shapes.values_mut().filter(|o| o.selected) {
+    |                         ^^^^^^ method, not a field
+    |
+help: use parentheses to call the method
+    |
+970 |         for obj in self.shapes().values_mut().filter(|o| o.selected) {
+    |                               ++
+
+error[E0609]: no field `spatial_index` on type `&mut Canvas`
+    --> crates/gcodekit4-designer/src/canvas.rs:1060:18
+     |
+1060 |             self.spatial_index.remove(id, &old_bounds);
+     |                  ^^^^^^^^^^^^^ unknown field
+     |
+     = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `spatial_index` on type `&mut Canvas`
+    --> crates/gcodekit4-designer/src/canvas.rs:1061:18
+     |
+1061 |             self.spatial_index.insert(id, &new_bounds);
+     |                  ^^^^^^^^^^^^^ unknown field
+     |
+     = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0615]: attempted to take value of method `shapes` on type `&Canvas`
+    --> crates/gcodekit4-designer/src/canvas.rs:1078:25
+     |
+1078 |         for obj in self.shapes.values().filter(|o| o.selected) {
+     |                         ^^^^^^ method, not a field
+     |
+help: use parentheses to call the method
+     |
+1078 |         for obj in self.shapes().values().filter(|o| o.selected) {
+     |                               ++
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+    --> crates/gcodekit4-designer/src/canvas.rs:1166:25
+     |
+1166 |         for obj in self.shapes.values_mut() {
+     |                         ^^^^^^ method, not a field
+     |
+help: use parentheses to call the method
+     |
+1166 |         for obj in self.shapes().values_mut() {
+     |                               ++
+
+error[E0609]: no field `spatial_index` on type `&mut Canvas`
+    --> crates/gcodekit4-designer/src/canvas.rs:1261:18
+     |
+1261 |             self.spatial_index.remove(id, &old_bounds);
+     |                  ^^^^^^^^^^^^^ unknown field
+     |
+     = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `spatial_index` on type `&mut Canvas`
+    --> crates/gcodekit4-designer/src/canvas.rs:1262:18
+     |
+1262 |             self.spatial_index.insert(id, &new_bounds);
+     |                  ^^^^^^^^^^^^^ unknown field
+     |
+     = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0615]: attempted to take value of method `shapes` on type `&Canvas`
+    --> crates/gcodekit4-designer/src/canvas.rs:1271:25
+     |
+1271 |         for obj in self.shapes.values().filter(|o| o.selected) {
+     |                         ^^^^^^ method, not a field
+     |
+help: use parentheses to call the method
+     |
+1271 |         for obj in self.shapes().values().filter(|o| o.selected) {
+     |                               ++
+
+error[E0615]: attempted to take value of method `shapes` on type `&mut Canvas`
+    --> crates/gcodekit4-designer/src/canvas.rs:1288:25
+     |
+1288 |         for obj in self.shapes.values_mut() {
+     |                         ^^^^^^ method, not a field
+     |
+help: use parentheses to call the method
+     |
+1288 |         for obj in self.shapes().values_mut() {
+     |                               ++
+
+error[E0609]: no field `spatial_index` on type `&mut Canvas`
+    --> crates/gcodekit4-designer/src/canvas.rs:1305:18
+     |
+1305 |             self.spatial_index.remove(id, &old_bounds);
+     |                  ^^^^^^^^^^^^^ unknown field
+     |
+     = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0609]: no field `spatial_index` on type `&mut Canvas`
+    --> crates/gcodekit4-designer/src/canvas.rs:1306:18
+     |
+1306 |             self.spatial_index.insert(id, &new_bounds);
+     |                  ^^^^^^^^^^^^^ unknown field
+     |
+     = note: available fields are: `shape_store`, `selection_manager`, `spatial_manager`, `mode`, `viewport`
+
+error[E0615]: attempted to take value of method `selected_id` on type `&mut Canvas`
+    --> crates/gcodekit4-designer/src/canvas.rs:1313:14
+     |
+1313 |         self.selected_id = id;
+     |              ^^^^^^^^^^^ method, not a field
+     |
+     = help: methods are immutable and cannot be assigned to
+
+error[E0277]: the trait bound `impl Iterator<Item = u64> + '_: DoubleEndedIterator` is not satisfied
+    --> crates/gcodekit4-designer/src/selection_manager.rs:51:43
+     |
+  51 |         for id in store.draw_order_iter().rev() {
+     |                                           ^^^ the trait `DoubleEndedIterator` is not implemented for `impl Iterator<Item = u64> + '_`
+     |
+note: required by a bound in `rev`
+    --> /home/thawkins/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/iter/traits/iterator.rs:3352:23
+     |
+3350 |     fn rev(self) -> Rev<Self>
+     |        --- required by a bound in this associated function
+3351 |     where
+3352 |         Self: Sized + DoubleEndedIterator,
+     |                       ^^^^^^^^^^^^^^^^^^^ required by this bound in `Iterator::rev`
+
+error[E0277]: the trait bound `impl Iterator<Item = u64> + '_: DoubleEndedIterator` is not satisfied
+  --> crates/gcodekit4-designer/src/selection_manager.rs:51:19
+   |
+51 |         for id in store.draw_order_iter().rev() {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `DoubleEndedIterator` is not implemented for `impl Iterator<Item = u64> + '_`
+   |
+   = note: required for `Rev<impl Iterator<Item = u64> + '_>` to implement `Iterator`
+   = note: required for `Rev<impl Iterator<Item = u64> + '_>` to implement `IntoIterator`
+
+warning: unused variable: `id`
+   --> crates/gcodekit4-designer/src/commands.rs:226:25
+    |
+226 |                 for (i, id) in cmd.ids.iter().enumerate() {
+    |                         ^^ help: if this is intentional, prefix it with an underscore: `_id`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `id`
+   --> crates/gcodekit4-designer/src/designer_state.rs:631:21
+    |
+631 |                 let id = self.canvas.generate_id();
+    |                     ^^ help: if this is intentional, prefix it with an underscore: `_id`
+
+Some errors have detailed explanations: E0277, E0609, E0615.
+For more information about an error, try `rustc --explain E0277`.
+warning: `gcodekit4-designer` (lib) generated 2 warnings
+error: could not compile `gcodekit4-designer` (lib) due to 136 previous errors; 2 warnings emitted

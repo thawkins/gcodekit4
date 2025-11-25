@@ -23,7 +23,7 @@ use lyon::geom::Arc;
 #[derive(Debug)]
 pub struct ImportedDesign {
     /// Imported shapes as trait objects
-    pub shapes: Vec<Box<dyn Shape>>,
+    pub shapes: Vec<Shape>,
     /// Original file dimensions (width, height)
     pub dimensions: (f64, f64),
     /// Source file format
@@ -70,31 +70,31 @@ impl ImportedShape {
         }
     }
 
-    fn convert(self, center_y: f64, offset_x: f64, offset_y: f64) -> Box<dyn Shape> {
+    fn convert(self, center_y: f64, offset_x: f64, offset_y: f64) -> Shape {
         match self {
             Self::Rect(r) => {
                 // y' = -y + 2c
                 // New min_y is -(old_max_y) + 2c = -(r.y + r.height) + 2c
                 let new_y = -(r.y + r.height) + 2.0 * center_y + offset_y;
                 let new_x = r.x + offset_x;
-                Box::new(Rectangle::new(new_x, new_y, r.width, r.height))
+                Shape::Rectangle(Rectangle::new(new_x, new_y, r.width, r.height))
             },
             Self::Circle(c) => {
                 let new_y = -c.center.y + 2.0 * center_y + offset_y;
                 let new_x = c.center.x + offset_x;
-                Box::new(Circle::new(Point::new(new_x, new_y), c.radius))
+                Shape::Circle(Circle::new(Point::new(new_x, new_y), c.radius))
             },
             Self::Line(l) => {
                 let start_y = -l.start.y + 2.0 * center_y + offset_y;
                 let start_x = l.start.x + offset_x;
                 let end_y = -l.end.y + 2.0 * center_y + offset_y;
                 let end_x = l.end.x + offset_x;
-                Box::new(Line::new(Point::new(start_x, start_y), Point::new(end_x, end_y)))
+                Shape::Line(Line::new(Point::new(start_x, start_y), Point::new(end_x, end_y)))
             },
             Self::Ellipse(e) => {
                 let new_y = -e.center.y + 2.0 * center_y + offset_y;
                 let new_x = e.center.x + offset_x;
-                Box::new(Ellipse::new(Point::new(new_x, new_y), e.rx, e.ry))
+                Shape::Ellipse(Ellipse::new(Point::new(new_x, new_y), e.rx, e.ry))
             },
             Self::Path(p) => {
                 // Transform: Translate(0, -c) -> Scale(1, -1) -> Translate(0, c) -> Translate(off_x, off_y)
@@ -106,7 +106,7 @@ impl ImportedShape {
                     0.0, -1.0,
                     offset_x as f32, (2.0 * center_y + offset_y) as f32
                 );
-                Box::new(PathShape::new(p.path.transformed(&transform)))
+                Shape::Path(PathShape::new(p.path.transformed(&transform)))
             }
         }
     }
@@ -401,7 +401,7 @@ impl SvgImporter {
         
         let center_y = if min_y == f64::MAX { 0.0 } else { (min_y + max_y) / 2.0 };
         
-        let shapes: Vec<Box<dyn Shape>> = imported_shapes
+        let shapes: Vec<Shape> = imported_shapes
             .into_iter()
             .map(|s| s.convert(center_y, self.offset_x, self.offset_y))
             .collect();
@@ -514,8 +514,8 @@ impl DxfImporter {
     ///
     /// Note: DXF coordinates are negated on X-axis to correct for coordinate system difference.
     /// DXF uses right-handed coordinate system, Designer uses left-handed with Y-up.
-    fn convert_entities_to_shapes(&self, dxf_file: &DxfFile) -> Result<Vec<Box<dyn Shape>>> {
-        let mut shapes: Vec<Box<dyn Shape>> = Vec::new();
+    fn convert_entities_to_shapes(&self, dxf_file: &DxfFile) -> Result<Vec<Shape>> {
+        let mut shapes: Vec<Shape> = Vec::new();
 
         // Transform to apply: negate X and add offset
         // Note: dxf_file is already scaled by self.scale
@@ -595,7 +595,7 @@ impl DxfImporter {
 
             if let Some(path) = path_opt {
                 let transformed_path = path.clone().transformed(&transform);
-                shapes.push(Box::new(PathShape::new(transformed_path)));
+                shapes.push(Shape::Path(PathShape::new(transformed_path)));
             }
         }
 

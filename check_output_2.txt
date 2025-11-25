@@ -1,0 +1,40 @@
+    Checking gcodekit4-designer v0.38.0-alpha (/home/thawkins/Projects/gcodekit4/crates/gcodekit4-designer)
+error[E0599]: no variant or associated item named `Center` found for enum `canvas::Alignment` in the current scope
+   --> crates/gcodekit4-designer/src/designer_state.rs:297:87
+    |
+297 |         let deltas = self.canvas.calculate_alignment_deltas(crate::canvas::Alignment::Center);
+    |                                                                                       ^^^^^^ variant or associated item not found in `canvas::Alignment`
+    |
+   ::: crates/gcodekit4-designer/src/canvas.rs:104:1
+    |
+104 | pub enum Alignment {
+    | ------------------ variant or associated item `Center` not found for this enum
+
+error[E0599]: no variant or associated item named `VerticalCenter` found for enum `canvas::Alignment` in the current scope
+   --> crates/gcodekit4-designer/src/designer_state.rs:348:87
+    |
+348 |         let deltas = self.canvas.calculate_alignment_deltas(crate::canvas::Alignment::VerticalCenter);
+    |                                                                                       ^^^^^^^^^^^^^^ variant or associated item not found in `canvas::Alignment`
+    |
+   ::: crates/gcodekit4-designer/src/canvas.rs:104:1
+    |
+104 | pub enum Alignment {
+    | ------------------ variant or associated item `VerticalCenter` not found for this enum
+
+warning: unused variable: `id`
+   --> crates/gcodekit4-designer/src/commands.rs:226:25
+    |
+226 |                 for (i, id) in cmd.ids.iter().enumerate() {
+    |                         ^^ help: if this is intentional, prefix it with an underscore: `_id`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `id`
+   --> crates/gcodekit4-designer/src/designer_state.rs:631:21
+    |
+631 |                 let id = self.canvas.generate_id();
+    |                     ^^ help: if this is intentional, prefix it with an underscore: `_id`
+
+For more information about this error, try `rustc --explain E0599`.
+warning: `gcodekit4-designer` (lib) generated 2 warnings
+error: could not compile `gcodekit4-designer` (lib) due to 2 previous errors; 2 warnings emitted

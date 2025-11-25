@@ -25,6 +25,7 @@ regex = "1.10"
 lazy_static = "1.4"
 rusttype = "0.9.3"
 cavalier_contours = "0.6.0"
+tiny-skia = "0.11.4"
 
 [dev-dependencies]
 tempfile = "3.10"

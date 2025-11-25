@@ -31,7 +31,7 @@ fn test_canvas_snap_selected_to_mm() {
     canvas.add_rectangle(100.3, 100.7, 50.4, 40.9);
 
     // Rectangle should exist
-    assert_eq!(canvas.shapes().len(), 1);
+    assert_eq!(canvas.shape_count(), 1);
 
     // Select the rectangle
     let point = Point::new(100.3, 100.7);

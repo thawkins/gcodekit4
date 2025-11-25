@@ -31,6 +31,7 @@ A **bright yellow crosshair** marks the world coordinate origin (0,0) on the can
 
 ### Select Mode (S)
 - Click to select shapes
+- **Group Selection**: Clicking anywhere inside a group's bounding box selects the entire group
 - Drag to move shapes
 - Resize handles on selection
 - Delete with Delete key

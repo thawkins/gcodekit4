@@ -2,10 +2,11 @@
 //! Manages the designer canvas state and handles UI callbacks.
 
 use crate::{
-    shapes::{OperationType, TextShape},
-    Canvas, Circle, DrawingMode, Line, Point, Rectangle, ToolpathGenerator, ToolpathToGcode,
+    shapes::{OperationType, PathShape, Shape, TextShape},
+    canvas::DrawingObject,
+    Canvas, Circle, DrawingMode, Line, Point, Rectangle, Ellipse, ToolpathGenerator, ToolpathToGcode,
 };
-use crate::canvas::CanvasSnapshot;
+use crate::commands::*;
 use gcodekit4_core::Units;
 
 /// Designer state for UI integration
@@ -20,8 +21,8 @@ pub struct DesignerState {
     pub design_name: String,
     pub show_grid: bool,
     pub clipboard: Vec<crate::canvas::DrawingObject>,
-    undo_stack: Vec<CanvasSnapshot>,
-    redo_stack: Vec<CanvasSnapshot>,
+    undo_stack: Vec<DesignerCommand>,
+    redo_stack: Vec<DesignerCommand>,
 }
 
 impl DesignerState {
@@ -43,30 +44,36 @@ impl DesignerState {
     }
 
     /// Saves current state to history
-    pub fn save_history(&mut self) {
-        self.undo_stack.push(self.canvas.get_snapshot());
+    /// Pushes a command to the undo stack and executes it.
+    pub fn push_command(&mut self, mut cmd: DesignerCommand) {
+        cmd.apply(&mut self.canvas);
+        self.undo_stack.push(cmd);
         self.redo_stack.clear();
         // Limit stack size to 50
         if self.undo_stack.len() > 50 {
             self.undo_stack.remove(0);
         }
+        self.is_modified = true;
+        self.gcode_generated = false;
     }
 
     /// Undo last change
+    /// Undo last change
     pub fn undo(&mut self) {
-        if let Some(snapshot) = self.undo_stack.pop() {
-            self.redo_stack.push(self.canvas.get_snapshot());
-            self.canvas.restore_snapshot(snapshot);
+        if let Some(mut cmd) = self.undo_stack.pop() {
+            cmd.undo(&mut self.canvas);
+            self.redo_stack.push(cmd);
             self.gcode_generated = false;
             self.is_modified = true;
         }
     }
 
     /// Redo last undo
+    /// Redo last undo
     pub fn redo(&mut self) {
-        if let Some(snapshot) = self.redo_stack.pop() {
-            self.undo_stack.push(self.canvas.get_snapshot());
-            self.canvas.restore_snapshot(snapshot);
+        if let Some(mut cmd) = self.redo_stack.pop() {
+            cmd.apply(&mut self.canvas);
+            self.undo_stack.push(cmd);
             self.gcode_generated = false;
             self.is_modified = true;
         }
@@ -84,7 +91,7 @@ impl DesignerState {
 
     /// Check if grouping is possible (at least 2 items selected, and at least one is not already in a group)
     pub fn can_group(&self) -> bool {
-        let selected: Vec<_> = self.canvas.shapes().iter().filter(|s| s.selected).collect();
+        let selected: Vec<_> = self.canvas.shapes().filter(|s| s.selected).collect();
         if selected.len() < 2 {
             return false;
         }
@@ -98,7 +105,7 @@ impl DesignerState {
 
     /// Check if ungrouping is possible (any selected item is in a group)
     pub fn can_ungroup(&self) -> bool {
-        self.canvas.shapes().iter().filter(|s| s.selected).any(|s| s.group_id.is_some())
+        self.canvas.shapes().filter(|s| s.selected).any(|s| s.group_id.is_some())
     }
 
     /// Clear history stacks
@@ -172,10 +179,21 @@ impl DesignerState {
 
     /// Deletes the selected shape(s).
     pub fn delete_selected(&mut self) {
-        if self.canvas.selected_count() > 0 {
-            self.save_history();
-            self.canvas.remove_selected();
+        let ids: Vec<u64> = self.canvas.shapes().filter(|s| s.selected).map(|s| s.id).collect();
+        if ids.is_empty() {
+            return;
         }
+        
+        let mut commands = Vec::new();
+        for id in ids {
+            commands.push(DesignerCommand::RemoveShape(RemoveShape { id, object: None }));
+        }
+        
+        let cmd = DesignerCommand::CompositeCommand(CompositeCommand {
+            commands,
+            name: "Delete Shapes".to_string(),
+        });
+        self.push_command(cmd);
     }
 
     /// Get number of selected shapes
@@ -185,7 +203,7 @@ impl DesignerState {
 
     /// Copies selected shapes to clipboard
     pub fn copy_selected(&mut self) {
-        self.clipboard = self.canvas.shapes().iter()
+        self.clipboard = self.canvas.shapes()
             .filter(|s| s.selected)
             .cloned()
             .collect();
@@ -196,7 +214,6 @@ impl DesignerState {
         if self.clipboard.is_empty() {
             return;
         }
-        self.save_history();
 
         // Calculate bounding box of clipboard items
         let mut min_x = f64::INFINITY;
@@ -219,85 +236,160 @@ impl DesignerState {
         let dx = x - center_x;
         let dy = y - center_y;
 
-        self.canvas.paste_objects(&self.clipboard, dx, dy);
+        self.canvas.deselect_all();
+
+        let mut new_ids = Vec::new();
+        let mut pasted_objects = Vec::new();
+        let mut group_map = std::collections::HashMap::new();
+
+        for obj in &self.clipboard {
+            let mut new_obj = obj.clone();
+            let id = self.canvas.generate_id();
+            new_obj.id = id;
+            
+            // Handle group ID mapping
+            if let Some(gid) = obj.group_id {
+                let new_gid = *group_map.entry(gid).or_insert_with(|| {
+                    self.canvas.generate_id()
+                });
+                new_obj.group_id = Some(new_gid);
+            }
+
+            // Apply offset
+            new_obj.shape.translate(dx, dy);
+            new_obj.selected = true;
+            
+            new_ids.push(id);
+            pasted_objects.push(Some(new_obj));
+        }
         
-        self.is_modified = true;
-        self.gcode_generated = false;
+        // Update selected_id to the last pasted object
+        if let Some(last_id) = new_ids.last() {
+            self.canvas.set_selected_id(Some(*last_id));
+        }
+
+        let cmd = DesignerCommand::PasteShapes(PasteShapes {
+            ids: new_ids,
+            objects: pasted_objects,
+        });
+        self.push_command(cmd);
     }
 
     /// Align selected shapes by their left edges
     pub fn align_selected_horizontal_left(&mut self) {
-        self.save_history();
-        if self.canvas.align_selected_left() {
-            self.is_modified = true;
-            self.gcode_generated = false;
-        } else {
-            // If no change, pop the history state we just pushed
-            self.undo_stack.pop();
+        let deltas = self.canvas.calculate_alignment_deltas(crate::canvas::Alignment::Left);
+        if deltas.is_empty() { return; }
+        
+        let mut commands = Vec::new();
+        for (id, dx, dy) in deltas {
+            commands.push(DesignerCommand::MoveShapes(MoveShapes { ids: vec![id], dx, dy }));
         }
+        
+        let cmd = DesignerCommand::CompositeCommand(CompositeCommand {
+            commands,
+            name: "Align Left".to_string(),
+        });
+        self.push_command(cmd);
     }
 
     /// Align selected shapes by their horizontal centers
     pub fn align_selected_horizontal_center(&mut self) {
-        self.save_history();
-        if self.canvas.align_selected_center() {
-            self.is_modified = true;
-            self.gcode_generated = false;
-        } else {
-            self.undo_stack.pop();
+        let deltas = self.canvas.calculate_alignment_deltas(crate::canvas::Alignment::CenterHorizontal);
+        if deltas.is_empty() { return; }
+        
+        let mut commands = Vec::new();
+        for (id, dx, dy) in deltas {
+            commands.push(DesignerCommand::MoveShapes(MoveShapes { ids: vec![id], dx, dy }));
         }
+        
+        let cmd = DesignerCommand::CompositeCommand(CompositeCommand {
+            commands,
+            name: "Align Horizontal Center".to_string(),
+        });
+        self.push_command(cmd);
     }
 
     /// Align selected shapes by their right edges
     pub fn align_selected_horizontal_right(&mut self) {
-        self.save_history();
-        if self.canvas.align_selected_right() {
-            self.is_modified = true;
-            self.gcode_generated = false;
-        } else {
-            self.undo_stack.pop();
+        let deltas = self.canvas.calculate_alignment_deltas(crate::canvas::Alignment::Right);
+        if deltas.is_empty() { return; }
+        
+        let mut commands = Vec::new();
+        for (id, dx, dy) in deltas {
+            commands.push(DesignerCommand::MoveShapes(MoveShapes { ids: vec![id], dx, dy }));
         }
+        
+        let cmd = DesignerCommand::CompositeCommand(CompositeCommand {
+            commands,
+            name: "Align Right".to_string(),
+        });
+        self.push_command(cmd);
     }
 
     /// Align selected shapes by their top edges
     pub fn align_selected_vertical_top(&mut self) {
-        self.save_history();
-        if self.canvas.align_selected_top() {
-            self.is_modified = true;
-            self.gcode_generated = false;
-        } else {
-            self.undo_stack.pop();
+        let deltas = self.canvas.calculate_alignment_deltas(crate::canvas::Alignment::Top);
+        if deltas.is_empty() { return; }
+        
+        let mut commands = Vec::new();
+        for (id, dx, dy) in deltas {
+            commands.push(DesignerCommand::MoveShapes(MoveShapes { ids: vec![id], dx, dy }));
         }
+        
+        let cmd = DesignerCommand::CompositeCommand(CompositeCommand {
+            commands,
+            name: "Align Top".to_string(),
+        });
+        self.push_command(cmd);
     }
 
     /// Align selected shapes by their vertical centers
     pub fn align_selected_vertical_center(&mut self) {
-        self.save_history();
-        if self.canvas.align_selected_vertical_center() {
-            self.is_modified = true;
-            self.gcode_generated = false;
-        } else {
-            self.undo_stack.pop();
+        let deltas = self.canvas.calculate_alignment_deltas(crate::canvas::Alignment::CenterVertical);
+        if deltas.is_empty() { return; }
+        
+        let mut commands = Vec::new();
+        for (id, dx, dy) in deltas {
+            commands.push(DesignerCommand::MoveShapes(MoveShapes { ids: vec![id], dx, dy }));
         }
+        
+        let cmd = DesignerCommand::CompositeCommand(CompositeCommand {
+            commands,
+            name: "Align Vertical Center".to_string(),
+        });
+        self.push_command(cmd);
     }
 
     /// Align selected shapes by their bottom edges
     pub fn align_selected_vertical_bottom(&mut self) {
-        self.save_history();
-        if self.canvas.align_selected_bottom() {
-            self.is_modified = true;
-            self.gcode_generated = false;
-        } else {
-            self.undo_stack.pop();
+        let deltas = self.canvas.calculate_alignment_deltas(crate::canvas::Alignment::Bottom);
+        if deltas.is_empty() { return; }
+        
+        let mut commands = Vec::new();
+        for (id, dx, dy) in deltas {
+            commands.push(DesignerCommand::MoveShapes(MoveShapes { ids: vec![id], dx, dy }));
         }
+        
+        let cmd = DesignerCommand::CompositeCommand(CompositeCommand {
+            commands,
+            name: "Align Bottom".to_string(),
+        });
+        self.push_command(cmd);
     }
 
     /// Clears all shapes from the canvas.
     pub fn clear_canvas(&mut self) {
-        if !self.canvas.shapes().is_empty() {
-            self.save_history();
-            self.canvas.clear();
-            self.gcode_generated = false;
+        if self.canvas.shape_count() > 0 {
+            let ids: Vec<u64> = self.canvas.shapes().map(|s| s.id).collect();
+            let mut commands = Vec::new();
+            for id in ids {
+                commands.push(DesignerCommand::RemoveShape(RemoveShape { id, object: None }));
+            }
+            let cmd = DesignerCommand::CompositeCommand(CompositeCommand {
+                commands,
+                name: "Clear Canvas".to_string(),
+            });
+            self.push_command(cmd);
         }
     }
 
@@ -312,76 +404,61 @@ impl DesignerState {
             self.toolpath_generator
                 .set_pocket_strategy(shape.pocket_strategy);
 
-            let shape_toolpaths = match shape.shape.shape_type() {
-                crate::ShapeType::Rectangle => {
-                    let (x1, y1, x2, y2) = shape.shape.bounding_box();
-                    let rect = Rectangle::new(x1, y1, x2 - x1, y2 - y1);
+            let shape_toolpaths = match &shape.shape {
+                crate::shapes::Shape::Rectangle(rect) => {
                     if shape.operation_type == OperationType::Pocket {
                         self.toolpath_generator.generate_rectangle_pocket(
-                            &rect,
+                            rect,
                             shape.pocket_depth,
                             shape.step_down as f64,
                             shape.step_in as f64,
                         )
                     } else {
-                        vec![self.toolpath_generator.generate_rectangle_contour(&rect)]
+                        vec![self.toolpath_generator.generate_rectangle_contour(rect)]
                     }
                 }
-                crate::ShapeType::Circle => {
-                    let (cx, cy, _, _) = shape.shape.bounding_box();
-                    let radius =
-                        ((shape.shape.bounding_box().2 - shape.shape.bounding_box().0) / 2.0).abs();
-                    let circle = Circle::new(Point::new(cx, cy), radius);
+                crate::shapes::Shape::Circle(circle) => {
                     if shape.operation_type == OperationType::Pocket {
                         self.toolpath_generator.generate_circle_pocket(
-                            &circle,
+                            circle,
                             shape.pocket_depth,
                             shape.step_down as f64,
                             shape.step_in as f64,
                         )
                     } else {
-                        vec![self.toolpath_generator.generate_circle_contour(&circle)]
+                        vec![self.toolpath_generator.generate_circle_contour(circle)]
                     }
                 }
-                crate::ShapeType::Line => {
-                    let (x1, y1, x2, y2) = shape.shape.bounding_box();
-                    let line = Line::new(Point::new(x1, y1), Point::new(x2, y2));
-                    vec![self.toolpath_generator.generate_line_contour(&line)]
+                crate::shapes::Shape::Line(line) => {
+                    vec![self.toolpath_generator.generate_line_contour(line)]
                 }
-                crate::ShapeType::Ellipse => {
-                    let (x1, y1, x2, y2) = shape.shape.bounding_box();
+                crate::shapes::Shape::Ellipse(ellipse) => {
+                    // Ellipse contour generation might need a Circle conversion or specific handler
+                    // The original code converted it to a Circle based on bounding box?
+                    // "let radius = ((x2 - x1).abs().max((y2 - y1).abs())) / 2.0;"
+                    // This seems to approximate ellipse as circle for toolpath?
+                    // Let's keep original logic for now but use the ellipse data
+                    let (x1, y1, x2, y2) = ellipse.bounding_box();
                     let cx = (x1 + x2) / 2.0;
                     let cy = (y1 + y2) / 2.0;
                     let radius = ((x2 - x1).abs().max((y2 - y1).abs())) / 2.0;
                     let circle = Circle::new(Point::new(cx, cy), radius);
                     vec![self.toolpath_generator.generate_circle_contour(&circle)]
                 }
-                crate::ShapeType::Path => {
-                    if let Some(path_shape) = shape
-                        .shape
-                        .as_any()
-                        .downcast_ref::<crate::shapes::PathShape>()
-                    {
-                        if shape.operation_type == OperationType::Pocket {
-                            self.toolpath_generator.generate_path_pocket(
-                                path_shape,
-                                shape.pocket_depth,
-                                shape.step_down as f64,
-                                shape.step_in as f64,
-                            )
-                        } else {
-                            vec![self.toolpath_generator.generate_path_contour(path_shape)]
-                        }
+                crate::shapes::Shape::Path(path_shape) => {
+                    if shape.operation_type == OperationType::Pocket {
+                        self.toolpath_generator.generate_path_pocket(
+                            path_shape,
+                            shape.pocket_depth,
+                            shape.step_down as f64,
+                            shape.step_in as f64,
+                        )
                     } else {
-                        vec![self.toolpath_generator.empty_toolpath()]
+                        vec![self.toolpath_generator.generate_path_contour(path_shape)]
                     }
                 }
-                crate::ShapeType::Text => {
-                    if let Some(text) = shape.shape.as_any().downcast_ref::<TextShape>() {
-                        vec![self.toolpath_generator.generate_text_toolpath(text)]
-                    } else {
-                        vec![self.toolpath_generator.empty_toolpath()]
-                    }
+                crate::shapes::Shape::Text(text) => {
+                    vec![self.toolpath_generator.generate_text_toolpath(text)]
                 }
             };
             toolpaths.extend(shape_toolpaths);
@@ -425,7 +502,7 @@ impl DesignerState {
         gcode.push_str(&gcode_gen.generate_footer());
 
         self.generated_gcode = gcode.clone();
-        self.gcode_generated = !self.canvas.shapes().is_empty();
+        self.gcode_generated = self.canvas.shape_count() > 0;
         gcode
     }
 
@@ -451,68 +528,107 @@ impl DesignerState {
 
     /// Adds a test rectangle to the canvas.
     pub fn add_test_rectangle(&mut self) {
-        self.save_history();
-        self.canvas.add_rectangle(10.0, 10.0, 50.0, 40.0);
+        let id = self.canvas.generate_id();
+        let rect = Rectangle::new(10.0, 10.0, 50.0, 40.0);
+        let obj = DrawingObject::new(id, Shape::Rectangle(rect));
+        let cmd = DesignerCommand::AddShape(AddShape { id, object: Some(obj) });
+        self.push_command(cmd);
     }
 
     /// Adds a test circle to the canvas.
     pub fn add_test_circle(&mut self) {
-        self.save_history();
-        self.canvas.add_circle(Point::new(75.0, 75.0), 20.0);
+        let id = self.canvas.generate_id();
+        let circle = Circle::new(Point::new(75.0, 75.0), 20.0);
+        let obj = DrawingObject::new(id, Shape::Circle(circle));
+        let cmd = DesignerCommand::AddShape(AddShape { id, object: Some(obj) });
+        self.push_command(cmd);
     }
 
     /// Adds a test line to the canvas.
     pub fn add_test_line(&mut self) {
-        self.save_history();
-        self.canvas
-            .add_line(Point::new(10.0, 10.0), Point::new(100.0, 100.0));
+        let id = self.canvas.generate_id();
+        let line = Line::new(Point::new(10.0, 10.0), Point::new(100.0, 100.0));
+        let obj = DrawingObject::new(id, Shape::Line(line));
+        let cmd = DesignerCommand::AddShape(AddShape { id, object: Some(obj) });
+        self.push_command(cmd);
     }
 
     /// Groups the selected shapes.
     pub fn group_selected(&mut self) {
-        self.save_history();
-        self.canvas.group_selected();
-        self.is_modified = true;
-        self.gcode_generated = false;
+        let ids: Vec<u64> = self.canvas.shapes().filter(|s| s.selected).map(|s| s.id).collect();
+        if ids.len() < 2 {
+            return;
+        }
+        
+        let group_id = self.canvas.generate_id();
+        let cmd = DesignerCommand::GroupShapes(GroupShapes { ids, group_id });
+        self.push_command(cmd);
     }
 
     /// Ungroups the selected shapes.
     pub fn ungroup_selected(&mut self) {
-        self.save_history();
-        self.canvas.ungroup_selected();
-        self.is_modified = true;
-        self.gcode_generated = false;
+        let mut group_map: std::collections::HashMap<u64, Vec<u64>> = std::collections::HashMap::new();
+        for obj in self.canvas.shapes() {
+            if obj.selected {
+                if let Some(gid) = obj.group_id {
+                    group_map.entry(gid).or_default().push(obj.id);
+                }
+            }
+        }
+        
+        if group_map.is_empty() {
+            return;
+        }
+        
+        let mut commands = Vec::new();
+        for (gid, ids) in group_map {
+            commands.push(DesignerCommand::UngroupShapes(UngroupShapes { ids, group_id: gid }));
+        }
+        
+        let cmd = DesignerCommand::CompositeCommand(CompositeCommand {
+            commands,
+            name: "Ungroup Shapes".to_string(),
+        });
+        self.push_command(cmd);
     }
 
     /// Adds a shape to the canvas at the specified position based on current mode.
     pub fn add_shape_at(&mut self, x: f64, y: f64, multi_select: bool) {
-        if self.canvas.mode() != DrawingMode::Select {
-            self.save_history();
-        }
         match self.canvas.mode() {
             DrawingMode::Select => {
                 // Select mode - just select shape at position
                 self.canvas.select_at(&Point::new(x, y), multi_select);
             }
             DrawingMode::Rectangle => {
-                // Draw 60x40 rectangle starting at click point
-                self.canvas.add_rectangle(x, y, 60.0, 40.0);
+                let id = self.canvas.generate_id();
+                let rect = Rectangle::new(x, y, 60.0, 40.0);
+                let obj = DrawingObject::new(id, Shape::Rectangle(rect));
+                let cmd = DesignerCommand::AddShape(AddShape { id, object: Some(obj) });
+                self.push_command(cmd);
             }
             DrawingMode::Circle => {
-                // Draw circle with radius 25 centered at click point
-                self.canvas.add_circle(Point::new(x, y), 25.0);
+                let id = self.canvas.generate_id();
+                let circle = Circle::new(Point::new(x, y), 25.0);
+                let obj = DrawingObject::new(id, Shape::Circle(circle));
+                let cmd = DesignerCommand::AddShape(AddShape { id, object: Some(obj) });
+                self.push_command(cmd);
             }
             DrawingMode::Line => {
-                // Draw 50 unit line from click point
-                self.canvas
-                    .add_line(Point::new(x, y), Point::new(x + 50.0, y));
+                let id = self.canvas.generate_id();
+                let line = Line::new(Point::new(x, y), Point::new(x + 50.0, y));
+                let obj = DrawingObject::new(id, Shape::Line(line));
+                let cmd = DesignerCommand::AddShape(AddShape { id, object: Some(obj) });
+                self.push_command(cmd);
             }
             DrawingMode::Ellipse => {
-                // Draw ellipse with rx=40, ry=25 centered at click point
-                self.canvas.add_ellipse(Point::new(x, y), 40.0, 25.0);
+                let id = self.canvas.generate_id();
+                let ellipse = Ellipse::new(Point::new(x, y), 40.0, 25.0);
+                let obj = DrawingObject::new(id, Shape::Ellipse(ellipse));
+                let cmd = DesignerCommand::AddShape(AddShape { id, object: Some(obj) });
+                self.push_command(cmd);
             }
             DrawingMode::Polyline => {
-                // Draw regular hexagon with radius 30 centered at click point
+                let id = self.canvas.generate_id();
                 let center = Point::new(x, y);
                 let radius = 30.0;
                 let sides = 6;
@@ -523,11 +639,18 @@ impl DesignerState {
                     let vy = center.y + radius * angle.sin();
                     vertices.push(Point::new(vx, vy));
                 }
-                self.canvas.add_polyline(vertices);
+                let path_shape = PathShape::from_points(&vertices, true);
+                let obj = DrawingObject::new(id, Shape::Path(path_shape));
+                let cmd = DesignerCommand::AddShape(AddShape { id, object: Some(obj) });
+                self.push_command(cmd);
+                // I'll check canvas.rs add_polyline.
             }
             DrawingMode::Text => {
-                // Add default text
-                self.canvas.add_text("Text".to_string(), x, y, 20.0);
+                let id = self.canvas.generate_id();
+                let text = TextShape::new("Text".to_string(), x, y, 20.0);
+                let obj = DrawingObject::new(id, Shape::Text(text));
+                let cmd = DesignerCommand::AddShape(AddShape { id, object: Some(obj) });
+                self.push_command(cmd);
             }
         }
     }
@@ -541,19 +664,124 @@ impl DesignerState {
 
     /// Moves the selected shape by (dx, dy).
     pub fn move_selected(&mut self, dx: f64, dy: f64) {
-        self.canvas.move_selected(dx, dy);
+        let ids: Vec<u64> = self.canvas.shapes().filter(|s| s.selected).map(|s| s.id).collect();
+        if ids.is_empty() {
+            return;
+        }
+        
+        let cmd = DesignerCommand::MoveShapes(MoveShapes { ids, dx, dy });
+        self.push_command(cmd);
     }
 
     /// Resizes the selected shape via handle drag.
     /// handle: 0=TL, 1=TR, 2=BL, 3=BR, 4=Center (move)
     pub fn resize_selected(&mut self, handle: usize, dx: f64, dy: f64) {
-        self.canvas.resize_selected(handle, dx, dy);
+        let ids: Vec<u64> = self.canvas.shapes().filter(|s| s.selected).map(|s| s.id).collect();
+        if ids.is_empty() {
+            return;
+        }
+
+        // Calculate bounding box of ALL selected shapes
+        let mut min_x = f64::INFINITY;
+        let mut min_y = f64::INFINITY;
+        let mut max_x = f64::NEG_INFINITY;
+        let mut max_y = f64::NEG_INFINITY;
+
+        for id in &ids {
+            if let Some(obj) = self.canvas.get_shape(*id) {
+                let (x1, y1, x2, y2) = obj.shape.bounding_box();
+                min_x = min_x.min(x1);
+                min_y = min_y.min(y1);
+                max_x = max_x.max(x2);
+                max_y = max_y.max(y2);
+            }
+        }
+
+        // If handle is 4 (move), we just translate all selected shapes
+        if handle == 4 {
+            self.move_selected(dx, dy);
+            return;
+        }
+
+        // Calculate new bounding box based on handle movement
+        let (new_min_x, new_min_y, new_max_x, new_max_y) = match handle {
+            0 => (min_x + dx, min_y + dy, max_x, max_y), // Top-left
+            1 => (min_x, min_y + dy, max_x + dx, max_y), // Top-right
+            2 => (min_x + dx, min_y, max_x, max_y + dy), // Bottom-left
+            3 => (min_x, min_y, max_x + dx, max_y + dy), // Bottom-right
+            _ => (min_x, min_y, max_x, max_y),
+        };
+
+        let old_width = max_x - min_x;
+        let old_height = max_y - min_y;
+        let new_width = (new_max_x - new_min_x).abs();
+        let new_height = (new_max_y - new_min_y).abs();
+
+        // Calculate scale factors
+        let sx = if old_width.abs() > 1e-6 { new_width / old_width } else { 1.0 };
+        let sy = if old_height.abs() > 1e-6 { new_height / old_height } else { 1.0 };
+
+        // Center of scaling
+        let center_x = (min_x + max_x) / 2.0;
+        let center_y = (min_y + max_y) / 2.0;
+        
+        let new_center_x = (new_min_x + new_max_x) / 2.0;
+        let new_center_y = (new_min_y + new_max_y) / 2.0;
+        
+        let t_dx = new_center_x - center_x;
+        let t_dy = new_center_y - center_y;
+        
+        let mut commands = Vec::new();
+        for id in ids {
+            if let Some(obj) = self.canvas.get_shape(id) {
+                let old_shape = obj.shape.clone();
+                let mut new_shape = old_shape.clone();
+                
+                // Scale relative to the center of the SELECTION bounding box
+                new_shape.scale(sx, sy, Point::new(center_x, center_y));
+                
+                // Translate to new center
+                new_shape.translate(t_dx, t_dy);
+                
+                commands.push(DesignerCommand::ResizeShape(ResizeShape {
+                    id,
+                    handle,
+                    dx,
+                    dy,
+                    old_shape: Some(old_shape),
+                    new_shape: Some(new_shape),
+                }));
+            }
+        }
+        
+        let cmd = DesignerCommand::CompositeCommand(CompositeCommand {
+            commands,
+            name: "Resize Shapes".to_string(),
+        });
+        self.push_command(cmd);
     }
 
     /// Snaps the selected shape to whole millimeters
+    /// Snaps the selected shape to whole millimeters
     pub fn snap_selected_to_mm(&mut self) {
-        self.save_history();
-        self.canvas.snap_selected_to_mm();
+        let updates = self.canvas.calculate_snapped_shapes();
+        if updates.is_empty() { return; }
+        
+        let mut commands = Vec::new();
+        for (id, new_obj) in updates {
+            let old_obj = self.canvas.get_shape(id).unwrap().clone();
+            commands.push(DesignerCommand::ChangeProperty(ChangeProperty {
+                id,
+                old_state: old_obj,
+                new_state: new_obj,
+            }));
+        }
+        
+        let cmd = DesignerCommand::CompositeCommand(CompositeCommand {
+            commands,
+            name: "Snap to Grid".to_string(),
+        });
+        self.push_command(cmd);
     }
 
     /// Deselects all shapes.
@@ -570,6 +798,7 @@ impl DesignerState {
         self.set_selected_position_and_size_with_flags(x, y, w, h, true, true);
     }
 
+    /// Sets the position and size of the selected shape with flags for which properties to update.
     pub fn set_selected_position_and_size_with_flags(
         &mut self,
         x: f64,
@@ -579,13 +808,24 @@ impl DesignerState {
         update_position: bool,
         update_size: bool,
     ) {
-        self.save_history();
-        if self.canvas.set_selected_position_and_size_with_flags(x, y, w, h, update_position, update_size) {
-            self.is_modified = true;
-            self.gcode_generated = false;
-        } else {
-            self.undo_stack.pop();
+        let updates = self.canvas.calculate_position_and_size_updates(x, y, w, h, update_position, update_size);
+        if updates.is_empty() { return; }
+        
+        let mut commands = Vec::new();
+        for (id, new_obj) in updates {
+            let old_obj = self.canvas.get_shape(id).unwrap().clone();
+            commands.push(DesignerCommand::ChangeProperty(ChangeProperty {
+                id,
+                old_state: old_obj,
+                new_state: new_obj,
+            }));
         }
+        
+        let cmd = DesignerCommand::CompositeCommand(CompositeCommand {
+            commands,
+            name: "Resize/Move Shape".to_string(),
+        });
+        self.push_command(cmd);
     }
 
     /// Save design to file
@@ -680,101 +920,130 @@ impl DesignerState {
     }
 
     pub fn set_selected_pocket_properties(&mut self, is_pocket: bool, depth: f64) {
-        self.save_history();
-        let mut changed = false;
-        for obj in self.canvas.shapes_mut().iter_mut() {
-            if !obj.selected {
-                continue;
-            }
-            let new_type = if is_pocket {
-                OperationType::Pocket
-            } else {
-                OperationType::Profile
-            };
+        let mut commands = Vec::new();
+        let new_type = if is_pocket {
+            OperationType::Pocket
+        } else {
+            OperationType::Profile
+        };
+
+        for obj in self.canvas.shapes().filter(|s| s.selected) {
             if obj.operation_type != new_type || (obj.pocket_depth - depth).abs() > f64::EPSILON {
-                obj.operation_type = new_type;
-                obj.pocket_depth = depth;
-                changed = true;
+                let mut new_obj = obj.clone();
+                new_obj.operation_type = new_type;
+                new_obj.pocket_depth = depth;
+                
+                commands.push(DesignerCommand::ChangeProperty(ChangeProperty {
+                    id: obj.id,
+                    old_state: obj.clone(),
+                    new_state: new_obj,
+                }));
             }
         }
-        if changed {
-            self.is_modified = true;
-            self.gcode_generated = false;
-        } else {
-            self.undo_stack.pop();
+        
+        if !commands.is_empty() {
+            let cmd = DesignerCommand::CompositeCommand(CompositeCommand {
+                commands,
+                name: "Change Pocket Properties".to_string(),
+            });
+            self.push_command(cmd);
         }
     }
 
     pub fn set_selected_step_down(&mut self, step_down: f64) {
-        self.save_history();
-        let mut changed = false;
-        for obj in self.canvas.shapes_mut().iter_mut() {
-            if !obj.selected {
-                continue;
-            }
+        let mut commands = Vec::new();
+        for obj in self.canvas.shapes().filter(|s| s.selected) {
             if (obj.step_down as f64 - step_down).abs() > f64::EPSILON {
-                obj.step_down = step_down as f32;
-                changed = true;
+                let mut new_obj = obj.clone();
+                new_obj.step_down = step_down as f32;
+                
+                commands.push(DesignerCommand::ChangeProperty(ChangeProperty {
+                    id: obj.id,
+                    old_state: obj.clone(),
+                    new_state: new_obj,
+                }));
             }
         }
-        if changed {
-            self.is_modified = true;
-            self.gcode_generated = false;
-        } else {
-            self.undo_stack.pop();
+        
+        if !commands.is_empty() {
+            let cmd = DesignerCommand::CompositeCommand(CompositeCommand {
+                commands,
+                name: "Change Step Down".to_string(),
+            });
+            self.push_command(cmd);
         }
     }
 
     pub fn set_selected_step_in(&mut self, step_in: f64) {
-        self.save_history();
-        let mut changed = false;
-        for obj in self.canvas.shapes_mut().iter_mut() {
-            if !obj.selected {
-                continue;
-            }
+        let mut commands = Vec::new();
+        for obj in self.canvas.shapes().filter(|s| s.selected) {
             if (obj.step_in as f64 - step_in).abs() > f64::EPSILON {
-                obj.step_in = step_in as f32;
-                changed = true;
+                let mut new_obj = obj.clone();
+                new_obj.step_in = step_in as f32;
+                
+                commands.push(DesignerCommand::ChangeProperty(ChangeProperty {
+                    id: obj.id,
+                    old_state: obj.clone(),
+                    new_state: new_obj,
+                }));
             }
         }
-        if changed {
-            self.is_modified = true;
-            self.gcode_generated = false;
-        } else {
-            self.undo_stack.pop();
+        
+        if !commands.is_empty() {
+            let cmd = DesignerCommand::CompositeCommand(CompositeCommand {
+                commands,
+                name: "Change Step In".to_string(),
+            });
+            self.push_command(cmd);
         }
     }
 
-    pub fn set_selected_text_properties(&mut self, content: &str, font_size: f64) {
-        self.save_history();
-        if self.canvas.set_selected_text_properties(content, font_size) {
-            self.is_modified = true;
-            self.gcode_generated = false;
-        } else {
-            self.undo_stack.pop();
+    /// Sets the text properties of the selected shape.
+    pub fn set_selected_text_properties(&mut self, content: String, font_size: f64) {
+        let updates = self.canvas.calculate_text_property_updates(&content, font_size);
+        if updates.is_empty() { return; }
+        
+        let mut commands = Vec::new();
+        for (id, new_obj) in updates {
+            let old_obj = self.canvas.get_shape(id).unwrap().clone();
+            commands.push(DesignerCommand::ChangeProperty(ChangeProperty {
+                id,
+                old_state: old_obj,
+                new_state: new_obj,
+            }));
         }
+        
+        let cmd = DesignerCommand::CompositeCommand(CompositeCommand {
+            commands,
+            name: "Change Text Properties".to_string(),
+        });
+        self.push_command(cmd);
     }
 
     pub fn set_selected_pocket_strategy(
         &mut self,
         strategy: crate::pocket_operations::PocketStrategy,
     ) {
-        self.save_history();
-        let mut changed = false;
-        for obj in self.canvas.shapes_mut().iter_mut() {
-            if !obj.selected {
-                continue;
-            }
+        let mut commands = Vec::new();
+        for obj in self.canvas.shapes().filter(|s| s.selected) {
             if obj.pocket_strategy != strategy {
-                obj.pocket_strategy = strategy;
-                changed = true;
+                let mut new_obj = obj.clone();
+                new_obj.pocket_strategy = strategy;
+                
+                commands.push(DesignerCommand::ChangeProperty(ChangeProperty {
+                    id: obj.id,
+                    old_state: obj.clone(),
+                    new_state: new_obj,
+                }));
             }
         }
-        if changed {
-            self.is_modified = true;
-            self.gcode_generated = false;
-        } else {
-            self.undo_stack.pop();
+        
+        if !commands.is_empty() {
+            let cmd = DesignerCommand::CompositeCommand(CompositeCommand {
+                commands,
+                name: "Change Pocket Strategy".to_string(),
+            });
+            self.push_command(cmd);
         }
     }
 }

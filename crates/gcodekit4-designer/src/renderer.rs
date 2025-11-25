@@ -1,21 +1,31 @@
 //! Canvas renderer for designer shapes
-//! Renders shapes to an image buffer for display in the UI
+//! Renders shapes to an image buffer for display in the UI using tiny-skia for high-quality 2D rendering.
 //!
 //! Features:
-//! - Bright yellow crosshair at world origin (0,0)
-//! - Shape rendering with selection indicators
+//! - Anti-aliased rendering
+//! - High performance
 //! - Viewport-based coordinate transformation
+//! - Shape rendering with selection indicators
 
-use crate::{Canvas, ShapeType, font_manager};
-use image::{ImageBuffer, Rgb, RgbImage};
-use rusttype::{Scale, point as rt_point};
-use lyon::path::iterator::PathIterator;
+use crate::{font_manager, Canvas};
+use image::{Rgb, RgbImage};
+use rusttype::{point as rt_point, Scale};
+use tiny_skia::{Color, FillRule, Paint, PathBuilder, Pixmap, Rect, Stroke, Transform};
 
-const BG_COLOR: Rgb<u8> = Rgb([52, 73, 94]); // #34495e
-const SHAPE_COLOR: Rgb<u8> = Rgb([52, 152, 219]); // #3498db
-const SELECTION_COLOR: Rgb<u8> = Rgb([255, 235, 59]); // #ffeb3b
-const CROSSHAIR_COLOR: Rgb<u8> = Rgb([255, 255, 0]); // Bright yellow
-const HANDLE_SIZE: i32 = 12;
+const HANDLE_SIZE: f32 = 18.0; // Increased from 12.0 for easier cursor positioning
+
+fn bg_color() -> Color {
+    Color::from_rgba8(52, 73, 94, 255)
+}
+fn shape_color() -> Color {
+    Color::from_rgba8(52, 152, 219, 255)
+}
+fn selection_color() -> Color {
+    Color::from_rgba8(255, 235, 59, 255)
+}
+fn crosshair_color() -> Color {
+    Color::from_rgba8(255, 255, 0, 255)
+}
 
 /// Render canvas shapes to an image buffer
 pub fn render_canvas(
@@ -26,405 +36,284 @@ pub fn render_canvas(
     _pan_x: f32,
     _pan_y: f32,
 ) -> RgbImage {
-    let mut img = ImageBuffer::from_pixel(width, height, BG_COLOR);
+    let mut pixmap = Pixmap::new(width, height).unwrap();
+    pixmap.fill(bg_color());
 
-    // Get viewport for coordinate transformations
     let viewport = canvas.viewport();
+    let zoom = viewport.zoom() as f32;
+    let pan_x = viewport.pan_x() as f32;
+    let pan_y = viewport.pan_y() as f32;
+    let canvas_height = height as f32;
 
-    // Draw 0,0 crosshair - convert world origin to screen coordinates
+    // Transform: World -> Screen
+    // pixel_x = world_x * zoom + pan_x
+    // pixel_y = canvas_height - (world_y * zoom + pan_y) = -world_y * zoom + (canvas_height - pan_y)
+    let transform = Transform::from_scale(zoom, -zoom).post_translate(pan_x, canvas_height - pan_y);
+
+    // Draw Crosshair (Axes)
+    let mut paint = Paint::default();
+    paint.set_color(crosshair_color());
+    paint.anti_alias = false; // Sharp lines for axes
+    let mut stroke = Stroke::default();
+    stroke.width = 2.0;
+
+    let mut pb = PathBuilder::new();
+    // X-axis (y=0)
+    // We want to draw from x=-infinity to +infinity in world space, clipped to screen.
+    // Easier: draw from screen left to screen right, transform back to world to find y?
+    // Or just draw a very long line in world space.
+    // World bounds visible:
+    // min_x = (0 - pan_x) / zoom
+    // max_x = (width - pan_x) / zoom
+    // min_y = (height - (canvas_height - pan_y)) / -zoom ... math is messy.
+    // Let's just draw the axes if they are visible.
+
+    // Origin in screen space
     let (origin_x, origin_y) = viewport.world_to_pixel(0.0, 0.0);
-    let origin_x = origin_x as i32;
-    let origin_y = origin_y as i32;
+    let origin_x = origin_x as f32;
+    let origin_y = origin_y as f32;
 
-    // Draw horizontal line across entire canvas (Y axis at world 0,0)
-    // Draw it slightly thicker to ensure visibility
-    if origin_y >= 0 && origin_y < height as i32 {
-        draw_line(
-            &mut img,
-            0,
-            origin_y,
-            width as i32 - 1,
-            origin_y,
-            CROSSHAIR_COLOR,
-        );
-        // Draw second line for thickness
-        if origin_y > 0 {
-            draw_line(
-                &mut img,
-                0,
-                origin_y - 1,
-                width as i32 - 1,
-                origin_y - 1,
-                CROSSHAIR_COLOR,
-            );
-        }
-        if origin_y < height as i32 - 1 {
-            draw_line(
-                &mut img,
-                0,
-                origin_y + 1,
-                width as i32 - 1,
-                origin_y + 1,
-                CROSSHAIR_COLOR,
-            );
-        }
+    if origin_y >= 0.0 && origin_y < canvas_height {
+        pb.move_to(0.0, origin_y);
+        pb.line_to(width as f32, origin_y);
+    }
+    if origin_x >= 0.0 && origin_x < width as f32 {
+        pb.move_to(origin_x, 0.0);
+        pb.line_to(origin_x, canvas_height);
+    }
+    if let Some(path) = pb.finish() {
+        pixmap.stroke_path(&path, &paint, &stroke, Transform::identity(), None);
     }
 
-    // Draw vertical line across entire canvas (X axis at world 0,0)
-    // Draw it slightly thicker to ensure visibility
-    if origin_x >= 0 && origin_x < width as i32 {
-        draw_line(
-            &mut img,
-            origin_x,
-            0,
-            origin_x,
-            height as i32 - 1,
-            CROSSHAIR_COLOR,
-        );
-        // Draw second line for thickness
-        if origin_x > 0 {
-            draw_line(
-                &mut img,
-                origin_x - 1,
-                0,
-                origin_x - 1,
-                height as i32 - 1,
-                CROSSHAIR_COLOR,
-            );
-        }
-        if origin_x < width as i32 - 1 {
-            draw_line(
-                &mut img,
-                origin_x + 1,
-                0,
-                origin_x + 1,
-                height as i32 - 1,
-                CROSSHAIR_COLOR,
-            );
-        }
-    }
-
-    // Render each shape
+    // Render Shapes
     for shape_obj in canvas.shapes() {
-        let (x1, y1, x2, y2) = shape_obj.shape.bounding_box();
+        let mut paint = Paint::default();
+        paint.set_color(shape_color());
+        paint.anti_alias = true;
 
-        // Convert world coordinates to screen coordinates using viewport transformation
-        let (screen_x1, screen_y1) = viewport.world_to_pixel(x1, y1);
-        let (screen_x2, screen_y2) = viewport.world_to_pixel(x2, y2);
+        // We can fill or stroke. Let's assume stroke for lines/paths and fill for closed shapes?
+        // The original renderer drew filled rectangles/circles/ellipses and stroked lines/paths.
 
-        let screen_x1 = screen_x1 as i32;
-        let screen_y1 = screen_y1 as i32;
-        let screen_x2 = screen_x2 as i32;
-        let screen_y2 = screen_y2 as i32;
-
-        // Render based on shape type
-        match shape_obj.shape.shape_type() {
-            ShapeType::Rectangle => {
-                draw_rectangle(
-                    &mut img,
-                    screen_x1,
-                    screen_y1,
-                    screen_x2,
-                    screen_y2,
-                    SHAPE_COLOR,
+        match &shape_obj.shape {
+            crate::shapes::Shape::Rectangle(rect) => {
+                let rect_path = Rect::from_xywh(
+                    rect.x as f32,
+                    rect.y as f32,
+                    rect.width as f32,
+                    rect.height as f32,
                 );
-                if shape_obj.selected {
-                    draw_selection_box(&mut img, screen_x1, screen_y1, screen_x2, screen_y2);
+                if let Some(r) = rect_path {
+                    let path = PathBuilder::from_rect(r);
+                    pixmap.fill_path(&path, &paint, FillRule::Winding, transform, None);
                 }
             }
-            ShapeType::Circle => {
-                // Calculate circle center and radius in world coordinates
-                let center_x = (x1 + x2) / 2.0;
-                let center_y = (y1 + y2) / 2.0;
-                let radius_world = ((x2 - x1) / 2.0).abs();
-
-                // Convert center to screen coordinates
-                let (cx, cy) = viewport.world_to_pixel(center_x, center_y);
-
-                // Calculate screen radius (use viewport zoom scale)
-                let radius_screen = (radius_world * viewport.zoom()) as i32;
-
-                draw_circle(&mut img, cx as i32, cy as i32, radius_screen, SHAPE_COLOR);
-                if shape_obj.selected {
-                    let r = radius_screen;
-                    draw_selection_box(
-                        &mut img,
-                        (cx as i32) - r,
-                        (cy as i32) - r,
-                        (cx as i32) + r,
-                        (cy as i32) + r,
-                    );
-                }
-            }
-            ShapeType::Line => {
-                draw_line(
-                    &mut img,
-                    screen_x1,
-                    screen_y1,
-                    screen_x2,
-                    screen_y2,
-                    SHAPE_COLOR,
+            crate::shapes::Shape::Circle(circle) => {
+                let path = PathBuilder::from_circle(
+                    circle.center.x as f32,
+                    circle.center.y as f32,
+                    circle.radius as f32,
                 );
-                if shape_obj.selected {
-                    draw_selection_box(
-                        &mut img,
-                        screen_x1.min(screen_x2),
-                        screen_y1.min(screen_y2),
-                        screen_x1.max(screen_x2),
-                        screen_y1.max(screen_y2),
-                    );
+                if let Some(p) = path {
+                    pixmap.fill_path(&p, &paint, FillRule::Winding, transform, None);
                 }
             }
-            ShapeType::Ellipse => {
-                let center_x = (x1 + x2) / 2.0;
-                let center_y = (y1 + y2) / 2.0;
-                let rx_world = ((x2 - x1) / 2.0).abs();
-                let ry_world = ((y2 - y1) / 2.0).abs();
-
-                let (cx, cy) = viewport.world_to_pixel(center_x, center_y);
-
-                let rx_screen = (rx_world * viewport.zoom()) as i32;
-                let ry_screen = (ry_world * viewport.zoom()) as i32;
-
-                draw_ellipse(
-                    &mut img,
-                    cx as i32,
-                    cy as i32,
-                    rx_screen,
-                    ry_screen,
-                    SHAPE_COLOR,
-                );
-                if shape_obj.selected {
-                    draw_selection_box(
-                        &mut img,
-                        (cx as i32) - rx_screen,
-                        (cy as i32) - ry_screen,
-                        (cx as i32) + rx_screen,
-                        (cy as i32) + ry_screen,
-                    );
+            crate::shapes::Shape::Line(line) => {
+                let mut pb = PathBuilder::new();
+                pb.move_to(line.start.x as f32, line.start.y as f32);
+                pb.line_to(line.end.x as f32, line.end.y as f32);
+                if let Some(path) = pb.finish() {
+                    let mut stroke = Stroke::default();
+                    stroke.width = 1.0; // 1 pixel width in world space? No, usually 1px screen space.
+                                        // If we apply transform to stroke, width scales.
+                                        // To keep 1px screen width, we should calculate width / zoom.
+                    stroke.width = 1.0 / zoom;
+                    pixmap.stroke_path(&path, &paint, &stroke, transform, None);
                 }
             }
-            ShapeType::Path => {
-                if let Some(path_shape) = shape_obj.shape.as_any().downcast_ref::<crate::shapes::PathShape>() {
-                    let tolerance = 0.5 / viewport.zoom();
-                    let mut start = None;
-                    let mut current = None;
-                    
-                    for event in path_shape.path.iter().flattened(tolerance as f32) {
-                        match event {
-                            lyon::path::Event::Begin { at } => {
-                                let (x, y) = viewport.world_to_pixel(at.x as f64, at.y as f64);
-                                start = Some((x as i32, y as i32));
-                                current = Some((x as i32, y as i32));
+            crate::shapes::Shape::Ellipse(ellipse) => {
+                // tiny-skia doesn't have direct ellipse primitive, use scale on circle
+                let path = PathBuilder::from_circle(0.0, 0.0, 1.0); // Unit circle
+                if let Some(p) = path {
+                    // Transform for ellipse: translate to center, scale by rx/ry
+                    let ellipse_transform = transform
+                        .pre_translate(ellipse.center.x as f32, ellipse.center.y as f32)
+                        .pre_scale(ellipse.rx as f32, ellipse.ry as f32);
+
+                    pixmap.fill_path(&p, &paint, FillRule::Winding, ellipse_transform, None);
+                }
+            }
+            crate::shapes::Shape::Path(path_shape) => {
+                // Convert lyon path to tiny-skia path
+                let mut pb = PathBuilder::new();
+                for event in path_shape.path.iter() {
+                    match event {
+                        lyon::path::Event::Begin { at } => {
+                            pb.move_to(at.x as f32, at.y as f32);
+                        }
+                        lyon::path::Event::Line { from: _, to } => {
+                            pb.line_to(to.x as f32, to.y as f32);
+                        }
+                        lyon::path::Event::Quadratic { from: _, ctrl, to } => {
+                            pb.quad_to(ctrl.x as f32, ctrl.y as f32, to.x as f32, to.y as f32);
+                        }
+                        lyon::path::Event::Cubic {
+                            from: _,
+                            ctrl1,
+                            ctrl2,
+                            to,
+                        } => {
+                            pb.cubic_to(
+                                ctrl1.x as f32,
+                                ctrl1.y as f32,
+                                ctrl2.x as f32,
+                                ctrl2.y as f32,
+                                to.x as f32,
+                                to.y as f32,
+                            );
+                        }
+                        lyon::path::Event::End {
+                            last: _,
+                            first: _,
+                            close,
+                        } => {
+                            if close {
+                                pb.close();
                             }
-                            lyon::path::Event::Line { from: _, to } => {
-                                let (x, y) = viewport.world_to_pixel(to.x as f64, to.y as f64);
-                                if let Some((cx, cy)) = current {
-                                    draw_line(&mut img, cx, cy, x as i32, y as i32, SHAPE_COLOR);
-                                }
-                                current = Some((x as i32, y as i32));
-                            }
-                            lyon::path::Event::End { last: _, first: _, close } => {
-                                if close {
-                                    if let (Some((sx, sy)), Some((cx, cy))) = (start, current) {
-                                        draw_line(&mut img, cx, cy, sx, sy, SHAPE_COLOR);
-                                    }
-                                }
-                                start = None;
-                                current = None;
-                            }
-                            _ => {}
                         }
                     }
                 }
-                
-                if shape_obj.selected {
-                    let (x1, y1, x2, y2) = shape_obj.shape.bounding_box();
-                    let (screen_x1, screen_y1) = viewport.world_to_pixel(x1, y1);
-                    let (screen_x2, screen_y2) = viewport.world_to_pixel(x2, y2);
-                    draw_selection_box(&mut img, screen_x1 as i32, screen_y1 as i32, screen_x2 as i32, screen_y2 as i32);
+                if let Some(path) = pb.finish() {
+                    let mut stroke = Stroke::default();
+                    stroke.width = 1.0 / zoom;
+                    pixmap.stroke_path(&path, &paint, &stroke, transform, None);
                 }
             }
-            ShapeType::Text => {
-                if let Some(text_shape) = shape_obj.shape.as_any().downcast_ref::<crate::shapes::TextShape>() {
-                     // Convert position to screen coordinates
-                     let (screen_x, screen_y) = viewport.world_to_pixel(text_shape.x, text_shape.y);
-                     let font_size_screen = (text_shape.font_size * viewport.zoom()) as f32;
-                     
-                     draw_text(
-                         &mut img,
-                         &text_shape.text,
-                         screen_x as i32,
-                         screen_y as i32,
-                         font_size_screen,
-                         SHAPE_COLOR,
-                     );
-                }
-                
-                if shape_obj.selected {
-                    draw_selection_box(&mut img, screen_x1, screen_y1, screen_x2, screen_y2);
-                }
-            }
-        }
-    }
+            crate::shapes::Shape::Text(text_shape) => {
+                // Text rendering using rusttype, drawing directly to pixmap pixels or using paths
+                // For simplicity and quality, let's convert glyphs to paths if possible, or just draw pixels.
+                // tiny-skia doesn't support text directly.
+                // We'll use the existing pixel-based approach but adapted for tiny-skia's buffer.
 
-    img
-}
+                let font = font_manager::get_font();
+                let font_size_screen = text_shape.font_size as f32 * zoom;
+                let scale = Scale::uniform(font_size_screen);
 
-/// Draw text
-fn draw_text(img: &mut RgbImage, text: &str, x: i32, y: i32, font_size: f32, color: Rgb<u8>) {
-    let font = font_manager::get_font();
-    let scale = Scale::uniform(font_size);
-    let v_metrics = font.v_metrics(scale);
-    
-    let start = rt_point(x as f32, y as f32 + v_metrics.ascent);
+                let (screen_x, screen_y) = viewport.world_to_pixel(text_shape.x, text_shape.y);
+                let v_metrics = font.v_metrics(scale);
+                let start = rt_point(screen_x as f32, screen_y as f32 + v_metrics.ascent);
 
-    for glyph in font.layout(text, scale, start) {
-        if let Some(bounding_box) = glyph.pixel_bounding_box() {
-            glyph.draw(|gx, gy, v| {
-                let px = gx as i32 + bounding_box.min.x;
-                let py = gy as i32 + bounding_box.min.y;
-                
-                if px >= 0 && px < img.width() as i32 && py >= 0 && py < img.height() as i32 {
-                    if v > 0.5 {
-                        img.put_pixel(px as u32, py as u32, color);
+                for glyph in font.layout(&text_shape.text, scale, start) {
+                    if let Some(bounding_box) = glyph.pixel_bounding_box() {
+                        glyph.draw(|gx, gy, v| {
+                            let px = gx as i32 + bounding_box.min.x;
+                            let py = gy as i32 + bounding_box.min.y;
+
+                            if px >= 0 && px < width as i32 && py >= 0 && py < height as i32 {
+                                let alpha = (v * 255.0) as u8;
+                                if alpha > 0 {
+                                    // Blend with existing color? Or just set?
+                                    // tiny-skia is premultiplied alpha.
+                                    // SHAPE_COLOR is opaque.
+                                    // We can just set the pixel if we want simple text.
+                                    // Or use tiny-skia's pixel manipulation if exposed.
+                                    // Pixmap data is a slice of u8.
+                                    let idx = ((py as u32 * width + px as u32) * 4) as usize;
+                                    let pixel = &mut pixmap.data_mut()[idx..idx + 4];
+
+                                    // Simple alpha blending over background
+                                    // Src: SHAPE_COLOR with alpha
+                                    // Dst: pixel
+                                    // This is getting complicated to do manually.
+                                    // Let's try to use PathBuilder with rusttype's outline_glyph if possible.
+                                    // But rusttype outline is experimental/complex?
+                                    // Actually, let's just draw pixels manually for now, it's easier.
+
+                                    let r = shape_color().red();
+                                    let g = shape_color().green();
+                                    let b = shape_color().blue();
+
+                                    // Premultiplied alpha
+                                    let a = alpha;
+                                    let r = (r as u16 * a as u16 / 255) as u8;
+                                    let g = (g as u16 * a as u16 / 255) as u8;
+                                    let b = (b as u16 * a as u16 / 255) as u8;
+
+                                    // Just overwrite for now (assuming opaque text on opaque bg)
+                                    pixel[0] = r;
+                                    pixel[1] = g;
+                                    pixel[2] = b;
+                                    pixel[3] = a;
+                                }
+                            }
+                        });
                     }
                 }
-            });
+            }
         }
-    }
-}
 
-/// Draw a filled rectangle
-fn draw_rectangle(img: &mut RgbImage, x1: i32, y1: i32, x2: i32, y2: i32, color: Rgb<u8>) {
-    let min_x = x1.min(x2).max(0);
-    let max_x = x1.max(x2).min(img.width() as i32 - 1);
-    let min_y = y1.min(y2).max(0);
-    let max_y = y1.max(y2).min(img.height() as i32 - 1);
+        // Draw Selection Indicators
+        if shape_obj.selected {
+            let (x1, y1, x2, y2) = shape_obj.shape.bounding_box();
 
-    for y in min_y..=max_y {
-        for x in min_x..=max_x {
-            if x >= 0 && y >= 0 && (x as u32) < img.width() && (y as u32) < img.height() {
-                // Draw filled
-                if x == min_x || x == max_x || y == min_y || y == max_y {
-                    img.put_pixel(x as u32, y as u32, color);
+            // Draw bounding box
+            let rect = Rect::from_ltrb(
+                x1 as f32,
+                y1.min(y2) as f32, // Ensure min/max correct
+                x2 as f32,
+                y1.max(y2) as f32,
+            );
+
+            if let Some(r) = rect {
+                let path = PathBuilder::from_rect(r);
+                let mut stroke = Stroke::default();
+                stroke.width = 1.0 / zoom;
+                let mut paint = Paint::default();
+                paint.set_color(selection_color());
+
+                pixmap.stroke_path(&path, &paint, &stroke, transform, None);
+
+                // Draw handles
+                let handles = [
+                    (x1, y1),
+                    (x2, y1),
+                    (x1, y2),
+                    (x2, y2),
+                    ((x1 + x2) / 2.0, (y1 + y2) / 2.0),
+                ];
+
+                let handle_size_world = HANDLE_SIZE / zoom;
+
+                for (i, (hx, hy)) in handles.iter().enumerate() {
+                    // Make center handle (index 4) 25% bigger for easier grabbing
+                    let size = if i == 4 {
+                        handle_size_world * 1.25
+                    } else {
+                        handle_size_world
+                    };
+
+                    let h_rect = Rect::from_xywh(
+                        (hx - size as f64 / 2.0) as f32,
+                        (hy - size as f64 / 2.0) as f32,
+                        size,
+                        size,
+                    );
+                    if let Some(hr) = h_rect {
+                        let h_path = PathBuilder::from_rect(hr);
+                        pixmap.fill_path(&h_path, &paint, FillRule::Winding, transform, None);
+                    }
                 }
             }
         }
     }
-}
 
-/// Draw a circle
-fn draw_circle(img: &mut RgbImage, cx: i32, cy: i32, radius: i32, color: Rgb<u8>) {
-    for angle in 0..360 {
-        let rad = (angle as f32).to_radians();
-        let x = (cx as f32 + radius as f32 * rad.cos()) as i32;
-        let y = (cy as f32 + radius as f32 * rad.sin()) as i32;
-        if x >= 0 && y >= 0 && (x as u32) < img.width() && (y as u32) < img.height() {
-            img.put_pixel(x as u32, y as u32, color);
-        }
-    }
-}
-
-/// Draw an ellipse
-fn draw_ellipse(img: &mut RgbImage, cx: i32, cy: i32, rx: i32, ry: i32, color: Rgb<u8>) {
-    for angle in 0..360 {
-        let rad = (angle as f32).to_radians();
-        let x = (cx as f32 + rx as f32 * rad.cos()) as i32;
-        let y = (cy as f32 + ry as f32 * rad.sin()) as i32;
-        if x >= 0 && y >= 0 && (x as u32) < img.width() && (y as u32) < img.height() {
-            img.put_pixel(x as u32, y as u32, color);
-        }
-    }
-}
-
-/// Draw a line using Bresenham's algorithm
-fn draw_line(img: &mut RgbImage, x1: i32, y1: i32, x2: i32, y2: i32, color: Rgb<u8>) {
-    let mut x = x1;
-    let mut y = y1;
-    let dx = (x2 - x1).abs();
-    let dy = (y2 - y1).abs();
-    let sx = if x1 < x2 { 1 } else { -1 };
-    let sy = if y1 < y2 { 1 } else { -1 };
-    let mut err = dx - dy;
-
-    loop {
-        if x >= 0 && y >= 0 && (x as u32) < img.width() && (y as u32) < img.height() {
-            img.put_pixel(x as u32, y as u32, color);
-        }
-
-        if x == x2 && y == y2 {
-            break;
-        }
-
-        let e2 = 2 * err;
-        if e2 > -dy {
-            err -= dy;
-            x += sx;
-        }
-        if e2 < dx {
-            err += dx;
-            y += sy;
-        }
-    }
-}
-
-/// Draw selection box with handles
-fn draw_selection_box(img: &mut RgbImage, x1: i32, y1: i32, x2: i32, y2: i32) {
-    // Draw selection outline
-    draw_rectangle_outline(img, x1, y1, x2, y2, SELECTION_COLOR);
-
-    // Draw resize handles at corners and center
-    let handles = [
-        (x1, y1),                       // Top-left
-        (x2, y1),                       // Top-right
-        (x1, y2),                       // Bottom-left
-        (x2, y2),                       // Bottom-right
-        ((x1 + x2) / 2, (y1 + y2) / 2), // Center
-    ];
-
-    for (hx, hy) in &handles {
-        draw_handle(img, *hx, *hy);
-    }
-}
-
-/// Draw a rectangle outline
-fn draw_rectangle_outline(img: &mut RgbImage, x1: i32, y1: i32, x2: i32, y2: i32, color: Rgb<u8>) {
-    // Top and bottom
-    for x in x1.min(x2)..=x1.max(x2) {
-        if x >= 0 && x < img.width() as i32 {
-            if y1 >= 0 && y1 < img.height() as i32 {
-                img.put_pixel(x as u32, y1 as u32, color);
-            }
-            if y2 >= 0 && y2 < img.height() as i32 {
-                img.put_pixel(x as u32, y2 as u32, color);
-            }
-        }
-    }
-
-    // Left and right
-    for y in y1.min(y2)..=y1.max(y2) {
-        if y >= 0 && y < img.height() as i32 {
-            if x1 >= 0 && x1 < img.width() as i32 {
-                img.put_pixel(x1 as u32, y as u32, color);
-            }
-            if x2 >= 0 && x2 < img.width() as i32 {
-                img.put_pixel(x2 as u32, y as u32, color);
-            }
-        }
-    }
-}
-
-/// Draw a resize handle
-fn draw_handle(img: &mut RgbImage, cx: i32, cy: i32) {
-    let half = HANDLE_SIZE / 2;
-    for dy in -half..=half {
-        for dx in -half..=half {
-            let x = cx + dx;
-            let y = cy + dy;
-            if x >= 0 && y >= 0 && (x as u32) < img.width() && (y as u32) < img.height() {
-                img.put_pixel(x as u32, y as u32, SELECTION_COLOR);
-            }
-        }
-    }
+    // Convert Pixmap to RgbImage
+    let data = pixmap.data();
+    RgbImage::from_fn(width, height, |x, y| {
+        let idx = ((y * width + x) * 4) as usize;
+        let r = data[idx];
+        let g = data[idx + 1];
+        let b = data[idx + 2];
+        // Ignore alpha, assume opaque
+        Rgb([r, g, b])
+    })
 }
