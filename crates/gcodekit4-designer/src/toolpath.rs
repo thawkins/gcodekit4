@@ -139,40 +139,184 @@ impl ToolpathGenerator {
     pub fn generate_rectangle_contour(&self, rect: &Rectangle) -> Toolpath {
         let mut toolpath = Toolpath::new(self.tool_diameter, self.cut_depth);
 
-        let corners = rect.corners();
+        // Normalize coordinates
+        let (x1, y1, x2, y2) = rect.bounding_box();
+        let min_x = x1.min(x2);
+        let max_x = x1.max(x2);
+        let min_y = y1.min(y2);
+        let max_y = y1.max(y2);
+        let w = max_x - min_x;
+        let h = max_y - min_y;
+        let x = min_x;
+        let y = min_y;
 
-        // Start at first corner with rapid move
-        let first_move = ToolpathSegment::new(
-            ToolpathSegmentType::RapidMove,
-            Point::new(0.0, 0.0),
-            corners[0],
-            self.feed_rate,
-            self.spindle_speed,
-        );
-        toolpath.add_segment(first_move);
+        let r = rect.corner_radius.min(w / 2.0).min(h / 2.0);
 
-        // Move around the rectangle
-        for i in 0..4 {
-            let next_i = (i + 1) % 4;
-            let segment = ToolpathSegment::new(
-                ToolpathSegmentType::LinearMove,
-                corners[i],
-                corners[next_i],
+        if r < 0.001 {
+            // Sharp corners
+            let corners = [
+                Point::new(x, y),
+                Point::new(x + w, y),
+                Point::new(x + w, y + h),
+                Point::new(x, y + h),
+            ];
+
+            // Start at first corner with rapid move
+            let first_move = ToolpathSegment::new(
+                ToolpathSegmentType::RapidMove,
+                Point::new(0.0, 0.0),
+                corners[0],
                 self.feed_rate,
                 self.spindle_speed,
             );
-            toolpath.add_segment(segment);
-        }
+            toolpath.add_segment(first_move);
 
-        // Return to origin with rapid move
-        let return_move = ToolpathSegment::new(
-            ToolpathSegmentType::RapidMove,
-            corners[0],
-            Point::new(0.0, 0.0),
-            self.feed_rate,
-            self.spindle_speed,
-        );
-        toolpath.add_segment(return_move);
+            // Move around the rectangle
+            for i in 0..4 {
+                let next_i = (i + 1) % 4;
+                let segment = ToolpathSegment::new(
+                    ToolpathSegmentType::LinearMove,
+                    corners[i],
+                    corners[next_i],
+                    self.feed_rate,
+                    self.spindle_speed,
+                );
+                toolpath.add_segment(segment);
+            }
+
+            // Return to origin with rapid move
+            let return_move = ToolpathSegment::new(
+                ToolpathSegmentType::RapidMove,
+                corners[0],
+                Point::new(0.0, 0.0),
+                self.feed_rate,
+                self.spindle_speed,
+            );
+            toolpath.add_segment(return_move);
+        } else {
+            // Rounded corners
+            // Start point: (x + r, y)
+            let start_pt = Point::new(x + r, y);
+            
+            // Rapid to start
+            toolpath.add_segment(ToolpathSegment::new(
+                ToolpathSegmentType::RapidMove,
+                Point::new(0.0, 0.0),
+                start_pt,
+                self.feed_rate,
+                self.spindle_speed,
+            ));
+            
+            let mut current_pt = start_pt;
+            
+            // Helper function for arc generation
+            fn add_arc_segments(
+                toolpath: &mut Toolpath, 
+                current_pt: &mut Point, 
+                center: Point, 
+                radius: f64, 
+                start_angle: f64, 
+                end_angle: f64,
+                feed_rate: f64,
+                spindle_speed: u32
+            ) {
+                let segments = 8;
+                let start_rad = start_angle.to_radians();
+                let end_rad = end_angle.to_radians();
+                let step = (end_rad - start_rad) / segments as f64;
+                
+                let mut angle = start_rad;
+                for _ in 0..segments {
+                    angle += step;
+                    let next_pt = Point::new(
+                        center.x + radius * angle.cos(),
+                        center.y + radius * angle.sin()
+                    );
+                    
+                    toolpath.add_segment(ToolpathSegment::new(
+                        ToolpathSegmentType::LinearMove,
+                        *current_pt,
+                        next_pt,
+                        feed_rate,
+                        spindle_speed,
+                    ));
+                    *current_pt = next_pt;
+                }
+            }
+
+            // 1. Bottom Edge
+            let p1 = Point::new(x + w - r, y);
+            if current_pt.distance_to(&p1) > 0.001 {
+                toolpath.add_segment(ToolpathSegment::new(
+                    ToolpathSegmentType::LinearMove,
+                    current_pt,
+                    p1,
+                    self.feed_rate,
+                    self.spindle_speed,
+                ));
+                current_pt = p1;
+            }
+            
+            // 2. BR Corner
+            add_arc_segments(&mut toolpath, &mut current_pt, Point::new(x + w - r, y + r), r, 270.0, 360.0, self.feed_rate, self.spindle_speed);
+            
+            // 3. Right Edge
+            let p2 = Point::new(x + w, y + h - r);
+            if current_pt.distance_to(&p2) > 0.001 {
+                toolpath.add_segment(ToolpathSegment::new(
+                    ToolpathSegmentType::LinearMove,
+                    current_pt,
+                    p2,
+                    self.feed_rate,
+                    self.spindle_speed,
+                ));
+                current_pt = p2;
+            }
+            
+            // 4. TR Corner
+            add_arc_segments(&mut toolpath, &mut current_pt, Point::new(x + w - r, y + h - r), r, 0.0, 90.0, self.feed_rate, self.spindle_speed);
+            
+            // 5. Top Edge
+            let p3 = Point::new(x + r, y + h);
+            if current_pt.distance_to(&p3) > 0.001 {
+                toolpath.add_segment(ToolpathSegment::new(
+                    ToolpathSegmentType::LinearMove,
+                    current_pt,
+                    p3,
+                    self.feed_rate,
+                    self.spindle_speed,
+                ));
+                current_pt = p3;
+            }
+            
+            // 6. TL Corner
+            add_arc_segments(&mut toolpath, &mut current_pt, Point::new(x + r, y + h - r), r, 90.0, 180.0, self.feed_rate, self.spindle_speed);
+            
+            // 7. Left Edge
+            let p4 = Point::new(x, y + r);
+            if current_pt.distance_to(&p4) > 0.001 {
+                toolpath.add_segment(ToolpathSegment::new(
+                    ToolpathSegmentType::LinearMove,
+                    current_pt,
+                    p4,
+                    self.feed_rate,
+                    self.spindle_speed,
+                ));
+                current_pt = p4;
+            }
+            
+            // 8. BL Corner
+            add_arc_segments(&mut toolpath, &mut current_pt, Point::new(x + r, y + r), r, 180.0, 270.0, self.feed_rate, self.spindle_speed);
+            
+            // Return to origin
+            toolpath.add_segment(ToolpathSegment::new(
+                ToolpathSegmentType::RapidMove,
+                current_pt,
+                Point::new(0.0, 0.0),
+                self.feed_rate,
+                self.spindle_speed,
+            ));
+        }
 
         toolpath
     }
@@ -313,6 +457,53 @@ impl ToolpathGenerator {
 
     /// Generates a pocket toolpath for a rectangle.
     pub fn generate_rectangle_pocket(&self, rect: &Rectangle, pocket_depth: f64, step_down: f64, step_in: f64) -> Vec<Toolpath> {
+        let r = rect.corner_radius.min(rect.width.abs() / 2.0).min(rect.height.abs() / 2.0);
+        
+        if r > 0.001 {
+            // Convert rounded rectangle to polygon for pocketing
+            let mut vertices = Vec::new();
+            let (x1, y1, x2, y2) = rect.bounding_box();
+            let min_x = x1.min(x2);
+            let max_x = x1.max(x2);
+            let min_y = y1.min(y2);
+            let max_y = y1.max(y2);
+            let w = max_x - min_x;
+            let h = max_y - min_y;
+            let x = min_x;
+            let y = min_y;
+            
+            let segments = 8;
+            
+            // Helper to add arc points
+            let mut add_arc_points = |center: Point, start_angle: f64, end_angle: f64| {
+                let start_rad = start_angle.to_radians();
+                let end_rad = end_angle.to_radians();
+                let step = (end_rad - start_rad) / segments as f64;
+                
+                for i in 0..=segments {
+                    let angle = start_rad + step * i as f64;
+                    vertices.push(Point::new(
+                        center.x + r * angle.cos(),
+                        center.y + r * angle.sin()
+                    ));
+                }
+            };
+            
+            // BR Corner (270 -> 360)
+            add_arc_points(Point::new(x + w - r, y + r), 270.0, 360.0);
+            
+            // TR Corner (0 -> 90)
+            add_arc_points(Point::new(x + w - r, y + h - r), 0.0, 90.0);
+            
+            // TL Corner (90 -> 180)
+            add_arc_points(Point::new(x + r, y + h - r), 90.0, 180.0);
+            
+            // BL Corner (180 -> 270)
+            add_arc_points(Point::new(x + r, y + r), 180.0, 270.0);
+            
+            return self.generate_polyline_pocket(&vertices, pocket_depth, step_down, step_in);
+        }
+
         let op = PocketOperation::new("rect_pocket".to_string(), pocket_depth, self.tool_diameter);
         let mut gen = PocketGenerator::new(op);
         let effective_step_in = if step_in > 0.0 { step_in } else { self.step_in };

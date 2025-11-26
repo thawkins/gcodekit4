@@ -1183,6 +1183,72 @@ impl Canvas {
         changed
     }
 
+    /// Calculates rectangle property updates without modifying the canvas.
+    pub fn calculate_rectangle_property_updates(&self, corner_radius: f64, is_slot: bool) -> Vec<(u64, DrawingObject)> {
+        let mut updates = Vec::new();
+        
+        for obj in self.shape_store.iter().filter(|o| o.selected) {
+            if let Some(rect) = obj.shape.as_any().downcast_ref::<Rectangle>() {
+                let mut new_rect = *rect;
+                new_rect.corner_radius = corner_radius;
+                new_rect.is_slot = is_slot;
+                
+                // Re-constrain radius
+                let max_radius = new_rect.width.min(new_rect.height).abs() / 2.0;
+                if new_rect.is_slot {
+                    new_rect.corner_radius = max_radius;
+                } else {
+                    new_rect.corner_radius = new_rect.corner_radius.min(max_radius);
+                }
+                
+                let mut new_obj = obj.clone();
+                new_obj.shape = Shape::Rectangle(new_rect);
+                updates.push((obj.id, new_obj));
+            }
+        }
+        
+        updates
+    }
+
+    pub fn set_selected_rectangle_properties(&mut self, corner_radius: f64, is_slot: bool) -> bool {
+        let mut changed = false;
+        let mut updates = Vec::new();
+        
+        for obj in self.shape_store.iter_mut() {
+            if !obj.selected {
+                continue;
+            }
+            if let Some(rect) = obj.shape.as_any().downcast_ref::<Rectangle>() {
+                let (old_x1, old_y1, old_x2, old_y2) = obj.shape.bounding_box();
+                
+                let mut new_rect = *rect;
+                new_rect.corner_radius = corner_radius;
+                new_rect.is_slot = is_slot;
+                
+                // Re-constrain radius
+                let max_radius = new_rect.width.min(new_rect.height).abs() / 2.0;
+                if new_rect.is_slot {
+                    new_rect.corner_radius = max_radius;
+                } else {
+                    new_rect.corner_radius = new_rect.corner_radius.min(max_radius);
+                }
+                
+                obj.shape = Shape::Rectangle(new_rect);
+                changed = true;
+                
+                let (new_x1, new_y1, new_x2, new_y2) = obj.shape.bounding_box();
+                updates.push((obj.id, Bounds::new(old_x1, old_y1, old_x2, old_y2), Bounds::new(new_x1, new_y1, new_x2, new_y2)));
+            }
+        }
+        
+        for (id, old_bounds, new_bounds) in updates {
+            self.spatial_manager.remove_bounds(id, &old_bounds);
+            self.spatial_manager.insert_bounds(id, &new_bounds);
+        }
+        
+        changed
+    }
+
     pub fn set_selected_id(&mut self, id: Option<u64>) {
         self.selection_manager.set_selected_id(id);
     }

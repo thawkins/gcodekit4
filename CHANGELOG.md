@@ -5,7 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.39.1-alpha] - 2025-11-25
+## [0.42.0-alpha] - 2025-11-26
+
+### Added
+- **Designer**: Added support for rounded corners and slot mode for rectangles.
+  - New "Radius" property for rectangles.
+  - New "Slot (Auto Radius)" checkbox to automatically set radius for slot shapes.
+  - Updated toolpath generator to support rounded rectangles and slots in both contour and pocket operations.
+  - Updated SVG renderer to display rounded corners and slots correctly.
+
+### Changed
+- **Designer**: Increased maximum zoom factor from 1000% to 5000% for better precision.
+- **Designer**: Increased left-hand panel width to 250px for better layout.
+- **Designer**: Standardized text sizes and control dimensions between left and right panels.
+- **Designer**: Removed padding around the canvas for a cleaner look.
+- **Designer**: Fixed icon alignment in tool buttons.
+
+## [0.41.0-alpha] - 2025-11-25
 
 ### Added
 - **Visualizer**: Added automatic "Fit to View" when switching to the Visualizer tab.

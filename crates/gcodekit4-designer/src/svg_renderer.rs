@@ -330,14 +330,47 @@ fn render_shape_trait(
     let (x1, y1, x2, y2) = shape.bounding_box();
 
     match shape {
-        crate::shapes::Shape::Rectangle(_) => {
-            let (sx1, sy1) = viewport.world_to_pixel(x1, y1);
-            let (sx2, sy2) = viewport.world_to_pixel(x2, y2);
+        crate::shapes::Shape::Rectangle(rect) => {
+            let (x1, y1, x2, y2) = rect.bounding_box();
+            // Normalize coordinates
+            let min_x = x1.min(x2);
+            let max_x = x1.max(x2);
+            let min_y = y1.min(y2);
+            let max_y = y1.max(y2);
 
-            format!(
-                "M {} {} L {} {} L {} {} L {} {} Z ",
-                sx1, sy1, sx2, sy1, sx2, sy2, sx1, sy2
-            )
+            let (sx1, sy1) = viewport.world_to_pixel(min_x, min_y);
+            let (sx2, sy2) = viewport.world_to_pixel(max_x, max_y);
+
+            let r = rect.corner_radius * viewport.zoom();
+            
+            // Clamp radius to half of min dimension in screen pixels to prevent artifacts
+            let width = (sx2 - sx1).abs();
+            let height = (sy1 - sy2).abs();
+            let max_r = width.min(height) / 2.0;
+            let r = r.min(max_r);
+
+            if r < 0.1 {
+                format!(
+                    "M {} {} L {} {} L {} {} L {} {} Z ",
+                    sx1, sy1, sx2, sy1, sx2, sy2, sx1, sy2
+                )
+            } else {
+                // Rounded rectangle
+                // BL -> BR -> TR -> TL
+                // sy1 is bottom (larger Y), sy2 is top (smaller Y)
+                format!(
+                    "M {} {} L {} {} A {} {} 0 0 0 {} {} L {} {} A {} {} 0 0 0 {} {} L {} {} A {} {} 0 0 0 {} {} L {} {} A {} {} 0 0 0 {} {} Z ",
+                    sx1 + r, sy1,           // Start bottom edge
+                    sx2 - r, sy1,           // End bottom edge
+                    r, r, sx2, sy1 - r,     // Arc to right edge
+                    sx2, sy2 + r,           // End right edge
+                    r, r, sx2 - r, sy2,     // Arc to top edge
+                    sx1 + r, sy2,           // End top edge
+                    r, r, sx1, sy2 + r,     // Arc to left edge
+                    sx1, sy1 - r,           // End left edge
+                    r, r, sx1 + r, sy1      // Arc to start
+                )
+            }
         }
         crate::shapes::Shape::Circle(_) => {
             let center_x = (x1 + x2) / 2.0;
