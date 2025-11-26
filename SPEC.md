@@ -1,14 +1,17 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.40.0-alpha  
+**Version**: 0.42.0-alpha  
 **Last Updated**: 2025-11-26  
 **Status**: Feature Release
 
-### Latest Release (v0.40.0-alpha) - Designer Enhancements
-- ✅ **Shape Naming**
-  - User-editable names for all shapes.
-  - Displayed in Layers list and Properties panel.
-  - Undo/Redo support for name changes.
+### Latest Release (v0.42.0-alpha) - Designer UI & Feature Polish
+- ✅ **UI Improvements**
+  - **Panel Layout**: Increased left sidebar width to 250px for better control visibility.
+  - **Consistency**: Standardized control sizes and text alignment across panels.
+  - **Canvas**: Removed padding for a cleaner, edge-to-edge drawing area.
+  - **Icons**: Fixed alignment of tool icons in the sidebar.
+- ✅ **Zoom & Navigation**
+  - **Extended Zoom**: Increased maximum zoom factor to 5000% for high-precision work.
 - ✅ **Rectangle Features**
   - **Rounded Corners**: Configurable corner radius for rectangles.
   - **Slot Mode**: Toggle to automatically set radius to max (half-width/height) for slot shapes.
@@ -18,7 +21,7 @@
   - **Layout**: Full vertical height utilization and column headers.
   - **Focus**: Automatic focus handling for seamless keyboard interaction.
 
-### Previous Release (v0.38.0-alpha) - Rubber Band Selection
+### Previous Release (v0.41.0-alpha) - Visualizer Enhancements
 - ✅ **Rubber Band Selection**
   - Drag on empty space (with Shift) to select multiple shapes.
   - Visual feedback with semi-transparent selection rectangle.
