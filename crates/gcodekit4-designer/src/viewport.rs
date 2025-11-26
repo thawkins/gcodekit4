@@ -51,9 +51,9 @@ impl Viewport {
         self.zoom
     }
 
-    /// Sets the zoom level, constrained between 0.1 and 10.0.
+    /// Sets the zoom level, constrained between 0.1 and 50.0.
     pub fn set_zoom(&mut self, zoom: f64) {
-        if zoom > 0.1 && zoom < 10.0 {
+        if zoom > 0.1 && zoom < 50.0 {
             self.zoom = zoom;
         }
     }
@@ -167,7 +167,7 @@ impl Viewport {
         let zoom_y = (self.canvas_height * padding_factor) / height;
 
         // Use the smaller zoom to fit everything
-        let new_zoom = zoom_x.min(zoom_y).max(0.1).min(10.0);
+        let new_zoom = zoom_x.min(zoom_y).max(0.1).min(50.0);
 
         // Center the content
         let content_pixel_width = width * new_zoom;
@@ -198,7 +198,7 @@ impl Viewport {
     /// * `world_point` - The world coordinate to zoom to
     /// * `new_zoom` - The new zoom level
     pub fn zoom_to_point(&mut self, world_point: &Point, new_zoom: f64) {
-        if new_zoom <= 0.1 || new_zoom >= 10.0 {
+        if new_zoom <= 0.1 || new_zoom >= 50.0 {
             return;
         }
 

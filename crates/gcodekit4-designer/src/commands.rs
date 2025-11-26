@@ -223,7 +223,7 @@ impl DesignerCommand {
                 }
             }
             DesignerCommand::PasteShapes(cmd) => {
-                for (i, id) in cmd.ids.iter().enumerate() {
+                for (i, _) in cmd.ids.iter().enumerate() {
                     if let Some(obj) = cmd.objects[i].take() {
                         canvas.restore_shape(obj);
                     }

@@ -139,7 +139,7 @@ impl DesignerState {
     /// Zooms in on the canvas.
     pub fn zoom_in(&mut self) {
         let current = self.canvas.zoom();
-        let new_zoom = (current * 1.2).min(10.0);
+        let new_zoom = (current * 1.2).min(50.0);
         self.canvas.set_zoom(new_zoom);
     }
 

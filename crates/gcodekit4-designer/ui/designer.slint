@@ -3,6 +3,40 @@
 
 import { Button, VerticalBox, HorizontalBox, ScrollView, CheckBox, ComboBox } from "std-widgets.slint";
 
+component DarkCheckBox inherits HorizontalLayout {
+    in-out property <bool> checked;
+    in property <string> text;
+    callback toggled;
+    
+    spacing: 4px;
+    
+    Rectangle {
+        width: 16px; height: 16px;
+        border-width: 1px;
+        border-color: #bdc3c7;
+        background: root.checked ? #3498db : transparent;
+        y: (parent.height - self.height) / 2;
+        
+        if root.checked : Text {
+            text: "✓";
+            color: white;
+            font-size: 12px;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
+        
+        TouchArea { clicked => { root.checked = !root.checked; root.toggled(); } }
+    }
+    
+    Text {
+        text: root.text;
+        color: #ecf0f1;
+        vertical-alignment: center;
+    }
+    
+    TouchArea { clicked => { root.checked = !root.checked; root.toggled(); } }
+}
+
 component CompactSpinBox inherits Rectangle {
     in-out property <float> value;
     in property <float> minimum: 0;
@@ -12,9 +46,9 @@ component CompactSpinBox inherits Rectangle {
     
     callback value-changed(float);
     
-    background: enabled ? white : #f0f0f0;
+    background: enabled ? #34495e : #2c3e50;
     border-width: 1px;
-    border-color: #ccc;
+    border-color: #555;
     border-radius: 2px;
     
     HorizontalLayout {
@@ -30,7 +64,7 @@ component CompactSpinBox inherits Rectangle {
                 vertical-alignment: center;
                 font-size: 13px;
                 enabled: root.enabled;
-                color: root.enabled ? black : #888;
+                color: root.enabled ? #ecf0f1 : #7f8c8d;
                 
                 edited => {
                     if (self.text != "") {
@@ -48,16 +82,16 @@ component CompactSpinBox inherits Rectangle {
             
             Rectangle {
                 height: 11px;
-                background: up-touch.has-hover && root.enabled ? #e0e0e0 : #f5f5f5;
+                background: up-touch.has-hover && root.enabled ? #465c71 : #2c3e50;
                 border-width: 1px;
-                border-color: #ccc;
+                border-color: #555;
                 
                 Text {
                     text: "▲";
                     font-size: 8px;
                     horizontal-alignment: center;
                     vertical-alignment: center;
-                    color: root.enabled ? black : #888;
+                    color: root.enabled ? #bdc3c7 : #555;
                 }
                 
                 up-touch := TouchArea {
@@ -73,16 +107,16 @@ component CompactSpinBox inherits Rectangle {
             
             Rectangle {
                 height: 11px;
-                background: down-touch.has-hover && root.enabled ? #e0e0e0 : #f5f5f5;
+                background: down-touch.has-hover && root.enabled ? #465c71 : #2c3e50;
                 border-width: 1px;
-                border-color: #ccc;
+                border-color: #555;
                 
                 Text {
                     text: "▼";
                     font-size: 8px;
                     horizontal-alignment: center;
                     vertical-alignment: center;
-                    color: root.enabled ? black : #888;
+                    color: root.enabled ? #bdc3c7 : #555;
                 }
                 
                 down-touch := TouchArea {
@@ -137,7 +171,7 @@ export struct DesignerState {
 component ToolButton inherits Rectangle {
     in property <int> tool_id;
     in property <int> current_mode;
-    in property <string> icon_text;
+    in property <image> icon;
     in property <string> tooltip;
     
     callback clicked;
@@ -148,14 +182,13 @@ component ToolButton inherits Rectangle {
     border-width: 2px;
     border-color: current_mode == tool_id ? white : transparent;
     
-    VerticalBox {
-        alignment: center;
-        Text {
-            text: icon_text;
-            font-size: 24px;
-            horizontal-alignment: center;
-            color: current_mode == tool_id ? white : #95a5a6;
-        }
+    Image {
+        source: icon;
+        width: 24px;
+        height: 24px;
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        colorize: current_mode == tool_id ? white : #95a5a6;
     }
     
     TouchArea {
@@ -865,8 +898,9 @@ export component DesignerPanel inherits Rectangle {
         // LEFT SIDEBAR: Tool Icons in 4-Column Grid
         // ═════════════════════════════════════════════
         Rectangle {
-            width: 210px;
+            width: 250px;
             horizontal-stretch: 0;
+            background: #2c3e50;
             
             VerticalLayout {
                 width: 100%;
@@ -882,33 +916,36 @@ export component DesignerPanel inherits Rectangle {
             // Drawing Tools Section (7 buttons in 4-column grid)
             HorizontalLayout {
                 spacing: 2px;
-                padding: 2px;
+                padding-left: 6px;
+                padding-right: 2px;
+                padding-top: 2px;
+                padding-bottom: 2px;
                 
                 ToolButton {
                     tool_id: 0;
                     current_mode: designer_state.mode;
-                    icon_text: "➜";
+                    icon: @image-url("../../../assets/icons/select.svg");
                     tooltip: "Select (S)";
                     clicked => { set_mode(0); }
                 }
                 ToolButton {
                     tool_id: 1;
                     current_mode: designer_state.mode;
-                    icon_text: "▭";
+                    icon: @image-url("../../../assets/icons/rectangle.svg");
                     tooltip: "Rectangle (R)";
                     clicked => { set_mode(1); }
                 }
                 ToolButton {
                     tool_id: 2;
                     current_mode: designer_state.mode;
-                    icon_text: "●";
+                    icon: @image-url("../../../assets/icons/circle.svg");
                     tooltip: "Circle (C)";
                     clicked => { set_mode(2); }
                 }
                 ToolButton {
                     tool_id: 3;
                     current_mode: designer_state.mode;
-                    icon_text: "/";
+                    icon: @image-url("../../../assets/icons/line.svg");
                     tooltip: "Line (L)";
                     clicked => { set_mode(3); }
                 }
@@ -916,26 +953,29 @@ export component DesignerPanel inherits Rectangle {
             
             HorizontalLayout {
                 spacing: 2px;
-                padding: 2px;
+                padding-left: 6px;
+                padding-right: 2px;
+                padding-top: 2px;
+                padding-bottom: 2px;
                 
                 ToolButton {
                     tool_id: 4;
                     current_mode: designer_state.mode;
-                    icon_text: "◯";
+                    icon: @image-url("../../../assets/icons/ellipse.svg");
                     tooltip: "Ellipse (E)";
                     clicked => { set_mode(4); }
                 }
                 ToolButton {
                     tool_id: 5;
                     current_mode: designer_state.mode;
-                    icon_text: "⬠";
+                    icon: @image-url("../../../assets/icons/polyline.svg");
                     tooltip: "Polyline (P)";
                     clicked => { set_mode(5); }
                 }
                 ToolButton {
                     tool_id: 6;
                     current_mode: designer_state.mode;
-                    icon_text: "T";
+                    icon: @image-url("../../../assets/icons/text.svg");
                     tooltip: "Text (T)";
                     clicked => { set_mode(6); }
                 }
@@ -956,22 +996,23 @@ export component DesignerPanel inherits Rectangle {
             
             // Tool Setup Controls (Copy)
             VerticalLayout {
-                spacing: 6px;
+                spacing: 10px;
                 padding: 6px;
                 
                 Text {
                     text: "Tool Setup";
                     font-weight: 700;
-                    font-size: 11px;
+                    font-size: 12px;
+                    color: #ecf0f1;
                 }
                 
                 HorizontalLayout {
                     spacing: 2px;
                     Text { 
                         text: "Feed:"; 
-                        font-size: 11px;
                         width: 40px;
                         vertical-alignment: center;
+                        color: #bdc3c7;
                     }
                     CompactSpinBox { 
                         value: root.feed_rate; 
@@ -979,7 +1020,6 @@ export component DesignerPanel inherits Rectangle {
                         maximum: 10000;
                         step: 10;
                         horizontal-stretch: 1;
-                        height: 22px;
                         value-changed(v) => {
                             root.feed_rate = v;
                             root.update_feed_rate(v);
@@ -991,9 +1031,9 @@ export component DesignerPanel inherits Rectangle {
                     spacing: 2px;
                     Text { 
                         text: "Speed:"; 
-                        font-size: 11px;
                         width: 40px;
                         vertical-alignment: center;
+                        color: #bdc3c7;
                     }
                     CompactSpinBox { 
                         value: root.spindle_speed;
@@ -1001,7 +1041,6 @@ export component DesignerPanel inherits Rectangle {
                         maximum: 30000;
                         step: 100;
                         horizontal-stretch: 1;
-                        height: 22px;
                         value-changed(v) => {
                             root.spindle_speed = v;
                             root.update_spindle_speed(v);
@@ -1013,9 +1052,9 @@ export component DesignerPanel inherits Rectangle {
                     spacing: 2px;
                     Text { 
                         text: "Tool:"; 
-                        font-size: 11px;
                         width: 40px;
                         vertical-alignment: center;
+                        color: #bdc3c7;
                     }
                     CompactSpinBox { 
                         value: root.tool_diameter;
@@ -1023,7 +1062,6 @@ export component DesignerPanel inherits Rectangle {
                         maximum: 50;
                         step: 0.1;
                         horizontal-stretch: 1;
-                        height: 22px;
                         value-changed(v) => {
                             root.tool_diameter = v;
                             root.update_tool_diameter(v);
@@ -1035,9 +1073,9 @@ export component DesignerPanel inherits Rectangle {
                     spacing: 2px;
                     Text { 
                         text: "Depth:"; 
-                        font-size: 11px;
                         width: 40px;
                         vertical-alignment: center;
+                        color: #bdc3c7;
                     }
                     CompactSpinBox { 
                         value: root.cut_depth;
@@ -1045,7 +1083,6 @@ export component DesignerPanel inherits Rectangle {
                         maximum: 0;
                         step: 0.1;
                         horizontal-stretch: 1;
-                        height: 22px;
                         value-changed(v) => {
                             root.cut_depth = v;
                             root.update_cut_depth(v);
@@ -1057,9 +1094,9 @@ export component DesignerPanel inherits Rectangle {
                     spacing: 2px;
                     Text { 
                         text: "Step:"; 
-                        font-size: 11px;
                         width: 40px;
                         vertical-alignment: center;
+                        color: #bdc3c7;
                     }
                     CompactSpinBox { 
                         value: root.step_in;
@@ -1067,7 +1104,6 @@ export component DesignerPanel inherits Rectangle {
                         maximum: 50;
                         step: 0.1;
                         horizontal-stretch: 1;
-                        height: 22px;
                         value-changed(v) => {
                             root.step_in = v;
                             root.update_step_in(v);
@@ -1075,7 +1111,7 @@ export component DesignerPanel inherits Rectangle {
                     }
                 }
                 
-                CheckBox {
+                DarkCheckBox {
                     text: "Grid";
                     checked <=> root.show_grid;
                     toggled => { root.toggle_grid(); }
@@ -1093,87 +1129,16 @@ export component DesignerPanel inherits Rectangle {
         Rectangle {
             horizontal-stretch: 1;
             
-            VerticalBox {
+            VerticalLayout {
                 width: 100%;
                 height: 100%;
-            
-            // Canvas Info Indicator
-            Rectangle {
-                height: 25px;
-                background: white;
-                border-width: 1px;
-                border-color: #cccccc;
-                
-                HorizontalBox {
-                    padding-left: 8px;
-                    padding-right: 8px;
-                    padding-top: 4px;
-                    padding-bottom: 4px;
-                    spacing: 0px;
-                    alignment: start;
-                    
-                    // Zoom Scale
-                    Text {
-                        text: "Scale: " + Math.round(zoom_scale * 1000.0) / 10.0 + "%";
-                        font-size: 13px;
-                        font-weight: 700;
-                        color: black;
-                    }
-                    
-                    // Spacer
-                    Rectangle { width: 20px; }
-                    
-                    // X Offset
-                    Text {
-                        text: "X: " + Math.round(x_offset * 10.0) / 10.0;
-                        font-size: 13px;
-                        color: black;
-                    }
-                    
-                    // Spacer
-                    Rectangle { width: 20px; }
-                    
-                    // Y Offset
-                    Text {
-                        text: "Y: " + Math.round(y_offset * 10.0) / 10.0;
-                        font-size: 13px;
-                        color: black;
-                    }
-                    
-                    // Spacer
-                    Rectangle { width: 20px; }
-
-                    // Grid Size
-                    if root.show_grid : Text {
-                        text: "Grid: " + root.grid_size;
-                        font-size: 13px;
-                        color: black;
-                    }
-                    
-                    // Spacer before shape indicator
-                    if designer_state.selected_id > 0 : Rectangle {
-                        width: 20px;
-                    }
-                    
-                    // Shape Indicator (X, Y, W, H) - shown only when shape is selected
-                    if designer_state.selected_id > 0 : Text {
-                        text: "| Shape: X=" + Math.round(root.selected_shape_x * 100.0) / 100.0 + 
-                              " Y=" + Math.round(root.selected_shape_y * 100.0) / 100.0 +
-                              " W=" + Math.round(root.selected_shape_w * 100.0) / 100.0 +
-                              " H=" + Math.round(root.selected_shape_h * 100.0) / 100.0;
-                        font-size: 13px;
-                        color: #2980b9;
-                        font-weight: 700;
-                    }
-                }
-            }
             
             // Canvas with interactive area
             Rectangle {
                 background: #2c3e50;
                 vertical-stretch: 1;
                 
-                VerticalBox {
+                VerticalLayout {
                     Rectangle {
                         vertical-stretch: 1;
                         background: #34495e;
@@ -1464,6 +1429,96 @@ export component DesignerPanel inherits Rectangle {
                                         }
                                     }
                                 }
+
+                                // Floating Status Bar (Bottom Left)
+                                Rectangle {
+                                    x: 10px;
+                                    y: parent.height - 40px;
+                                    height: 30px;
+                                    width: status-layout.preferred-width + 20px;
+                                    background: #2c3e50;
+                                    border-radius: 15px;
+                                    opacity: 0.9;
+                                    border-width: 1px;
+                                    border-color: #34495e;
+                                    
+                                    status-layout := HorizontalLayout {
+                                        padding-left: 10px;
+                                        padding-right: 10px;
+                                        spacing: 15px;
+                                        
+                                        Text {
+                                            text: Math.round(zoom_scale * 100.0) + "%";
+                                            color: #ecf0f1;
+                                            font-size: 12px;
+                                            font-weight: 700;
+                                            vertical-alignment: center;
+                                        }
+                                        
+                                        Text {
+                                            text: "X: " + Math.round(x_offset);
+                                            color: #bdc3c7;
+                                            font-size: 12px;
+                                            vertical-alignment: center;
+                                        }
+                                        
+                                        Text {
+                                            text: "Y: " + Math.round(y_offset);
+                                            color: #bdc3c7;
+                                            font-size: 12px;
+                                            vertical-alignment: center;
+                                        }
+                                        
+                                        if root.show_grid : Text {
+                                            text: root.grid_size;
+                                            color: #bdc3c7;
+                                            font-size: 12px;
+                                            vertical-alignment: center;
+                                        }
+                                    }
+                                }
+                                
+                                // Floating Zoom Controls (Bottom Right)
+                                Rectangle {
+                                    x: parent.width - 100px;
+                                    y: parent.height - 40px;
+                                    height: 30px;
+                                    width: 90px;
+                                    background: #2c3e50;
+                                    border-radius: 15px;
+                                    opacity: 0.9;
+                                    border-width: 1px;
+                                    border-color: #34495e;
+                                    
+                                    HorizontalLayout {
+                                        alignment: center;
+                                        spacing: 5px;
+                                        
+                                        Rectangle {
+                                            width: 24px;
+                                            height: 24px;
+                                            background: transparent;
+                                            Text { text: "-"; color: #ecf0f1; font-size: 16px; vertical-alignment: center; horizontal-alignment: center; }
+                                            TouchArea { clicked => { zoom_out(); } }
+                                        }
+                                        
+                                        Rectangle {
+                                            width: 24px;
+                                            height: 24px;
+                                            background: transparent;
+                                            Text { text: "Fit"; color: #ecf0f1; font-size: 11px; vertical-alignment: center; horizontal-alignment: center; }
+                                            TouchArea { clicked => { zoom_fit(); } }
+                                        }
+                                        
+                                        Rectangle {
+                                            width: 24px;
+                                            height: 24px;
+                                            background: transparent;
+                                            Text { text: "+"; color: #ecf0f1; font-size: 16px; vertical-alignment: center; horizontal-alignment: center; }
+                                            TouchArea { width: 100%; height: 100%; clicked => { root.zoom_in(); } }
+                                        }
+                                    }
+                                }
                             }
                         }
                         }
@@ -1479,9 +1534,9 @@ export component DesignerPanel inherits Rectangle {
         Rectangle {
             width: 270px;
             horizontal-stretch: 0;
-            background: #ecf0f1;
+            background: #2c3e50;
             border-width: 1px;
-            border-color: #bdc3c7;
+            border-color: #34495e;
             
             VerticalBox {
                 padding: 0px;
@@ -1495,9 +1550,9 @@ export component DesignerPanel inherits Rectangle {
                     
                     Rectangle {
                         horizontal-stretch: 1;
-                        background: root.current_tab == 0 ? #ecf0f1 : #bdc3c7;
+                        background: root.current_tab == 0 ? #2c3e50 : #34495e;
                         border-width: 1px;
-                        border-color: #bdc3c7;
+                        border-color: #34495e;
                         
                         Text { 
                             text: "Properties"; 
@@ -1505,6 +1560,7 @@ export component DesignerPanel inherits Rectangle {
                             vertical-alignment: center; 
                             font-weight: root.current_tab == 0 ? 700 : 400;
                             font-size: 12px;
+                            color: #ecf0f1;
                         }
                         
                         TouchArea { clicked => { root.current_tab = 0; } }
@@ -1512,9 +1568,9 @@ export component DesignerPanel inherits Rectangle {
                     
                     Rectangle {
                         horizontal-stretch: 1;
-                        background: root.current_tab == 1 ? #ecf0f1 : #bdc3c7;
+                        background: root.current_tab == 1 ? #2c3e50 : #34495e;
                         border-width: 1px;
-                        border-color: #bdc3c7;
+                        border-color: #34495e;
                         
                         Text { 
                             text: "Layers"; 
@@ -1522,6 +1578,7 @@ export component DesignerPanel inherits Rectangle {
                             vertical-alignment: center; 
                             font-weight: root.current_tab == 1 ? 700 : 400;
                             font-size: 12px;
+                            color: #ecf0f1;
                         }
                         
                         TouchArea { clicked => { root.current_tab = 1; } }
@@ -1531,7 +1588,7 @@ export component DesignerPanel inherits Rectangle {
                 // Content Area
                 Rectangle {
                     vertical-stretch: 1;
-                    background: #ecf0f1;
+                    background: #2c3e50;
                     
                     // Properties Tab
                     if root.current_tab == 0 : ScrollView {
@@ -1551,6 +1608,7 @@ export component DesignerPanel inherits Rectangle {
                                       : "Design Properties"; 
                                 font-weight: 700; 
                                 font-size: 14px; 
+                                color: #ecf0f1;
                             }
                             
                             if root.selected_count > 0 : VerticalBox {
@@ -1560,34 +1618,35 @@ export component DesignerPanel inherits Rectangle {
                                 // Name Property (only if single selection)
                                 if root.selected_count == 1 : VerticalBox {
                                     spacing: 5px;
-                                    Text { text: "Name"; font-weight: 700; font-size: 12px; }
+                                    Text { text: "Name"; font-weight: 700; font-size: 12px; color: #ecf0f1; }
                                     Rectangle {
                                         height: 30px;
                                         border-width: 1px;
-                                        border-color: #ccc;
-                                        background: white;
+                                        border-color: #555;
+                                        background: #34495e;
                                         TextInput {
                                             text: root.selected_shape_name;
                                             width: 100%;
                                             height: 100%;
                                             vertical-alignment: center;
+                                            color: #ecf0f1;
                                             edited => { root.update_shape_property_string(1, self.text); }
                                         }
                                     }
                                 }
 
                                 // Position & Size
-                                Text { text: "Transform"; font-weight: 700; font-size: 12px; }
+                                Text { text: "Transform"; font-weight: 700; font-size: 12px; color: #ecf0f1; }
                                 
                                 HorizontalBox {
                                     spacing: 5px;
-                                    Text { text: "X:"; vertical-alignment: center; width: 20px; }
+                                    Text { text: "X:"; vertical-alignment: center; width: 20px; color: #bdc3c7; }
                                     CompactSpinBox { 
                                         value: root.selected_shape_x;
                                         minimum: -1000.0; maximum: 1000.0; step: 0.1;
                                         value-changed(v) => { root.update_shape_property(0, v); }
                                     }
-                                    Text { text: "Y:"; vertical-alignment: center; width: 20px; }
+                                    Text { text: "Y:"; vertical-alignment: center; width: 20px; color: #bdc3c7; }
                                     CompactSpinBox { 
                                         value: root.selected_shape_y;
                                         minimum: -1000.0; maximum: 1000.0; step: 0.1;
@@ -1597,13 +1656,13 @@ export component DesignerPanel inherits Rectangle {
                                 
                                 HorizontalBox {
                                     spacing: 5px;
-                                    Text { text: "W:"; vertical-alignment: center; width: 20px; }
+                                    Text { text: "W:"; vertical-alignment: center; width: 20px; color: #bdc3c7; }
                                     CompactSpinBox { 
                                         value: root.selected_shape_w;
                                         minimum: 0.1; maximum: 1000.0; step: 0.1;
                                         value-changed(v) => { root.update_shape_property(2, v); }
                                     }
-                                    Text { text: "H:"; vertical-alignment: center; width: 20px; }
+                                    Text { text: "H:"; vertical-alignment: center; width: 20px; color: #bdc3c7; }
                                     CompactSpinBox { 
                                         value: root.selected_shape_h;
                                         minimum: 0.1; maximum: 1000.0; step: 0.1;
@@ -1614,11 +1673,11 @@ export component DesignerPanel inherits Rectangle {
                                 // Rectangle Properties
                                 if root.selected_shape_type == 0 : VerticalBox {
                                     spacing: 5px;
-                                    Text { text: "Rectangle Options"; font-weight: 700; font-size: 12px; }
+                                    Text { text: "Rectangle Options"; font-weight: 700; font-size: 12px; color: #ecf0f1; }
                                     
                                     HorizontalBox {
                                         spacing: 5px;
-                                        Text { text: "Radius:"; vertical-alignment: center; width: 45px; }
+                                        Text { text: "Radius:"; vertical-alignment: center; width: 45px; color: #bdc3c7; }
                                         CompactSpinBox { 
                                             value: root.selected_shape_corner_radius;
                                             minimum: 0.0; 
@@ -1629,7 +1688,7 @@ export component DesignerPanel inherits Rectangle {
                                         }
                                     }
                                     
-                                    CheckBox { 
+                                    DarkCheckBox { 
                                         text: "Slot (Auto Radius)"; 
                                         checked: root.selected_shape_is_slot;
                                         toggled => { root.update_shape_property_bool(3, self.checked); }
@@ -1639,24 +1698,25 @@ export component DesignerPanel inherits Rectangle {
                                 // Text Properties
                                 if root.selected_shape_type == 6 : VerticalBox {
                                     spacing: 5px;
-                                    Text { text: "Text Content"; font-weight: 700; font-size: 12px; }
+                                    Text { text: "Text Content"; font-weight: 700; font-size: 12px; color: #ecf0f1; }
                                     Rectangle {
                                         height: 30px;
                                         border-width: 1px;
-                                        border-color: #ccc;
-                                        background: white;
+                                        border-color: #555;
+                                        background: #34495e;
                                         TextInput {
                                             text: root.selected_shape_text_content;
                                             width: 100%;
                                             height: 100%;
                                             vertical-alignment: center;
+                                            color: #ecf0f1;
                                             edited => { root.update_shape_property_string(0, self.text); }
                                         }
                                     }
                                     
                                     HorizontalBox {
                                         spacing: 5px;
-                                        Text { text: "Size:"; vertical-alignment: center; }
+                                        Text { text: "Size:"; vertical-alignment: center; color: #bdc3c7; }
                                         CompactSpinBox { 
                                             value: root.selected_shape_font_size;
                                             minimum: 1.0; maximum: 1000.0;
@@ -1667,15 +1727,15 @@ export component DesignerPanel inherits Rectangle {
                             }
                                 
                             // CAM Operations
-                            Text { text: "CAM Operations"; font-weight: 700; font-size: 12px; }
+                            Text { text: "CAM Operations"; font-weight: 700; font-size: 12px; color: #ecf0f1; }
                             
-                            if root.selected_count > 0 : CheckBox { 
+                            if root.selected_count > 0 : DarkCheckBox { 
                                 text: "Use Custom Values"; 
                                 checked: root.selected_shape_use_custom_values;
                                 toggled => { root.update_shape_property_bool(2, self.checked); }
                             }
                             
-                            CheckBox { 
+                            DarkCheckBox { 
                                 text: "Pocket Operation"; 
                                 checked: root.selected_shape_is_pocket;
                                 toggled => { root.update_shape_property_bool(0, self.checked); }
@@ -1685,7 +1745,7 @@ export component DesignerPanel inherits Rectangle {
                                     spacing: 5px;
                                     
                                     HorizontalBox {
-                                        Text { text: "Depth:"; vertical-alignment: center; width: 60px; }
+                                        Text { text: "Depth:"; vertical-alignment: center; width: 60px; color: #bdc3c7; }
                                         CompactSpinBox { 
                                             value: root.selected_shape_pocket_depth;
                                             minimum: -100.0; maximum: 100.0;
@@ -1694,7 +1754,7 @@ export component DesignerPanel inherits Rectangle {
                                     }
                                     
                                     HorizontalBox {
-                                        Text { text: "Step Down:"; vertical-alignment: center; width: 60px; }
+                                        Text { text: "Step Down:"; vertical-alignment: center; width: 60px; color: #bdc3c7; }
                                         CompactSpinBox { 
                                             value: root.selected_shape_step_down;
                                             minimum: 0.1; maximum: 100.0;
@@ -1703,7 +1763,7 @@ export component DesignerPanel inherits Rectangle {
                                     }
                                     
                                     HorizontalBox {
-                                        Text { text: "Step In:"; vertical-alignment: center; width: 60px; }
+                                        Text { text: "Step In:"; vertical-alignment: center; width: 60px; color: #bdc3c7; }
                                         CompactSpinBox { 
                                             value: root.selected_shape_step_in;
                                             minimum: 0.1; maximum: 100.0;
@@ -1712,7 +1772,7 @@ export component DesignerPanel inherits Rectangle {
                                     }
                                     
                                     HorizontalBox {
-                                        Text { text: "Strategy:"; vertical-alignment: center; width: 60px; }
+                                        Text { text: "Strategy:"; vertical-alignment: center; width: 60px; color: #bdc3c7; }
                                         ComboBox {
                                             model: ["Raster", "Contour", "Adaptive"];
                                             current-index: root.selected_shape_pocket_strategy;
@@ -1725,7 +1785,7 @@ export component DesignerPanel inherits Rectangle {
                                     }
                                     
                                     HorizontalBox {
-                                        Text { text: "Angle:"; vertical-alignment: center; width: 60px; }
+                                        Text { text: "Angle:"; vertical-alignment: center; width: 60px; color: #bdc3c7; }
                                         CompactSpinBox { 
                                             value: root.selected_shape_raster_angle;
                                             minimum: -360.0; maximum: 360.0;
@@ -1733,7 +1793,7 @@ export component DesignerPanel inherits Rectangle {
                                         }
                                     }
                                     
-                                    CheckBox { 
+                                    DarkCheckBox { 
                                         text: "Bidirectional"; 
                                         checked: root.selected_shape_bidirectional;
                                         toggled => { root.update_shape_property_bool(1, self.checked); }
@@ -1751,7 +1811,7 @@ export component DesignerPanel inherits Rectangle {
                         // Column Headers
                         Rectangle {
                             height: 24px;
-                            background: #dfe6e9;
+                            background: #34495e;
                             border-width: 0px;
                             
                             HorizontalLayout {
@@ -1765,6 +1825,7 @@ export component DesignerPanel inherits Rectangle {
                                     font-weight: 700; 
                                     font-size: 11px; 
                                     vertical-alignment: center; 
+                                    color: #ecf0f1;
                                 }
                                 Text { 
                                     text: "Name"; 
@@ -1772,6 +1833,7 @@ export component DesignerPanel inherits Rectangle {
                                     font-weight: 700; 
                                     font-size: 11px; 
                                     vertical-alignment: center; 
+                                    color: #ecf0f1;
                                 }
                                 Text { 
                                     text: "Group"; 
@@ -1779,6 +1841,7 @@ export component DesignerPanel inherits Rectangle {
                                     font-weight: 700; 
                                     font-size: 11px; 
                                     vertical-alignment: center; 
+                                    color: #ecf0f1;
                                 }
                             }
                             
@@ -1786,7 +1849,7 @@ export component DesignerPanel inherits Rectangle {
                             Rectangle {
                                 y: parent.height - 1px;
                                 height: 1px;
-                                background: #bdc3c7;
+                                background: #2c3e50;
                             }
                         }
 
@@ -1812,7 +1875,7 @@ export component DesignerPanel inherits Rectangle {
                                     
                                     for shape[index] in root.shapes : Rectangle {
                                     height: 28px;
-                                    background: shape.selected ? #3498db : (layer-touch.has-hover ? #e0e0e0 : transparent);
+                                    background: shape.selected ? #3498db : (layer-touch.has-hover ? #3d566e : transparent);
                                     border-radius: 2px;
                                     
                                     HorizontalLayout {
@@ -1827,7 +1890,7 @@ export component DesignerPanel inherits Rectangle {
                                                   shape.shape_type == 3 ? "◯" : 
                                                   shape.shape_type == 4 ? "⬠" : 
                                                   shape.shape_type == 6 ? "T" : "?";
-                                            color: shape.selected ? white : black;
+                                            color: shape.selected ? white : #ecf0f1;
                                             vertical-alignment: center;
                                             font-size: 14px;
                                             width: 30px;
@@ -1835,7 +1898,7 @@ export component DesignerPanel inherits Rectangle {
                                         
                                         Text {
                                             text: shape.name;
-                                            color: shape.selected ? white : black;
+                                            color: shape.selected ? white : #ecf0f1;
                                             vertical-alignment: center;
                                             font-size: 12px;
                                             horizontal-stretch: 1;
@@ -1843,7 +1906,7 @@ export component DesignerPanel inherits Rectangle {
     
                                         if shape.group_id > 0 : Text {
                                             text: "Grp " + shape.group_id;
-                                            color: shape.selected ? #eee : #666;
+                                            color: shape.selected ? #eee : #95a5a6;
                                             vertical-alignment: center;
                                             font-size: 11px;
                                             width: 40px;

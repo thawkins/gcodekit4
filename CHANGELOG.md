@@ -880,6 +880,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - G-code export for laser cutting
 
 
+## [0.41.0-alpha] - 2025-11-26
+
+### Changed
+- **Designer UI**:
+  - Increased Left Sidebar width to 250px.
+  - Standardized font sizes and control heights across Left and Right sidebars.
+  - Removed padding around the canvas area for a cleaner look.
+  - Fixed icon alignment in toolbar buttons (perfectly centered).
+  - Increased maximum zoom level to 5000% (50x).
+
 ## [0.40.0-alpha] - 2025-11-26
 
 ### Added

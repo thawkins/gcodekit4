@@ -467,6 +467,16 @@ Rectangle {
   - `fit-timer := Timer { interval: 50ms; running: false; triggered => { root.fit-to-view(...); self.running = false; } }`
 - **Result**: The timer delay allows the layout engine to perform a pass, ensuring correct dimensions are available when `fit-to-view` is called.
 
+### Designer UI Polish (2025-11-26)
+- **Icon Alignment**: Fixed icon alignment in `ToolButton` by removing the `VerticalBox` wrapper (which added unwanted padding) and manually centering the `Image` component using calculated coordinates.
+- **Canvas Padding**: Removed padding around the canvas area by replacing `VerticalBox` containers with `VerticalLayout`. `VerticalBox` adds default padding, while `VerticalLayout` does not.
+- **Panel Sizing**: Increased the Left Sidebar width from 210px to 250px to accommodate content better.
+- **Control Standardization**:
+  - Standardized font sizes in the Left Sidebar to match the Right Sidebar (removed explicit `11px` overrides).
+  - Removed fixed height from `CompactSpinBox` in the Left Sidebar to match the Right Sidebar's natural sizing.
+  - Updated `DarkCheckBox` to use default font size.
+- **Zoom Limits**: Increased maximum zoom factor from 1000% (10.0) to 5000% (50.0) in `DesignerState` and `Viewport`.
+
 ### Layers Tab Improvements (2025-11-26)
 - **Keyboard Navigation**:
   - Implemented Up/Down arrow key navigation for the shape list.
