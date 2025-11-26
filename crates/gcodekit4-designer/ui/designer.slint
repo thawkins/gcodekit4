@@ -8,10 +8,11 @@ component CompactSpinBox inherits Rectangle {
     in property <float> minimum: 0;
     in property <float> maximum: 100;
     in property <float> step: 1.0;
+    in property <bool> enabled: true;
     
     callback value-changed(float);
     
-    background: white;
+    background: enabled ? white : #f0f0f0;
     border-width: 1px;
     border-color: #ccc;
     border-radius: 2px;
@@ -28,6 +29,8 @@ component CompactSpinBox inherits Rectangle {
                 horizontal-alignment: center;
                 vertical-alignment: center;
                 font-size: 13px;
+                enabled: root.enabled;
+                color: root.enabled ? black : #888;
                 
                 edited => {
                     if (self.text != "") {
@@ -45,7 +48,7 @@ component CompactSpinBox inherits Rectangle {
             
             Rectangle {
                 height: 11px;
-                background: up-touch.has-hover ? #e0e0e0 : #f5f5f5;
+                background: up-touch.has-hover && root.enabled ? #e0e0e0 : #f5f5f5;
                 border-width: 1px;
                 border-color: #ccc;
                 
@@ -54,9 +57,11 @@ component CompactSpinBox inherits Rectangle {
                     font-size: 8px;
                     horizontal-alignment: center;
                     vertical-alignment: center;
+                    color: root.enabled ? black : #888;
                 }
                 
                 up-touch := TouchArea {
+                    enabled: root.enabled;
                     clicked => {
                         if (value < maximum) {
                             value = min(maximum, value + step);
@@ -68,7 +73,7 @@ component CompactSpinBox inherits Rectangle {
             
             Rectangle {
                 height: 11px;
-                background: down-touch.has-hover ? #e0e0e0 : #f5f5f5;
+                background: down-touch.has-hover && root.enabled ? #e0e0e0 : #f5f5f5;
                 border-width: 1px;
                 border-color: #ccc;
                 
@@ -77,9 +82,11 @@ component CompactSpinBox inherits Rectangle {
                     font-size: 8px;
                     horizontal-alignment: center;
                     vertical-alignment: center;
+                    color: root.enabled ? black : #888;
                 }
                 
                 down-touch := TouchArea {
+                    enabled: root.enabled;
                     clicked => {
                         if (value > minimum) {
                             value = max(minimum, value - step);
@@ -94,11 +101,15 @@ component CompactSpinBox inherits Rectangle {
 
 export struct DesignerShape {
     id: int,
+    group_id: int,
+    name: string,
     x: float,
     y: float,
     width: float,
     height: float,
     radius: float,
+    corner_radius: float,
+    is_slot: bool,
     x2: float,
     y2: float,
     shape_type: int,
@@ -659,6 +670,9 @@ export component DesignerPanel inherits Rectangle {
     in property <bool> selected_shape_use_custom_values: false;
     in property <string> selected_shape_text_content: "";
     in property <float> selected_shape_font_size: 12.0;
+    in property <string> selected_shape_name: "";
+    in property <float> selected_shape_corner_radius: 0.0;
+    in property <bool> selected_shape_is_slot: false;
     in property <int> delete_confirmation_trigger: 0;
     in property <int> delete_confirmation_count: 0;
     
@@ -687,6 +701,7 @@ export component DesignerPanel inherits Rectangle {
     private property <float> rubber_band_current_y: 0.0;
 
     callback select_in_rect(float, float, float, float, bool);
+    callback select_shape(int, bool);
 
     callback set_mode(int);
     callback zoom_in();
@@ -716,8 +731,10 @@ export component DesignerPanel inherits Rectangle {
     callback show_context_menu(float, float);      // x, y - show context menu
     callback save_shape_properties();              // Save all properties from current dialog values
     callback update_shape_property(int, float);    // property_id, value (0=x, 1=y, 2=w, 3=h, 4=radius, 5=pocket_depth, 6=font_size, 7=step_down)
-    callback update_shape_property_bool(int, bool); // property_id, value (0=is_pocket, 1=bidirectional, 2=use_custom_values)
-    callback update_shape_property_string(int, string); // property_id, value (0=text_content)
+    callback update_shape_property_bool(int, bool); // property_id, value (0=is_pocket, 1=bidirectional, 2=use_custom_values, 3=is_slot)
+    callback update_shape_property_string(int, string); // property_id, value (0=text_content, 1=name)
+    callback select_next_shape();
+    callback select_previous_shape();
     callback toggle_grid();
     callback show_delete_confirmation(int);
     callback confirm_delete();
@@ -783,6 +800,8 @@ export component DesignerPanel inherits Rectangle {
     private property <int> hovered_handle: -1;  // Track which handle we're hovering over
     private property <bool> drag_start_initialized: false;  // Track if drag_start has been set for current press
     private property <bool> shift_pressed: false;  // Track if Shift key is held
+    private property <bool> space_pressed: false;  // Track if Space key is held
+    private property <int> current_tab: 0; // 0=Properties, 1=Layers
     
     // Main layout: vertical toolbox on left, canvas and properties on right
     show_delete_confirmation(count) => {
@@ -805,6 +824,9 @@ export component DesignerPanel inherits Rectangle {
                 root.shift_pressed = true;
                 set_shift_pressed(true);
                 accept
+            } else if event.text == " " {
+                root.space_pressed = true;
+                accept
             } else if event.text == "z" && event.modifiers.control {
                 if (event.modifiers.shift) {
                     if (designer_state.can_redo) { root.redo(); }
@@ -824,6 +846,9 @@ export component DesignerPanel inherits Rectangle {
             if event.text == Key.Shift {
                 root.shift_pressed = false;
                 set_shift_pressed(false);
+                accept
+            } else if event.text == " " {
+                root.space_pressed = false;
                 accept
             } else {
                 reject
@@ -1314,6 +1339,15 @@ export component DesignerPanel inherits Rectangle {
                                         }
                                         root.drag_occurred = false;
                                     }
+
+                                    scroll-event(event) => {
+                                        if (event.delta-y > 0) {
+                                            zoom_in();
+                                        } else {
+                                            zoom_out();
+                                        }
+                                        accept
+                                    }
                                     
                                     // Detect handle on press down
                                     pointer-event(event) => {
@@ -1384,16 +1418,16 @@ export component DesignerPanel inherits Rectangle {
                                                 root.drag_last_dx = 0.0;
                                                 root.drag_last_dy = 0.0;
 
-                                                // Check if we should start rubber band
-                                                if root.dragging_handle == -1 {
-                                                    if root.shift_pressed {
-                                                        root.rubber_band_active = true;
-                                                        root.rubber_band_start_x = root.drag_start_x;
-                                                        root.rubber_band_start_y = root.drag_start_y;
-                                                        root.rubber_band_current_x = root.drag_start_x;
-                                                        root.rubber_band_current_y = root.drag_start_y;
-                                                    }
-                                                }
+                                    // Check if we should start rubber band
+                                    if root.dragging_handle == -1 {
+                                        if !root.space_pressed {
+                                            root.rubber_band_active = true;
+                                            root.rubber_band_start_x = root.drag_start_x;
+                                            root.rubber_band_start_y = root.drag_start_y;
+                                            root.rubber_band_current_x = root.drag_start_x;
+                                            root.rubber_band_current_y = root.drag_start_y;
+                                        }
+                                    }
                                             }
                                             
                                             if root.rubber_band_active {
@@ -1418,7 +1452,7 @@ export component DesignerPanel inherits Rectangle {
                                                         root.drag_occurred = true;
                                                     } else if root.dragging_handle == -1 {
                                                         // No shape selected - pan the canvas
-                                                        if !root.shift_pressed {
+                                                        if root.space_pressed {
                                                             canvas_pan(inc_dx, -inc_dy);
                                                             root.drag_occurred = true;
                                                         }
@@ -1449,168 +1483,384 @@ export component DesignerPanel inherits Rectangle {
             border-width: 1px;
             border-color: #bdc3c7;
             
-            ScrollView {
-                VerticalBox {
-                    alignment: start;
-                    spacing: 10px;
-                    padding: 10px;
+            VerticalBox {
+                padding: 0px;
+                spacing: 0px;
+                
+                // Tabs
+                HorizontalBox {
+                    height: 30px;
+                    spacing: 0px;
+                    padding: 0px;
                     
-                    Text { 
-                        text: root.selected_count > 0 ? 
-                              (root.selected_shape_type == 0 ? "Rectangle Properties" : 
-                               root.selected_shape_type == 1 ? "Circle Properties" : 
-                               root.selected_shape_type == 2 ? "Line Properties" : 
-                               root.selected_shape_type == 3 ? "Ellipse Properties" : 
-                               root.selected_shape_type == 4 ? "Path Properties" : 
-                               root.selected_shape_type == 6 ? "Text Properties" : "Shape Properties") 
-                              : "Design Properties"; 
-                        font-weight: 700; 
-                        font-size: 14px; 
-                    }
-                    
-                    if root.selected_count > 0 : VerticalBox {
-                        spacing: 10px;
-                        padding: 0px;
+                    Rectangle {
+                        horizontal-stretch: 1;
+                        background: root.current_tab == 0 ? #ecf0f1 : #bdc3c7;
+                        border-width: 1px;
+                        border-color: #bdc3c7;
                         
-                        // Position & Size
-                        Text { text: "Transform"; font-weight: 700; font-size: 12px; }
-                        
-                        HorizontalBox {
-                            spacing: 5px;
-                            Text { text: "X:"; vertical-alignment: center; width: 20px; }
-                            CompactSpinBox { 
-                                value: root.selected_shape_x;
-                                minimum: -1000.0; maximum: 1000.0; step: 0.1;
-                                value-changed(v) => { root.update_shape_property(0, v); }
-                            }
-                            Text { text: "Y:"; vertical-alignment: center; width: 20px; }
-                            CompactSpinBox { 
-                                value: root.selected_shape_y;
-                                minimum: -1000.0; maximum: 1000.0; step: 0.1;
-                                value-changed(v) => { root.update_shape_property(1, v); }
-                            }
+                        Text { 
+                            text: "Properties"; 
+                            horizontal-alignment: center; 
+                            vertical-alignment: center; 
+                            font-weight: root.current_tab == 0 ? 700 : 400;
+                            font-size: 12px;
                         }
                         
-                        HorizontalBox {
-                            spacing: 5px;
-                            Text { text: "W:"; vertical-alignment: center; width: 20px; }
-                            CompactSpinBox { 
-                                value: root.selected_shape_w;
-                                minimum: 0.1; maximum: 1000.0; step: 0.1;
-                                value-changed(v) => { root.update_shape_property(2, v); }
-                            }
-                            Text { text: "H:"; vertical-alignment: center; width: 20px; }
-                            CompactSpinBox { 
-                                value: root.selected_shape_h;
-                                minimum: 0.1; maximum: 1000.0; step: 0.1;
-                                value-changed(v) => { root.update_shape_property(3, v); }
-                            }
+                        TouchArea { clicked => { root.current_tab = 0; } }
+                    }
+                    
+                    Rectangle {
+                        horizontal-stretch: 1;
+                        background: root.current_tab == 1 ? #ecf0f1 : #bdc3c7;
+                        border-width: 1px;
+                        border-color: #bdc3c7;
+                        
+                        Text { 
+                            text: "Layers"; 
+                            horizontal-alignment: center; 
+                            vertical-alignment: center; 
+                            font-weight: root.current_tab == 1 ? 700 : 400;
+                            font-size: 12px;
                         }
                         
-                        // Text Properties
-                        if root.selected_shape_type == 6 : VerticalBox {
-                            spacing: 5px;
-                            Text { text: "Text Content"; font-weight: 700; font-size: 12px; }
-                            Rectangle {
-                                height: 30px;
-                                border-width: 1px;
-                                border-color: #ccc;
-                                background: white;
-                                TextInput {
-                                    text: root.selected_shape_text_content;
-                                    width: 100%;
-                                    height: 100%;
-                                    vertical-alignment: center;
-                                    edited => { root.update_shape_property_string(0, self.text); }
-                                }
-                            }
-                            
-                            HorizontalBox {
-                                spacing: 5px;
-                                Text { text: "Size:"; vertical-alignment: center; }
-                                CompactSpinBox { 
-                                    value: root.selected_shape_font_size;
-                                    minimum: 1.0; maximum: 1000.0;
-                                    value-changed(v) => { root.update_shape_property(6, v); }
-                                }
-                            }
-                        }
+                        TouchArea { clicked => { root.current_tab = 1; } }
                     }
-                        
-                    // CAM Operations
-                    Text { text: "CAM Operations"; font-weight: 700; font-size: 12px; }
+                }
+                
+                // Content Area
+                Rectangle {
+                    vertical-stretch: 1;
+                    background: #ecf0f1;
                     
-                    if root.selected_count > 0 : CheckBox { 
-                        text: "Use Custom Values"; 
-                        checked: root.selected_shape_use_custom_values;
-                        toggled => { root.update_shape_property_bool(2, self.checked); }
-                    }
-                    
-                    CheckBox { 
-                        text: "Pocket Operation"; 
-                        checked: root.selected_shape_is_pocket;
-                        toggled => { root.update_shape_property_bool(0, self.checked); }
-                    }
-                    
-                    if root.selected_shape_is_pocket : VerticalBox {
-                            spacing: 5px;
+                    // Properties Tab
+                    if root.current_tab == 0 : ScrollView {
+                        VerticalBox {
+                            alignment: start;
+                            spacing: 10px;
+                            padding: 10px;
                             
-                            HorizontalBox {
-                                Text { text: "Depth:"; vertical-alignment: center; width: 60px; }
-                                CompactSpinBox { 
-                                    value: root.selected_shape_pocket_depth;
-                                    minimum: -100.0; maximum: 100.0;
-                                    value-changed(v) => { root.update_shape_property(5, v); }
-                                }
+                            Text { 
+                                text: root.selected_count > 0 ? 
+                                      (root.selected_shape_type == 0 ? "Rectangle Properties" : 
+                                       root.selected_shape_type == 1 ? "Circle Properties" : 
+                                       root.selected_shape_type == 2 ? "Line Properties" : 
+                                       root.selected_shape_type == 3 ? "Ellipse Properties" : 
+                                       root.selected_shape_type == 4 ? "Path Properties" : 
+                                       root.selected_shape_type == 6 ? "Text Properties" : "Shape Properties") 
+                                      : "Design Properties"; 
+                                font-weight: 700; 
+                                font-size: 14px; 
                             }
                             
-                            HorizontalBox {
-                                Text { text: "Step Down:"; vertical-alignment: center; width: 60px; }
-                                CompactSpinBox { 
-                                    value: root.selected_shape_step_down;
-                                    minimum: 0.1; maximum: 100.0;
-                                    value-changed(v) => { root.update_shape_property(7, v); }
+                            if root.selected_count > 0 : VerticalBox {
+                                spacing: 10px;
+                                padding: 0px;
+                                
+                                // Name Property (only if single selection)
+                                if root.selected_count == 1 : VerticalBox {
+                                    spacing: 5px;
+                                    Text { text: "Name"; font-weight: 700; font-size: 12px; }
+                                    Rectangle {
+                                        height: 30px;
+                                        border-width: 1px;
+                                        border-color: #ccc;
+                                        background: white;
+                                        TextInput {
+                                            text: root.selected_shape_name;
+                                            width: 100%;
+                                            height: 100%;
+                                            vertical-alignment: center;
+                                            edited => { root.update_shape_property_string(1, self.text); }
+                                        }
+                                    }
                                 }
-                            }
-                            
-                            HorizontalBox {
-                                Text { text: "Step In:"; vertical-alignment: center; width: 60px; }
-                                CompactSpinBox { 
-                                    value: root.selected_shape_step_in;
-                                    minimum: 0.1; maximum: 100.0;
-                                    value-changed(v) => { root.update_shape_property(8, v); }
+
+                                // Position & Size
+                                Text { text: "Transform"; font-weight: 700; font-size: 12px; }
+                                
+                                HorizontalBox {
+                                    spacing: 5px;
+                                    Text { text: "X:"; vertical-alignment: center; width: 20px; }
+                                    CompactSpinBox { 
+                                        value: root.selected_shape_x;
+                                        minimum: -1000.0; maximum: 1000.0; step: 0.1;
+                                        value-changed(v) => { root.update_shape_property(0, v); }
+                                    }
+                                    Text { text: "Y:"; vertical-alignment: center; width: 20px; }
+                                    CompactSpinBox { 
+                                        value: root.selected_shape_y;
+                                        minimum: -1000.0; maximum: 1000.0; step: 0.1;
+                                        value-changed(v) => { root.update_shape_property(1, v); }
+                                    }
                                 }
-                            }
-                            
-                            HorizontalBox {
-                                Text { text: "Strategy:"; vertical-alignment: center; width: 60px; }
-                                ComboBox {
-                                    model: ["Raster", "Contour", "Adaptive"];
-                                    current-index: root.selected_shape_pocket_strategy;
-                                    selected(val) => { 
-                                        if (val == "Raster") { root.update_shape_property(9, 0.0); }
-                                        if (val == "Contour") { root.update_shape_property(9, 1.0); }
-                                        if (val == "Adaptive") { root.update_shape_property(9, 2.0); }
+                                
+                                HorizontalBox {
+                                    spacing: 5px;
+                                    Text { text: "W:"; vertical-alignment: center; width: 20px; }
+                                    CompactSpinBox { 
+                                        value: root.selected_shape_w;
+                                        minimum: 0.1; maximum: 1000.0; step: 0.1;
+                                        value-changed(v) => { root.update_shape_property(2, v); }
+                                    }
+                                    Text { text: "H:"; vertical-alignment: center; width: 20px; }
+                                    CompactSpinBox { 
+                                        value: root.selected_shape_h;
+                                        minimum: 0.1; maximum: 1000.0; step: 0.1;
+                                        value-changed(v) => { root.update_shape_property(3, v); }
+                                    }
+                                }
+                                
+                                // Rectangle Properties
+                                if root.selected_shape_type == 0 : VerticalBox {
+                                    spacing: 5px;
+                                    Text { text: "Rectangle Options"; font-weight: 700; font-size: 12px; }
+                                    
+                                    HorizontalBox {
+                                        spacing: 5px;
+                                        Text { text: "Radius:"; vertical-alignment: center; width: 45px; }
+                                        CompactSpinBox { 
+                                            value: root.selected_shape_corner_radius;
+                                            minimum: 0.0; 
+                                            maximum: min(root.selected_shape_w, root.selected_shape_h) / 2.0;
+                                            step: 0.5;
+                                            enabled: !root.selected_shape_is_slot;
+                                            value-changed(v) => { root.update_shape_property(4, v); }
+                                        }
+                                    }
+                                    
+                                    CheckBox { 
+                                        text: "Slot (Auto Radius)"; 
+                                        checked: root.selected_shape_is_slot;
+                                        toggled => { root.update_shape_property_bool(3, self.checked); }
+                                    }
+                                }
+
+                                // Text Properties
+                                if root.selected_shape_type == 6 : VerticalBox {
+                                    spacing: 5px;
+                                    Text { text: "Text Content"; font-weight: 700; font-size: 12px; }
+                                    Rectangle {
+                                        height: 30px;
+                                        border-width: 1px;
+                                        border-color: #ccc;
+                                        background: white;
+                                        TextInput {
+                                            text: root.selected_shape_text_content;
+                                            width: 100%;
+                                            height: 100%;
+                                            vertical-alignment: center;
+                                            edited => { root.update_shape_property_string(0, self.text); }
+                                        }
+                                    }
+                                    
+                                    HorizontalBox {
+                                        spacing: 5px;
+                                        Text { text: "Size:"; vertical-alignment: center; }
+                                        CompactSpinBox { 
+                                            value: root.selected_shape_font_size;
+                                            minimum: 1.0; maximum: 1000.0;
+                                            value-changed(v) => { root.update_shape_property(6, v); }
+                                        }
                                     }
                                 }
                             }
+                                
+                            // CAM Operations
+                            Text { text: "CAM Operations"; font-weight: 700; font-size: 12px; }
                             
-                            HorizontalBox {
-                                Text { text: "Angle:"; vertical-alignment: center; width: 60px; }
-                                CompactSpinBox { 
-                                    value: root.selected_shape_raster_angle;
-                                    minimum: -360.0; maximum: 360.0;
-                                    value-changed(v) => { root.update_shape_property(10, v); }
-                                }
+                            if root.selected_count > 0 : CheckBox { 
+                                text: "Use Custom Values"; 
+                                checked: root.selected_shape_use_custom_values;
+                                toggled => { root.update_shape_property_bool(2, self.checked); }
                             }
                             
                             CheckBox { 
-                                text: "Bidirectional"; 
-                                checked: root.selected_shape_bidirectional;
-                                toggled => { root.update_shape_property_bool(1, self.checked); }
+                                text: "Pocket Operation"; 
+                                checked: root.selected_shape_is_pocket;
+                                toggled => { root.update_shape_property_bool(0, self.checked); }
+                            }
+                            
+                            if root.selected_shape_is_pocket : VerticalBox {
+                                    spacing: 5px;
+                                    
+                                    HorizontalBox {
+                                        Text { text: "Depth:"; vertical-alignment: center; width: 60px; }
+                                        CompactSpinBox { 
+                                            value: root.selected_shape_pocket_depth;
+                                            minimum: -100.0; maximum: 100.0;
+                                            value-changed(v) => { root.update_shape_property(5, v); }
+                                        }
+                                    }
+                                    
+                                    HorizontalBox {
+                                        Text { text: "Step Down:"; vertical-alignment: center; width: 60px; }
+                                        CompactSpinBox { 
+                                            value: root.selected_shape_step_down;
+                                            minimum: 0.1; maximum: 100.0;
+                                            value-changed(v) => { root.update_shape_property(7, v); }
+                                        }
+                                    }
+                                    
+                                    HorizontalBox {
+                                        Text { text: "Step In:"; vertical-alignment: center; width: 60px; }
+                                        CompactSpinBox { 
+                                            value: root.selected_shape_step_in;
+                                            minimum: 0.1; maximum: 100.0;
+                                            value-changed(v) => { root.update_shape_property(8, v); }
+                                        }
+                                    }
+                                    
+                                    HorizontalBox {
+                                        Text { text: "Strategy:"; vertical-alignment: center; width: 60px; }
+                                        ComboBox {
+                                            model: ["Raster", "Contour", "Adaptive"];
+                                            current-index: root.selected_shape_pocket_strategy;
+                                            selected(val) => { 
+                                                if (val == "Raster") { root.update_shape_property(9, 0.0); }
+                                                if (val == "Contour") { root.update_shape_property(9, 1.0); }
+                                                if (val == "Adaptive") { root.update_shape_property(9, 2.0); }
+                                            }
+                                        }
+                                    }
+                                    
+                                    HorizontalBox {
+                                        Text { text: "Angle:"; vertical-alignment: center; width: 60px; }
+                                        CompactSpinBox { 
+                                            value: root.selected_shape_raster_angle;
+                                            minimum: -360.0; maximum: 360.0;
+                                            value-changed(v) => { root.update_shape_property(10, v); }
+                                        }
+                                    }
+                                    
+                                    CheckBox { 
+                                        text: "Bidirectional"; 
+                                        checked: root.selected_shape_bidirectional;
+                                        toggled => { root.update_shape_property_bool(1, self.checked); }
+                                    }
+                                }
                             }
                         }
                     }
+                    
+                    // Layers Tab
+                    if root.current_tab == 1 : VerticalLayout {
+                        spacing: 0px;
+                        padding: 0px;
+                        
+                        // Column Headers
+                        Rectangle {
+                            height: 24px;
+                            background: #dfe6e9;
+                            border-width: 0px;
+                            
+                            HorizontalLayout {
+                                padding-left: 5px;
+                                padding-right: 5px;
+                                spacing: 5px;
+                                
+                                Text { 
+                                    text: "Type"; 
+                                    width: 30px; 
+                                    font-weight: 700; 
+                                    font-size: 11px; 
+                                    vertical-alignment: center; 
+                                }
+                                Text { 
+                                    text: "Name"; 
+                                    horizontal-stretch: 1; 
+                                    font-weight: 700; 
+                                    font-size: 11px; 
+                                    vertical-alignment: center; 
+                                }
+                                Text { 
+                                    text: "Group"; 
+                                    width: 40px; 
+                                    font-weight: 700; 
+                                    font-size: 11px; 
+                                    vertical-alignment: center; 
+                                }
+                            }
+                            
+                            // Bottom border
+                            Rectangle {
+                                y: parent.height - 1px;
+                                height: 1px;
+                                background: #bdc3c7;
+                            }
+                        }
+
+                        layers-focus := FocusScope {
+                            vertical-stretch: 1;
+                            key-pressed(event) => {
+                                if (event.text == Key.UpArrow) {
+                                    root.select_previous_shape();
+                                    return accept;
+                                }
+                                if (event.text == Key.DownArrow) {
+                                    root.select_next_shape();
+                                    return accept;
+                                }
+                                reject
+                            }
+
+                            ScrollView {
+                                VerticalLayout {
+                                    alignment: start;
+                                    spacing: 2px;
+                                    padding: 5px;
+                                    
+                                    for shape[index] in root.shapes : Rectangle {
+                                    height: 28px;
+                                    background: shape.selected ? #3498db : (layer-touch.has-hover ? #e0e0e0 : transparent);
+                                    border-radius: 2px;
+                                    
+                                    HorizontalLayout {
+                                        padding-left: 5px;
+                                        padding-right: 5px;
+                                        spacing: 5px;
+                                        
+                                        Text {
+                                            text: shape.shape_type == 0 ? "▭" : 
+                                                  shape.shape_type == 1 ? "●" : 
+                                                  shape.shape_type == 2 ? "/" : 
+                                                  shape.shape_type == 3 ? "◯" : 
+                                                  shape.shape_type == 4 ? "⬠" : 
+                                                  shape.shape_type == 6 ? "T" : "?";
+                                            color: shape.selected ? white : black;
+                                            vertical-alignment: center;
+                                            font-size: 14px;
+                                            width: 30px;
+                                        }
+                                        
+                                        Text {
+                                            text: shape.name;
+                                            color: shape.selected ? white : black;
+                                            vertical-alignment: center;
+                                            font-size: 12px;
+                                            horizontal-stretch: 1;
+                                        }
+    
+                                        if shape.group_id > 0 : Text {
+                                            text: "Grp " + shape.group_id;
+                                            color: shape.selected ? #eee : #666;
+                                            vertical-alignment: center;
+                                            font-size: 11px;
+                                            width: 40px;
+                                        }
+                                    }
+                                    
+                                    layer-touch := TouchArea {
+                                        clicked => {
+                                            layers-focus.focus();
+                                            root.select_shape(shape.id, root.shift_pressed);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
                 }
             }
         }

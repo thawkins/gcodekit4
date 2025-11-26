@@ -434,13 +434,23 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
                 gcodekit4::ShapeType::Path => 4,
                 gcodekit4::ShapeType::Text => 6,
             };
+            let (corner_radius, is_slot) = if let gcodekit4::Shape::Rectangle(r) = &obj.shape {
+                (r.corner_radius as f32, r.is_slot)
+            } else {
+                (0.0, false)
+            };
+
             crate::DesignerShape {
                 id: obj.id as i32,
+                group_id: obj.group_id.map(|id| id as i32).unwrap_or(0),
+                name: slint::SharedString::from(obj.name.clone()),
                 x: x1 as f32,
                 y: y1 as f32,
                 width: (x2 - x1).abs() as f32,
                 height: (y2 - y1).abs() as f32,
                 radius: (((x2 - x1).abs() / 2.0).max((y2 - y1).abs() / 2.0)) as f32,
+                corner_radius,
+                is_slot,
                 x2: x2 as f32,
                 y2: y2 as f32,
                 shape_type,
@@ -517,6 +527,14 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
             window.set_designer_selected_shape_type(shape_type);
             window.set_designer_selected_shape_radius(radius as f32);
 
+            if let gcodekit4::Shape::Rectangle(r) = &obj.shape {
+                window.set_designer_selected_shape_corner_radius(r.corner_radius as f32);
+                window.set_designer_selected_shape_is_slot(r.is_slot);
+            } else {
+                window.set_designer_selected_shape_corner_radius(0.0);
+                window.set_designer_selected_shape_is_slot(false);
+            }
+
             let is_pocket =
                 obj.operation_type == gcodekit4::designer::shapes::OperationType::Pocket;
             window.set_designer_selected_shape_is_pocket(is_pocket);
@@ -551,8 +569,11 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
                 window.set_designer_selected_shape_text_content(slint::SharedString::from(""));
                 window.set_designer_selected_shape_font_size(12.0);
             }
+            window.set_designer_selected_shape_name(slint::SharedString::from(obj.name.clone()));
         }
     } else {
+        window.set_designer_selected_shape_name(slint::SharedString::from(""));
+        
         // No selection - show default properties
         let obj = &state.default_properties_shape;
         
@@ -940,6 +961,45 @@ fn main() -> anyhow::Result<()> {
             if let Some(window) = window_weak.upgrade() {
                 let mut state = designer_mgr.borrow_mut();
                 state.paste_at_location(x as f64, y as f64);
+                update_designer_ui(&window, &mut state);
+            }
+        });
+    }
+
+    // Handle designer select shape
+    {
+        let designer_mgr = designer_mgr.clone();
+        let window_weak = main_window.as_weak();
+        main_window.on_designer_select_shape(move |id, multi| {
+            if let Some(window) = window_weak.upgrade() {
+                let mut state = designer_mgr.borrow_mut();
+                state.canvas.select_shape(id as u64, multi);
+                update_designer_ui(&window, &mut state);
+            }
+        });
+    }
+
+    // Handle designer select next shape
+    {
+        let designer_mgr = designer_mgr.clone();
+        let window_weak = main_window.as_weak();
+        main_window.on_designer_select_next_shape(move || {
+            if let Some(window) = window_weak.upgrade() {
+                let mut state = designer_mgr.borrow_mut();
+                state.select_next_shape();
+                update_designer_ui(&window, &mut state);
+            }
+        });
+    }
+
+    // Handle designer select previous shape
+    {
+        let designer_mgr = designer_mgr.clone();
+        let window_weak = main_window.as_weak();
+        main_window.on_designer_select_previous_shape(move || {
+            if let Some(window) = window_weak.upgrade() {
+                let mut state = designer_mgr.borrow_mut();
+                state.select_previous_shape();
                 update_designer_ui(&window, &mut state);
             }
         });
@@ -5497,6 +5557,7 @@ fn main() -> anyhow::Result<()> {
                 1 => state.set_selected_position_and_size_with_flags(cur_x, value as f64, cur_w, cur_h, true, false),
                 2 => state.set_selected_position_and_size_with_flags(cur_x, cur_y, value as f64, cur_h, false, true),
                 3 => state.set_selected_position_and_size_with_flags(cur_x, cur_y, cur_w, value as f64, false, true),
+                4 => state.set_selected_corner_radius(value as f64),
                 5 => {
                     let is_pocket = state.canvas.shapes().find(|s| s.selected).map(|s| s.operation_type == gcodekit4::designer::shapes::OperationType::Pocket).unwrap_or(false);
                     state.set_selected_pocket_properties(is_pocket, value as f64);
@@ -5571,6 +5632,7 @@ fn main() -> anyhow::Result<()> {
                     state.set_selected_pocket_strategy(strategy);
                 },
                 2 => state.set_selected_use_custom_values(value),
+                3 => state.set_selected_is_slot(value),
                 _ => {}
             }
             update_designer_ui(&window, &mut state);
@@ -5592,6 +5654,9 @@ fn main() -> anyhow::Result<()> {
                          } else { 12.0 }
                     } else { 12.0 };
                     state.set_selected_text_properties(value.to_string(), font_size);
+                },
+                1 => {
+                    state.set_selected_name(value.to_string());
                 },
                 _ => {}
             }

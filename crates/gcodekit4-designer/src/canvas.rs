@@ -60,6 +60,7 @@ pub enum DrawingMode {
 pub struct DrawingObject {
     pub id: u64,
     pub group_id: Option<u64>,
+    pub name: String,
     pub shape: Shape,
     pub selected: bool,
     pub operation_type: OperationType,
@@ -73,9 +74,19 @@ pub struct DrawingObject {
 impl DrawingObject {
     /// Creates a new drawing object.
     pub fn new(id: u64, shape: Shape) -> Self {
+        let name = match shape.shape_type() {
+            ShapeType::Rectangle => "Rectangle",
+            ShapeType::Circle => "Circle",
+            ShapeType::Line => "Line",
+            ShapeType::Ellipse => "Ellipse",
+            ShapeType::Path => "Path",
+            ShapeType::Text => "Text",
+        }.to_string();
+
         Self {
             id,
             group_id: None,
+            name,
             shape,
             selected: false,
             operation_type: OperationType::default(),
@@ -93,6 +104,7 @@ impl Clone for DrawingObject {
         Self {
             id: self.id,
             group_id: self.group_id,
+            name: self.name.clone(),
             shape: self.shape.clone(),
             selected: self.selected,
             operation_type: self.operation_type,
@@ -287,6 +299,11 @@ impl Canvas {
     /// If multi is false, clears other selections first.
     pub fn select_in_rect(&mut self, x: f64, y: f64, width: f64, height: f64, multi: bool) {
         self.selection_manager.select_in_rect(&mut self.shape_store, self.spatial_manager.inner(), x, y, width, height, multi);
+    }
+
+    /// Selects a shape by ID.
+    pub fn select_shape(&mut self, id: u64, multi: bool) {
+        self.selection_manager.select_id(&mut self.shape_store, id, multi);
     }
 
     /// Gets the number of selected shapes.
@@ -623,6 +640,7 @@ impl Canvas {
             let new_obj = DrawingObject {
                 id,
                 group_id: new_group_id,
+                name: obj.name.clone(),
                 shape: new_shape,
                 selected: true, // Select the new object
                 operation_type: obj.operation_type,

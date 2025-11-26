@@ -4,7 +4,7 @@ A modern, cross-platform G-Code sender and CNC machine controller written in Rus
 
 [![Build Status](https://github.com/thawkins/gcodekit4/workflows/CI/badge.svg)](https://github.com/thawkins/gcodekit4/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-0.38.0--alpha-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-0.40.0--alpha-brightgreen.svg)](CHANGELOG.md)
 
 ## Overview
 
@@ -544,9 +544,15 @@ You may choose either license for your use of this software.
 
 ## Project Status
 
-**Current Version**: 0.37.14-alpha
+**Current Version**: 0.40.0-alpha
 **Status**: Active Development
 **Stability**: Alpha (breaking changes may occur)
+
+### Recent Updates (v0.40.0)
+- **Designer Enhancements**:
+  - **Shape Naming**: User-editable names for all shapes, displayed in Layers list.
+  - **Rectangle Features**: Rounded corners and Slot mode (auto-radius) for rectangles.
+  - **Layers Tab**: Improved layout with headers and keyboard navigation (Up/Down arrows).
 
 ### Recent Updates (v0.37.14)
 - **Designer Copy/Paste**: Copy and paste shapes (single, multiple, groups) with context menu support.

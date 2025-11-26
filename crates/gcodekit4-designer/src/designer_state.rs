@@ -1054,6 +1054,144 @@ impl DesignerState {
         self.push_command(cmd);
     }
 
+    pub fn set_selected_corner_radius(&mut self, radius: f64) {
+        let mut commands = Vec::new();
+        for obj in self.canvas.shapes_mut() {
+            if obj.selected {
+                if let crate::shapes::Shape::Rectangle(mut rect) = obj.shape {
+                    let max_radius = rect.width.min(rect.height) / 2.0;
+                    let new_radius = radius.min(max_radius).max(0.0);
+                    
+                    if (rect.corner_radius - new_radius).abs() > f64::EPSILON {
+                        rect.corner_radius = new_radius;
+                        let mut new_obj = obj.clone();
+                        new_obj.shape = crate::shapes::Shape::Rectangle(rect);
+                        
+                        commands.push(DesignerCommand::ChangeProperty(ChangeProperty {
+                            id: obj.id,
+                            old_state: obj.clone(),
+                            new_state: new_obj,
+                        }));
+                    }
+                }
+            }
+        }
+        if !commands.is_empty() {
+            let cmd = DesignerCommand::CompositeCommand(CompositeCommand {
+                commands,
+                name: "Change Corner Radius".to_string(),
+            });
+            self.push_command(cmd);
+        }
+    }
+
+    pub fn set_selected_is_slot(&mut self, is_slot: bool) {
+        let mut commands = Vec::new();
+        for obj in self.canvas.shapes_mut() {
+            if obj.selected {
+                if let crate::shapes::Shape::Rectangle(mut rect) = obj.shape {
+                    if rect.is_slot != is_slot {
+                        rect.is_slot = is_slot;
+                        if is_slot {
+                            rect.corner_radius = rect.width.min(rect.height) / 2.0;
+                        }
+                        
+                        let mut new_obj = obj.clone();
+                        new_obj.shape = crate::shapes::Shape::Rectangle(rect);
+                        
+                        commands.push(DesignerCommand::ChangeProperty(ChangeProperty {
+                            id: obj.id,
+                            old_state: obj.clone(),
+                            new_state: new_obj,
+                        }));
+                    }
+                }
+            }
+        }
+        if !commands.is_empty() {
+            let cmd = DesignerCommand::CompositeCommand(CompositeCommand {
+                commands,
+                name: "Change Is Slot".to_string(),
+            });
+            self.push_command(cmd);
+        }
+    }
+
+    pub fn set_selected_name(&mut self, name: String) {
+        let mut commands = Vec::new();
+        for obj in self.canvas.shapes_mut() {
+            if obj.selected {
+                if obj.name != name {
+                    let mut new_obj = obj.clone();
+                    new_obj.name = name.clone();
+                    
+                    commands.push(DesignerCommand::ChangeProperty(ChangeProperty {
+                        id: obj.id,
+                        old_state: obj.clone(),
+                        new_state: new_obj,
+                    }));
+                }
+            }
+        }
+        if !commands.is_empty() {
+            let cmd = DesignerCommand::CompositeCommand(CompositeCommand {
+                commands,
+                name: "Change Name".to_string(),
+            });
+            self.push_command(cmd);
+        }
+    }
+
+    pub fn select_next_shape(&mut self) {
+        let selected_id = self.canvas.selected_id();
+        let ids: Vec<u64> = self.canvas.shape_store.draw_order_iter().collect();
+        
+        if ids.is_empty() {
+            return;
+        }
+        
+        let new_id = if let Some(id) = selected_id {
+            if let Some(pos) = ids.iter().position(|&x| x == id) {
+                if pos + 1 < ids.len() {
+                    ids[pos + 1]
+                } else {
+                    ids[ids.len() - 1]
+                }
+            } else {
+                ids[0]
+            }
+        } else {
+            ids[0]
+        };
+        
+        self.canvas.select_shape(new_id, false);
+    }
+
+    pub fn select_previous_shape(&mut self) {
+        let selected_id = self.canvas.selected_id();
+        let ids: Vec<u64> = self.canvas.shape_store.draw_order_iter().collect();
+        
+        if ids.is_empty() {
+            return;
+        }
+        
+        let new_id = if let Some(id) = selected_id {
+            if let Some(pos) = ids.iter().position(|&x| x == id) {
+                if pos > 0 {
+                    ids[pos - 1]
+                } else {
+                    ids[0]
+                }
+            } else {
+                ids[0]
+            }
+        } else {
+            ids[0]
+        };
+        
+        self.canvas.select_shape(new_id, false);
+    }
+
     pub fn set_selected_pocket_strategy(
         &mut self,
         strategy: crate::pocket_operations::PocketStrategy,

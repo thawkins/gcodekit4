@@ -316,6 +316,37 @@ impl SelectionManager {
         }
     }
 
+    /// Selects a shape by ID.
+    ///
+    /// # Arguments
+    ///
+    /// * `store` - The shape store to select from
+    /// * `id` - The ID of the shape to select
+    /// * `multi` - If `true`, adds to existing selection; if `false`, replaces it
+    pub fn select_id(&mut self, store: &mut ShapeStore, id: u64, multi: bool) {
+        if !multi {
+            self.deselect_all(store);
+        }
+
+        let mut group_id_to_select = None;
+
+        if let Some(obj) = store.get(id) {
+            group_id_to_select = obj.group_id;
+        }
+
+        if let Some(gid) = group_id_to_select {
+            for obj in store.iter_mut() {
+                if obj.group_id == Some(gid) {
+                    obj.selected = true;
+                }
+            }
+            self.selected_id = Some(id);
+        } else if let Some(obj) = store.get_mut(id) {
+            obj.selected = true;
+            self.selected_id = Some(id);
+        }
+    }
+
     /// Returns the number of currently selected shapes.
     ///
     /// Counts all shapes in the store that have their `selected` flag set to `true`.

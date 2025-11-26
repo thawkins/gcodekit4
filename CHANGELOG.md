@@ -880,6 +880,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - G-code export for laser cutting
 
 
+## [0.40.0-alpha] - 2025-11-26
+
+### Added
+- **Designer**: Added `name` property to shapes.
+  - Shapes now have a user-editable name (defaults to shape type).
+  - Name is displayed in the Layers list and Properties panel.
+  - Name changes are undoable/redoable.
+- **Designer**: Added Rounded Corner and Slot support for Rectangles.
+  - Added `corner_radius` property to Rectangle shapes.
+  - Added `is_slot` property to toggle Slot mode (auto-calculates max radius).
+  - Added UI controls for Radius and Slot mode in the Properties panel.
+  - Radius is automatically constrained to half the minimum dimension.
+- **Designer**: Improved Layers Tab.
+  - Added column headers (Type, Name, Group).
+  - Added keyboard navigation (Up/Down arrows) to select shapes in the list.
+  - Shape list now fills the available vertical space.
+  - Clicking a layer item automatically focuses the list for keyboard navigation.
+
+### Changed
+- **Designer**: Updated `Rectangle` struct and serialization to support new properties.
+- **Designer**: Refactored `DesignerState` to handle name and rectangle property updates via commands.
+- **UI**: Updated `CompactSpinBox` to support `enabled` state.
+
+### Fixed
+- **Designer**: Fixed persistence of shape name changes by resolving conflicting UI callbacks.
+
 ## [0.39.2-alpha] - 2025-11-25
 ### Added
 - Persistent right-hand properties panel in Designer for immediate shape editing.

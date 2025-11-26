@@ -1,10 +1,24 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.38.0-alpha  
-**Last Updated**: 2025-11-24  
+**Version**: 0.40.0-alpha  
+**Last Updated**: 2025-11-26  
 **Status**: Feature Release
 
-### Latest Release (v0.38.0-alpha) - Rubber Band Selection
+### Latest Release (v0.40.0-alpha) - Designer Enhancements
+- ✅ **Shape Naming**
+  - User-editable names for all shapes.
+  - Displayed in Layers list and Properties panel.
+  - Undo/Redo support for name changes.
+- ✅ **Rectangle Features**
+  - **Rounded Corners**: Configurable corner radius for rectangles.
+  - **Slot Mode**: Toggle to automatically set radius to max (half-width/height) for slot shapes.
+  - **Constraints**: Radius automatically clamped to valid range.
+- ✅ **Layers Tab Improvements**
+  - **Keyboard Navigation**: Up/Down arrow keys to traverse the shape list.
+  - **Layout**: Full vertical height utilization and column headers.
+  - **Focus**: Automatic focus handling for seamless keyboard interaction.
+
+### Previous Release (v0.38.0-alpha) - Rubber Band Selection
 - ✅ **Rubber Band Selection**
   - Drag on empty space (with Shift) to select multiple shapes.
   - Visual feedback with semi-transparent selection rectangle.

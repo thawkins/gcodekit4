@@ -467,6 +467,16 @@ Rectangle {
   - `fit-timer := Timer { interval: 50ms; running: false; triggered => { root.fit-to-view(...); self.running = false; } }`
 - **Result**: The timer delay allows the layout engine to perform a pass, ensuring correct dimensions are available when `fit-to-view` is called.
 
+### Layers Tab Improvements (2025-11-26)
+- **Keyboard Navigation**:
+  - Implemented Up/Down arrow key navigation for the shape list.
+  - Used `FocusScope` to capture key events.
+  - Added `select_next_shape` and `select_previous_shape` logic in `DesignerState` based on draw order.
+  - Clicking a list item automatically grabs focus for the `FocusScope`, enabling immediate keyboard control.
+- **Layout**:
+  - Used `vertical-stretch: 1` on the shape list container to ensure it fills the available vertical space.
+  - Added column headers for Type, Name, and Group.
+
 ### Designer Properties Panel Refactor (2025-11-25)
 - **Persistent Panel**: Replaced the modal `ShapePropertiesDialog` with a persistent right-hand sidebar (270px fixed width).
 - **Immediate Updates**: Removed the "Save" button and `pending_properties` buffer. Changes to properties (Position, Size, CAM settings) are now applied immediately to the selected shape(s) via `update_shape_property` callbacks.

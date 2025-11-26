@@ -22,6 +22,17 @@ This analysis outlines the current patterns, compares them with industry norms, 
   - **Zoom**: `+` / `-` buttons or keys.
 - **Context Menu**: Right-click provides access to critical functions (Properties, Group, Align).
 
+### Current Keystroke Bindings
+The following keystrokes are currently implemented and functional:
+- **Escape**: Deselect all objects.
+- **Delete**: Delete selected objects.
+- **Ctrl + Z**: Undo last action.
+- **Ctrl + Shift + Z** / **Ctrl + Y**: Redo last action.
+- **+** / **=**: Zoom in.
+- **-**: Zoom out.
+- **Shift**: Hold for multi-selection or rubber-band selection.
+- **Note**: Tooltips suggest single-letter shortcuts (S, R, C, L, E, P, T) for tool switching, but these are not currently implemented in the code.
+
 ## 3. Comparison with Industry Norms
 
 ### Competitive Benchmark: Inkscape

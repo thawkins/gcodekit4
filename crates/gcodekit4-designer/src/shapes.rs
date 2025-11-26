@@ -143,6 +143,17 @@ impl Shape {
             Shape::Text(s) => s,
         }
     }
+
+    pub fn as_any_mut(&mut self) -> &mut dyn Any {
+        match self {
+            Shape::Rectangle(s) => s,
+            Shape::Circle(s) => s,
+            Shape::Line(s) => s,
+            Shape::Ellipse(s) => s,
+            Shape::Path(s) => s,
+            Shape::Text(s) => s,
+        }
+    }
 }
 
 /// A rectangle defined by its top-left corner and dimensions.
@@ -152,11 +163,13 @@ pub struct Rectangle {
     pub y: f64,
     pub width: f64,
     pub height: f64,
+    pub corner_radius: f64,
+    pub is_slot: bool,
 }
 
 impl Rectangle {
     pub fn new(x: f64, y: f64, width: f64, height: f64) -> Self {
-        Self { x, y, width, height }
+        Self { x, y, width, height, corner_radius: 0.0, is_slot: false }
     }
 
     pub fn corners(&self) -> [Point; 4] {
@@ -193,6 +206,14 @@ impl Rectangle {
         self.y = new_y;
         self.width = new_width;
         self.height = new_height;
+        
+        // Re-constrain radius if dimensions shrink
+        let max_radius = self.width.min(self.height).abs() / 2.0;
+        if self.is_slot {
+            self.corner_radius = max_radius;
+        } else {
+            self.corner_radius = self.corner_radius.min(max_radius);
+        }
     }
 
     pub fn resize(&mut self, handle: usize, dx: f64, dy: f64) {
@@ -210,6 +231,14 @@ impl Rectangle {
         self.height = (new_y2 - new_y1).abs();
         self.x = new_x1.min(new_x2);
         self.y = new_y1.min(new_y2);
+        
+        // Re-constrain radius
+        let max_radius = self.width.min(self.height) / 2.0;
+        if self.is_slot {
+            self.corner_radius = max_radius;
+        } else {
+            self.corner_radius = self.corner_radius.min(max_radius);
+        }
     }
 }
 

@@ -78,6 +78,10 @@ pub struct ShapeData {
     pub path_data: String,
     #[serde(default)]
     pub group_id: Option<u64>,
+    #[serde(default)]
+    pub corner_radius: f64,
+    #[serde(default)]
+    pub is_slot: bool,
 }
 
 /// Toolpath generation parameters
@@ -191,6 +195,12 @@ impl DesignFile {
             String::new()
         };
 
+        let (corner_radius, is_slot) = if let Shape::Rectangle(r) = &obj.shape {
+            (r.corner_radius, r.is_slot)
+        } else {
+            (0.0, false)
+        };
+
         ShapeData {
             id: obj.id as i32,
             shape_type: shape_type.to_string(),
@@ -212,13 +222,20 @@ impl DesignFile {
             font_size,
             path_data,
             group_id: obj.group_id,
+            corner_radius,
+            is_slot,
         }
     }
 
     /// Convert ShapeData to DrawingObject
     pub fn to_drawing_object(data: &ShapeData, next_id: i32) -> Result<DrawingObject> {
         let shape: Shape = match data.shape_type.as_str() {
-            "rectangle" => Shape::Rectangle(Rectangle::new(data.x, data.y, data.width, data.height)),
+            "rectangle" => {
+                let mut rect = Rectangle::new(data.x, data.y, data.width, data.height);
+                rect.corner_radius = data.corner_radius;
+                rect.is_slot = data.is_slot;
+                Shape::Rectangle(rect)
+            },
             "circle" => {
                 let radius = data.width.min(data.height) / 2.0;
                 let center = Point::new(data.x + radius, data.y + radius);
@@ -257,7 +274,10 @@ impl DesignFile {
                     Shape::Path(path_shape)
                 } else {
                     // Fallback if path parsing fails
-                    Shape::Rectangle(Rectangle::new(data.x, data.y, data.width, data.height))
+                    let mut rect = Rectangle::new(data.x, data.y, data.width, data.height);
+                    rect.corner_radius = data.corner_radius;
+                    rect.is_slot = data.is_slot;
+                    Shape::Rectangle(rect)
                 }
             },
             _ => anyhow::bail!("Unknown shape type: {}", data.shape_type),
@@ -271,6 +291,14 @@ impl DesignFile {
         Ok(DrawingObject {
             id: next_id as u64,
             group_id: data.group_id,
+            name: match shape.shape_type() {
+                crate::shapes::ShapeType::Rectangle => "Rectangle",
+                crate::shapes::ShapeType::Circle => "Circle",
+                crate::shapes::ShapeType::Line => "Line",
+                crate::shapes::ShapeType::Ellipse => "Ellipse",
+                crate::shapes::ShapeType::Path => "Path",
+                crate::shapes::ShapeType::Text => "Text",
+            }.to_string(),
             shape,
             selected: data.selected,
             operation_type,

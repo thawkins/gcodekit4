@@ -31,11 +31,15 @@ export struct PortInfo {
 
 export struct DesignerShape {
     id: int,
+    group_id: int,
+    name: string,
     x: float,
     y: float,
     width: float,
     height: float,
     radius: float,
+    corner_radius: float,
+    is_slot: bool,
     x2: float,
     y2: float,
     shape_type: int,
@@ -208,6 +212,9 @@ export component MainWindow inherits Window {
     in property <bool> designer-selected-shape-use-custom-values: false;
     in property <string> designer-selected-shape-text-content: "";
     in property <float> designer-selected-shape-font-size: 12.0;
+    in property <string> designer-selected-shape-name: "";
+    in property <float> designer-selected-shape-corner-radius: 0.0;
+    in property <bool> designer-selected-shape-is-slot: false;
     in-out property <bool> designer-is-editing-defaults: false;
     
     // Materials Manager properties
@@ -395,11 +402,14 @@ export component MainWindow inherits Window {
     callback designer-deselect-all();
     callback designer-select-all();
     callback designer-select-in-rect(float, float, float, float, bool);
+    callback designer-select-shape(int, bool);
     callback designer-set-shift-pressed(bool);              // Shift key state
     callback designer-save-shape-properties();              // Save all properties
     callback designer-update-shape-property(int, float);    // property_id, value
     callback designer-update-shape-property-bool(int, bool); // property_id, value
     callback designer-update-shape-property-string(int, string); // property_id, value
+    callback designer-select-next-shape();
+    callback designer-select-previous-shape();
     callback designer-align-horizontal-left();
     callback designer-align-horizontal-center();
     callback designer-align-horizontal-right();
@@ -1519,6 +1529,9 @@ export component MainWindow inherits Window {
                         selected_shape_use_custom_values: root.designer-selected-shape-use-custom-values;
                         selected_shape_text_content: root.designer-selected-shape-text-content;
                         selected_shape_font_size: root.designer-selected-shape-font-size;
+                        selected_shape_name: root.designer-selected-shape-name;
+                        selected_shape_corner_radius: root.designer-selected-shape-corner-radius;
+                        selected_shape_is_slot: root.designer-selected-shape-is-slot;
                         is_editing_defaults <=> root.designer-is-editing-defaults;
                         
                         set_mode(m) => {
@@ -1579,6 +1592,10 @@ export component MainWindow inherits Window {
 
                         select_in_rect(x, y, w, h, multi) => {
                             root.designer-select-in-rect(x, y, w, h, multi);
+                        }
+
+                        select_shape(id, multi) => {
+                            root.designer-select-shape(id, multi);
                         }
                         
                         detect_handle(x, y) => {
@@ -1704,6 +1721,14 @@ export component MainWindow inherits Window {
                         
                         toggle_grid => {
                             root.designer-toggle-grid();
+                        }
+                        
+                        select_next_shape => {
+                            root.designer-select-next-shape();
+                        }
+                        
+                        select_previous_shape => {
+                            root.designer-select-previous-shape();
                         }
                     }
 
