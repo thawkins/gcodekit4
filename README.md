@@ -4,7 +4,7 @@ A modern, cross-platform G-Code sender and CNC machine controller written in Rus
 
 [![Build Status](https://github.com/thawkins/gcodekit4/workflows/CI/badge.svg)](https://github.com/thawkins/gcodekit4/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-0.40.0--alpha-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-0.43.0--alpha-brightgreen.svg)](CHANGELOG.md)
 
 ## Overview
 
@@ -544,9 +544,15 @@ You may choose either license for your use of this software.
 
 ## Project Status
 
-**Current Version**: 0.40.0-alpha
+**Current Version**: 0.43.0-alpha
 **Status**: Active Development
 **Stability**: Alpha (breaking changes may occur)
+
+### Recent Updates (v0.43.0)
+- **Visualizer UI Overhaul**:
+  - **Dark Theme**: Full adoption of Designer's dark theme for consistent aesthetics.
+  - **Modern Layout**: Left sidebar controls, floating status/zoom overlays, and edge-to-edge canvas.
+  - **Components**: New icon-based tool buttons and styled checkboxes.
 
 ### Recent Updates (v0.40.0)
 - **Designer Enhancements**:

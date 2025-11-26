@@ -1,10 +1,17 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.42.0-alpha  
+**Version**: 0.43.0-alpha  
 **Last Updated**: 2025-11-26  
 **Status**: Feature Release
 
-### Latest Release (v0.42.0-alpha) - Designer UI & Feature Polish
+### Latest Release (v0.43.0-alpha) - Visualizer UI Overhaul
+- ✅ **Visualizer Aesthetics**
+  - **Dark Theme**: Full adoption of `#2c3e50` / `#34495e` color scheme.
+  - **Layout**: Left sidebar for controls, edge-to-edge canvas.
+  - **Overlays**: Floating status and zoom controls.
+  - **Components**: Modern icon buttons and styled checkboxes.
+
+### Previous Release (v0.42.0-alpha) - Designer UI & Feature Polish
 - ✅ **UI Improvements**
   - **Panel Layout**: Increased left sidebar width to 250px for better control visibility.
   - **Consistency**: Standardized control sizes and text alignment across panels.

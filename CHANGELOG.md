@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.43.0-alpha] - 2025-11-26
+
+### Changed
+- **Visualizer UI Overhaul**:
+  - **Dark Theme**: Adopted the Designer's dark theme (`#2c3e50` panels, `#34495e` canvas) for a consistent look and feel.
+  - **Layout**: Moved toolbar controls to a dedicated Left Sidebar (200px).
+  - **Floating Overlays**: Replaced static status bar with floating "pill" overlays for Status (Zoom, X/Y, Grid) and Zoom Controls (+, -, Fit).
+  - **Modern Components**: Replaced standard buttons with icon-based `VisualizerToolButton` and standard checkboxes with `DarkCheckBox`.
+  - **Canvas**: Removed padding for edge-to-edge visualization.
+
 ## [0.42.0-alpha] - 2025-11-26
 
 ### Added

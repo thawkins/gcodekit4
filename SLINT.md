@@ -467,6 +467,23 @@ Rectangle {
   - `fit-timer := Timer { interval: 50ms; running: false; triggered => { root.fit-to-view(...); self.running = false; } }`
 - **Result**: The timer delay allows the layout engine to perform a pass, ensuring correct dimensions are available when `fit-to-view` is called.
 
+### Visualizer UI Overhaul (2025-11-26)
+- **Dark Theme Adoption**:
+  - Migrated Visualizer from mixed light/dark theme to full dark theme (`#2c3e50` panels, `#34495e` canvas).
+  - Ensures visual consistency with the Designer component.
+- **Floating Overlays**:
+  - Implemented floating "pill" overlays for status and zoom controls.
+  - Uses `Rectangle` with `opacity: 0.9`, `border-radius: 15px`, and absolute positioning (`x`, `y`).
+  - **Status Pill**: Bottom-left, auto-sizing based on content (`width: status-layout.preferred-width + 20px`).
+  - **Zoom Pill**: Bottom-right, fixed width.
+- **Custom Components**:
+  - **VisualizerToolButton**: Icon-based button with hover state (`#34495e` vs `#2c3e50`) and pointer cursor.
+  - **DarkCheckBox**: Custom checkbox matching Designer's style (transparent background, white checkmark).
+- **Layout**:
+  - Moved controls from top toolbar to a fixed-width (200px) left sidebar.
+  - Used `VerticalLayout` for strict spacing control.
+  - Added a 1px right border separator using a nested `Rectangle` (workaround for missing `border-right` property).
+
 ### Designer UI Polish (2025-11-26)
 - **Icon Alignment**: Fixed icon alignment in `ToolButton` by removing the `VerticalBox` wrapper (which added unwanted padding) and manually centering the `Image` component using calculated coordinates.
 - **Canvas Padding**: Removed padding around the canvas area by replacing `VerticalBox` containers with `VerticalLayout`. `VerticalBox` adds default padding, while `VerticalLayout` does not.
