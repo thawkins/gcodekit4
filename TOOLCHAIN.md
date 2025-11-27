@@ -4,9 +4,14 @@ This document describes how to set up your development environment with Rust and
 
 ## Prerequisites
 
-- Linux/Unix-based system (macOS, Ubuntu, Fedora, etc.)
-- `curl` or `wget` for downloading
-- Git for version control
+- **Linux/macOS:**
+  - `curl` or `wget` for downloading
+  - Git for version control
+  - `build-essential` (Linux) or Xcode Command Line Tools (macOS)
+- **Windows:**
+  - Windows 10 or 11
+  - [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) (Desktop development with C++ workload)
+  - Git for Windows
 
 ## Installing Rust
 
@@ -14,9 +19,15 @@ GCodeKit4 requires Rust 1.70 or later. We recommend using `rustup` for managing 
 
 ### Install Rustup (Recommended)
 
+**Linux/macOS:**
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
+
+**Windows:**
+1. Download `rustup-init.exe` from [rustup.rs](https://rustup.rs).
+2. Run the installer and follow the on-screen instructions.
+3. Ensure you have the **Visual Studio Build Tools** installed (required for the MSVC toolchain).
 
 Follow the on-screen prompts to complete the installation. After installation, add Rust to your PATH:
 
@@ -38,7 +49,7 @@ rustc 1.90.0 (...)
 cargo 1.90.0 (...)
 ```
 
-## Installing the Wild Linker
+## Installing the Wild Linker (Optional)
 
 The Wild linker is a modern, fast linker written in Rust that significantly speeds up link times during development.
 
@@ -65,6 +76,13 @@ brew install llvm
 ```bash
 sudo pacman -S lld
 ```
+
+**Windows:**
+1. Install **Visual Studio Build Tools** (2019 or newer) with the "Desktop development with C++" workload.
+2. Install Rust using `rustup-init.exe` from [rustup.rs](https://rustup.rs).
+3. (Optional) Install `lld` via Cargo or use the MSVC linker (default).
+   - To use `lld` on Windows, you may need to install LLVM separately or use `cargo-binutils`.
+   - Note: The default MSVC linker is generally sufficient for Windows development.
 
 ### Verify LLD Installation
 
