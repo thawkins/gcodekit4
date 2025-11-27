@@ -171,6 +171,7 @@ export component MaterialsManager inherits Rectangle {
                 text: "➕ New Material";
                 primary: true;
                 width: 120px;
+                tooltip: "Create New Material";
                 clicked => {
                     is_creating = true;
                     is_editing = false;
@@ -197,6 +198,7 @@ export component MaterialsManager inherits Rectangle {
             StandardButton {
                 text: "🔄 Refresh";
                 width: 100px;
+                tooltip: "Reload Materials List";
                 clicked => {
                     root.load_materials();
                 }
@@ -374,6 +376,7 @@ export component MaterialsManager inherits Rectangle {
                             text: "💾 Save";
                             primary: true;
                             width: 80px;
+                            tooltip: "Save Material Changes";
                             clicked => {
                                 selected_material = {
                                     id: edit_id,
@@ -408,6 +411,7 @@ export component MaterialsManager inherits Rectangle {
                         StandardButton {
                             text: "❌ Cancel";
                             width: 80px;
+                            tooltip: "Cancel Editing";
                             clicked => {
                                 is_editing = false;
                                 is_creating = false;
@@ -418,6 +422,7 @@ export component MaterialsManager inherits Rectangle {
                             text: "🗑️ Delete";
                             destructive: true;
                             width: 80px;
+                            tooltip: "Delete Material";
                             clicked => {
                                 root.delete_material(selected_material.id);
                                 is_editing = false;

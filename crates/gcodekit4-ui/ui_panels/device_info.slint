@@ -67,6 +67,7 @@ export component DeviceInfoPanel inherits Rectangle {
                 StandardButton {
                     text: "Refresh Info";
                     icon: "🔄";
+                    tooltip: "Refresh Device Information";
                     enabled: root.connected;
                     clicked => { root.refresh-clicked(); }
                 }
@@ -74,6 +75,7 @@ export component DeviceInfoPanel inherits Rectangle {
                 StandardButton {
                     text: "Copy Config";
                     icon: "📋";
+                    tooltip: "Copy Configuration to Clipboard";
                     enabled: root.connected;
                     clicked => { root.copy-config-clicked(); }
                 }

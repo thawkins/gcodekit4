@@ -3,7 +3,7 @@
 
 import { Button, ComboBox, LineEdit, VerticalBox, HorizontalBox, ScrollView, GridBox } from "std-widgets.slint";
 import { Theme } from "../ui/theme.slint";
-import { StandardButton, StandardSidebar } from "../ui/ui_components/shared.slint";
+import { StandardButton, StandardSidebar, StandardTooltip } from "../ui/ui_components/shared.slint";
 
 component DROAxis inherits Rectangle {
     in property <string> label;
@@ -63,12 +63,18 @@ component DROAxis inherits Rectangle {
             zero-touch := TouchArea {
                 clicked => { root.zero-clicked(); }
             }
+            
+            StandardTooltip {
+                text: "Zero " + root.label + " Axis";
+                show: zero-touch.has-hover; y: parent.height + 5px; x: (parent.width - self.width) / 2;
+            }
         }
     }
 }
 
 component JogArrowButton inherits Rectangle {
     in property <string> text;
+    in property <string> tooltip;
     callback clicked;
     
     width: 60px;
@@ -88,6 +94,11 @@ component JogArrowButton inherits Rectangle {
     
     touch := TouchArea {
         clicked => { root.clicked(); }
+    }
+    
+    StandardTooltip {
+        text: root.tooltip;
+        show: touch.has-hover; y: parent.height + 5px; x: (parent.width - self.width) / 2;
     }
 }
 
@@ -112,6 +123,11 @@ component StepSizeButton inherits Rectangle {
     
     touch := TouchArea {
         clicked => { root.clicked(); }
+    }
+    
+    StandardTooltip {
+        text: "Set Step to " + root.text + "mm";
+        show: touch.has-hover; y: parent.height + 5px; x: (parent.width - self.width) / 2;
     }
 }
 
@@ -187,6 +203,7 @@ export component MachineControlPanel inherits Rectangle {
                             icon: root.connected ? "🔌" : "🔗";
                             primary: !root.connected;
                             destructive: root.connected;
+                            tooltip: root.connected ? "Disconnect from Machine" : "Connect to Machine";
                             clicked => {
                                 if (root.connected) { root.disconnect-clicked(); }
                                 else { root.connect-clicked(); }
@@ -195,7 +212,7 @@ export component MachineControlPanel inherits Rectangle {
                         StandardButton {
                             icon: "🔄";
                             width: 40px;
-                            tooltip: "Refresh Ports";
+                            tooltip: "Refresh Serial Ports";
                             clicked => { root.refresh-ports-clicked(); }
                         }
                     }
@@ -228,12 +245,14 @@ export component MachineControlPanel inherits Rectangle {
                         StandardButton {
                             text: "Home";
                             icon: "⌂";
+                            tooltip: "Homing Cycle ($H)";
                             enabled: root.connected && root.machine-state != "Run";
                             clicked => { root.jog-home-clicked(); }
                         }
                         StandardButton {
                             text: "Unlock";
                             icon: "🔓";
+                            tooltip: "Unlock Alarm ($X)";
                             enabled: root.connected && (root.machine-state == "ALARM" || root.machine-state == "Alarm");
                             clicked => { root.unlock-clicked(); }
                         }
@@ -248,14 +267,14 @@ export component MachineControlPanel inherits Rectangle {
                     GridLayout {
                         spacing: 5px;
                         Row {
-                            StandardButton { text: "G54"; clicked => { root.send-command("G54"); } }
-                            StandardButton { text: "G55"; clicked => { root.send-command("G55"); } }
-                            StandardButton { text: "G56"; clicked => { root.send-command("G56"); } }
+                            StandardButton { text: "G54"; tooltip: "Select WCS G54"; clicked => { root.send-command("G54"); } }
+                            StandardButton { text: "G55"; tooltip: "Select WCS G55"; clicked => { root.send-command("G55"); } }
+                            StandardButton { text: "G56"; tooltip: "Select WCS G56"; clicked => { root.send-command("G56"); } }
                         }
                         Row {
-                            StandardButton { text: "G57"; clicked => { root.send-command("G57"); } }
-                            StandardButton { text: "G58"; clicked => { root.send-command("G58"); } }
-                            StandardButton { text: "G59"; clicked => { root.send-command("G59"); } }
+                            StandardButton { text: "G57"; tooltip: "Select WCS G57"; clicked => { root.send-command("G57"); } }
+                            StandardButton { text: "G58"; tooltip: "Select WCS G58"; clicked => { root.send-command("G58"); } }
+                            StandardButton { text: "G59"; tooltip: "Select WCS G59"; clicked => { root.send-command("G59"); } }
                         }
                     }
                 }
@@ -323,22 +342,22 @@ export component MachineControlPanel inherits Rectangle {
                         spacing: 5px;
                         Row {
                             Rectangle { width: 60px; height: 60px; } // Empty top-left
-                            JogArrowButton { text: "▲"; clicked => { root.jog-y-positive(root.step-size); } }
+                            JogArrowButton { text: "▲"; tooltip: "Jog Y+"; clicked => { root.jog-y-positive(root.step-size); } }
                             Rectangle { width: 60px; height: 60px; } // Empty top-right
                         }
                         Row {
-                            JogArrowButton { text: "◀"; clicked => { root.jog-x-negative(root.step-size); } }
+                            JogArrowButton { text: "◀"; tooltip: "Jog X-"; clicked => { root.jog-x-negative(root.step-size); } }
                             Rectangle { // Center Home
                                 width: 60px; height: 60px;
                                 background: Theme.sidebar-background;
                                 border-radius: 30px;
                                 Text { text: "XY"; color: Theme.text-muted; font-size: 14px; horizontal-alignment: center; vertical-alignment: center; }
                             }
-                            JogArrowButton { text: "▶"; clicked => { root.jog-x-positive(root.step-size); } }
+                            JogArrowButton { text: "▶"; tooltip: "Jog X+"; clicked => { root.jog-x-positive(root.step-size); } }
                         }
                         Row {
                             Rectangle { width: 60px; height: 60px; } // Empty bottom-left
-                            JogArrowButton { text: "▼"; clicked => { root.jog-y-negative(root.step-size); } }
+                            JogArrowButton { text: "▼"; tooltip: "Jog Y-"; clicked => { root.jog-y-negative(root.step-size); } }
                             Rectangle { width: 60px; height: 60px; } // Empty bottom-right
                         }
                     }
@@ -347,12 +366,12 @@ export component MachineControlPanel inherits Rectangle {
                     VerticalLayout {
                         alignment: center;
                         spacing: 5px;
-                        JogArrowButton { text: "▲"; clicked => { root.jog-z-positive(root.step-size); } }
+                        JogArrowButton { text: "▲"; tooltip: "Jog Z+"; clicked => { root.jog-z-positive(root.step-size); } }
                         Rectangle { 
                             height: 60px; 
                             Text { text: "Z"; color: Theme.text-muted; font-size: 18px; horizontal-alignment: center; vertical-alignment: center; }
                         }
-                        JogArrowButton { text: "▼"; clicked => { root.jog-z-negative(root.step-size); } }
+                        JogArrowButton { text: "▼"; tooltip: "Jog Z-"; clicked => { root.jog-z-negative(root.step-size); } }
                     }
                 }
             }

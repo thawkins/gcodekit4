@@ -145,6 +145,7 @@ export component DeviceManagerPanel inherits Rectangle {
                             text: "Add Device";
                             primary: true;
                             width: 120px;
+                            tooltip: "Create New Device Profile";
                             clicked => { root.add-profile(); }
                         }
                     }
@@ -174,6 +175,7 @@ export component DeviceManagerPanel inherits Rectangle {
                     if !p.is-active : StandardButton {
                         text: "Set as Active";
                         width: 120px;
+                        tooltip: "Set as Current Device";
                         clicked => { root.set-active-profile(p.id); }
                     }
                 }
@@ -409,6 +411,7 @@ export component DeviceManagerPanel inherits Rectangle {
                         text: "Delete Device";
                         destructive: true;
                         width: 120px;
+                        tooltip: "Delete Device Profile";
                         clicked => { root.delete-profile(p.id); }
                     }
                 }

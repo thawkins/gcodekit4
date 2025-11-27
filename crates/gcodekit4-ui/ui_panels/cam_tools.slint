@@ -3,6 +3,7 @@
 
 import { Button, VerticalBox, HorizontalBox, ScrollView, GridBox } from "std-widgets.slint";
 import { Theme } from "../ui/theme.slint";
+import { StandardTooltip } from "../ui/ui_components/shared.slint";
 
 component GeneratedIcon inherits Rectangle {
     in property <string> type;
@@ -63,6 +64,7 @@ component ToolCard inherits Rectangle {
     in property <string> tool-title: "Tool";
     in property <string> tool-description: "Description";
     in property <string> icon-type: "unknown";
+    in property <string> tooltip;
     
     callback clicked();
     
@@ -103,8 +105,13 @@ component ToolCard inherits Rectangle {
         }
     }
     
-    TouchArea {
+    touch := TouchArea {
         clicked => { root.clicked(); }
+    }
+    
+    StandardTooltip {
+        text: root.tooltip != "" ? root.tooltip : "Open " + root.tool-title;
+        show: touch.has-hover; y: parent.height + 5px; x: (parent.width - self.width) / 2;
     }
 }
 

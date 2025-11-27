@@ -1,6 +1,28 @@
 import { Button, LineEdit, CheckBox, SpinBox, VerticalBox, HorizontalBox } from "std-widgets.slint";
 import { Theme } from "../theme.slint";
 
+export component StandardTooltip inherits Rectangle {
+    in property <string> text;
+    in property <bool> show;
+    
+    width: tt-text.preferred-width + 10px;
+    height: 24px;
+    background: #222222;
+    border-radius: 3px;
+    border-width: 1px;
+    border-color: #555555;
+    z: 100;
+    visible: root.show && root.text != "";
+    
+    tt-text := Text {
+        text: root.text;
+        color: white;
+        font-size: 11px;
+        vertical-alignment: center;
+        horizontal-alignment: center;
+    }
+}
+
 export component StandardButton inherits Rectangle {
     in property <string> text;
     in property <string> icon;
@@ -48,28 +70,19 @@ export component StandardButton inherits Rectangle {
     }
     
     touch := TouchArea {
-        enabled: root.enabled;
         mouse-cursor: root.enabled ? pointer : default;
-        clicked => { root.clicked(); }
+        clicked => { 
+            if (root.enabled) {
+                root.clicked();
+            }
+        }
     }
     
-    if (touch.has-hover && root.tooltip != "") : Rectangle {
+    StandardTooltip {
+        text: root.tooltip;
+        show: touch.has-hover;
         y: parent.height + 5px;
         x: (parent.width - self.width) / 2;
-        width: tt-text.preferred-width + 10px;
-        height: 24px;
-        background: #222222;
-        border-radius: 3px;
-        border-width: 1px;
-        border-color: #555555;
-        z: 100;
-        tt-text := Text {
-            text: root.tooltip;
-            color: white;
-            font-size: 11px;
-            vertical-alignment: center;
-            horizontal-alignment: center;
-        }
     }
 }
 

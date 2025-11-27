@@ -119,6 +119,7 @@ export component ToolsManager inherits Rectangle {
                 text: "➕ New Tool";
                 primary: true;
                 width: 100px;
+                tooltip: "Create New Tool";
                 clicked => {
                     is_creating = true;
                     is_editing = false;
@@ -143,6 +144,7 @@ export component ToolsManager inherits Rectangle {
             StandardButton {
                 text: "📦 Import GTC";
                 width: 100px;
+                tooltip: "Import Tool Library (.gtc)";
                 clicked => {
                     root.import_gtc_package("");
                 }
@@ -336,6 +338,7 @@ export component ToolsManager inherits Rectangle {
                                 text: "💾 Save";
                                 primary: true;
                                 width: 80px;
+                                tooltip: "Save Tool Changes";
                                 clicked => {
                                     selected_tool = {
                                         id: edit_id,
@@ -368,6 +371,7 @@ export component ToolsManager inherits Rectangle {
                             StandardButton {
                                 text: "❌ Cancel";
                                 width: 80px;
+                                tooltip: "Cancel Editing";
                                 clicked => {
                                     is_editing = false;
                                     is_creating = false;
@@ -378,6 +382,7 @@ export component ToolsManager inherits Rectangle {
                                 text: "🗑️ Delete";
                                 destructive: true;
                                 width: 80px;
+                                tooltip: "Delete Tool";
                                 clicked => {
                                     root.delete_tool(selected_tool.id);
                                     is_editing = false;

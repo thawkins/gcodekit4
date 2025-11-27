@@ -55,6 +55,7 @@ export component ConfigSettingsPanel inherits Rectangle {
             StandardButton {
                 text: "Retrieve";
                 width: 80px;
+                tooltip: "Retrieve Settings from Device ($$)";
                 enabled: root.connected;
                 clicked => { root.retrieve-settings(); }
             }
@@ -62,6 +63,7 @@ export component ConfigSettingsPanel inherits Rectangle {
             StandardButton {
                 text: "Save";
                 width: 80px;
+                tooltip: "Save Settings to File";
                 enabled: root.has-loaded-settings;
                 clicked => { root.save-to-file(); }
             }
@@ -69,12 +71,14 @@ export component ConfigSettingsPanel inherits Rectangle {
             StandardButton {
                 text: "Load";
                 width: 80px;
+                tooltip: "Load Settings from File";
                 clicked => { root.load-from-file(); }
             }
             
             StandardButton {
                 text: "Restore";
                 width: 80px;
+                tooltip: "Restore Settings to Device";
                 enabled: root.has-loaded-settings && root.connected;
                 clicked => { root.restore-to-device(); }
             }
@@ -385,6 +389,7 @@ export component ConfigSettingsPanel inherits Rectangle {
                     StandardButton {
                         text: "Cancel";
                         width: 100px;
+                        tooltip: "Cancel Editing";
                         clicked => {
                             root.show-edit-dialog = false;
                         }
@@ -394,6 +399,7 @@ export component ConfigSettingsPanel inherits Rectangle {
                         text: "Save";
                         width: 100px;
                         primary: true;
+                        tooltip: "Save Setting Value";
                         clicked => {
                             root.save-edited-setting(root.edit-setting-number, root.edit-setting-value);
                             root.show-edit-dialog = false;
