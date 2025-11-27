@@ -4,7 +4,7 @@
 
 import "../../../assets/fonts/fira-code/FiraCode-Regular.ttf";
 
-import { Button, ComboBox, LineEdit, TextEdit, VerticalBox, HorizontalBox, ScrollView, SpinBox, CheckBox } from "std-widgets.slint";
+import { Button, ComboBox, LineEdit, TextEdit, VerticalBox, HorizontalBox, ScrollView, SpinBox, CheckBox, Palette } from "std-widgets.slint";
 
 // Import all panel components
 import { GcodeEditorPanel, TextLine } from "ui_panels/gcode_editor.slint";
@@ -23,6 +23,38 @@ import { TabbedBoxDialog } from "../gcodekit4-camtools/ui/tabbed_box_dialog.slin
 import { SpoilboardSurfacingDialog } from "../gcodekit4-camtools/ui/spoilboard_surfacing_dialog.slint";
 import { SpoilboardGridDialog } from "../gcodekit4-camtools/ui/spoilboard_grid_dialog.slint";
 import { SpeedsFeedsDialog } from "../gcodekit4-camtools/ui/speeds_feeds_dialog.slint";
+import { Theme } from "ui/theme.slint";
+
+component TabItem inherits Rectangle {
+    in property <string> text;
+    in property <bool> selected;
+    callback clicked;
+
+    width: 130px;
+    height: 40px;
+    background: selected ? Theme.primary : transparent;
+
+    Text {
+        text: root.text;
+        color: selected ? Theme.text-primary : Theme.text-secondary;
+        font-size: 13px;
+        font-weight: selected ? 700 : 400;
+        vertical-alignment: center;
+        horizontal-alignment: center;
+    }
+    
+    // Bottom accent line
+    Rectangle {
+        width: 100%;
+        height: 3px;
+        y: parent.height - self.height;
+        background: selected ? white : transparent;
+    }
+
+    TouchArea {
+        clicked => { root.clicked(); }
+    }
+}
 
 export struct PortInfo {
     port: string,
@@ -67,6 +99,24 @@ export struct DesignerState {
 
 export component MainWindow inherits Window {
     title: "GCodeKit4 - GCode Toolkit for CNC/Laser Machines";
+    background: Theme.background;
+    
+    init => {
+        Palette.color-scheme = ColorScheme.dark;
+        about-dialog-visible = true;
+        startup-timer.running = true;
+    }
+    
+    property <duration> startup-delay: 6s;
+    
+    startup-timer := Timer {
+        interval: root.startup-delay;
+        running: false;
+        triggered => {
+            about-dialog-visible = false;
+            self.running = false;
+        }
+    }
     
     // Busy cursor while processing
     in-out property <bool> is-busy: false;
@@ -480,319 +530,6 @@ export component MainWindow inherits Window {
         designer-delete-trigger += 1;
     }
 
-    // Native menu bar with dark theme support
-    MenuBar {
-        Menu {
-            title: @tr("File");
-            MenuItem {
-                title: root.current-view == "designer" ? "Design File" : "GCode File";
-                enabled: false;
-            }
-            MenuItem {
-                title: "----------------";
-                enabled: false;
-            }
-            MenuItem {
-                title: @tr("New");
-                activated => {
-                    if (root.current-view == "designer") {
-                        root.designer-file-new();
-                    } else {
-                        root.menu-file-new();
-                    }
-                }
-            }
-            MenuItem {
-                title: @tr("Open File");
-                activated => {
-                    if (root.current-view == "designer") {
-                        root.designer-file-open();
-                    } else {
-                        root.menu-file-open();
-                    }
-                }
-            }
-            MenuItem {
-                title: @tr("Save File");
-                activated => {
-                    if (root.current-view == "designer") {
-                        root.designer-file-save();
-                    } else {
-                        root.menu-file-save();
-                    }
-                }
-            }
-            MenuItem {
-                title: @tr("Save As");
-                activated => {
-                    if (root.current-view == "designer") {
-                        root.designer-file-save-as();
-                    } else {
-                        root.menu-file-save-as();
-                    }
-                }
-            }
-            MenuItem {
-                title: "----------------";
-                enabled: false;
-            }
-            Menu {
-                title: @tr("Export");
-                enabled: root.current-view == "designer";
-                MenuItem {
-                    title: @tr("G-Code");
-                    enabled: root.current-view == "designer" && root.designer-shapes.length > 0;
-                    activated => {
-                        root.designer-generate-toolpath();
-                    }
-                }
-            }
-            Menu {
-                title: @tr("Load");
-                enabled: root.current-view == "designer";
-                MenuItem {
-                    title: @tr("DXF");
-                    activated => {
-                        root.designer-import-dxf();
-                    }
-                }
-                MenuItem {
-                    title: @tr("SVG");
-                    activated => {
-                        root.designer-import-svg();
-                    }
-                }
-            }
-            Menu {
-                title: @tr("Add");
-                enabled: root.current-view == "designer";
-                MenuItem {
-                    title: @tr("DXF");
-                    activated => {
-                        root.designer-add-dxf();
-                    }
-                }
-                MenuItem {
-                    title: @tr("SVG");
-                    activated => {
-                        root.designer-add-svg();
-                    }
-                }
-            }
-            MenuItem {
-                title: @tr("Exit");
-                activated => { root.menu-file-exit(); }
-            }
-        }
-        
-        Menu {
-            title: @tr("Edit");
-            MenuItem {
-                title: @tr("Select All");
-                enabled: root.current-view == "designer" && root.designer-shapes.length > 0;
-                activated => {
-                    root.designer-select-all();
-                }
-            }
-            MenuItem {
-                title: @tr("Undo");
-                enabled: root.current-view == "designer" ? root.designer-state.can_undo : root.can-undo;
-                activated => {
-                    if (root.current-view == "designer") {
-                        root.designer-undo();
-                    } else {
-                        root.undo-requested();
-                    }
-                }
-            }
-            MenuItem {
-                title: @tr("Redo");
-                enabled: root.current-view == "designer" ? root.designer-state.can_redo : root.can-redo;
-                activated => {
-                    if (root.current-view == "designer") {
-                        root.designer-redo();
-                    } else {
-                        root.redo-requested();
-                    }
-                }
-            }
-            MenuItem {
-                title: "----------------";
-                enabled: false;
-            }
-            MenuItem {
-                title: @tr("Preferences");
-                activated => { 
-                    root.menu-edit-preferences();
-                    settings-dialog-visible = true;
-                }
-            }
-        }
-        
-        Menu {
-            title: @tr("View");
-            MenuItem {
-                title: @tr("Zoom In");
-                enabled: root.current-view == "designer" || root.current-view == "gcode-visualizer";
-                activated => {
-                    if (root.current-view == "designer") {
-                        root.designer-zoom-in();
-                    } else if (root.current-view == "gcode-visualizer") {
-                        root.zoom-in(root.visualizer-canvas-width, root.visualizer-canvas-height);
-                    }
-                }
-            }
-            MenuItem {
-                title: @tr("Zoom Out");
-                enabled: root.current-view == "designer" || root.current-view == "gcode-visualizer";
-                activated => {
-                    if (root.current-view == "designer") {
-                        root.designer-zoom-out();
-                    } else if (root.current-view == "gcode-visualizer") {
-                        root.zoom-out(root.visualizer-canvas-width, root.visualizer-canvas-height);
-                    }
-                }
-            }
-            MenuItem {
-                title: @tr("Fit to View");
-                enabled: root.current-view == "designer" || root.current-view == "gcode-visualizer";
-                activated => {
-                    if (root.current-view == "designer") {
-                        root.designer-zoom-fit();
-                    } else if (root.current-view == "gcode-visualizer") {
-                        root.fit-to-view(root.visualizer-canvas-width, root.visualizer-canvas-height);
-                    }
-                }
-            }
-            MenuItem {
-                title: @tr("Reset to Default");
-                enabled: root.current-view == "designer" || root.current-view == "gcode-visualizer";
-                activated => {
-                    if (root.current-view == "designer") {
-                        root.designer-reset-view();
-                    } else if (root.current-view == "gcode-visualizer") {
-                        root.reset-view(root.visualizer-canvas-width, root.visualizer-canvas-height);
-                    }
-                }
-            }
-            MenuItem {
-                title: "----------------";
-                enabled: false;
-            }
-            MenuItem {
-                title: current-view == "gcode-editor" ? @tr("✓ G-Code Editor") : @tr("G-Code Editor");
-                activated => {
-                    if (current-view != "gcode-editor") {
-                        current-view = "gcode-editor";
-                        root.gcode-focus-trigger += 1;
-                        root.menu-view-gcode-editor();
-                    } else {
-                        root.menu-view-gcode-editor();
-                        root.gcode-focus-trigger += 1;
-                    }
-                }
-            }
-            MenuItem {
-                title: current-view == "machine" ? @tr("✓ Machine Control") : @tr("Machine Control");
-                activated => {
-                    if (current-view != "machine") {
-                        current-view = "machine";
-                        root.menu-view-machine();
-                    }
-                }
-            }
-            MenuItem {
-                title: current-view == "device-info" ? @tr("✓ Machine Info") : @tr("Machine Info");
-                activated => {
-                    if (current-view != "device-info") {
-                        current-view = "device-info";
-                    }
-                }
-            }
-            MenuItem {
-                title: current-view == "device-console" ? @tr("✓ Device Console") : @tr("Device Console");
-                activated => {
-                    if (current-view != "device-console") {
-                        current-view = "device-console";
-                        root.menu-view-device-console();
-                    }
-                }
-            }
-            MenuItem {
-                title: current-view == "device-manager" ? @tr("✓ Device Manager") : @tr("Device Manager");
-                activated => {
-                    if (current-view != "device-manager") {
-                        current-view = "device-manager";
-                        root.load-device-profiles();
-                    }
-                }
-            }
-
-            MenuItem {
-                title: current-view == "config-settings" ? @tr("✓ Device Config") : @tr("Device Config");
-                activated => {
-                    current-view = "config-settings";
-                }
-            }
-
-            MenuItem {
-                title: current-view == "gcode-visualizer" ? @tr("✓ Visualizer") : @tr("Visualizer");
-                activated => {
-                    if (current-view != "gcode-visualizer") {
-                        current-view = "gcode-visualizer";
-                        root.menu-view-gcode-visualizer();
-                    }
-                }
-            }
-            MenuItem {
-                title: current-view == "designer" ? @tr("✓ Designer") : @tr("Designer");
-                activated => {
-                    if (current-view != "designer") {
-                        current-view = "designer";
-                        root.menu-view-designer();
-                    }
-                }
-            }
-            MenuItem {
-                title: current-view == "cam-tools" ? @tr("✓ CAMTools") : @tr("CAMTools");
-                activated => {
-                    if (current-view != "cam-tools") {
-                        current-view = "cam-tools";
-                    }
-                }
-            }
-            MenuItem {
-                title: current-view == "materials" ? @tr("✓ Materials") : @tr("Materials");
-                activated => {
-                    if (current-view != "materials") {
-                        current-view = "materials";
-                        root.menu-view-materials();
-                    }
-                }
-            }
-            MenuItem {
-                title: current-view == "cnc-tools" ? @tr("✓ CNCTools") : @tr("CNCTools");
-                activated => {
-                    if (current-view != "cnc-tools") {
-                        current-view = "cnc-tools";
-                        root.load_tools();
-                    }
-                }
-            }
-        }
-        
-        Menu {
-            title: @tr("Help");
-            MenuItem {
-                title: @tr("About");
-                activated => { 
-                    root.menu-help-about();
-                    about-dialog-visible = true;
-                }
-            }
-        }
-    }
-    
     // Busy cursor overlay
     if root.is-busy : TouchArea {
         width: 100%;
@@ -814,299 +551,132 @@ export component MainWindow inherits Window {
     // Main content area - no FocusScope wrapper, let child elements handle focus
     VerticalBox {
         spacing: 0px;
+        padding: 0px;
         
         // Main content area
         HorizontalBox {
-            spacing: -20px;
-            padding-left: 10px;
-            padding-right: 10px;
-            padding-bottom: 0px;
+            spacing: 0px;
+            padding: 0px;
             
             // Main content area - File and Viewer
             VerticalBox {
                 spacing: 0px;
+                padding: 0px;
                 horizontal-stretch: 1.0;
                 vertical-stretch: 1.0;
                 
                 // Tab bar
                 Rectangle {
-                    background: #2c3e50;
+                    background: Theme.sidebar-background;
                     height: 40px;
                     
                     HorizontalBox {
-                        padding: 4px;
-                        spacing: 2px;
+                        padding: 0px;
+                        spacing: 0px;
                         alignment: start;
                         
-                        // G-Code Editor Tab
-                        Rectangle {
-                            width: 140px;
-                            height: 32px;
-                            background: current-view == "gcode-editor" ? #34495e : #3d5470;
-                            border-radius: 3px;
-                            
-                            Text {
-                                text: "G-Code Editor";
-                                color: current-view == "gcode-editor" ? white : #bdc3c7;
-                                font-size: 12px;
-                                font-weight: current-view == "gcode-editor" ? 700 : 400;
-                                vertical-alignment: center;
-                                horizontal-alignment: center;
-                            }
-                            
-                            TouchArea {
-                                mouse-cursor: pointer;
-                                clicked => {
-                                    current-view = "gcode-editor";
-                                    root.gcode-focus-trigger += 1;
-                                    root.menu-view-gcode-editor();
-                                }
+                        TabItem {
+                            text: "G-Code Editor";
+                            selected: current-view == "gcode-editor";
+                            clicked => {
+                                current-view = "gcode-editor";
+                                root.gcode-focus-trigger += 1;
+                                root.menu-view-gcode-editor();
                             }
                         }
                         
-                        // Machine Control Tab
-                        Rectangle {
-                            width: 140px;
-                            height: 32px;
-                            background: current-view == "machine" ? #34495e : #3d5470;
-                            border-radius: 3px;
-                            
-                            Text {
-                                text: "Machine Control";
-                                color: current-view == "machine" ? white : #bdc3c7;
-                                font-size: 12px;
-                                font-weight: current-view == "machine" ? 700 : 400;
-                                vertical-alignment: center;
-                                horizontal-alignment: center;
-                            }
-                            
-                            TouchArea {
-                                mouse-cursor: pointer;
-                                clicked => {
-                                    current-view = "machine";
-                                    root.menu-view-machine();
-                                }
+                        TabItem {
+                            text: "Machine Control";
+                            selected: current-view == "machine";
+                            clicked => {
+                                current-view = "machine";
+                                root.menu-view-machine();
                             }
                         }
                         
-                        // Device Console Tab
-                        Rectangle {
-                            width: 140px;
-                            height: 32px;
-                            background: current-view == "device-console" ? #34495e : #3d5470;
-                            border-radius: 3px;
-                            
-                            Text {
-                                text: "Device Console";
-                                color: current-view == "device-console" ? white : #bdc3c7;
-                                font-size: 12px;
-                                font-weight: current-view == "device-console" ? 700 : 400;
-                                vertical-alignment: center;
-                                horizontal-alignment: center;
-                            }
-                            
-                            TouchArea {
-                                mouse-cursor: pointer;
-                                clicked => {
-                                    current-view = "device-console";
-                                    root.menu-view-device-console();
-                                }
+                        TabItem {
+                            text: "Device Console";
+                            selected: current-view == "device-console";
+                            clicked => {
+                                current-view = "device-console";
+                                root.menu-view-device-console();
                             }
                         }
                         
-                        // Device Info Tab
-                        Rectangle {
+                        TabItem {
+                            text: "📱 Device Info";
+                            selected: current-view == "device-info";
                             width: 110px;
-                            height: 32px;
-                            background: current-view == "device-info" ? #34495e : #3d5470;
-                            border-radius: 3px;
-                            
-                            Text {
-                                text: "📱 Device Info";
-                                color: current-view == "device-info" ? white : #bdc3c7;
-                                font-size: 12px;
-                                font-weight: current-view == "device-info" ? 700 : 400;
-                                vertical-alignment: center;
-                                horizontal-alignment: center;
-                            }
-                            
-                            TouchArea {
-                                mouse-cursor: pointer;
-                                clicked => {
-                                    current-view = "device-info";
-                                }
+                            clicked => {
+                                current-view = "device-info";
                             }
                         }
 
-                        // Device Manager Tab
-                        Rectangle {
-                            width: 130px;
-                            height: 32px;
-                            background: current-view == "device-manager" ? #34495e : #3d5470;
-                            border-radius: 3px;
-                            
-                            Text {
-                                text: "🖥️ Device Manager";
-                                color: current-view == "device-manager" ? white : #bdc3c7;
-                                font-size: 12px;
-                                font-weight: current-view == "device-manager" ? 700 : 400;
-                                vertical-alignment: center;
-                                horizontal-alignment: center;
-                            }
-                            
-                            TouchArea {
-                                mouse-cursor: pointer;
-                                clicked => {
-                                    current-view = "device-manager";
-                                    root.load-device-profiles();
-                                }
+                        TabItem {
+                            text: "🖥️ Device Manager";
+                            selected: current-view == "device-manager";
+                            width: 140px;
+                            clicked => {
+                                current-view = "device-manager";
+                                root.load-device-profiles();
                             }
                         }
                         
-                        // Config Tab
-                        Rectangle {
+                        TabItem {
+                            text: "⚙️ Device Config";
+                            selected: current-view == "config-settings";
                             width: 130px;
-                            height: 32px;
-                            background: current-view == "config-settings" ? #34495e : #3d5470;
-                            border-radius: 3px;
-                            
-                            Text {
-                                text: "⚙️ Device Config";
-                                color: current-view == "config-settings" ? white : #bdc3c7;
-                                font-size: 12px;
-                                font-weight: current-view == "config-settings" ? 700 : 400;
-                                vertical-alignment: center;
-                                horizontal-alignment: center;
-                            }
-                            
-                            TouchArea {
-                                mouse-cursor: pointer;
-                                clicked => {
-                                    current-view = "config-settings";
-                                }
+                            clicked => {
+                                current-view = "config-settings";
                             }
                         }
                         
-                        // GCode Visualizer Tab
-                        Rectangle {
-                            width: 120px;
-                            height: 32px;
-                            background: current-view == "gcode-visualizer" ? #34495e : #3d5470;
-                            border-radius: 3px;
-                            
-                            Text {
-                                text: "Visualizer";
-                                color: current-view == "gcode-visualizer" ? white : #bdc3c7;
-                                font-size: 12px;
-                                font-weight: current-view == "gcode-visualizer" ? 700 : 400;
-                                vertical-alignment: center;
-                                horizontal-alignment: center;
-                            }
-                            
-                            TouchArea {
-                                mouse-cursor: pointer;
-                                clicked => {
-                                    current-view = "gcode-visualizer";
-                                    root.menu-view-gcode-visualizer();
-                                }
+                        TabItem {
+                            text: "Visualizer";
+                            selected: current-view == "gcode-visualizer";
+                            width: 100px;
+                            clicked => {
+                                current-view = "gcode-visualizer";
+                                root.menu-view-gcode-visualizer();
                             }
                         }
 
-                        // Designer Tab
-                        Rectangle {
-                            width: 120px;
-                            height: 32px;
-                            background: current-view == "designer" ? #34495e : #3d5470;
-                            border-radius: 3px;
-                            
-                            Text {
-                                text: "Designer";
-                                color: red;
-                                font-size: 12px;
-                                font-weight: current-view == "designer" ? 700 : 400;
-                                vertical-alignment: center;
-                                horizontal-alignment: center;
-                            }
-                            
-                            TouchArea {
-                                mouse-cursor: pointer;
-                                clicked => {
-                                    current-view = "designer";
-                                    root.menu-view-designer();
-                                }
+                        TabItem {
+                            text: "Designer";
+                            selected: current-view == "designer";
+                            width: 100px;
+                            clicked => {
+                                current-view = "designer";
+                                root.menu-view-designer();
                             }
                         }
                         
-                        // CAM Tools Tab
-                        Rectangle {
+                        TabItem {
+                            text: "🔧 CAM Tools";
+                            selected: current-view == "cam-tools";
                             width: 120px;
-                            height: 32px;
-                            background: current-view == "cam-tools" ? #34495e : #3d5470;
-                            border-radius: 3px;
-                            
-                            Text {
-                                text: "🔧 CAM Tools";
-                                color: current-view == "cam-tools" ? white : #bdc3c7;
-                                font-size: 12px;
-                                font-weight: current-view == "cam-tools" ? 700 : 400;
-                                vertical-alignment: center;
-                                horizontal-alignment: center;
-                            }
-                            
-                            TouchArea {
-                                mouse-cursor: pointer;
-                                clicked => {
-                                    current-view = "cam-tools";
-                                }
+                            clicked => {
+                                current-view = "cam-tools";
                             }
                         }
                         
-                        // Materials Tab
-                        Rectangle {
-                            width: 120px;
-                            height: 32px;
-                            background: current-view == "materials" ? #34495e : #3d5470;
-                            border-radius: 3px;
-                            
-                            Text {
-                                text: "📦 Materials";
-                                color: current-view == "materials" ? white : #bdc3c7;
-                                font-size: 12px;
-                                font-weight: current-view == "materials" ? 700 : 400;
-                                vertical-alignment: center;
-                                horizontal-alignment: center;
-                            }
-                            
-                            TouchArea {
-                                mouse-cursor: pointer;
-                                clicked => {
-                                    current-view = "materials";
-                                }
+                        TabItem {
+                            text: "📦 Materials";
+                            selected: current-view == "materials";
+                            width: 110px;
+                            clicked => {
+                                current-view = "materials";
+                                root.menu-view-materials();
                             }
                         }
                         
-                        // CNC Tools Tab
-                        Rectangle {
-                            width: 120px;
-                            height: 32px;
-                            background: current-view == "cnc-tools" ? #34495e : #3d5470;
-                            border-radius: 3px;
-                            
-                            Text {
-                                text: "🔩 CNC Tools";
-                                color: current-view == "cnc-tools" ? white : #bdc3c7;
-                                font-size: 12px;
-                                font-weight: current-view == "cnc-tools" ? 700 : 400;
-                                vertical-alignment: center;
-                                horizontal-alignment: center;
-                            }
-                            
-                            TouchArea {
-                                mouse-cursor: pointer;
-                                clicked => {
-                                    current-view = "cnc-tools";
-                                    root.load_tools();
-                                }
+                        TabItem {
+                            text: "🔩 CNC Tools";
+                            selected: current-view == "cnc-tools";
+                            width: 110px;
+                            clicked => {
+                                current-view = "cnc-tools";
+                                root.load_tools();
                             }
                         }
                     }
@@ -2130,4 +1700,316 @@ export component MainWindow inherits Window {
     }
     
     }  // Close root FocusScope (startup-focus)
+    // Native menu bar with dark theme support
+    MenuBar {
+        Menu {
+            title: @tr("File");
+            MenuItem {
+                title: root.current-view == "designer" ? "Design File" : "GCode File";
+                enabled: false;
+            }
+            MenuItem {
+                title: "----------------";
+                enabled: false;
+            }
+            MenuItem {
+                title: @tr("New");
+                activated => {
+                    if (root.current-view == "designer") {
+                        root.designer-file-new();
+                    } else {
+                        root.menu-file-new();
+                    }
+                }
+            }
+            MenuItem {
+                title: @tr("Open File");
+                activated => {
+                    if (root.current-view == "designer") {
+                        root.designer-file-open();
+                    } else {
+                        root.menu-file-open();
+                    }
+                }
+            }
+            MenuItem {
+                title: @tr("Save File");
+                activated => {
+                    if (root.current-view == "designer") {
+                        root.designer-file-save();
+                    } else {
+                        root.menu-file-save();
+                    }
+                }
+            }
+            MenuItem {
+                title: @tr("Save As");
+                activated => {
+                    if (root.current-view == "designer") {
+                        root.designer-file-save-as();
+                    } else {
+                        root.menu-file-save-as();
+                    }
+                }
+            }
+            MenuItem {
+                title: "----------------";
+                enabled: false;
+            }
+            Menu {
+                title: @tr("Export");
+                enabled: root.current-view == "designer";
+                MenuItem {
+                    title: @tr("G-Code");
+                    enabled: root.current-view == "designer" && root.designer-shapes.length > 0;
+                    activated => {
+                        root.designer-generate-toolpath();
+                    }
+                }
+            }
+            Menu {
+                title: @tr("Load");
+                enabled: root.current-view == "designer";
+                MenuItem {
+                    title: @tr("DXF");
+                    activated => {
+                        root.designer-import-dxf();
+                    }
+                }
+                MenuItem {
+                    title: @tr("SVG");
+                    activated => {
+                        root.designer-import-svg();
+                    }
+                }
+            }
+            Menu {
+                title: @tr("Add");
+                enabled: root.current-view == "designer";
+                MenuItem {
+                    title: @tr("DXF");
+                    activated => {
+                        root.designer-add-dxf();
+                    }
+                }
+                MenuItem {
+                    title: @tr("SVG");
+                    activated => {
+                        root.designer-add-svg();
+                    }
+                }
+            }
+            MenuItem {
+                title: @tr("Exit");
+                activated => { root.menu-file-exit(); }
+            }
+        }
+        
+        Menu {
+            title: @tr("Edit");
+            MenuItem {
+                title: @tr("Select All");
+                enabled: root.current-view == "designer" && root.designer-shapes.length > 0;
+                activated => {
+                    root.designer-select-all();
+                }
+            }
+            MenuItem {
+                title: @tr("Undo");
+                enabled: root.current-view == "designer" ? root.designer-state.can_undo : root.can-undo;
+                activated => {
+                    if (root.current-view == "designer") {
+                        root.designer-undo();
+                    } else {
+                        root.undo-requested();
+                    }
+                }
+            }
+            MenuItem {
+                title: @tr("Redo");
+                enabled: root.current-view == "designer" ? root.designer-state.can_redo : root.can-redo;
+                activated => {
+                    if (root.current-view == "designer") {
+                        root.designer-redo();
+                    } else {
+                        root.redo-requested();
+                    }
+                }
+            }
+            MenuItem {
+                title: "----------------";
+                enabled: false;
+            }
+            MenuItem {
+                title: @tr("Preferences");
+                activated => { 
+                    root.menu-edit-preferences();
+                    settings-dialog-visible = true;
+                }
+            }
+        }
+        
+        Menu {
+            title: @tr("View");
+            MenuItem {
+                title: @tr("Zoom In");
+                enabled: root.current-view == "designer" || root.current-view == "gcode-visualizer";
+                activated => {
+                    if (root.current-view == "designer") {
+                        root.designer-zoom-in();
+                    } else if (root.current-view == "gcode-visualizer") {
+                        root.zoom-in(root.visualizer-canvas-width, root.visualizer-canvas-height);
+                    }
+                }
+            }
+            MenuItem {
+                title: @tr("Zoom Out");
+                enabled: root.current-view == "designer" || root.current-view == "gcode-visualizer";
+                activated => {
+                    if (root.current-view == "designer") {
+                        root.designer-zoom-out();
+                    } else if (root.current-view == "gcode-visualizer") {
+                        root.zoom-out(root.visualizer-canvas-width, root.visualizer-canvas-height);
+                    }
+                }
+            }
+            MenuItem {
+                title: @tr("Fit to View");
+                enabled: root.current-view == "designer" || root.current-view == "gcode-visualizer";
+                activated => {
+                    if (root.current-view == "designer") {
+                        root.designer-zoom-fit();
+                    } else if (root.current-view == "gcode-visualizer") {
+                        root.fit-to-view(root.visualizer-canvas-width, root.visualizer-canvas-height);
+                    }
+                }
+            }
+            MenuItem {
+                title: @tr("Reset to Default");
+                enabled: root.current-view == "designer" || root.current-view == "gcode-visualizer";
+                activated => {
+                    if (root.current-view == "designer") {
+                        root.designer-reset-view();
+                    } else if (root.current-view == "gcode-visualizer") {
+                        root.reset-view(root.visualizer-canvas-width, root.visualizer-canvas-height);
+                    }
+                }
+            }
+            MenuItem {
+                title: "----------------";
+                enabled: false;
+            }
+            MenuItem {
+                title: current-view == "gcode-editor" ? @tr("✓ G-Code Editor") : @tr("G-Code Editor");
+                activated => {
+                    if (current-view != "gcode-editor") {
+                        current-view = "gcode-editor";
+                        root.gcode-focus-trigger += 1;
+                        root.menu-view-gcode-editor();
+                    } else {
+                        root.menu-view-gcode-editor();
+                        root.gcode-focus-trigger += 1;
+                    }
+                }
+            }
+            MenuItem {
+                title: current-view == "machine" ? @tr("✓ Machine Control") : @tr("Machine Control");
+                activated => {
+                    if (current-view != "machine") {
+                        current-view = "machine";
+                        root.menu-view-machine();
+                    }
+                }
+            }
+            MenuItem {
+                title: current-view == "device-info" ? @tr("✓ Machine Info") : @tr("Machine Info");
+                activated => {
+                    if (current-view != "device-info") {
+                        current-view = "device-info";
+                    }
+                }
+            }
+            MenuItem {
+                title: current-view == "device-console" ? @tr("✓ Device Console") : @tr("Device Console");
+                activated => {
+                    if (current-view != "device-console") {
+                        current-view = "device-console";
+                        root.menu-view-device-console();
+                    }
+                }
+            }
+            MenuItem {
+                title: current-view == "device-manager" ? @tr("✓ Device Manager") : @tr("Device Manager");
+                activated => {
+                    if (current-view != "device-manager") {
+                        current-view = "device-manager";
+                        root.load-device-profiles();
+                    }
+                }
+            }
+
+            MenuItem {
+                title: current-view == "config-settings" ? @tr("✓ Device Config") : @tr("Device Config");
+                activated => {
+                    current-view = "config-settings";
+                }
+            }
+
+            MenuItem {
+                title: current-view == "gcode-visualizer" ? @tr("✓ Visualizer") : @tr("Visualizer");
+                activated => {
+                    if (current-view != "gcode-visualizer") {
+                        current-view = "gcode-visualizer";
+                        root.menu-view-gcode-visualizer();
+                    }
+                }
+            }
+            MenuItem {
+                title: current-view == "designer" ? @tr("✓ Designer") : @tr("Designer");
+                activated => {
+                    if (current-view != "designer") {
+                        current-view = "designer";
+                        root.menu-view-designer();
+                    }
+                }
+            }
+            MenuItem {
+                title: current-view == "cam-tools" ? @tr("✓ CAMTools") : @tr("CAMTools");
+                activated => {
+                    if (current-view != "cam-tools") {
+                        current-view = "cam-tools";
+                    }
+                }
+            }
+            MenuItem {
+                title: current-view == "materials" ? @tr("✓ Materials") : @tr("Materials");
+                activated => {
+                    if (current-view != "materials") {
+                        current-view = "materials";
+                        root.menu-view-materials();
+                    }
+                }
+            }
+            MenuItem {
+                title: current-view == "cnc-tools" ? @tr("✓ CNCTools") : @tr("CNCTools");
+                activated => {
+                    if (current-view != "cnc-tools") {
+                        current-view = "cnc-tools";
+                        root.load_tools();
+                    }
+                }
+            }
+        }
+        
+        Menu {
+            title: @tr("Help");
+            MenuItem {
+                title: @tr("About");
+                activated => { 
+                    root.menu-help-about();
+                    about-dialog-visible = true;
+                }
+            }
+        }
+    }
 }
