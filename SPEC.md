@@ -1704,3 +1704,22 @@ See [FIRMWARE_CAPABILITIES_DATABASE.md](docs/FIRMWARE_CAPABILITIES_DATABASE.md) 
 - **Rendering**: Toolpaths now rendered with single-pixel wide lines for clarity at any zoom level.
 - **Grid**: Dynamic grid sizing that covers the entire canvas.
 - **Info Display**: Added bounding box dimensions and offset information to the visualizer toolbar.
+
+## UI Refactoring (November 2025)
+
+### Centralized Theme System
+- **Theme Singleton**: A global `Theme` object in `theme.slint` defines the application's visual style.
+- **Color Palette**: Standardized dark mode colors (`primary`, `secondary`, `background`, `surface`, etc.).
+- **Sizing**: Consistent padding, spacing, and border radii.
+
+### Shared Component Library
+- **StandardButton**: Reusable button component with primary/secondary/destructive variants.
+- **StandardInput**: Uniform text input field.
+- **StandardCheckBox**: Consistent checkbox styling.
+- **StandardSpinBox**: Numeric input controls.
+- **StandardSidebar**: Layout container for left-side navigation panels (fixed 250px width).
+
+### Panel Standardization
+- All 11 major UI panels have been refactored to use the new theme and shared components.
+- Removed ad-hoc styling and local component definitions from individual panel files.
+- Improved consistency in layout, spacing, and interaction patterns across the application.

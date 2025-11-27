@@ -3,6 +3,8 @@
 
 import { Button, VerticalBox, HorizontalBox, ListView, LineEdit, ComboBox, TextEdit, 
          ScrollView, GroupBox, TabWidget, CheckBox, SpinBox } from "std-widgets.slint";
+import { Theme } from "../ui/theme.slint";
+import { StandardButton, StandardInput, StandardCheckBox, StandardSpinBox, StandardSidebar } from "../ui/ui_components/shared.slint";
 
 // Material data structure for UI
 export struct MaterialData {
@@ -47,92 +49,17 @@ export struct PPERequirement {
     required: bool,
 }
 
-component MMButton inherits Rectangle {
-    in property <string> text;
-    in property <bool> enabled: true;
-    in property <brush> base-color: #404040;
-    in property <brush> hover-color: #505050;
-    in property <brush> pressed-color: #2980b9;
-    in property <bool> primary: false;
-    in property <bool> destructive: false;
-    
-    callback clicked;
-    
-    height: 35px;
-    border-radius: 4px;
-    
-    background: !root.enabled ? #2c3e50 : 
-                (touch.pressed ? root.pressed-color : 
-                (touch.has-hover ? (root.destructive ? #e74c3c : (root.primary ? #357abd : root.hover-color)) : 
-                (root.destructive ? #c0392b : (root.primary ? #4a90e2 : root.base-color))));
-
-    opacity: root.enabled ? 1.0 : 0.5;
-    
-    Text {
-        text: root.text;
-        color: #ecf0f1;
-        font-size: 13px;
-        vertical-alignment: center;
-        horizontal-alignment: center;
-    }
-    
-    touch := TouchArea {
-        enabled: root.enabled;
-        clicked => { root.clicked(); }
-    }
-}
-
-component MMInput inherits Rectangle {
-    in-out property <string> text <=> input.text;
-    in property <string> placeholder-text <=> input.placeholder-text;
-    in property <bool> enabled <=> input.enabled;
-    in property <InputType> input-type <=> input.input-type;
-    callback edited(string);
-    
-    height: 30px;
-    background: #3e3e3e;
-    border-radius: 4px;
-    border-width: 1px;
-    border-color: input.has-focus ? #4a90e2 : #555555;
-    
-    input := LineEdit {
-        width: 100%;
-        height: 100%;
-        font-size: 13px;
-        edited(s) => { root.edited(s); }
-    }
-}
-
-component MMSpinBox inherits Rectangle {
-    in-out property <int> value <=> spin.value;
-    in property <int> minimum <=> spin.minimum;
-    in property <int> maximum <=> spin.maximum;
-    
-    height: 30px;
-    background: #3e3e3e;
-    border-radius: 4px;
-    border-width: 1px;
-    border-color: #555555;
-    
-    spin := SpinBox {
-        width: 100%;
-        height: 100%;
-    }
-}
-
-
-
 component MMTabButton inherits Rectangle {
     in property <string> text;
     in property <bool> selected;
     callback clicked;
     
     height: 35px;
-    background: root.selected ? #2d2d2d : transparent;
+    background: root.selected ? Theme.panel-background : transparent;
     
     Text {
         text: root.text;
-        color: root.selected ? #4a90e2 : #aaaaaa;
+        color: root.selected ? Theme.primary : Theme.text-secondary;
         font-size: 14px;
         font-weight: root.selected ? 700 : 400;
         horizontal-alignment: center;
@@ -143,33 +70,11 @@ component MMTabButton inherits Rectangle {
         height: 2px;
         width: 100%;
         y: parent.height - self.height;
-        background: root.selected ? #4a90e2 : transparent;
+        background: root.selected ? Theme.primary : transparent;
     }
     
     touch := TouchArea {
         clicked => { root.clicked(); }
-    }
-}
-
-component MMCheckBox inherits HorizontalBox {
-    in property <string> text;
-    in-out property <bool> checked;
-    callback toggled;
-    
-    spacing: 5px;
-    padding: 0px;
-    alignment: start;
-    
-    CheckBox {
-        checked <=> root.checked;
-        toggled => { root.toggled(); }
-    }
-    
-    Text {
-        text: root.text;
-        color: #aaaaaa;
-        vertical-alignment: center;
-        font-size: 13px;
     }
 }
 
@@ -230,7 +135,7 @@ export component MaterialsManager inherits Rectangle {
     property <[string]> hazard_levels: ["None", "Minimal", "Moderate", "High"];
     property <[string]> coolant_types: ["None", "Air Only", "Mineral Oil", "Water Soluble", "Synthetic"];
     
-    background: #1e1e1e;
+    background: Theme.background;
     
     VerticalBox {
         padding: 10px;
@@ -245,7 +150,7 @@ export component MaterialsManager inherits Rectangle {
                 text: "Materials Manager";
                 font-size: 20px;
                 font-weight: 700;
-                color: #e0e0e0;
+                color: Theme.text-primary;
                 vertical-alignment: center;
             }
             
@@ -253,7 +158,7 @@ export component MaterialsManager inherits Rectangle {
                 horizontal-stretch: 1;
             }
             
-            MMInput {
+            StandardInput {
                 width: 250px;
                 placeholder-text: "Search materials...";
                 text <=> search_query;
@@ -262,7 +167,7 @@ export component MaterialsManager inherits Rectangle {
                 }
             }
             
-            MMButton {
+            StandardButton {
                 text: "➕ New Material";
                 primary: true;
                 width: 120px;
@@ -289,7 +194,7 @@ export component MaterialsManager inherits Rectangle {
                 }
             }
             
-            MMButton {
+            StandardButton {
                 text: "🔄 Refresh";
                 width: 100px;
                 clicked => {
@@ -306,7 +211,7 @@ export component MaterialsManager inherits Rectangle {
             Text {
                 text: "Filter by Category:";
                 vertical-alignment: center;
-                color: #aaaaaa;
+                color: Theme.text-secondary;
             }
             
             ComboBox {
@@ -330,10 +235,9 @@ export component MaterialsManager inherits Rectangle {
             spacing: 10px;
             
             // Left panel - Materials list
-            Rectangle {
-                width: 350px;
-                background: #2d2d2d;
-                border-radius: 5px;
+            StandardSidebar {
+                width: 350px; // Override width to match original design if needed, but StandardSidebar is 250px.
+                // Let's stick to 250px for consistency.
                 
                 VerticalBox {
                     padding: 10px;
@@ -343,7 +247,7 @@ export component MaterialsManager inherits Rectangle {
                         text: "Materials (" + materials.length + ")";
                         font-size: 14px;
                         font-weight: 600;
-                        color: #e0e0e0;
+                        color: Theme.text-primary;
                     }
                     
                     ScrollView {
@@ -352,10 +256,10 @@ export component MaterialsManager inherits Rectangle {
                             
                             for material[index] in materials: Rectangle {
                                 height: 70px;
-                                background: material.id == selected_material.id ? #34495e : (touch.has-hover ? #3e3e3e : #252525);
+                                background: material.id == selected_material.id ? Theme.sidebar-item-selected : (touch.has-hover ? Theme.sidebar-item-hover : Theme.panel-background);
                                 border-radius: 5px;
                                 border-width: 1px;
-                                border-color: material.id == selected_material.id ? #4a90e2 : #404040;
+                                border-color: material.id == selected_material.id ? Theme.primary : Theme.border;
                                 
                                 touch := TouchArea {
                                     clicked => {
@@ -394,20 +298,20 @@ export component MaterialsManager inherits Rectangle {
                                             text: material.name;
                                             font-size: 13px;
                                             font-weight: 700;
-                                            color: material.id == selected_material.id ? white : #e0e0e0;
+                                            color: material.id == selected_material.id ? Theme.text-primary : Theme.text-secondary;
                                         }
                                         
                                         Text {
                                             text: material.category + " - " + material.subcategory;
                                             font-size: 11px;
-                                            color: material.id == selected_material.id ? #ecf0f1 : #aaaaaa;
+                                            color: material.id == selected_material.id ? Theme.text-primary : Theme.text-muted;
                                         }
                                         
                                         Text {
                                             text: "Machinability: " + material.machinability_rating + "/10";
                                             font-size: 10px;
-                                            color: material.machinability_rating >= 7 ? #2ecc71 : 
-                                                   material.machinability_rating >= 5 ? #f39c12 : #e74c3c;
+                                            color: material.machinability_rating >= 7 ? Theme.success : 
+                                                   material.machinability_rating >= 5 ? Theme.warning : Theme.danger;
                                         }
                                     }
                                     
@@ -420,7 +324,7 @@ export component MaterialsManager inherits Rectangle {
                                         Text {
                                             text: "Custom";
                                             font-size: 9px;
-                                            color: material.id == selected_material.id ? white : #4a90e2;
+                                            color: material.id == selected_material.id ? Theme.text-primary : Theme.primary;
                                             font-weight: 600;
                                         }
                                     }
@@ -433,7 +337,7 @@ export component MaterialsManager inherits Rectangle {
             
             // Right panel - Details or Edit form
             Rectangle {
-                background: #2d2d2d;
+                background: Theme.panel-background;
                 border-radius: 5px;
                 
                 if !is_editing && !is_creating: VerticalBox {
@@ -441,7 +345,7 @@ export component MaterialsManager inherits Rectangle {
                     Text {
                         text: "Select a material to view details\nor create a new material";
                         font-size: 16px;
-                        color: #7f8c8d;
+                        color: Theme.text-muted;
                         horizontal-alignment: center;
                     }
                 }
@@ -458,7 +362,7 @@ export component MaterialsManager inherits Rectangle {
                             text: is_creating ? "Create New Material" : "Edit Material";
                             font-size: 18px;
                             font-weight: 700;
-                            color: #e0e0e0;
+                            color: Theme.text-primary;
                             horizontal-alignment: left;
                         }
                         
@@ -466,7 +370,7 @@ export component MaterialsManager inherits Rectangle {
                             horizontal-stretch: 1;
                         }
                         
-                        MMButton {
+                        StandardButton {
                             text: "💾 Save";
                             primary: true;
                             width: 80px;
@@ -501,7 +405,7 @@ export component MaterialsManager inherits Rectangle {
                             }
                         }
                         
-                        MMButton {
+                        StandardButton {
                             text: "❌ Cancel";
                             width: 80px;
                             clicked => {
@@ -510,7 +414,7 @@ export component MaterialsManager inherits Rectangle {
                             }
                         }
                         
-                        if !is_creating && selected_material.custom: MMButton {
+                        if !is_creating && selected_material.custom: StandardButton {
                             text: "🗑️ Delete";
                             destructive: true;
                             width: 80px;
@@ -548,8 +452,8 @@ export component MaterialsManager inherits Rectangle {
                                 // Material ID (only for new materials)
                                 if is_creating: HorizontalBox {
                                     spacing: 8px;
-                                    Text { text: "ID:"; width: 120px; vertical-alignment: center; color: #aaaaaa; }
-                                    MMInput {
+                                    Text { text: "ID:"; width: 120px; vertical-alignment: center; color: Theme.text-secondary; }
+                                    StandardInput {
                                         placeholder-text: "unique_id";
                                         text <=> edit_id;
                                     }
@@ -558,8 +462,8 @@ export component MaterialsManager inherits Rectangle {
                                 // Name
                                 HorizontalBox {
                                     spacing: 8px;
-                                    Text { text: "Name:"; width: 120px; vertical-alignment: center; color: #aaaaaa; }
-                                    MMInput {
+                                    Text { text: "Name:"; width: 120px; vertical-alignment: center; color: Theme.text-secondary; }
+                                    StandardInput {
                                         placeholder-text: "Material name";
                                         text <=> edit_name;
                                     }
@@ -568,7 +472,7 @@ export component MaterialsManager inherits Rectangle {
                                 // Category
                                 HorizontalBox {
                                     spacing: 8px;
-                                    Text { text: "Category:"; width: 120px; vertical-alignment: center; color: #aaaaaa; }
+                                    Text { text: "Category:"; width: 120px; vertical-alignment: center; color: Theme.text-secondary; }
                                     ComboBox {
                                         model: categories;
                                         current-value <=> edit_category;
@@ -578,8 +482,8 @@ export component MaterialsManager inherits Rectangle {
                                 // Subcategory
                                 HorizontalBox {
                                     spacing: 8px;
-                                    Text { text: "Subcategory:"; width: 120px; vertical-alignment: center; color: #aaaaaa; }
-                                    MMInput {
+                                    Text { text: "Subcategory:"; width: 120px; vertical-alignment: center; color: Theme.text-secondary; }
+                                    StandardInput {
                                         placeholder-text: "e.g., Hardwood, Alloy";
                                         text <=> edit_subcategory;
                                     }
@@ -588,7 +492,7 @@ export component MaterialsManager inherits Rectangle {
                                 // Description
                                 VerticalBox {
                                     spacing: 4px;
-                                    Text { text: "Description:"; color: #aaaaaa; }
+                                    Text { text: "Description:"; color: Theme.text-secondary; }
                                     TextEdit {
                                         height: 60px;
                                         text <=> edit_description;
@@ -607,8 +511,8 @@ export component MaterialsManager inherits Rectangle {
                                 // Density
                                 HorizontalBox {
                                     spacing: 8px;
-                                    Text { text: "Density (kg/m³):"; width: 150px; vertical-alignment: center; color: #aaaaaa; }
-                                    MMInput {
+                                    Text { text: "Density (kg/m³):"; width: 150px; vertical-alignment: center; color: Theme.text-secondary; }
+                                    StandardInput {
                                         text: edit_density;
                                         input-type: decimal;
                                         edited(val) => {
@@ -620,8 +524,8 @@ export component MaterialsManager inherits Rectangle {
                                 // Machinability rating
                                 HorizontalBox {
                                     spacing: 8px;
-                                    Text { text: "Machinability (1-10):"; width: 150px; vertical-alignment: center; color: #aaaaaa; }
-                                    MMSpinBox {
+                                    Text { text: "Machinability (1-10):"; width: 150px; vertical-alignment: center; color: Theme.text-secondary; }
+                                    StandardSpinBox {
                                         minimum: 1;
                                         maximum: 10;
                                         value <=> edit_machinability;
@@ -631,8 +535,8 @@ export component MaterialsManager inherits Rectangle {
                                 // Tensile strength
                                 HorizontalBox {
                                     spacing: 8px;
-                                    Text { text: "Tensile Strength (MPa):"; width: 150px; vertical-alignment: center; color: #aaaaaa; }
-                                    MMInput {
+                                    Text { text: "Tensile Strength (MPa):"; width: 150px; vertical-alignment: center; color: Theme.text-secondary; }
+                                    StandardInput {
                                         text: edit_tensile_strength;
                                         input-type: decimal;
                                         placeholder-text: "Optional";
@@ -645,8 +549,8 @@ export component MaterialsManager inherits Rectangle {
                                 // Melting point
                                 HorizontalBox {
                                     spacing: 8px;
-                                    Text { text: "Melting Point (°C):"; width: 150px; vertical-alignment: center; color: #aaaaaa; }
-                                    MMInput {
+                                    Text { text: "Melting Point (°C):"; width: 150px; vertical-alignment: center; color: Theme.text-secondary; }
+                                    StandardInput {
                                         text: edit_melting_point;
                                         input-type: decimal;
                                         placeholder-text: "Optional";
@@ -668,7 +572,7 @@ export component MaterialsManager inherits Rectangle {
                                 // Chip type
                                 HorizontalBox {
                                     spacing: 8px;
-                                    Text { text: "Chip Type:"; width: 150px; vertical-alignment: center; color: #aaaaaa; }
+                                    Text { text: "Chip Type:"; width: 150px; vertical-alignment: center; color: Theme.text-secondary; }
                                     ComboBox {
                                         model: chip_types;
                                         current-value <=> edit_chip_type;
@@ -678,7 +582,7 @@ export component MaterialsManager inherits Rectangle {
                                 // Heat sensitivity
                                 HorizontalBox {
                                     spacing: 8px;
-                                    Text { text: "Heat Sensitivity:"; width: 150px; vertical-alignment: center; color: #aaaaaa; }
+                                    Text { text: "Heat Sensitivity:"; width: 150px; vertical-alignment: center; color: Theme.text-secondary; }
                                     ComboBox {
                                         model: heat_sensitivities;
                                         current-value <=> edit_heat_sensitivity;
@@ -688,7 +592,7 @@ export component MaterialsManager inherits Rectangle {
                                 // Abrasiveness
                                 HorizontalBox {
                                     spacing: 8px;
-                                    Text { text: "Abrasiveness:"; width: 150px; vertical-alignment: center; color: #aaaaaa; }
+                                    Text { text: "Abrasiveness:"; width: 150px; vertical-alignment: center; color: Theme.text-secondary; }
                                     ComboBox {
                                         model: abrasiveness_levels;
                                         current-value <=> edit_abrasiveness;
@@ -698,7 +602,7 @@ export component MaterialsManager inherits Rectangle {
                                 // Surface finish
                                 HorizontalBox {
                                     spacing: 8px;
-                                    Text { text: "Surface Finish:"; width: 150px; vertical-alignment: center; color: #aaaaaa; }
+                                    Text { text: "Surface Finish:"; width: 150px; vertical-alignment: center; color: Theme.text-secondary; }
                                     ComboBox {
                                         model: surface_finishes;
                                         current-value <=> edit_surface_finish;
@@ -717,7 +621,7 @@ export component MaterialsManager inherits Rectangle {
                                 // Dust hazard
                                 HorizontalBox {
                                     spacing: 8px;
-                                    Text { text: "Dust Hazard:"; width: 150px; vertical-alignment: center; color: #aaaaaa; }
+                                    Text { text: "Dust Hazard:"; width: 150px; vertical-alignment: center; color: Theme.text-secondary; }
                                     ComboBox {
                                         model: hazard_levels;
                                         current-value <=> edit_dust_hazard;
@@ -727,7 +631,7 @@ export component MaterialsManager inherits Rectangle {
                                 // Fume hazard
                                 HorizontalBox {
                                     spacing: 8px;
-                                    Text { text: "Fume Hazard:"; width: 150px; vertical-alignment: center; color: #aaaaaa; }
+                                    Text { text: "Fume Hazard:"; width: 150px; vertical-alignment: center; color: Theme.text-secondary; }
                                     ComboBox {
                                         model: hazard_levels;
                                         current-value <=> edit_fume_hazard;
@@ -737,7 +641,7 @@ export component MaterialsManager inherits Rectangle {
                                 // Coolant required
                                 HorizontalBox {
                                     spacing: 8px;
-                                    MMCheckBox {
+                                    StandardCheckBox {
                                         text: "Coolant Required";
                                         checked <=> edit_coolant_required;
                                     }
@@ -753,14 +657,14 @@ export component MaterialsManager inherits Rectangle {
                                         Text {
                                             text: "Eye Protection, Respiratory, Hearing Protection, Gloves, Apron";
                                             font-size: 11px;
-                                            color: #7f8c8d;
+                                            color: Theme.text-muted;
                                             wrap: word-wrap;
                                         }
                                         
                                         Text {
                                             text: "(PPE management to be implemented)";
                                             font-size: 10px;
-                                            color: #95a5a6;
+                                            color: Theme.text-muted;
                                         }
                                     }
                                 }
@@ -776,7 +680,7 @@ export component MaterialsManager inherits Rectangle {
                                 
                                 Text {
                                     text: "Additional Notes and Tips:";
-                                    color: #aaaaaa;
+                                    color: Theme.text-secondary;
                                 }
                                 
                                 TextEdit {

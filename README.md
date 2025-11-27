@@ -548,6 +548,12 @@ You may choose either license for your use of this software.
 **Status**: Active Development
 **Stability**: Alpha (breaking changes may occur)
 
+### Recent Updates (v0.45.0)
+- **UI Refactoring**:
+  - **Centralized Theme**: Implemented a global `Theme` singleton for consistent colors and sizing across the application.
+  - **Shared Components**: Created a library of reusable UI components (`StandardButton`, `StandardInput`, `StandardCheckBox`, `StandardSpinBox`, `StandardSidebar`) to replace ad-hoc implementations.
+  - **Panel Updates**: Refactored 11 major UI panels to use the new theme and shared components.
+
 ### Recent Updates (v0.44.0)
 - **UI Aesthetics Overhaul**:
   - **Complete Redesign**: Visualizer, G-Code Editor, Machine Control, Device Console, Device Info, Device Manager, Device Config, and CAM Tools updated to a unified dark theme.

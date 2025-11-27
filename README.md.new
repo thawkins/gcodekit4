@@ -1,0 +1,18 @@
+### Recent Updates (v0.45.0)
+- **UI Refactoring**:
+  - **Centralized Theme**: Implemented a global `Theme` singleton for consistent colors and sizing across the application.
+  - **Shared Components**: Created a library of reusable UI components (`StandardButton`, `StandardInput`, `StandardCheckBox`, `StandardSpinBox`, `StandardSidebar`) to replace ad-hoc implementations.
+  - **Panel Updates**: Refactored 11 major UI panels to use the new theme and shared components:
+    - G-Code Editor
+    - Machine Control
+    - Device Console
+    - Device Info
+    - Device Manager
+    - Config Settings
+    - G-Code Visualizer
+    - Designer
+    - CAM Tools
+    - Materials Manager
+    - Tools Manager
+  - **Code Cleanup**: Removed redundant style definitions and hardcoded colors from individual panel files.
+

@@ -1,4 +1,6 @@
 import { Button, LineEdit, ComboBox, CheckBox, ScrollView, ListView, VerticalBox, HorizontalBox, TabWidget } from "std-widgets.slint";
+import { Theme } from "../../gcodekit4-ui/ui/theme.slint";
+import { StandardButton, StandardInput, StandardCheckBox, StandardSidebar } from "../../gcodekit4-ui/ui/ui_components/shared.slint";
 
 export struct DeviceProfileUiModel {
     id: string,
@@ -26,69 +28,14 @@ export struct DeviceProfileUiModel {
     is-active: bool,
 }
 
-component DMButton inherits Rectangle {
-    in property <string> text;
-    in property <bool> enabled: true;
-    in property <brush> base-color: #404040;
-    in property <brush> hover-color: #505050;
-    in property <brush> pressed-color: #2980b9;
-    in property <bool> primary: false;
-    in property <bool> destructive: false;
-    
-    callback clicked;
-    
-    height: 35px;
-    border-radius: 4px;
-    
-    background: !root.enabled ? #2c3e50 : 
-                (touch.pressed ? root.pressed-color : 
-                (touch.has-hover ? (root.destructive ? #e74c3c : (root.primary ? #357abd : root.hover-color)) : 
-                (root.destructive ? #c0392b : (root.primary ? #4a90e2 : root.base-color))));
-
-    opacity: root.enabled ? 1.0 : 0.5;
-    
-    Text {
-        text: root.text;
-        color: #ecf0f1;
-        font-size: 13px;
-        vertical-alignment: center;
-        horizontal-alignment: center;
-    }
-    
-    touch := TouchArea {
-        enabled: root.enabled;
-        clicked => { root.clicked(); }
-    }
-}
-
-component DMInput inherits Rectangle {
-    in-out property <string> text <=> input.text;
-    in property <string> placeholder-text <=> input.placeholder-text;
-    in property <bool> enabled <=> input.enabled;
-    callback edited(string);
-    
-    height: 30px;
-    background: #3e3e3e;
-    border-radius: 4px;
-    border-width: 1px;
-    border-color: input.has-focus ? #4a90e2 : #555555;
-    
-    input := LineEdit {
-        width: 100%;
-        height: 100%;
-        font-size: 13px;
-        edited(s) => { root.edited(s); }
-    }
-}
-
 component DeviceListItem inherits Rectangle {
     in property <DeviceProfileUiModel> profile;
     in property <bool> selected;
     callback clicked();
 
     height: 40px;
-    background: root.selected ? #4a90e2 : (touch.has-hover ? #3e3e3e : transparent);
-    border-radius: 4px;
+    background: root.selected ? Theme.primary : (touch.has-hover ? Theme.input-background : transparent);
+    border-radius: Theme.border-radius;
 
     HorizontalBox {
         padding-left: 10px;
@@ -97,7 +44,7 @@ component DeviceListItem inherits Rectangle {
         
         Text {
             text: root.profile.name;
-            color: #e0e0e0;
+            color: Theme.text-primary;
             font-size: 13px;
             vertical-alignment: center;
             font-weight: root.profile.is-active ? 700 : 400;
@@ -105,7 +52,7 @@ component DeviceListItem inherits Rectangle {
         
         if root.profile.is-active : Text {
             text: "(Active)";
-            color: #2ecc71;
+            color: Theme.success;
             font-size: 11px;
             vertical-alignment: center;
         }
@@ -122,11 +69,11 @@ component DMTabButton inherits Rectangle {
     callback clicked;
     
     height: 35px;
-    background: root.selected ? #2d2d2d : transparent;
+    background: root.selected ? Theme.panel-background : transparent;
     
     Text {
         text: root.text;
-        color: root.selected ? #4a90e2 : #aaaaaa;
+        color: root.selected ? Theme.primary : Theme.text-secondary;
         font-size: 14px;
         font-weight: root.selected ? 700 : 400;
         horizontal-alignment: center;
@@ -137,33 +84,11 @@ component DMTabButton inherits Rectangle {
         height: 2px;
         width: 100%;
         y: parent.height - self.height;
-        background: root.selected ? #4a90e2 : transparent;
+        background: root.selected ? Theme.primary : transparent;
     }
     
     touch := TouchArea {
         clicked => { root.clicked(); }
-    }
-}
-
-component DMCheckBox inherits HorizontalBox {
-    in property <string> text;
-    in-out property <bool> checked;
-    callback toggled;
-    
-    spacing: 5px;
-    padding: 0px;
-    alignment: start;
-    
-    CheckBox {
-        checked <=> root.checked;
-        toggled => { root.toggled(); }
-    }
-    
-    Text {
-        text: root.text;
-        color: #aaaaaa;
-        vertical-alignment: center;
-        font-size: 13px;
     }
 }
 
@@ -180,23 +105,20 @@ export component DeviceManagerPanel inherits Rectangle {
     callback save-profile(DeviceProfileUiModel);
     callback set-active-profile(string);
     
-    background: #1e1e1e;
+    background: Theme.background;
     
     HorizontalBox {
         spacing: 0px;
         
         // Left Pane: List
-        Rectangle {
-            width: 250px;
-            background: #2d2d2d;
-            
+        StandardSidebar {
             VerticalBox {
-                padding: 10px;
-                spacing: 10px;
+                padding: Theme.padding;
+                spacing: Theme.spacing;
                 
                 Text {
                     text: "Devices";
-                    color: #ffffff;
+                    color: Theme.text-primary;
                     font-size: 16px;
                     font-weight: 700;
                     height: 40px;
@@ -219,7 +141,7 @@ export component DeviceManagerPanel inherits Rectangle {
                     height: 50px;
                     HorizontalBox {
                         alignment: center;
-                        DMButton {
+                        StandardButton {
                             text: "Add Device";
                             primary: true;
                             width: 120px;
@@ -228,19 +150,11 @@ export component DeviceManagerPanel inherits Rectangle {
                     }
                 }
             }
-            
-            // Right border
-            Rectangle {
-                width: 1px;
-                height: 100%;
-                x: parent.width - 1px;
-                background: #404040;
-            }
         }
         
         // Right Pane: Details
         Rectangle {
-            background: #1e1e1e;
+            background: Theme.background;
             
             if root.selected-index >= 0 && root.selected-index < root.profiles.length : VerticalBox {
                 padding: 20px;
@@ -254,10 +168,10 @@ export component DeviceManagerPanel inherits Rectangle {
                         text: "Edit Device: " + p.name;
                         font-size: 18px;
                         font-weight: 700;
-                        color: #e0e0e0;
+                        color: Theme.text-primary;
                     }
                     
-                    if !p.is-active : DMButton {
+                    if !p.is-active : StandardButton {
                         text: "Set as Active";
                         width: 120px;
                         clicked => { root.set-active-profile(p.id); }
@@ -287,8 +201,8 @@ export component DeviceManagerPanel inherits Rectangle {
                         alignment: start;
                         padding-top: 15px;
                         
-                        Text { text: "Name:"; color: #aaaaaa; }
-                        DMInput {
+                        Text { text: "Name:"; color: Theme.text-secondary; }
+                        StandardInput {
                             text: p.name;
                             edited(s) => { 
                                 root.temp-profile = p;
@@ -297,8 +211,8 @@ export component DeviceManagerPanel inherits Rectangle {
                             }
                         }
                         
-                        Text { text: "Description:"; color: #aaaaaa; }
-                        DMInput {
+                        Text { text: "Description:"; color: Theme.text-secondary; }
+                        StandardInput {
                             text: p.description;
                             edited(s) => { 
                                 root.temp-profile = p;
@@ -307,7 +221,7 @@ export component DeviceManagerPanel inherits Rectangle {
                             }
                         }
                         
-                        Text { text: "Device Type:"; color: #aaaaaa; }
+                        Text { text: "Device Type:"; color: Theme.text-secondary; }
                         ComboBox {
                             model: ["CNC Mill", "CNC Lathe", "Laser Cutter", "3D Printer", "Plotter"];
                             current-value: p.device-type;
@@ -318,7 +232,7 @@ export component DeviceManagerPanel inherits Rectangle {
                             }
                         }
                         
-                        Text { text: "Controller Type:"; color: #aaaaaa; }
+                        Text { text: "Controller Type:"; color: Theme.text-secondary; }
                         ComboBox {
                             model: ["GRBL", "TinyG", "g2core", "Smoothieware", "FluidNC", "Marlin"];
                             current-value: p.controller-type;
@@ -330,9 +244,9 @@ export component DeviceManagerPanel inherits Rectangle {
                         }
 
                         Rectangle { height: 10px; }
-                        Text { text: "Connection Settings:"; color: #e0e0e0; font-weight: 700; }
+                        Text { text: "Connection Settings:"; color: Theme.text-primary; font-weight: 700; }
 
-                        Text { text: "Connection Type:"; color: #aaaaaa; }
+                        Text { text: "Connection Type:"; color: Theme.text-secondary; }
                         ComboBox {
                             model: ["Serial", "TCP/IP", "WebSocket"];
                             current-value: p.connection-type;
@@ -346,7 +260,7 @@ export component DeviceManagerPanel inherits Rectangle {
                         if p.connection-type == "Serial" : VerticalBox {
                             spacing: 10px;
                             padding: 0px;
-                            Text { text: "Baud Rate:"; color: #aaaaaa; }
+                            Text { text: "Baud Rate:"; color: Theme.text-secondary; }
                             ComboBox {
                                 model: ["9600", "19200", "38400", "57600", "115200", "250000"];
                                 current-value: p.baud-rate;
@@ -356,8 +270,8 @@ export component DeviceManagerPanel inherits Rectangle {
                                     root.save-profile(root.temp-profile);
                                 }
                             }
-                            Text { text: "Port:"; color: #aaaaaa; }
-                            DMInput {
+                            Text { text: "Port:"; color: Theme.text-secondary; }
+                            StandardInput {
                                 text: p.port;
                                 edited(s) => {
                                     root.temp-profile = p;
@@ -370,8 +284,8 @@ export component DeviceManagerPanel inherits Rectangle {
                         if p.connection-type != "Serial" : VerticalBox {
                             spacing: 10px;
                             padding: 0px;
-                            Text { text: "TCP Port:"; color: #aaaaaa; }
-                            DMInput {
+                            Text { text: "TCP Port:"; color: Theme.text-secondary; }
+                            StandardInput {
                                 text: p.tcp-port;
                                 edited(s) => {
                                     root.temp-profile = p;
@@ -381,8 +295,8 @@ export component DeviceManagerPanel inherits Rectangle {
                             }
                         }
 
-                        Text { text: "Timeout (ms):"; color: #aaaaaa; }
-                        DMInput {
+                        Text { text: "Timeout (ms):"; color: Theme.text-secondary; }
+                        StandardInput {
                             text: p.timeout-ms;
                             edited(s) => {
                                 root.temp-profile = p;
@@ -391,7 +305,7 @@ export component DeviceManagerPanel inherits Rectangle {
                             }
                         }
 
-                        DMCheckBox {
+                        StandardCheckBox {
                             text: "Auto Reconnect";
                             checked: p.auto-reconnect;
                             toggled => {
@@ -412,27 +326,27 @@ export component DeviceManagerPanel inherits Rectangle {
                         padding-top: 15px;
                         
                         HorizontalBox {
-                            Text { text: "X Axis (mm):"; width: 100px; vertical-alignment: center; color: #aaaaaa; }
-                            Text { text: "Min:"; vertical-alignment: center; font-size: 10px; color: #aaaaaa; }
-                            DMInput { text: p.x-min; width: 70px; placeholder-text: "0.0"; edited(s) => { root.temp-profile = p; root.temp-profile.x-min = s; root.save-profile(root.temp-profile); } }
-                            Text { text: "Max:"; vertical-alignment: center; font-size: 10px; color: #aaaaaa; }
-                            DMInput { text: p.x-max; width: 70px; placeholder-text: "200.0"; edited(s) => { root.temp-profile = p; root.temp-profile.x-max = s; root.save-profile(root.temp-profile); } }
+                            Text { text: "X Axis (mm):"; width: 100px; vertical-alignment: center; color: Theme.text-secondary; }
+                            Text { text: "Min:"; vertical-alignment: center; font-size: 10px; color: Theme.text-secondary; }
+                            StandardInput { text: p.x-min; width: 70px; placeholder-text: "0.0"; edited(s) => { root.temp-profile = p; root.temp-profile.x-min = s; root.save-profile(root.temp-profile); } }
+                            Text { text: "Max:"; vertical-alignment: center; font-size: 10px; color: Theme.text-secondary; }
+                            StandardInput { text: p.x-max; width: 70px; placeholder-text: "200.0"; edited(s) => { root.temp-profile = p; root.temp-profile.x-max = s; root.save-profile(root.temp-profile); } }
                         }
                         
                         HorizontalBox {
-                            Text { text: "Y Axis (mm):"; width: 100px; vertical-alignment: center; color: #aaaaaa; }
-                            Text { text: "Min:"; vertical-alignment: center; font-size: 10px; color: #aaaaaa; }
-                            DMInput { text: p.y-min; width: 70px; placeholder-text: "0.0"; edited(s) => { root.temp-profile = p; root.temp-profile.y-min = s; root.save-profile(root.temp-profile); } }
-                            Text { text: "Max:"; vertical-alignment: center; font-size: 10px; color: #aaaaaa; }
-                            DMInput { text: p.y-max; width: 70px; placeholder-text: "200.0"; edited(s) => { root.temp-profile = p; root.temp-profile.y-max = s; root.save-profile(root.temp-profile); } }
+                            Text { text: "Y Axis (mm):"; width: 100px; vertical-alignment: center; color: Theme.text-secondary; }
+                            Text { text: "Min:"; vertical-alignment: center; font-size: 10px; color: Theme.text-secondary; }
+                            StandardInput { text: p.y-min; width: 70px; placeholder-text: "0.0"; edited(s) => { root.temp-profile = p; root.temp-profile.y-min = s; root.save-profile(root.temp-profile); } }
+                            Text { text: "Max:"; vertical-alignment: center; font-size: 10px; color: Theme.text-secondary; }
+                            StandardInput { text: p.y-max; width: 70px; placeholder-text: "200.0"; edited(s) => { root.temp-profile = p; root.temp-profile.y-max = s; root.save-profile(root.temp-profile); } }
                         }
                         
                         HorizontalBox {
-                            Text { text: "Z Axis (mm):"; width: 100px; vertical-alignment: center; color: #aaaaaa; }
-                            Text { text: "Min:"; vertical-alignment: center; font-size: 10px; color: #aaaaaa; }
-                            DMInput { text: p.z-min; width: 70px; placeholder-text: "0.0"; edited(s) => { root.temp-profile = p; root.temp-profile.z-min = s; root.save-profile(root.temp-profile); } }
-                            Text { text: "Max:"; vertical-alignment: center; font-size: 10px; color: #aaaaaa; }
-                            DMInput { text: p.z-max; width: 70px; placeholder-text: "100.0"; edited(s) => { root.temp-profile = p; root.temp-profile.z-max = s; root.save-profile(root.temp-profile); } }
+                            Text { text: "Z Axis (mm):"; width: 100px; vertical-alignment: center; color: Theme.text-secondary; }
+                            Text { text: "Min:"; vertical-alignment: center; font-size: 10px; color: Theme.text-secondary; }
+                            StandardInput { text: p.z-min; width: 70px; placeholder-text: "0.0"; edited(s) => { root.temp-profile = p; root.temp-profile.z-min = s; root.save-profile(root.temp-profile); } }
+                            Text { text: "Max:"; vertical-alignment: center; font-size: 10px; color: Theme.text-secondary; }
+                            StandardInput { text: p.z-max; width: 70px; placeholder-text: "100.0"; edited(s) => { root.temp-profile = p; root.temp-profile.z-max = s; root.save-profile(root.temp-profile); } }
                         }
                     }
                     }
@@ -445,30 +359,30 @@ export component DeviceManagerPanel inherits Rectangle {
                         alignment: start;
                         padding-top: 15px;
                         
-                        DMCheckBox {
+                        StandardCheckBox {
                             text: "Has Spindle";
                             checked: p.has-spindle;
                             toggled => { root.temp-profile = p; root.temp-profile.has-spindle = self.checked; root.save-profile(root.temp-profile); }
                         }
                         
-                        DMCheckBox {
+                        StandardCheckBox {
                             text: "Has Laser";
                             checked: p.has-laser;
                             toggled => { root.temp-profile = p; root.temp-profile.has-laser = self.checked; root.save-profile(root.temp-profile); }
                         }
                         
-                        DMCheckBox {
+                        StandardCheckBox {
                             text: "Has Coolant Control";
                             checked: p.has-coolant;
                             toggled => { root.temp-profile = p; root.temp-profile.has-coolant = self.checked; root.save-profile(root.temp-profile); }
                         }
                         
                         Rectangle { height: 10px; }
-                        Text { text: "Power Settings:"; color: #e0e0e0; font-weight: 700; }
+                        Text { text: "Power Settings:"; color: Theme.text-primary; font-weight: 700; }
                         
                         HorizontalBox {
-                            Text { text: "Spindle Power (W):"; width: 140px; vertical-alignment: center; color: #aaaaaa; }
-                            DMInput { 
+                            Text { text: "Spindle Power (W):"; width: 140px; vertical-alignment: center; color: Theme.text-secondary; }
+                            StandardInput { 
                                 text: p.cnc-spindle-watts; 
                                 width: 100px; 
                                 enabled: p.has-spindle;
@@ -477,8 +391,8 @@ export component DeviceManagerPanel inherits Rectangle {
                         }
                         
                         HorizontalBox {
-                            Text { text: "Laser Power (W):"; width: 140px; vertical-alignment: center; color: #aaaaaa; }
-                            DMInput { 
+                            Text { text: "Laser Power (W):"; width: 140px; vertical-alignment: center; color: Theme.text-secondary; }
+                            StandardInput { 
                                 text: p.laser-watts; 
                                 width: 100px; 
                                 enabled: p.has-laser;
@@ -491,7 +405,7 @@ export component DeviceManagerPanel inherits Rectangle {
                 
                 HorizontalBox {
                     alignment: end;
-                    DMButton {
+                    StandardButton {
                         text: "Delete Device";
                         destructive: true;
                         width: 120px;
@@ -502,7 +416,7 @@ export component DeviceManagerPanel inherits Rectangle {
             
             if root.selected-index == -1 : Text {
                 text: "Select a device to edit or create a new one.";
-                color: #7f8c8d;
+                color: Theme.text-muted;
                 horizontal-alignment: center;
                 vertical-alignment: center;
             }

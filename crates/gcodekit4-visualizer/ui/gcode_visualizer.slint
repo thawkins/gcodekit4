@@ -3,72 +3,13 @@
 //! Shows machine position, bounding box, and real-time tool movement
 
 import { ScrollView, VerticalBox, HorizontalBox, Button, GridBox, CheckBox } from "std-widgets.slint";
-
-component DarkCheckBox inherits HorizontalLayout {
-    in-out property <bool> checked;
-    in property <string> text;
-    callback toggled;
-    
-    spacing: 4px;
-    
-    Rectangle {
-        width: 16px; height: 16px;
-        border-width: 1px;
-        border-color: #bdc3c7;
-        background: root.checked ? #3498db : transparent;
-        y: (parent.height - self.height) / 2;
-        
-        if root.checked : Text {
-            text: "✓";
-            color: white;
-            font-size: 12px;
-            horizontal-alignment: center;
-            vertical-alignment: center;
-        }
-        
-        TouchArea { clicked => { root.checked = !root.checked; root.toggled(); } }
-    }
-    
-    Text {
-        text: root.text;
-        color: #ecf0f1;
-        vertical-alignment: center;
-        font-size: 12px;
-    }
-    
-    TouchArea { clicked => { root.checked = !root.checked; root.toggled(); } }
-}
-
-component VisualizerToolButton inherits Rectangle {
-    in property <string> icon;
-    in property <string> tooltip;
-    callback clicked;
-    
-    width: 40px;
-    height: 40px;
-    background: touch.has-hover ? #34495e : #2c3e50;
-    border-radius: 4px;
-    border-width: 1px;
-    border-color: #34495e;
-    
-    Text {
-        text: root.icon;
-        font-size: 20px;
-        color: #ecf0f1;
-        horizontal-alignment: center;
-        vertical-alignment: center;
-    }
-    
-    touch := TouchArea { 
-        mouse-cursor: pointer;
-        clicked => { root.clicked(); } 
-    }
-}
+import { Theme } from "../../gcodekit4-ui/ui/theme.slint";
+import { StandardButton, StandardCheckBox, StandardSidebar } from "../../gcodekit4-ui/ui/ui_components/shared.slint";
 
 export component GcodeVisualizerPanel inherits Rectangle {
     horizontal-stretch: 1.0;
     vertical-stretch: 1.0;
-    background: #2c3e50;
+    background: Theme.sidebar-background;
 
     in property <string> gcode-filename: "untitled.gcode";
     in property <string> gcode-content: "";
@@ -117,21 +58,17 @@ export component GcodeVisualizerPanel inherits Rectangle {
         // ═════════════════════════════════════════════
         // LEFT SIDEBAR: Controls
         // ═════════════════════════════════════════════
-        Rectangle {
-            width: 200px;
-            horizontal-stretch: 0;
-            background: #2c3e50;
-
+        StandardSidebar {
             VerticalLayout {
-                padding: 10px;
-                spacing: 10px;
+                padding: Theme.padding;
+                spacing: Theme.spacing;
                 alignment: start;
 
                 Text {
                     text: "Visualizer";
                     font-weight: 700;
                     font-size: 14px;
-                    color: #ecf0f1;
+                    color: Theme.text-primary;
                 }
 
                 Rectangle { height: 10px; }
@@ -140,24 +77,27 @@ export component GcodeVisualizerPanel inherits Rectangle {
                     text: "View Controls";
                     font-weight: 700;
                     font-size: 12px;
-                    color: #bdc3c7;
+                    color: Theme.text-secondary;
                 }
 
                 HorizontalLayout {
                     spacing: 5px;
-                    VisualizerToolButton {
+                    StandardButton {
                         icon: "🔄";
                         tooltip: "Refresh";
+                        width: 40px;
                         clicked => { root.refresh-visualization(root.canvas-width, root.canvas-height); }
                     }
-                    VisualizerToolButton {
+                    StandardButton {
                         icon: "⊡";
                         tooltip: "Fit to View";
+                        width: 40px;
                         clicked => { root.fit-to-view(root.canvas-width, root.canvas-height); }
                     }
-                    VisualizerToolButton {
+                    StandardButton {
                         icon: "↺";
                         tooltip: "Reset View";
+                        width: 40px;
                         clicked => { root.reset-view(root.canvas-width, root.canvas-height); }
                     }
                 }
@@ -168,15 +108,15 @@ export component GcodeVisualizerPanel inherits Rectangle {
                     text: "Visibility";
                     font-weight: 700;
                     font-size: 12px;
-                    color: #bdc3c7;
+                    color: Theme.text-secondary;
                 }
 
-                DarkCheckBox {
+                StandardCheckBox {
                     text: "Show Rapid Moves";
                     checked <=> root.show-rapid-moves;
                 }
 
-                DarkCheckBox {
+                StandardCheckBox {
                     text: "Show Grid";
                     checked <=> root.show-grid;
                     toggled => { root.toggle-grid(); }
@@ -190,23 +130,15 @@ export component GcodeVisualizerPanel inherits Rectangle {
                         text: "Bounds";
                         font-weight: 700;
                         font-size: 12px;
-                        color: #bdc3c7;
+                        color: Theme.text-secondary;
                     }
                     Text {
                         text: root.bounding-box-info;
                         font-size: 11px;
-                        color: #ecf0f1;
+                        color: Theme.text-primary;
                         wrap: word-wrap;
                     }
                 }
-            }
-            
-            // Right border separator
-            Rectangle {
-                width: 1px;
-                height: 100%;
-                x: parent.width - 1px;
-                background: #34495e;
             }
         }
 
@@ -216,7 +148,7 @@ export component GcodeVisualizerPanel inherits Rectangle {
         Rectangle {
             horizontal-stretch: 1;
             vertical-stretch: 1;
-            background: #34495e;
+            background: Theme.sidebar-item-selected;
             clip: true;
 
             // Wrap canvas in FocusScope to enable mouse wheel handling if needed later
@@ -371,11 +303,11 @@ export component GcodeVisualizerPanel inherits Rectangle {
                     y: parent.height - 40px;
                     height: 30px;
                     width: status-layout.preferred-width + 20px;
-                    background: #2c3e50;
+                    background: Theme.sidebar-background;
                     border-radius: 15px;
                     opacity: 0.9;
                     border-width: 1px;
-                    border-color: #34495e;
+                    border-color: Theme.sidebar-item-selected;
                     
                     status-layout := HorizontalLayout {
                         padding-left: 10px;
@@ -384,7 +316,7 @@ export component GcodeVisualizerPanel inherits Rectangle {
                         
                         Text {
                             text: Math.round(root.zoom-scale * 100.0) + "%";
-                            color: #ecf0f1;
+                            color: Theme.text-primary;
                             font-size: 12px;
                             font-weight: 700;
                             vertical-alignment: center;
@@ -392,21 +324,21 @@ export component GcodeVisualizerPanel inherits Rectangle {
                         
                         Text {
                             text: "X: " + Math.round(root.x-offset * 10.0) / 10.0;
-                            color: #bdc3c7;
+                            color: Theme.text-secondary;
                             font-size: 12px;
                             vertical-alignment: center;
                         }
                         
                         Text {
                             text: "Y: " + Math.round(root.y-offset * 10.0) / 10.0;
-                            color: #bdc3c7;
+                            color: Theme.text-secondary;
                             font-size: 12px;
                             vertical-alignment: center;
                         }
                         
                         if root.show-grid : Text {
                             text: root.grid_size;
-                            color: #bdc3c7;
+                            color: Theme.text-secondary;
                             font-size: 12px;
                             vertical-alignment: center;
                         }
@@ -419,11 +351,11 @@ export component GcodeVisualizerPanel inherits Rectangle {
                     y: parent.height - 40px;
                     height: 30px;
                     width: 90px;
-                    background: #2c3e50;
+                    background: Theme.sidebar-background;
                     border-radius: 15px;
                     opacity: 0.9;
                     border-width: 1px;
-                    border-color: #34495e;
+                    border-color: Theme.sidebar-item-selected;
                     
                     HorizontalLayout {
                         alignment: center;
@@ -433,7 +365,7 @@ export component GcodeVisualizerPanel inherits Rectangle {
                             width: 24px;
                             height: 24px;
                             background: transparent;
-                            Text { text: "-"; color: #ecf0f1; font-size: 16px; vertical-alignment: center; horizontal-alignment: center; }
+                            Text { text: "-"; color: Theme.text-primary; font-size: 16px; vertical-alignment: center; horizontal-alignment: center; }
                             TouchArea { clicked => { root.zoom-out(root.canvas-width, root.canvas-height); } }
                         }
                         
@@ -441,7 +373,7 @@ export component GcodeVisualizerPanel inherits Rectangle {
                             width: 24px;
                             height: 24px;
                             background: transparent;
-                            Text { text: "Fit"; color: #ecf0f1; font-size: 11px; vertical-alignment: center; horizontal-alignment: center; }
+                            Text { text: "Fit"; color: Theme.text-primary; font-size: 11px; vertical-alignment: center; horizontal-alignment: center; }
                             TouchArea { clicked => { root.fit-to-view(root.canvas-width, root.canvas-height); } }
                         }
                         
@@ -449,7 +381,7 @@ export component GcodeVisualizerPanel inherits Rectangle {
                             width: 24px;
                             height: 24px;
                             background: transparent;
-                            Text { text: "+"; color: #ecf0f1; font-size: 16px; vertical-alignment: center; horizontal-alignment: center; }
+                            Text { text: "+"; color: Theme.text-primary; font-size: 16px; vertical-alignment: center; horizontal-alignment: center; }
                             TouchArea { width: 100%; height: 100%; clicked => { root.zoom-in(root.canvas-width, root.canvas-height); } }
                         }
                     }

@@ -3,6 +3,8 @@
 
 import { Button, VerticalBox, HorizontalBox, ListView, LineEdit, ComboBox, TextEdit, 
          ScrollView, GroupBox, TabWidget, CheckBox, SpinBox } from "std-widgets.slint";
+import { Theme } from "../ui/theme.slint";
+import { StandardButton, StandardInput, StandardSpinBox, StandardSidebar } from "../ui/ui_components/shared.slint";
 
 // Tool data structure for UI
 export struct ToolData {
@@ -24,80 +26,8 @@ export struct ToolData {
     notes: string,
 }
 
-component TMButton inherits Rectangle {
-    in property <string> text;
-    in property <bool> enabled: true;
-    in property <brush> base-color: #404040;
-    in property <brush> hover-color: #505050;
-    in property <brush> pressed-color: #2980b9;
-    in property <bool> primary: false;
-    in property <bool> destructive: false;
-    
-    callback clicked;
-    
-    height: 35px;
-    border-radius: 4px;
-    
-    background: !root.enabled ? #2c3e50 : 
-                (touch.pressed ? root.pressed-color : 
-                (touch.has-hover ? (root.destructive ? #e74c3c : (root.primary ? #357abd : root.hover-color)) : 
-                (root.destructive ? #c0392b : (root.primary ? #4a90e2 : root.base-color))));
-
-    opacity: root.enabled ? 1.0 : 0.5;
-    
-    Text {
-        text: root.text;
-        color: #ecf0f1;
-        font-size: 13px;
-        vertical-alignment: center;
-        horizontal-alignment: center;
-    }
-    
-    touch := TouchArea {
-        enabled: root.enabled;
-        clicked => { root.clicked(); }
-    }
-}
-
-component TMInput inherits Rectangle {
-    in-out property <string> text <=> input.text;
-    in property <string> placeholder-text <=> input.placeholder-text;
-    in property <bool> enabled <=> input.enabled;
-    callback edited(string);
-    
-    height: 30px;
-    background: #3e3e3e;
-    border-radius: 4px;
-    border-width: 1px;
-    border-color: input.has-focus ? #4a90e2 : #555555;
-    
-    input := LineEdit {
-        width: 100%;
-        height: 100%;
-        font-size: 13px;
-        edited(s) => { root.edited(s); }
-    }
-}
-
-component TMSpinBox inherits Rectangle {
-    in-out property <int> value <=> spin.value;
-    in property <int> minimum <=> spin.minimum;
-    in property <int> maximum <=> spin.maximum;
-    
-    height: 30px;
-    background: #3e3e3e;
-    border-radius: 4px;
-    border-width: 1px;
-    border-color: #555555;
-    
-    spin := SpinBox {
-        width: 100%;
-        height: 100%;
-    }
-}
-
 component TMSectionHeader inherits Text {
-    color: #e0e0e0;
+    color: Theme.text-primary;
     font-size: 14px;
     font-weight: 700;
 }
@@ -153,7 +83,7 @@ export component ToolsManager inherits Rectangle {
     property <[string]> materials: ["HSS", "Carbide", "Coated Carbide", "Diamond"];
     property <[string]> coatings: ["None", "TiN", "TiAlN", "DLC", "AlOx"];
     
-    background: #1e1e1e;
+    background: Theme.background;
     
     VerticalBox {
         padding: 10px;
@@ -168,7 +98,7 @@ export component ToolsManager inherits Rectangle {
                 text: "CNC Tools Manager";
                 font-size: 20px;
                 font-weight: 700;
-                color: #e0e0e0;
+                color: Theme.text-primary;
                 vertical-alignment: center;
             }
             
@@ -176,7 +106,7 @@ export component ToolsManager inherits Rectangle {
                 horizontal-stretch: 1;
             }
             
-            TMInput {
+            StandardInput {
                 width: 250px;
                 placeholder-text: "Search tools...";
                 text <=> search_query;
@@ -185,7 +115,7 @@ export component ToolsManager inherits Rectangle {
                 }
             }
             
-            TMButton {
+            StandardButton {
                 text: "➕ New Tool";
                 primary: true;
                 width: 100px;
@@ -210,7 +140,7 @@ export component ToolsManager inherits Rectangle {
                 }
             }
             
-            TMButton {
+            StandardButton {
                 text: "📦 Import GTC";
                 width: 100px;
                 clicked => {
@@ -227,7 +157,7 @@ export component ToolsManager inherits Rectangle {
             Text {
                 text: "Filter by Type:";
                 vertical-alignment: center;
-                color: #aaaaaa;
+                color: Theme.text-secondary;
             }
             
             ComboBox {
@@ -250,10 +180,8 @@ export component ToolsManager inherits Rectangle {
             spacing: 10px;
             
             // Left panel - Tool list
-            Rectangle {
-                width: 350px;
-                background: #2d2d2d;
-                border-radius: 5px;
+            StandardSidebar {
+                width: 350px; // Override width to match original design if needed
                 
                 VerticalBox {
                     padding: 10px;
@@ -263,7 +191,7 @@ export component ToolsManager inherits Rectangle {
                         text: "Tools (" + tools.length + ")";
                         font-size: 14px;
                         font-weight: 600;
-                        color: #e0e0e0;
+                        color: Theme.text-primary;
                     }
                     
                     ScrollView {
@@ -272,10 +200,10 @@ export component ToolsManager inherits Rectangle {
                             
                             for tool[index] in tools: Rectangle {
                                 height: 80px;
-                                background: tool.id == selected_tool.id ? #34495e : (touch.has-hover ? #3e3e3e : #252525);
+                                background: tool.id == selected_tool.id ? Theme.sidebar-item-selected : (touch.has-hover ? Theme.sidebar-item-hover : Theme.panel-background);
                                 border-radius: 5px;
                                 border-width: 1px;
-                                border-color: tool.id == selected_tool.id ? #4a90e2 : #404040;
+                                border-color: tool.id == selected_tool.id ? Theme.primary : Theme.border;
                                 
                                 touch := TouchArea {
                                     clicked => {
@@ -318,33 +246,33 @@ export component ToolsManager inherits Rectangle {
                                                 text: "T" + tool.number;
                                                 font-size: 12px;
                                                 font-weight: 700;
-                                                color: tool.id == selected_tool.id ? white : #4a90e2;
+                                                color: tool.id == selected_tool.id ? white : Theme.primary;
                                             }
                                             
                                             Text {
                                                 text: tool.name;
                                                 font-size: 12px;
                                                 font-weight: 600;
-                                                color: tool.id == selected_tool.id ? white : #e0e0e0;
+                                                color: tool.id == selected_tool.id ? white : Theme.text-primary;
                                             }
                                         }
                                         
                                         Text {
                                             text: tool.tool_type;
                                             font-size: 10px;
-                                            color: tool.id == selected_tool.id ? #ecf0f1 : #aaaaaa;
+                                            color: tool.id == selected_tool.id ? Theme.text-primary : Theme.text-secondary;
                                         }
                                         
                                         Text {
                                             text: "Ø" + tool.diameter + "mm × " + tool.length + "mm";
                                             font-size: 10px;
-                                            color: tool.id == selected_tool.id ? #ecf0f1 : #aaaaaa;
+                                            color: tool.id == selected_tool.id ? Theme.text-primary : Theme.text-secondary;
                                         }
                                         
                                         Text {
                                             text: tool.material + (tool.coating != "None" ? " (" + tool.coating + ")" : "");
                                             font-size: 9px;
-                                            color: tool.id == selected_tool.id ? #ecf0f1 : #7f8c8d;
+                                            color: tool.id == selected_tool.id ? Theme.text-primary : Theme.text-muted;
                                         }
                                     }
                                     
@@ -357,7 +285,7 @@ export component ToolsManager inherits Rectangle {
                                         Text {
                                             text: "Custom";
                                             font-size: 9px;
-                                            color: tool.id == selected_tool.id ? white : #4a90e2;
+                                            color: tool.id == selected_tool.id ? white : Theme.primary;
                                             font-weight: 600;
                                         }
                                     }
@@ -370,7 +298,7 @@ export component ToolsManager inherits Rectangle {
             
             // Right panel - Details or Edit form
             Rectangle {
-                background: #2d2d2d;
+                background: Theme.panel-background;
                 border-radius: 5px;
                 
                 if !is_editing && !is_creating: VerticalBox {
@@ -378,7 +306,7 @@ export component ToolsManager inherits Rectangle {
                     Text {
                         text: "Select a tool to view details\nor create a new tool";
                         font-size: 16px;
-                        color: #7f8c8d;
+                        color: Theme.text-muted;
                         horizontal-alignment: center;
                     }
                 }
@@ -396,7 +324,7 @@ export component ToolsManager inherits Rectangle {
                                 text: is_creating ? "Create New Tool" : "Edit Tool";
                                 font-size: 18px;
                                 font-weight: 700;
-                                color: #e0e0e0;
+                                color: Theme.text-primary;
                                 horizontal-alignment: left;
                             }
                             
@@ -404,7 +332,7 @@ export component ToolsManager inherits Rectangle {
                                 horizontal-stretch: 1;
                             }
                             
-                            TMButton {
+                            StandardButton {
                                 text: "💾 Save";
                                 primary: true;
                                 width: 80px;
@@ -437,7 +365,7 @@ export component ToolsManager inherits Rectangle {
                                 }
                             }
                             
-                            TMButton {
+                            StandardButton {
                                 text: "❌ Cancel";
                                 width: 80px;
                                 clicked => {
@@ -446,7 +374,7 @@ export component ToolsManager inherits Rectangle {
                                 }
                             }
                             
-                            if !is_creating && selected_tool.custom: TMButton {
+                            if !is_creating && selected_tool.custom: StandardButton {
                                 text: "🗑️ Delete";
                                 destructive: true;
                                 width: 80px;
@@ -468,8 +396,8 @@ export component ToolsManager inherits Rectangle {
                                 
                                 VerticalBox {
                                     spacing: 5px;
-                                    Text { text: "Tool Number:"; color: #aaaaaa; }
-                                    TMSpinBox {
+                                    Text { text: "Tool Number:"; color: Theme.text-secondary; }
+                                    StandardSpinBox {
                                         value <=> edit_number;
                                         minimum: 1;
                                         maximum: 9999;
@@ -479,8 +407,8 @@ export component ToolsManager inherits Rectangle {
                                 VerticalBox {
                                     spacing: 5px;
                                     horizontal-stretch: 1;
-                                    Text { text: "Tool Name:"; color: #aaaaaa; }
-                                    TMInput {
+                                    Text { text: "Tool Name:"; color: Theme.text-secondary; }
+                                    StandardInput {
                                         text <=> edit_name;
                                         placeholder-text: "e.g., 6mm Carbide End Mill";
                                     }
@@ -492,7 +420,7 @@ export component ToolsManager inherits Rectangle {
                                 
                                 VerticalBox {
                                     spacing: 5px;
-                                    Text { text: "Tool Type:"; color: #aaaaaa; }
+                                    Text { text: "Tool Type:"; color: Theme.text-secondary; }
                                     ComboBox {
                                         model: tool_types;
                                         current-value <=> edit_tool_type;
@@ -501,7 +429,7 @@ export component ToolsManager inherits Rectangle {
                                 
                                 VerticalBox {
                                     spacing: 5px;
-                                    Text { text: "Material:"; color: #aaaaaa; }
+                                    Text { text: "Material:"; color: Theme.text-secondary; }
                                     ComboBox {
                                         model: materials;
                                         current-value <=> edit_material;
@@ -510,7 +438,7 @@ export component ToolsManager inherits Rectangle {
                                 
                                 VerticalBox {
                                     spacing: 5px;
-                                    Text { text: "Coating:"; color: #aaaaaa; }
+                                    Text { text: "Coating:"; color: Theme.text-secondary; }
                                     ComboBox {
                                         model: coatings;
                                         current-value <=> edit_coating;
@@ -519,7 +447,7 @@ export component ToolsManager inherits Rectangle {
                             }
                         }
                         
-                        Rectangle { height: 1px; background: #404040; }
+                        Rectangle { height: 1px; background: Theme.border; }
                         
                         // Geometry
                         VerticalBox {
@@ -531,8 +459,8 @@ export component ToolsManager inherits Rectangle {
                                 
                                 VerticalBox {
                                     spacing: 5px;
-                                    Text { text: "Diameter (mm):"; color: #aaaaaa; }
-                                    TMInput {
+                                    Text { text: "Diameter (mm):"; color: Theme.text-secondary; }
+                                    StandardInput {
                                         text: edit_diameter;
                                         edited(val) => {
                                             edit_diameter = val.to-float();
@@ -542,8 +470,8 @@ export component ToolsManager inherits Rectangle {
                                 
                                 VerticalBox {
                                     spacing: 5px;
-                                    Text { text: "Overall Length (mm):"; color: #aaaaaa; }
-                                    TMInput {
+                                    Text { text: "Overall Length (mm):"; color: Theme.text-secondary; }
+                                    StandardInput {
                                         text: edit_length;
                                         edited(val) => {
                                             edit_length = val.to-float();
@@ -553,8 +481,8 @@ export component ToolsManager inherits Rectangle {
                                 
                                 VerticalBox {
                                     spacing: 5px;
-                                    Text { text: "Flute Length (mm):"; color: #aaaaaa; }
-                                    TMInput {
+                                    Text { text: "Flute Length (mm):"; color: Theme.text-secondary; }
+                                    StandardInput {
                                         text: edit_flute_length;
                                         edited(val) => {
                                             edit_flute_length = val.to-float();
@@ -568,8 +496,8 @@ export component ToolsManager inherits Rectangle {
                                 
                                 VerticalBox {
                                     spacing: 5px;
-                                    Text { text: "Shaft Diameter (mm):"; color: #aaaaaa; }
-                                    TMInput {
+                                    Text { text: "Shaft Diameter (mm):"; color: Theme.text-secondary; }
+                                    StandardInput {
                                         text: edit_shaft_diameter;
                                         edited(val) => {
                                             edit_shaft_diameter = val.to-float();
@@ -579,8 +507,8 @@ export component ToolsManager inherits Rectangle {
                                 
                                 VerticalBox {
                                     spacing: 5px;
-                                    Text { text: "Number of Flutes:"; color: #aaaaaa; }
-                                    TMSpinBox {
+                                    Text { text: "Number of Flutes:"; color: Theme.text-secondary; }
+                                    StandardSpinBox {
                                         value <=> edit_flutes;
                                         minimum: 1;
                                         maximum: 12;
@@ -593,7 +521,7 @@ export component ToolsManager inherits Rectangle {
                             }
                         }
                         
-                        Rectangle { height: 1px; background: #404040; }
+                        Rectangle { height: 1px; background: Theme.border; }
                         
                         // Manufacturer Info
                         VerticalBox {
@@ -606,8 +534,8 @@ export component ToolsManager inherits Rectangle {
                                 VerticalBox {
                                     spacing: 5px;
                                     horizontal-stretch: 1;
-                                    Text { text: "Manufacturer:"; color: #aaaaaa; }
-                                    TMInput {
+                                    Text { text: "Manufacturer:"; color: Theme.text-secondary; }
+                                    StandardInput {
                                         text <=> edit_manufacturer;
                                         placeholder-text: "e.g., Harvey Tool";
                                     }
@@ -616,8 +544,8 @@ export component ToolsManager inherits Rectangle {
                                 VerticalBox {
                                     spacing: 5px;
                                     horizontal-stretch: 1;
-                                    Text { text: "Part Number:"; color: #aaaaaa; }
-                                    TMInput {
+                                    Text { text: "Part Number:"; color: Theme.text-secondary; }
+                                    StandardInput {
                                         text <=> edit_part_number;
                                         placeholder-text: "e.g., EM-6-2F";
                                     }
@@ -626,7 +554,7 @@ export component ToolsManager inherits Rectangle {
                             
                             VerticalBox {
                                 spacing: 5px;
-                                Text { text: "Description:"; color: #aaaaaa; }
+                                Text { text: "Description:"; color: Theme.text-secondary; }
                                 TextEdit {
                                     text <=> edit_description;
                                     height: 60px;
@@ -634,7 +562,7 @@ export component ToolsManager inherits Rectangle {
                             }
                         }
                         
-                        Rectangle { height: 1px; background: #404040; }
+                        Rectangle { height: 1px; background: Theme.border; }
                         
                         // Notes
                         VerticalBox {

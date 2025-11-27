@@ -2,71 +2,13 @@
 /// Displays device console output with clear and copy buttons
 
 import { Button, TextEdit, LineEdit, VerticalBox, HorizontalBox, ScrollView } from "std-widgets.slint";
-
-component ConsoleToolButton inherits Rectangle {
-    in property <string> text;
-    in property <string> icon;
-    in property <string> tooltip;
-    in property <bool> enabled: true;
-    in property <brush> base-color: #34495e;
-    in property <brush> hover-color: #3d566e;
-    
-    callback clicked;
-    
-    height: 40px;
-    background: !root.enabled ? #2c3e50 : (touch.has-hover ? root.hover-color : root.base-color);
-    border-radius: 4px;
-    opacity: root.enabled ? 1.0 : 0.5;
-    
-    HorizontalBox {
-        padding: 5px;
-        spacing: 8px;
-        alignment: center;
-        
-        if (root.icon != "") : Text {
-            text: root.icon;
-            font-size: 18px;
-            color: #ecf0f1;
-            vertical-alignment: center;
-        }
-        
-        if (root.text != "") : Text {
-            text: root.text;
-            font-size: 13px;
-            color: #ecf0f1;
-            vertical-alignment: center;
-        }
-    }
-    
-    touch := TouchArea {
-        enabled: root.enabled;
-        clicked => { root.clicked(); }
-    }
-
-    if (touch.has-hover && root.tooltip != "") : Rectangle {
-        y: parent.height + 5px;
-        x: (parent.width - self.width) / 2;
-        width: tt-text.preferred-width + 10px;
-        height: 24px;
-        background: #222222;
-        border-radius: 3px;
-        border-width: 1px;
-        border-color: #555555;
-        z: 100;
-        tt-text := Text {
-            text: root.tooltip;
-            color: white;
-            font-size: 11px;
-            vertical-alignment: center;
-            horizontal-alignment: center;
-        }
-    }
-}
+import { Theme } from "../ui/theme.slint";
+import { StandardButton, StandardSidebar } from "../ui/ui_components/shared.slint";
 
 export component DeviceConsolePanel inherits Rectangle {
     horizontal-stretch: 1.0;
     vertical-stretch: 1.0;
-    background: #1e1e1e;
+    background: Theme.background;
     
     in property <string> console-output: "";
     in property <bool> connected: false;
@@ -82,43 +24,32 @@ export component DeviceConsolePanel inherits Rectangle {
         // ═════════════════════════════════════════════
         // LEFT SIDEBAR: Actions
         // ═════════════════════════════════════════════
-        Rectangle {
-            width: 200px;
-            background: #2c3e50;
-            
+        StandardSidebar {
             VerticalLayout {
-                padding: 10px;
-                spacing: 10px;
+                padding: Theme.padding;
+                spacing: Theme.spacing;
                 alignment: start;
                 
                 Text {
                     text: "Console Actions";
                     font-weight: 700;
                     font-size: 12px;
-                    color: #bdc3c7;
+                    color: Theme.text-secondary;
                 }
                 
-                ConsoleToolButton {
+                StandardButton {
                     text: "Clear";
                     icon: "🗑";
                     tooltip: "Clear Console Output";
                     clicked => { root.console-clear-clicked(); }
                 }
                 
-                ConsoleToolButton {
+                StandardButton {
                     text: "Copy";
                     icon: "📋";
                     tooltip: "Copy to Clipboard";
                     clicked => { root.console-copy-clicked(); }
                 }
-            }
-            
-            // Right border separator
-            Rectangle {
-                width: 1px;
-                height: 100%;
-                x: parent.width - 1px;
-                background: #34495e;
             }
         }
 
@@ -126,15 +57,15 @@ export component DeviceConsolePanel inherits Rectangle {
         // MAIN AREA: Log & Input
         // ═════════════════════════════════════════════
         Rectangle {
-            background: #1e1e1e;
+            background: Theme.background;
             
             VerticalLayout {
-                padding: 10px;
-                spacing: 10px;
+                padding: Theme.padding;
+                spacing: Theme.spacing;
                 
                 // Console Output
                 Rectangle {
-                    background: #1e1e1e;
+                    background: Theme.background;
                     vertical-stretch: 1;
                     
                     ScrollView {
@@ -144,7 +75,7 @@ export component DeviceConsolePanel inherits Rectangle {
                         
                         Text {
                             text: root.console-output;
-                            color: #ecf0f1;
+                            color: Theme.text-primary;
                             font-family: "Fira Code";
                             font-size: 12px;
                             wrap: word-wrap;
@@ -157,10 +88,10 @@ export component DeviceConsolePanel inherits Rectangle {
                 // Command Input Bar
                 Rectangle {
                     height: 40px;
-                    background: #252526;
+                    background: Theme.panel-background;
                     border-radius: 4px;
                     border-width: 1px;
-                    border-color: #3e3e42;
+                    border-color: Theme.border;
                     
                     HorizontalLayout {
                         padding: 5px;
@@ -168,7 +99,7 @@ export component DeviceConsolePanel inherits Rectangle {
                         
                         Text {
                             text: ">";
-                            color: #2ecc71;
+                            color: Theme.success;
                             font-weight: 700;
                             vertical-alignment: center;
                             font-size: 16px;
@@ -189,14 +120,13 @@ export component DeviceConsolePanel inherits Rectangle {
                             }
                         }
                         
-                        ConsoleToolButton {
+                        StandardButton {
                             icon: "➤";
                             width: 40px;
                             height: 30px;
                             tooltip: "Send Command";
                             enabled: root.connected && root.command-input != "";
-                            base-color: #2ecc71;
-                            hover-color: #27ae60;
+                            primary: true;
                             clicked => {
                                 if (root.command-input != "") {
                                     root.send-command(root.command-input);

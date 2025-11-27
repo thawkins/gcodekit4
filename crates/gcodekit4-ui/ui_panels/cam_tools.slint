@@ -2,6 +2,7 @@
 //! Provides a collection of CAM (Computer-Aided Manufacturing) tools and utilities
 
 import { Button, VerticalBox, HorizontalBox, ScrollView, GridBox } from "std-widgets.slint";
+import { Theme } from "../ui/theme.slint";
 
 component GeneratedIcon inherits Rectangle {
     in property <string> type;
@@ -10,13 +11,13 @@ component GeneratedIcon inherits Rectangle {
     if type == "box" : Path {
         width: 100%; height: 100%;
         commands: "M 20 20 L 40 20 L 40 30 L 60 30 L 60 20 L 80 20 L 80 80 L 60 80 L 60 70 L 40 70 L 40 80 L 20 80 Z";
-        stroke: #3498db; stroke-width: 2px; fill: #3498db20;
+        stroke: Theme.primary; stroke-width: 2px; fill: #3498db20;
     }
     
     if type == "puzzle" : Path {
         width: 100%; height: 100%;
         commands: "M 30 30 L 45 30 C 45 20 55 20 55 30 L 70 30 L 70 45 C 80 45 80 55 70 55 L 70 70 L 55 70 C 55 80 45 80 45 70 L 30 70 L 30 55 C 20 55 20 45 30 45 Z";
-        stroke: #e74c3c; stroke-width: 2px; fill: #e74c3c20;
+        stroke: Theme.danger; stroke-width: 2px; fill: #e74c3c20;
     }
     
     if type == "bitmap" : Rectangle {
@@ -30,13 +31,13 @@ component GeneratedIcon inherits Rectangle {
     if type == "vector" : Path {
         width: 100%; height: 100%;
         commands: "M 20 80 C 20 20 80 20 80 80";
-        stroke: #2ecc71; stroke-width: 3px; fill: transparent;
+        stroke: Theme.success; stroke-width: 3px; fill: transparent;
     }
     
     if type == "speeds" : Path {
         width: 100%; height: 100%;
         commands: "M 50 50 L 50 20 M 50 50 L 70 70 M 50 10 A 40 40 0 1 1 10 50";
-        stroke: #f1c40f; stroke-width: 3px; fill: transparent;
+        stroke: Theme.warning; stroke-width: 3px; fill: transparent;
     }
     
     if type == "surface" : Path {
@@ -54,7 +55,7 @@ component GeneratedIcon inherits Rectangle {
     if type == "unknown" : Text {
         text: "?";
         font-size: 40px;
-        color: #7f8c8d;
+        color: Theme.text-muted;
     }
 }
 
@@ -65,10 +66,10 @@ component ToolCard inherits Rectangle {
     
     callback clicked();
     
-    background: #2c3e50;
+    background: Theme.sidebar-background;
     border-radius: 8px;
     border-width: 1px;
-    border-color: #34495e;
+    border-color: Theme.sidebar-item-selected;
     height: 200px;
     
     VerticalBox {
@@ -88,14 +89,14 @@ component ToolCard inherits Rectangle {
             text: root.tool-title;
             font-size: 18px;
             font-weight: 600;
-            color: #ecf0f1;
+            color: Theme.text-primary;
             horizontal-alignment: center;
         }
         
         Text {
             text: root.tool-description;
             font-size: 14px;
-            color: #bdc3c7;
+            color: Theme.text-secondary;
             wrap: word-wrap;
             horizontal-alignment: center;
             vertical-alignment: top;
@@ -108,7 +109,7 @@ component ToolCard inherits Rectangle {
 }
 
 export component CAMToolsPanel inherits Rectangle {
-    background: #1e1e1e;
+    background: Theme.background;
     
     callback open-tabbed-box-maker();
     callback open-jigsaw-puzzle-maker();
@@ -126,7 +127,7 @@ export component CAMToolsPanel inherits Rectangle {
             text: "CAM Tools";
             font-size: 24px;
             font-weight: 700;
-            color: #ecf0f1;
+            color: Theme.text-primary;
         }
         
         ScrollView {

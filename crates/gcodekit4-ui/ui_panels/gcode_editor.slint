@@ -3,6 +3,8 @@
 
 import { Button, LineEdit, VerticalBox, HorizontalBox } from "std-widgets.slint";
 import { CustomTextEdit } from "../ui/ui_components/custom_text_edit.slint";
+import { Theme } from "../ui/theme.slint";
+import { StandardButton, StandardSidebar } from "../ui/ui_components/shared.slint";
 
 export struct TextLine {
     line_number: int,
@@ -10,61 +12,12 @@ export struct TextLine {
     is_dirty: bool,
 }
 
-component EditorToolButton inherits Rectangle {
-    in property <string> icon;
-    in property <string> text;
-    in property <string> tooltip;
-    in property <bool> enabled: true;
-    callback clicked;
-    
-    width: 40px;
-    height: 40px;
-    background: touch.has-hover ? #34495e : #2c3e50;
-    border-radius: 4px;
-    border-width: 1px;
-    border-color: #34495e;
-    opacity: root.enabled ? 1.0 : 0.5;
-    
-    Text {
-        text: root.icon;
-        font-size: 20px;
-        color: #ecf0f1;
-        horizontal-alignment: center;
-        vertical-alignment: center;
-    }
-    
-    touch := TouchArea { 
-        mouse-cursor: root.enabled ? pointer : default;
-        enabled: root.enabled;
-        clicked => { root.clicked(); } 
-    }
-    
-    if (touch.has-hover && root.tooltip != "") : Rectangle {
-        y: parent.height + 5px;
-        x: (parent.width - self.width) / 2;
-        width: tt-text.preferred-width + 10px;
-        height: 24px;
-        background: #222222;
-        border-radius: 3px;
-        border-width: 1px;
-        border-color: #555555;
-        z: 100;
-        tt-text := Text {
-            text: root.tooltip;
-            color: white;
-            font-size: 11px;
-            vertical-alignment: center;
-            horizontal-alignment: center;
-        }
-    }
-}
-
 export component GcodeEditorPanel inherits Rectangle {
     forward-focus: editor-focus;
    
     horizontal-stretch: 1.0;
     vertical-stretch: 1.0;
-    background: #2c3e50;
+    background: Theme.background;
     
     in-out property <string> gcode-content: "";
     in-out property <string> gcode-filename: "untitled.gcode";
@@ -113,21 +66,17 @@ export component GcodeEditorPanel inherits Rectangle {
         // ═════════════════════════════════════════════
         // LEFT SIDEBAR: Controls
         // ═════════════════════════════════════════════
-        Rectangle {
-            width: 200px;
-            horizontal-stretch: 0;
-            background: #2c3e50;
-
+        StandardSidebar {
             VerticalLayout {
-                padding: 10px;
-                spacing: 10px;
+                padding: Theme.padding;
+                spacing: Theme.spacing;
                 alignment: start;
 
                 Text {
                     text: "Editor";
                     font-weight: 700;
                     font-size: 14px;
-                    color: #ecf0f1;
+                    color: Theme.text-primary;
                 }
 
                 Rectangle { height: 10px; }
@@ -136,42 +85,38 @@ export component GcodeEditorPanel inherits Rectangle {
                     text: "Transmission";
                     font-weight: 700;
                     font-size: 12px;
-                    color: #bdc3c7;
+                    color: Theme.text-secondary;
                 }
 
                 HorizontalLayout {
                     spacing: 5px;
-                    EditorToolButton {
+                    StandardButton {
                         icon: "▶";
                         tooltip: "Send";
+                        width: 40px;
                         enabled: root.gcode-content != "";
                         clicked => { root.menu-send-to-device(); }
                     }
-                    EditorToolButton {
+                    StandardButton {
                         icon: "⏸";
                         tooltip: "Pause";
+                        width: 40px;
                         clicked => { root.menu-pause-transmission(); }
                     }
-                    EditorToolButton {
+                    StandardButton {
                         icon: "▶"; // Resume icon same as play usually, or maybe ⏯
                         text: "R"; // Fallback if icon font issue
                         tooltip: "Resume";
+                        width: 40px;
                         clicked => { root.menu-resume-transmission(); }
                     }
-                    EditorToolButton {
+                    StandardButton {
                         icon: "⏹";
                         tooltip: "Stop";
+                        width: 40px;
                         clicked => { root.menu-stop-transmission(); }
                     }
                 }
-            }
-            
-            // Right border separator
-            Rectangle {
-                width: 1px;
-                height: 100%;
-                x: parent.width - 1px;
-                background: #34495e;
             }
         }
 
@@ -181,7 +126,7 @@ export component GcodeEditorPanel inherits Rectangle {
         Rectangle {
             horizontal-stretch: 1;
             vertical-stretch: 1;
-            background: #1e1e1e; // Keep dark editor background
+            background: Theme.background; // Keep dark editor background
             clip: true;
             
             // Wrapper FocusScope for editor focus management
@@ -217,11 +162,11 @@ export component GcodeEditorPanel inherits Rectangle {
                     cursor-blink-visible: root.cursor-blink-visible;
                     
                     // Theme overrides
-                    background-color: #1e1e1e;
-                    gutter-background-color: #2c3e50;
-                    text-color: #ecf0f1;
-                    line-number-color: #bdc3c7;
-                    current-line-color: #34495e;
+                    background-color: Theme.background;
+                    gutter-background-color: Theme.sidebar-background;
+                    text-color: Theme.text-primary;
+                    line-number-color: Theme.text-secondary;
+                    current-line-color: Theme.sidebar-item-selected;
                     
                     text-changed(text) => {
                         root.gcode-content = text;
@@ -283,11 +228,11 @@ export component GcodeEditorPanel inherits Rectangle {
                 y: parent.height - 40px;
                 height: 30px;
                 width: status-layout.preferred-width + 20px;
-                background: #2c3e50;
+                background: Theme.sidebar-background;
                 border-radius: 15px;
                 opacity: 0.9;
                 border-width: 1px;
-                border-color: #34495e;
+                border-color: Theme.sidebar-item-selected;
                 
                 status-layout := HorizontalLayout {
                     padding-left: 10px;
@@ -296,7 +241,7 @@ export component GcodeEditorPanel inherits Rectangle {
                     
                     Text {
                         text: root.gcode-filename;
-                        color: #ecf0f1;
+                        color: Theme.text-primary;
                         font-size: 12px;
                         font-weight: 700;
                         vertical-alignment: center;
@@ -304,14 +249,14 @@ export component GcodeEditorPanel inherits Rectangle {
                     
                     Text {
                         text: "Line " + root.cursor-line + ":" + root.cursor-column;
-                        color: #bdc3c7;
+                        color: Theme.text-secondary;
                         font-size: 12px;
                         vertical-alignment: center;
                     }
                     
                     Text {
                         text: "Total: " + root.total-lines;
-                        color: #bdc3c7;
+                        color: Theme.text-secondary;
                         font-size: 12px;
                         vertical-alignment: center;
                     }

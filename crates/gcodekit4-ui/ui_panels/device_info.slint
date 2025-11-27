@@ -2,6 +2,8 @@
 /// Display firmware type, version, and capabilities when device is connected
 
 import { Button, VerticalBox, HorizontalBox, ScrollView, GridBox } from "std-widgets.slint";
+import { Theme } from "../ui/theme.slint";
+import { StandardButton, StandardSidebar } from "../ui/ui_components/shared.slint";
 
 export struct CapabilityItem {
     name: string,
@@ -9,31 +11,8 @@ export struct CapabilityItem {
     notes: string,
 }
 
-component InfoToolButton inherits Rectangle {
-    in property <string> text;
-    in property <string> icon;
-    in property <bool> enabled: true;
-    callback clicked;
-    
-    height: 40px;
-    background: !root.enabled ? #34495e : (touch.has-hover ? #3d566e : #2c3e50);
-    border-radius: 4px;
-    border-width: 1px;
-    border-color: #3d566e;
-    
-    HorizontalBox {
-        alignment: center;
-        spacing: 8px;
-        if (root.icon != "") : Text { text: root.icon; font-size: 18px; color: #ecf0f1; vertical-alignment: center; }
-        Text { text: root.text; font-size: 13px; color: #ecf0f1; vertical-alignment: center; }
-    }
-    touch := TouchArea {
-        clicked => { root.clicked(); }
-    }
-}
-
 export component DeviceInfoPanel inherits Rectangle {
-    background: #1e1e1e;
+    background: Theme.background;
     
     in property <bool> connected: false;
     in property <string> firmware-type: "";
@@ -46,10 +25,7 @@ export component DeviceInfoPanel inherits Rectangle {
 
     HorizontalLayout {
         // Sidebar
-        Rectangle {
-            width: 250px;
-            background: #2c3e50;
-            
+        StandardSidebar {
             VerticalLayout {
                 padding: 15px;
                 spacing: 20px;
@@ -69,33 +45,33 @@ export component DeviceInfoPanel inherits Rectangle {
                 // Device Info
                 VerticalLayout {
                     spacing: 5px;
-                    Text { text: "DEVICE NAME"; font-size: 10px; color: #95a5a6; font-weight: 700; }
-                    Text { text: root.connected ? root.device-name : "No Device"; font-size: 16px; color: #ecf0f1; font-weight: 600; overflow: elide; }
+                    Text { text: "DEVICE NAME"; font-size: 10px; color: Theme.text-muted; font-weight: 700; }
+                    Text { text: root.connected ? root.device-name : "No Device"; font-size: 16px; color: Theme.text-primary; font-weight: 600; overflow: elide; }
                 }
 
                 VerticalLayout {
                     spacing: 5px;
-                    Text { text: "FIRMWARE"; font-size: 10px; color: #95a5a6; font-weight: 700; }
-                    Text { text: root.connected ? root.firmware-type : "-"; font-size: 14px; color: #2ecc71; font-weight: 600; }
+                    Text { text: "FIRMWARE"; font-size: 10px; color: Theme.text-muted; font-weight: 700; }
+                    Text { text: root.connected ? root.firmware-type : "-"; font-size: 14px; color: Theme.success; font-weight: 600; }
                 }
 
                 VerticalLayout {
                     spacing: 5px;
-                    Text { text: "VERSION"; font-size: 10px; color: #95a5a6; font-weight: 700; }
-                    Text { text: root.connected ? root.firmware-version : "-"; font-size: 14px; color: #3498db; font-family: "Fira Code"; }
+                    Text { text: "VERSION"; font-size: 10px; color: Theme.text-muted; font-weight: 700; }
+                    Text { text: root.connected ? root.firmware-version : "-"; font-size: 14px; color: Theme.primary; font-family: "Fira Code"; }
                 }
                 
-                Rectangle { height: 1px; background: #34495e; }
+                Rectangle { height: 1px; background: Theme.sidebar-item-selected; }
                 
                 // Actions
-                InfoToolButton {
+                StandardButton {
                     text: "Refresh Info";
                     icon: "🔄";
                     enabled: root.connected;
                     clicked => { root.refresh-clicked(); }
                 }
                 
-                InfoToolButton {
+                StandardButton {
                     text: "Copy Config";
                     icon: "📋";
                     enabled: root.connected;
@@ -104,20 +80,17 @@ export component DeviceInfoPanel inherits Rectangle {
                 
                 Rectangle { vertical-stretch: 1; }
             }
-            
-            // Border
-            Rectangle { width: 1px; x: parent.width - 1px; background: #1a252f; }
         }
         
         // Main Content
         Rectangle {
-            background: #1e1e1e;
+            background: Theme.background;
             
             if !root.connected : VerticalLayout {
                 alignment: center;
                 Text {
                     text: "Connect a device to view capabilities";
-                    color: #7f8c8d;
+                    color: Theme.text-muted;
                     font-size: 16px;
                     horizontal-alignment: center;
                 }
@@ -131,7 +104,7 @@ export component DeviceInfoPanel inherits Rectangle {
                     text: "Firmware Capabilities";
                     font-size: 18px;
                     font-weight: 300;
-                    color: #ecf0f1;
+                    color: Theme.text-primary;
                 }
                 
                 ScrollView {
@@ -139,7 +112,7 @@ export component DeviceInfoPanel inherits Rectangle {
                         spacing: 2px;
                         for cap[i] in root.capabilities : Rectangle {
                             height: 40px;
-                            background: Math.mod(i, 2) == 0 ? #252526 : #2d2d30;
+                            background: Math.mod(i, 2) == 0 ? Theme.panel-background : Theme.background;
                             border-radius: 4px;
                             
                             HorizontalLayout {
@@ -160,14 +133,14 @@ export component DeviceInfoPanel inherits Rectangle {
                                         // Background with opacity
                                         Rectangle {
                                             border-radius: 12px;
-                                            background: cap.enabled ? #2ecc71 : #e74c3c;
+                                            background: cap.enabled ? Theme.success : Theme.danger;
                                             opacity: 0.2;
                                         }
                                         
                                         // Text on top (full opacity)
                                         Text {
                                             text: cap.enabled ? "ENABLED" : "DISABLED";
-                                            color: cap.enabled ? #2ecc71 : #e74c3c;
+                                            color: cap.enabled ? Theme.success : Theme.danger;
                                             font-size: 10px;
                                             font-weight: 700;
                                             horizontal-alignment: center;
@@ -178,7 +151,7 @@ export component DeviceInfoPanel inherits Rectangle {
                                 
                                 Text {
                                     text: cap.name;
-                                    color: #ecf0f1;
+                                    color: Theme.text-primary;
                                     font-size: 14px;
                                     width: 250px;
                                     vertical-alignment: center;
@@ -187,7 +160,7 @@ export component DeviceInfoPanel inherits Rectangle {
                                 
                                 Text {
                                     text: cap.notes;
-                                    color: #95a5a6;
+                                    color: Theme.text-muted;
                                     font-size: 12px;
                                     horizontal-stretch: 1;
                                     vertical-alignment: center;

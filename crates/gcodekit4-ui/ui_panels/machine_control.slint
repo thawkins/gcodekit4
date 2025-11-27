@@ -1,70 +1,9 @@
 /// Machine Control Panel Component
 /// Displays position (DRO), jog controls, and coordinate system buttons
 
-import { Button, ComboBox, LineEdit, VerticalBox, HorizontalBox, ScrollView } from "std-widgets.slint";
-
-component MCToolButton inherits Rectangle {
-    in property <string> text;
-    in property <string> icon;
-    in property <string> tooltip;
-    in property <bool> checkable: false;
-    in property <bool> checked: false;
-    in property <bool> enabled: true;
-    in property <brush> base-color: #34495e;
-    in property <brush> hover-color: #3d566e;
-    in property <brush> checked-color: #2980b9;
-    
-    callback clicked;
-    
-    height: 40px;
-    background: !root.enabled ? #2c3e50 : (root.checked ? root.checked-color : (touch.has-hover ? root.hover-color : root.base-color));
-    border-radius: 4px;
-    opacity: root.enabled ? 1.0 : 0.5;
-    
-    HorizontalBox {
-        padding: 5px;
-        spacing: 8px;
-        alignment: center;
-        
-        if (root.icon != "") : Text {
-            text: root.icon;
-            font-size: 18px;
-            color: #ecf0f1;
-            vertical-alignment: center;
-        }
-        
-        if (root.text != "") : Text {
-            text: root.text;
-            font-size: 13px;
-            color: #ecf0f1;
-            vertical-alignment: center;
-        }
-    }
-    
-    touch := TouchArea {
-        enabled: root.enabled;
-        clicked => { root.clicked(); }
-    }
-    
-    if (touch.has-hover && root.tooltip != "") : Rectangle {
-        y: parent.height + 5px;
-        x: (parent.width - self.width) / 2;
-        width: tt-text.preferred-width + 10px;
-        height: 24px;
-        background: #222222;
-        border-radius: 3px;
-        border-width: 1px;
-        border-color: #555555;
-        z: 100;
-        tt-text := Text {
-            text: root.tooltip;
-            color: white;
-            font-size: 11px;
-            vertical-alignment: center;
-            horizontal-alignment: center;
-        }
-    }
-}
+import { Button, ComboBox, LineEdit, VerticalBox, HorizontalBox, ScrollView, GridBox } from "std-widgets.slint";
+import { Theme } from "../ui/theme.slint";
+import { StandardButton, StandardSidebar } from "../ui/ui_components/shared.slint";
 
 component DROAxis inherits Rectangle {
     in property <string> label;
@@ -88,7 +27,7 @@ component DROAxis inherits Rectangle {
             text: root.label;
             font-size: 32px;
             font-weight: 700;
-            color: root.active ? #2ecc71 : #7f8c8d;
+            color: root.active ? Theme.success : Theme.text-muted;
             width: 40px;
             vertical-alignment: center;
         }
@@ -98,7 +37,7 @@ component DROAxis inherits Rectangle {
             text: root.value;
             font-size: 32px;
             font-family: "Fira Code"; // Monospace if available
-            color: #ecf0f1;
+            color: Theme.text-primary;
             horizontal-alignment: right;
             vertical-alignment: center;
             width: 200px;
@@ -109,14 +48,14 @@ component DROAxis inherits Rectangle {
             width: 40px;
             height: 40px;
             border-radius: 20px;
-            background: zero-touch.has-hover ? #34495e : #2c3e50;
+            background: zero-touch.has-hover ? Theme.sidebar-item-selected : Theme.sidebar-background;
             border-width: 1px;
-            border-color: #34495e;
+            border-color: Theme.sidebar-item-selected;
             
             Text {
                 text: "⊙";
                 font-size: 20px;
-                color: #ecf0f1;
+                color: Theme.text-primary;
                 horizontal-alignment: center;
                 vertical-alignment: center;
             }
@@ -134,15 +73,15 @@ component JogArrowButton inherits Rectangle {
     
     width: 60px;
     height: 60px;
-    background: touch.pressed ? #2980b9 : (touch.has-hover ? #34495e : #2c3e50);
+    background: touch.pressed ? Theme.primary-pressed : (touch.has-hover ? Theme.sidebar-item-selected : Theme.sidebar-background);
     border-radius: 8px;
     border-width: 1px;
-    border-color: #34495e;
+    border-color: Theme.sidebar-item-selected;
     
     Text {
         text: root.text;
         font-size: 24px;
-        color: #ecf0f1;
+        color: Theme.text-primary;
         horizontal-alignment: center;
         vertical-alignment: center;
     }
@@ -159,13 +98,13 @@ component StepSizeButton inherits Rectangle {
     
     width: 50px;
     height: 30px;
-    background: root.selected ? #2980b9 : (touch.has-hover ? #34495e : #2c3e50);
+    background: root.selected ? Theme.primary-pressed : (touch.has-hover ? Theme.sidebar-item-selected : Theme.sidebar-background);
     border-radius: 4px;
     
     Text {
         text: root.text;
         font-size: 12px;
-        color: #ecf0f1;
+        color: Theme.text-primary;
         horizontal-alignment: center;
         vertical-alignment: center;
         font-weight: root.selected ? 700 : 400;
@@ -179,7 +118,7 @@ component StepSizeButton inherits Rectangle {
 export component MachineControlPanel inherits Rectangle {
     horizontal-stretch: 1.0;
     vertical-stretch: 1.0;
-    background: #1e1e1e;
+    background: Theme.background;
     
     in property <bool> connected: false;
     in property <float> position-x: 0.0;
@@ -223,19 +162,16 @@ export component MachineControlPanel inherits Rectangle {
         // ═════════════════════════════════════════════
         // LEFT SIDEBAR: Controls
         // ═════════════════════════════════════════════
-        Rectangle {
-            width: 250px;
-            background: #2c3e50;
-            
+        StandardSidebar {
             VerticalLayout {
-                padding: 15px;
-                spacing: 20px;
+                padding: Theme.padding;
+                spacing: Theme.spacing;
                 alignment: start;
                 
                 // Connection Section
                 VerticalLayout {
                     spacing: 10px;
-                    Text { text: "Connection"; color: #bdc3c7; font-size: 12px; font-weight: 700; }
+                    Text { text: "Connection"; color: Theme.text-secondary; font-size: 12px; font-weight: 700; }
                     
                     ComboBox {
                         model: root.available-ports;
@@ -246,17 +182,17 @@ export component MachineControlPanel inherits Rectangle {
                     
                     HorizontalLayout {
                         spacing: 10px;
-                        MCToolButton {
+                        StandardButton {
                             text: root.connected ? "Disconnect" : "Connect";
                             icon: root.connected ? "🔌" : "🔗";
-                            base-color: root.connected ? #c0392b : #27ae60;
-                            hover-color: root.connected ? #e74c3c : #2ecc71;
+                            primary: !root.connected;
+                            destructive: root.connected;
                             clicked => {
                                 if (root.connected) { root.disconnect-clicked(); }
                                 else { root.connect-clicked(); }
                             }
                         }
-                        MCToolButton {
+                        StandardButton {
                             icon: "🔄";
                             width: 40px;
                             tooltip: "Refresh Ports";
@@ -268,18 +204,18 @@ export component MachineControlPanel inherits Rectangle {
                 // Machine State Section
                 VerticalLayout {
                     spacing: 10px;
-                    Text { text: "Machine State"; color: #bdc3c7; font-size: 12px; font-weight: 700; }
+                    Text { text: "Machine State"; color: Theme.text-secondary; font-size: 12px; font-weight: 700; }
                     
                     Rectangle {
                         height: 40px;
-                        background: #34495e;
+                        background: Theme.sidebar-item-selected;
                         border-radius: 4px;
                         
                         Text {
                             text: root.machine-state;
-                            color: root.machine-state == "ALARM" ? #e74c3c : 
-                                   (root.machine-state == "Run" ? #2ecc71 : 
-                                   (root.machine-state == "Idle" ? #f1c40f : #ecf0f1));
+                            color: root.machine-state == "ALARM" ? Theme.danger : 
+                                   (root.machine-state == "Run" ? Theme.success : 
+                                   (root.machine-state == "Idle" ? Theme.warning : Theme.text-primary));
                             font-size: 16px;
                             font-weight: 700;
                             horizontal-alignment: center;
@@ -289,13 +225,13 @@ export component MachineControlPanel inherits Rectangle {
                     
                     HorizontalLayout {
                         spacing: 10px;
-                        MCToolButton {
+                        StandardButton {
                             text: "Home";
                             icon: "⌂";
                             enabled: root.connected && root.machine-state != "Run";
                             clicked => { root.jog-home-clicked(); }
                         }
-                        MCToolButton {
+                        StandardButton {
                             text: "Unlock";
                             icon: "🔓";
                             enabled: root.connected && (root.machine-state == "ALARM" || root.machine-state == "Alarm");
@@ -307,30 +243,22 @@ export component MachineControlPanel inherits Rectangle {
                 // Work Coordinate Systems
                 VerticalLayout {
                     spacing: 10px;
-                    Text { text: "Work Coordinates"; color: #bdc3c7; font-size: 12px; font-weight: 700; }
+                    Text { text: "Work Coordinates"; color: Theme.text-secondary; font-size: 12px; font-weight: 700; }
                     
                     GridLayout {
                         spacing: 5px;
                         Row {
-                            MCToolButton { text: "G54"; clicked => { root.send-command("G54"); } }
-                            MCToolButton { text: "G55"; clicked => { root.send-command("G55"); } }
-                            MCToolButton { text: "G56"; clicked => { root.send-command("G56"); } }
+                            StandardButton { text: "G54"; clicked => { root.send-command("G54"); } }
+                            StandardButton { text: "G55"; clicked => { root.send-command("G55"); } }
+                            StandardButton { text: "G56"; clicked => { root.send-command("G56"); } }
                         }
                         Row {
-                            MCToolButton { text: "G57"; clicked => { root.send-command("G57"); } }
-                            MCToolButton { text: "G58"; clicked => { root.send-command("G58"); } }
-                            MCToolButton { text: "G59"; clicked => { root.send-command("G59"); } }
+                            StandardButton { text: "G57"; clicked => { root.send-command("G57"); } }
+                            StandardButton { text: "G58"; clicked => { root.send-command("G58"); } }
+                            StandardButton { text: "G59"; clicked => { root.send-command("G59"); } }
                         }
                     }
                 }
-            }
-            
-            // Right border separator
-            Rectangle {
-                width: 1px;
-                height: 100%;
-                x: parent.width - 1px;
-                background: #34495e;
             }
         }
         
@@ -376,7 +304,7 @@ export component MachineControlPanel inherits Rectangle {
                 HorizontalLayout {
                     alignment: center;
                     spacing: 5px;
-                    Text { text: "Step (mm):"; color: #bdc3c7; vertical-alignment: center; font-size: 14px; }
+                    Text { text: "Step (mm):"; color: Theme.text-secondary; vertical-alignment: center; font-size: 14px; }
                     Rectangle { width: 10px; }
                     
                     StepSizeButton { text: "0.1"; selected: root.step-index == 0; clicked => { root.step-index = 0; root.step-size = 0.1; } }
@@ -402,9 +330,9 @@ export component MachineControlPanel inherits Rectangle {
                             JogArrowButton { text: "◀"; clicked => { root.jog-x-negative(root.step-size); } }
                             Rectangle { // Center Home
                                 width: 60px; height: 60px;
-                                background: #2c3e50;
+                                background: Theme.sidebar-background;
                                 border-radius: 30px;
-                                Text { text: "XY"; color: #7f8c8d; font-size: 14px; horizontal-alignment: center; vertical-alignment: center; }
+                                Text { text: "XY"; color: Theme.text-muted; font-size: 14px; horizontal-alignment: center; vertical-alignment: center; }
                             }
                             JogArrowButton { text: "▶"; clicked => { root.jog-x-positive(root.step-size); } }
                         }
@@ -422,7 +350,7 @@ export component MachineControlPanel inherits Rectangle {
                         JogArrowButton { text: "▲"; clicked => { root.jog-z-positive(root.step-size); } }
                         Rectangle { 
                             height: 60px; 
-                            Text { text: "Z"; color: #7f8c8d; font-size: 18px; horizontal-alignment: center; vertical-alignment: center; }
+                            Text { text: "Z"; color: Theme.text-muted; font-size: 18px; horizontal-alignment: center; vertical-alignment: center; }
                         }
                         JogArrowButton { text: "▼"; clicked => { root.jog-z-negative(root.step-size); } }
                     }

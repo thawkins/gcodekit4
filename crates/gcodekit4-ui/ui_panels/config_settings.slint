@@ -2,6 +2,8 @@
 /// Display and manage GRBL controller configuration settings
 
 import { Button, ComboBox, LineEdit, VerticalBox, HorizontalBox, ScrollView, ListView } from "std-widgets.slint";
+import { Theme } from "../ui/theme.slint";
+import { StandardButton, StandardInput } from "../ui/ui_components/shared.slint";
 
 export struct ConfigSetting {
     number: int,
@@ -11,61 +13,6 @@ export struct ConfigSetting {
     description: string,
     category: string,
     read-only: bool,
-}
-
-component DCButton inherits Rectangle {
-    in property <string> text;
-    in property <bool> enabled: true;
-    in property <brush> base-color: #404040;
-    in property <brush> hover-color: #505050;
-    in property <brush> pressed-color: #2980b9;
-    in property <bool> primary: false;
-    in property <bool> destructive: false;
-    
-    callback clicked;
-    
-    height: 30px;
-    border-radius: 4px;
-    
-    background: !root.enabled ? #2c3e50 : 
-                (touch.pressed ? root.pressed-color : 
-                (touch.has-hover ? (root.destructive ? #e74c3c : (root.primary ? #357abd : root.hover-color)) : 
-                (root.destructive ? #c0392b : (root.primary ? #4a90e2 : root.base-color))));
-
-    opacity: root.enabled ? 1.0 : 0.5;
-    
-    Text {
-        text: root.text;
-        color: #ecf0f1;
-        font-size: 12px;
-        vertical-alignment: center;
-        horizontal-alignment: center;
-    }
-    
-    touch := TouchArea {
-        enabled: root.enabled;
-        clicked => { root.clicked(); }
-    }
-}
-
-component DCInput inherits Rectangle {
-    in-out property <string> text <=> input.text;
-    in property <string> placeholder-text <=> input.placeholder-text;
-    in property <bool> enabled <=> input.enabled;
-    callback edited(string);
-    
-    height: 30px;
-    background: #3e3e3e;
-    border-radius: 4px;
-    border-width: 1px;
-    border-color: input.has-focus ? #4a90e2 : #555555;
-    
-    input := LineEdit {
-        width: 100%;
-        height: 100%;
-        font-size: 13px;
-        edited(s) => { root.edited(s); }
-    }
 }
 
 export component ConfigSettingsPanel inherits Rectangle {
@@ -93,7 +40,7 @@ export component ConfigSettingsPanel inherits Rectangle {
     callback save-edited-setting(int, string);
     callback filter-changed();
     
-    background: #1e1e1e;
+    background: Theme.background;
     
     VerticalBox {
         spacing: 10px;
@@ -105,27 +52,27 @@ export component ConfigSettingsPanel inherits Rectangle {
             padding: 5px;
             alignment: start;
             
-            DCButton {
+            StandardButton {
                 text: "Retrieve";
                 width: 80px;
                 enabled: root.connected;
                 clicked => { root.retrieve-settings(); }
             }
             
-            DCButton {
+            StandardButton {
                 text: "Save";
                 width: 80px;
                 enabled: root.has-loaded-settings;
                 clicked => { root.save-to-file(); }
             }
             
-            DCButton {
+            StandardButton {
                 text: "Load";
                 width: 80px;
                 clicked => { root.load-from-file(); }
             }
             
-            DCButton {
+            StandardButton {
                 text: "Restore";
                 width: 80px;
                 enabled: root.has-loaded-settings && root.connected;
@@ -142,10 +89,10 @@ export component ConfigSettingsPanel inherits Rectangle {
             Text {
                 text: "Filter:";
                 vertical-alignment: center;
-                color: #aaaaaa;
+                color: Theme.text-secondary;
             }
             
-            DCInput {
+            StandardInput {
                 placeholder-text: "Search settings...";
                 text <=> root.filter-text;
                 horizontal-stretch: 1;
@@ -157,7 +104,7 @@ export component ConfigSettingsPanel inherits Rectangle {
             Text {
                 text: "Category:";
                 vertical-alignment: center;
-                color: #aaaaaa;
+                color: Theme.text-secondary;
             }
             
             ComboBox {
@@ -173,7 +120,7 @@ export component ConfigSettingsPanel inherits Rectangle {
         // Settings list header
         Rectangle {
             height: 30px;
-            background: #252525;
+            background: Theme.panel-background;
             
             HorizontalBox {
                 padding: 5px;
@@ -181,7 +128,7 @@ export component ConfigSettingsPanel inherits Rectangle {
                 
                 Text {
                     text: "ID";
-                    color: #ffffff;
+                    color: Theme.text-primary;
                     font-weight: 700;
                     width: 50px;
                     font-size: 12px;
@@ -189,7 +136,7 @@ export component ConfigSettingsPanel inherits Rectangle {
                 
                 Text {
                     text: "Name";
-                    color: #ffffff;
+                    color: Theme.text-primary;
                     font-weight: 700;
                     width: 200px;
                     font-size: 12px;
@@ -197,7 +144,7 @@ export component ConfigSettingsPanel inherits Rectangle {
                 
                 Text {
                     text: "Value";
-                    color: #ffffff;
+                    color: Theme.text-primary;
                     font-weight: 700;
                     width: 100px;
                     font-size: 12px;
@@ -205,7 +152,7 @@ export component ConfigSettingsPanel inherits Rectangle {
                 
                 Text {
                     text: "Unit";
-                    color: #ffffff;
+                    color: Theme.text-primary;
                     font-weight: 700;
                     width: 80px;
                     font-size: 12px;
@@ -213,7 +160,7 @@ export component ConfigSettingsPanel inherits Rectangle {
                 
                 Text {
                     text: "Category";
-                    color: #ffffff;
+                    color: Theme.text-primary;
                     font-weight: 700;
                     width: 150px;
                     font-size: 12px;
@@ -221,7 +168,7 @@ export component ConfigSettingsPanel inherits Rectangle {
                 
                 Text {
                     text: "Description";
-                    color: #ffffff;
+                    color: Theme.text-primary;
                     font-weight: 700;
                     horizontal-stretch: 1;
                     font-size: 12px;
@@ -236,7 +183,7 @@ export component ConfigSettingsPanel inherits Rectangle {
             ListView {
                 for setting[index] in root.filtered-settings: Rectangle {
                     height: 40px;
-                    background: Math.mod(index, 2) == 0 ? #1e1e1e : #252525;
+                    background: Math.mod(index, 2) == 0 ? Theme.background : Theme.panel-background;
                     
                     HorizontalBox {
                         padding: 5px;
@@ -246,7 +193,7 @@ export component ConfigSettingsPanel inherits Rectangle {
                             text: "$" + setting.number;
                             width: 50px;
                             vertical-alignment: center;
-                            color: setting.read-only ? #7f8c8d : #aaaaaa;
+                            color: setting.read-only ? Theme.text-muted : Theme.text-secondary;
                             font-size: 12px;
                         }
                         
@@ -255,7 +202,7 @@ export component ConfigSettingsPanel inherits Rectangle {
                             width: 200px;
                             vertical-alignment: center;
                             font-weight: 600;
-                            color: setting.read-only ? #7f8c8d : #e0e0e0;
+                            color: setting.read-only ? Theme.text-muted : Theme.text-primary;
                             font-size: 12px;
                         }
                         
@@ -263,7 +210,7 @@ export component ConfigSettingsPanel inherits Rectangle {
                             text: setting.value;
                             width: 100px;
                             vertical-alignment: center;
-                            color: #2ecc71;
+                            color: Theme.success;
                             font-size: 12px;
                         }
                         
@@ -271,7 +218,7 @@ export component ConfigSettingsPanel inherits Rectangle {
                             text: setting.unit;
                             width: 80px;
                             vertical-alignment: center;
-                            color: #7f8c8d;
+                            color: Theme.text-muted;
                             font-size: 11px;
                         }
                         
@@ -279,7 +226,7 @@ export component ConfigSettingsPanel inherits Rectangle {
                             text: setting.category;
                             width: 150px;
                             vertical-alignment: center;
-                            color: #7f8c8d;
+                            color: Theme.text-muted;
                             font-size: 11px;
                         }
                         
@@ -287,7 +234,7 @@ export component ConfigSettingsPanel inherits Rectangle {
                             text: setting.description;
                             horizontal-stretch: 1;
                             vertical-alignment: center;
-                            color: #7f8c8d;
+                            color: Theme.text-muted;
                             font-size: 11px;
                             overflow: elide;
                         }
@@ -307,7 +254,7 @@ export component ConfigSettingsPanel inherits Rectangle {
         // Status bar
         Rectangle {
             height: 30px;
-            background: #252525;
+            background: Theme.panel-background;
             
             HorizontalBox {
                 padding: 5px;
@@ -315,7 +262,7 @@ export component ConfigSettingsPanel inherits Rectangle {
                 Text {
                     text: root.status-message;
                     vertical-alignment: center;
-                    color: #e0e0e0;
+                    color: Theme.text-primary;
                     font-size: 12px;
                 }
                 
@@ -324,7 +271,7 @@ export component ConfigSettingsPanel inherits Rectangle {
                 Text {
                     text: root.filtered-settings.length + " / " + root.settings.length + " settings";
                     vertical-alignment: center;
-                    color: #7f8c8d;
+                    color: Theme.text-muted;
                     font-size: 11px;
                 }
             }
@@ -342,10 +289,10 @@ export component ConfigSettingsPanel inherits Rectangle {
         Rectangle {
             width: 500px;
             height: 350px;
-            background: #2d2d2d;
+            background: Theme.panel-background;
             border-radius: 8px;
             border-width: 1px;
-            border-color: #404040;
+            border-color: Theme.border;
             
             VerticalBox {
                 padding: 20px;
@@ -356,7 +303,7 @@ export component ConfigSettingsPanel inherits Rectangle {
                     text: "Edit Setting $" + root.edit-setting-number;
                     font-size: 18px;
                     font-weight: 700;
-                    color: #e0e0e0;
+                    color: Theme.text-primary;
                 }
                 
                 // Setting name
@@ -368,14 +315,14 @@ export component ConfigSettingsPanel inherits Rectangle {
                         font-weight: 600;
                         width: 100px;
                         vertical-alignment: center;
-                        color: #aaaaaa;
+                        color: Theme.text-secondary;
                     }
                     
                     Text {
                         text: root.edit-setting-name;
                         horizontal-stretch: 1;
                         vertical-alignment: center;
-                        color: #e0e0e0;
+                        color: Theme.text-primary;
                     }
                 }
                 
@@ -388,14 +335,14 @@ export component ConfigSettingsPanel inherits Rectangle {
                         font-weight: 600;
                         width: 100px;
                         vertical-alignment: top;
-                        color: #aaaaaa;
+                        color: Theme.text-secondary;
                     }
                     
                     Text {
                         text: root.edit-setting-description;
                         horizontal-stretch: 1;
                         wrap: word-wrap;
-                        color: #7f8c8d;
+                        color: Theme.text-muted;
                     }
                 }
                 
@@ -408,10 +355,10 @@ export component ConfigSettingsPanel inherits Rectangle {
                         font-weight: 600;
                         width: 100px;
                         vertical-alignment: center;
-                        color: #aaaaaa;
+                        color: Theme.text-secondary;
                     }
                     
-                    DCInput {
+                    StandardInput {
                         text <=> root.edit-setting-value;
                         horizontal-stretch: 1;
                         placeholder-text: "Enter new value";
@@ -421,7 +368,7 @@ export component ConfigSettingsPanel inherits Rectangle {
                         text: root.edit-setting-unit;
                         width: 60px;
                         vertical-alignment: center;
-                        color: #7f8c8d;
+                        color: Theme.text-muted;
                     }
                 }
                 
@@ -435,7 +382,7 @@ export component ConfigSettingsPanel inherits Rectangle {
                     spacing: 10px;
                     alignment: end;
                     
-                    DCButton {
+                    StandardButton {
                         text: "Cancel";
                         width: 100px;
                         clicked => {
@@ -443,7 +390,7 @@ export component ConfigSettingsPanel inherits Rectangle {
                         }
                     }
                     
-                    DCButton {
+                    StandardButton {
                         text: "Save";
                         width: 100px;
                         primary: true;
