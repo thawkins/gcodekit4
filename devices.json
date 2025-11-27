@@ -7,6 +7,45 @@
         "max": 360.0,
         "min": 0.0
       },
+      "auto_reconnect": false,
+      "baud_rate": 115200,
+      "cnc_spindle_watts": 500.0,
+      "connection_type": "Serial",
+      "controller_type": "Grbl",
+      "description": "LunYee desktop CNC machine with spindle fitted. ",
+      "device_type": "CncMill",
+      "has_coolant": true,
+      "has_laser": true,
+      "has_spindle": true,
+      "id": "3be7355a-16bf-47b8-aead-50d2163f59dd",
+      "laser_watts": 5.0,
+      "max_feed_rate": 1000.0,
+      "name": "LunYee 3018 Pro Ultra (CNC Mode)",
+      "port": "Auto",
+      "tcp_port": 23,
+      "timeout_ms": 5000,
+      "x_axis": {
+        "enabled": true,
+        "max": 300.0,
+        "min": 0.0
+      },
+      "y_axis": {
+        "enabled": true,
+        "max": 180.0,
+        "min": 0.0
+      },
+      "z_axis": {
+        "enabled": true,
+        "max": 80.0,
+        "min": 0.0
+      }
+    },
+    {
+      "a_axis": {
+        "enabled": false,
+        "max": 360.0,
+        "min": 0.0
+      },
       "auto_reconnect": true,
       "baud_rate": 115200,
       "cnc_spindle_watts": 500.0,
@@ -37,45 +76,6 @@
       "z_axis": {
         "enabled": true,
         "max": 0.0,
-        "min": 0.0
-      }
-    },
-    {
-      "a_axis": {
-        "enabled": false,
-        "max": 360.0,
-        "min": 0.0
-      },
-      "auto_reconnect": false,
-      "baud_rate": 115200,
-      "cnc_spindle_watts": 500.0,
-      "connection_type": "Serial",
-      "controller_type": "Grbl",
-      "description": "LunYee desktop CNC machine with spindle fitted. ",
-      "device_type": "CncMill",
-      "has_coolant": false,
-      "has_laser": false,
-      "has_spindle": true,
-      "id": "3be7355a-16bf-47b8-aead-50d2163f59dd",
-      "laser_watts": 5.0,
-      "max_feed_rate": 1000.0,
-      "name": "LunYee 3018 Pro Ultra (CNC Mode)",
-      "port": "Auto",
-      "tcp_port": 23,
-      "timeout_ms": 5000,
-      "x_axis": {
-        "enabled": true,
-        "max": 300.0,
-        "min": 0.0
-      },
-      "y_axis": {
-        "enabled": true,
-        "max": 180.0,
-        "min": 0.0
-      },
-      "z_axis": {
-        "enabled": true,
-        "max": 80.0,
         "min": 0.0
       }
     }

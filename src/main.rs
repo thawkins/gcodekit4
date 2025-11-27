@@ -19,17 +19,6 @@ use std::path::PathBuf;
 use std::rc::Rc;
 use tracing::warn;
 
-#[derive(Default, Clone, Copy)]
-struct PendingPropertyFlags {
-    position: bool,
-    size: bool,
-    pocket: bool,
-    step_down: bool,
-    step_in: bool,
-    text: bool,
-    pocket_strategy: bool,
-    use_custom_values: bool,
-}
 
 slint::include_modules!();
 
@@ -909,7 +898,7 @@ fn main() -> anyhow::Result<()> {
         let window_weak = main_window.as_weak();
         main_window.on_designer_interaction_start(move || {
             if let Some(_window) = window_weak.upgrade() {
-                let mut state = designer_mgr.borrow_mut();
+                let _state = designer_mgr.borrow_mut();
                 // History is automatically saved by command pattern
             }
         });
@@ -7812,6 +7801,39 @@ fn main() -> anyhow::Result<()> {
             .ok();
         }
     });
+
+    // Handle device info copy config
+    {
+        let window_weak = main_window.as_weak();
+        let capability_manager = capability_manager.clone();
+        main_window.on_device_info_copy_config(move || {
+            if let Some(window) = window_weak.upgrade() {
+                let state = capability_manager.get_state();
+                let firmware_type = window.get_device_firmware_type();
+                let firmware_version = window.get_device_firmware_version();
+                let device_name = window.get_device_name();
+                
+                let mut info = String::new();
+                info.push_str(&format!("Device: {}\n", device_name));
+                info.push_str(&format!("Firmware: {}\n", firmware_type));
+                info.push_str(&format!("Version: {}\n", firmware_version));
+                info.push_str("\nCapabilities:\n");
+                info.push_str(&format!("- Arcs: {}\n", if state.supports_arcs { "Yes" } else { "No" }));
+                info.push_str(&format!("- Probing: {}\n", if state.supports_probing { "Yes" } else { "No" }));
+                info.push_str(&format!("- Tool Change: {}\n", if state.supports_tool_change { "Yes" } else { "No" }));
+                info.push_str(&format!("- Variable Spindle: {}\n", if state.supports_variable_spindle { "Yes" } else { "No" }));
+                info.push_str(&format!("- Homing: {}\n", if state.supports_homing { "Yes" } else { "No" }));
+                info.push_str(&format!("- Overrides: {}\n", if state.supports_overrides { "Yes" } else { "No" }));
+                info.push_str(&format!("- Laser Mode: {}\n", if state.supports_laser { "Yes" } else { "No" }));
+                info.push_str(&format!("- Max Axes: {}\n", state.max_axes));
+                info.push_str(&format!("- Coordinate Systems: {}\n", state.coordinate_systems));
+                
+                if copy_to_clipboard(&info) {
+                     tracing::info!("Device config copied to clipboard");
+                }
+            }
+        });
+    }
 
     main_window
         .show()

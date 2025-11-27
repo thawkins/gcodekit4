@@ -771,6 +771,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cursor navigation regression: restored line wrapping at line boundaries
 - Cursor position indexing: proper 0-based (backend) to 1-based (UI) conversion
 
+## [0.44.0-alpha] - 2025-11-27
+
+### Changed
+- **UI Aesthetics Overhaul**:
+  - **Visualizer**: Updated to match Designer aesthetics (dark theme, refined layout).
+  - **G-Code Editor**: Refactored to use Left Sidebar layout, dark theme, and improved gutter visibility.
+  - **Machine Control**: Applied dark theme, updated tool buttons, and improved layout.
+  - **Device Console**: Fixed log alignment (top-left), applied dark theme.
+  - **Device Info**: Updated layout for capabilities (columns, left-aligned), added "Copy Config" button.
+  - **Device Manager**: Applied dark theme, replaced standard checkboxes and tabs with custom high-visibility components.
+  - **Device Config**: Applied dark theme and custom components.
+  - **CAM Tools**:
+    - Refactored to use a responsive Grid Layout (3 columns).
+    - Restored all 7 CAM tools.
+    - Added dynamic icon generation for tool cards.
+    - Applied dark theme.
+
+### Added
+- **Documentation**: Created `docs/*_LOOKFEEL.md` files for all major views to document aesthetic standards.
+- **Device Info**: Implemented "Copy Config" functionality to copy device details to clipboard.
+
 ## [0.25.7-alpha] - 2025-11-15
 
 ### Added

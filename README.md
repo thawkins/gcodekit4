@@ -544,9 +544,16 @@ You may choose either license for your use of this software.
 
 ## Project Status
 
-**Current Version**: 0.43.0-alpha
+**Current Version**: 0.44.0-alpha
 **Status**: Active Development
 **Stability**: Alpha (breaking changes may occur)
+
+### Recent Updates (v0.44.0)
+- **UI Aesthetics Overhaul**:
+  - **Complete Redesign**: Visualizer, G-Code Editor, Machine Control, Device Console, Device Info, Device Manager, Device Config, and CAM Tools updated to a unified dark theme.
+  - **Improved Layouts**: Left sidebar navigation, grid layouts for tools, and responsive design.
+  - **Enhanced Components**: Custom checkboxes, tabs, and tool buttons for better visibility and usability.
+  - **CAM Tools**: Restored all 7 tools with dynamic icon generation and improved grid layout.
 
 ### Recent Updates (v0.43.0)
 - **Visualizer UI Overhaul**:

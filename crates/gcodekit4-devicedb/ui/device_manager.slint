@@ -26,13 +26,69 @@ export struct DeviceProfileUiModel {
     is-active: bool,
 }
 
+component DMButton inherits Rectangle {
+    in property <string> text;
+    in property <bool> enabled: true;
+    in property <brush> base-color: #404040;
+    in property <brush> hover-color: #505050;
+    in property <brush> pressed-color: #2980b9;
+    in property <bool> primary: false;
+    in property <bool> destructive: false;
+    
+    callback clicked;
+    
+    height: 35px;
+    border-radius: 4px;
+    
+    background: !root.enabled ? #2c3e50 : 
+                (touch.pressed ? root.pressed-color : 
+                (touch.has-hover ? (root.destructive ? #e74c3c : (root.primary ? #357abd : root.hover-color)) : 
+                (root.destructive ? #c0392b : (root.primary ? #4a90e2 : root.base-color))));
+
+    opacity: root.enabled ? 1.0 : 0.5;
+    
+    Text {
+        text: root.text;
+        color: #ecf0f1;
+        font-size: 13px;
+        vertical-alignment: center;
+        horizontal-alignment: center;
+    }
+    
+    touch := TouchArea {
+        enabled: root.enabled;
+        clicked => { root.clicked(); }
+    }
+}
+
+component DMInput inherits Rectangle {
+    in-out property <string> text <=> input.text;
+    in property <string> placeholder-text <=> input.placeholder-text;
+    in property <bool> enabled <=> input.enabled;
+    callback edited(string);
+    
+    height: 30px;
+    background: #3e3e3e;
+    border-radius: 4px;
+    border-width: 1px;
+    border-color: input.has-focus ? #4a90e2 : #555555;
+    
+    input := LineEdit {
+        width: 100%;
+        height: 100%;
+        font-size: 13px;
+        edited(s) => { root.edited(s); }
+    }
+}
+
 component DeviceListItem inherits Rectangle {
     in property <DeviceProfileUiModel> profile;
     in property <bool> selected;
     callback clicked();
 
     height: 40px;
-    background: root.selected ? #3d5470 : transparent;
+    background: root.selected ? #4a90e2 : (touch.has-hover ? #3e3e3e : transparent);
+    border-radius: 4px;
 
     HorizontalBox {
         padding-left: 10px;
@@ -41,7 +97,7 @@ component DeviceListItem inherits Rectangle {
         
         Text {
             text: root.profile.name;
-            color: white;
+            color: #e0e0e0;
             font-size: 13px;
             vertical-alignment: center;
             font-weight: root.profile.is-active ? 700 : 400;
@@ -55,8 +111,59 @@ component DeviceListItem inherits Rectangle {
         }
     }
 
-    TouchArea {
+    touch := TouchArea {
         clicked => { root.clicked(); }
+    }
+}
+
+component DMTabButton inherits Rectangle {
+    in property <string> text;
+    in property <bool> selected;
+    callback clicked;
+    
+    height: 35px;
+    background: root.selected ? #2d2d2d : transparent;
+    
+    Text {
+        text: root.text;
+        color: root.selected ? #4a90e2 : #aaaaaa;
+        font-size: 14px;
+        font-weight: root.selected ? 700 : 400;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+    
+    Rectangle {
+        height: 2px;
+        width: 100%;
+        y: parent.height - self.height;
+        background: root.selected ? #4a90e2 : transparent;
+    }
+    
+    touch := TouchArea {
+        clicked => { root.clicked(); }
+    }
+}
+
+component DMCheckBox inherits HorizontalBox {
+    in property <string> text;
+    in-out property <bool> checked;
+    callback toggled;
+    
+    spacing: 5px;
+    padding: 0px;
+    alignment: start;
+    
+    CheckBox {
+        checked <=> root.checked;
+        toggled => { root.toggled(); }
+    }
+    
+    Text {
+        text: root.text;
+        color: #aaaaaa;
+        vertical-alignment: center;
+        font-size: 13px;
     }
 }
 
@@ -65,6 +172,7 @@ export component DeviceManagerPanel inherits Rectangle {
     in property <DeviceProfileUiModel> active-profile;
     in-out property <int> selected-index: -1;
     private property <DeviceProfileUiModel> temp-profile;
+    private property <int> active-tab: 0;
     
     callback select-profile(int);
     callback add-profile();
@@ -72,26 +180,27 @@ export component DeviceManagerPanel inherits Rectangle {
     callback save-profile(DeviceProfileUiModel);
     callback set-active-profile(string);
     
+    background: #1e1e1e;
+    
     HorizontalBox {
         spacing: 0px;
         
         // Left Pane: List
         Rectangle {
             width: 250px;
-            background: #2c3e50;
+            background: #2d2d2d;
             
             VerticalBox {
-                padding: 0px;
-                spacing: 0px;
+                padding: 10px;
+                spacing: 10px;
                 
                 Text {
                     text: "Devices";
-                    color: white;
+                    color: #ffffff;
                     font-size: 16px;
                     font-weight: 700;
                     height: 40px;
                     vertical-alignment: center;
-                    horizontal-alignment: center;
                 }
                 
                 ListView {
@@ -110,22 +219,32 @@ export component DeviceManagerPanel inherits Rectangle {
                     height: 50px;
                     HorizontalBox {
                         alignment: center;
-                        Button {
+                        DMButton {
                             text: "Add Device";
+                            primary: true;
+                            width: 120px;
                             clicked => { root.add-profile(); }
                         }
                     }
                 }
             }
+            
+            // Right border
+            Rectangle {
+                width: 1px;
+                height: 100%;
+                x: parent.width - 1px;
+                background: #404040;
+            }
         }
         
         // Right Pane: Details
         Rectangle {
-            background: #ecf0f1;
+            background: #1e1e1e;
             
             if root.selected-index >= 0 && root.selected-index < root.profiles.length : VerticalBox {
                 padding: 20px;
-                spacing: 15px;
+                spacing: 20px;
                 
                 property <DeviceProfileUiModel> p: root.profiles[root.selected-index];
                 
@@ -135,234 +254,247 @@ export component DeviceManagerPanel inherits Rectangle {
                         text: "Edit Device: " + p.name;
                         font-size: 18px;
                         font-weight: 700;
-                        color: #2c3e50;
+                        color: #e0e0e0;
                     }
                     
-                    if !p.is-active : Button {
+                    if !p.is-active : DMButton {
                         text: "Set as Active";
+                        width: 120px;
                         clicked => { root.set-active-profile(p.id); }
                     }
                 }
                 
-                TabWidget {
+                // Custom Tab Bar
+                HorizontalBox {
+                    spacing: 10px;
+                    alignment: start;
+                    height: 40px;
+                    
+                    DMTabButton { text: "General"; selected: root.active-tab == 0; width: 100px; clicked => { root.active-tab = 0; } }
+                    DMTabButton { text: "Dimensions"; selected: root.active-tab == 1; width: 100px; clicked => { root.active-tab = 1; } }
+                    DMTabButton { text: "Capabilities"; selected: root.active-tab == 2; width: 100px; clicked => { root.active-tab = 2; } }
+                }
+                
+                // Tab Content Area
+                Rectangle {
                     vertical-stretch: 1;
-                    Tab {
-                        title: "General";
-                        Flickable {
-                            viewport-height: general-content.preferred-height;
-                            general-content := VerticalBox {
+                    
+                    // General Tab
+                    if root.active-tab == 0 : Flickable {
+                        viewport-height: general-content.preferred-height;
+                        general-content := VerticalBox {
+                        spacing: 15px;
+                        alignment: start;
+                        padding-top: 15px;
+                        
+                        Text { text: "Name:"; color: #aaaaaa; }
+                        DMInput {
+                            text: p.name;
+                            edited(s) => { 
+                                root.temp-profile = p;
+                                root.temp-profile.name = s;
+                                root.save-profile(root.temp-profile);
+                            }
+                        }
+                        
+                        Text { text: "Description:"; color: #aaaaaa; }
+                        DMInput {
+                            text: p.description;
+                            edited(s) => { 
+                                root.temp-profile = p;
+                                root.temp-profile.description = s;
+                                root.save-profile(root.temp-profile);
+                            }
+                        }
+                        
+                        Text { text: "Device Type:"; color: #aaaaaa; }
+                        ComboBox {
+                            model: ["CNC Mill", "CNC Lathe", "Laser Cutter", "3D Printer", "Plotter"];
+                            current-value: p.device-type;
+                            selected(s) => {
+                                root.temp-profile = p;
+                                root.temp-profile.device-type = s;
+                                root.save-profile(root.temp-profile);
+                            }
+                        }
+                        
+                        Text { text: "Controller Type:"; color: #aaaaaa; }
+                        ComboBox {
+                            model: ["GRBL", "TinyG", "g2core", "Smoothieware", "FluidNC", "Marlin"];
+                            current-value: p.controller-type;
+                            selected(s) => {
+                                root.temp-profile = p;
+                                root.temp-profile.controller-type = s;
+                                root.save-profile(root.temp-profile);
+                            }
+                        }
+
+                        Rectangle { height: 10px; }
+                        Text { text: "Connection Settings:"; color: #e0e0e0; font-weight: 700; }
+
+                        Text { text: "Connection Type:"; color: #aaaaaa; }
+                        ComboBox {
+                            model: ["Serial", "TCP/IP", "WebSocket"];
+                            current-value: p.connection-type;
+                            selected(s) => {
+                                root.temp-profile = p;
+                                root.temp-profile.connection-type = s;
+                                root.save-profile(root.temp-profile);
+                            }
+                        }
+
+                        if p.connection-type == "Serial" : VerticalBox {
                             spacing: 10px;
-                            alignment: start;
-                            
-                            Text { text: "Name:"; color: #34495e; }
-                            LineEdit {
-                                text: p.name;
-                                edited(s) => { 
-                                    root.temp-profile = p;
-                                    root.temp-profile.name = s;
-                                    root.save-profile(root.temp-profile);
-                                }
-                            }
-                            
-                            Text { text: "Description:"; color: #34495e; }
-                            LineEdit {
-                                text: p.description;
-                                edited(s) => { 
-                                    root.temp-profile = p;
-                                    root.temp-profile.description = s;
-                                    root.save-profile(root.temp-profile);
-                                }
-                            }
-                            
-                            Text { text: "Device Type:"; color: #34495e; }
+                            padding: 0px;
+                            Text { text: "Baud Rate:"; color: #aaaaaa; }
                             ComboBox {
-                                model: ["CNC Mill", "CNC Lathe", "Laser Cutter", "3D Printer", "Plotter"];
-                                current-value: p.device-type;
+                                model: ["9600", "19200", "38400", "57600", "115200", "250000"];
+                                current-value: p.baud-rate;
                                 selected(s) => {
                                     root.temp-profile = p;
-                                    root.temp-profile.device-type = s;
+                                    root.temp-profile.baud-rate = s;
                                     root.save-profile(root.temp-profile);
                                 }
                             }
-                            
-                            Text { text: "Controller Type:"; color: #34495e; }
-                            ComboBox {
-                                model: ["GRBL", "TinyG", "g2core", "Smoothieware", "FluidNC", "Marlin"];
-                                current-value: p.controller-type;
-                                selected(s) => {
-                                    root.temp-profile = p;
-                                    root.temp-profile.controller-type = s;
-                                    root.save-profile(root.temp-profile);
-                                }
-                            }
-
-                            Rectangle { height: 10px; }
-                            Text { text: "Connection Settings:"; color: #34495e; font-weight: 700; }
-
-                            Text { text: "Connection Type:"; color: #34495e; }
-                            ComboBox {
-                                model: ["Serial", "TCP/IP", "WebSocket"];
-                                current-value: p.connection-type;
-                                selected(s) => {
-                                    root.temp-profile = p;
-                                    root.temp-profile.connection-type = s;
-                                    root.save-profile(root.temp-profile);
-                                }
-                            }
-
-                            if p.connection-type == "Serial" : VerticalBox {
-                                spacing: 10px;
-                                padding: 0px;
-                                Text { text: "Baud Rate:"; color: #34495e; }
-                                ComboBox {
-                                    model: ["9600", "19200", "38400", "57600", "115200", "250000"];
-                                    current-value: p.baud-rate;
-                                    selected(s) => {
-                                        root.temp-profile = p;
-                                        root.temp-profile.baud-rate = s;
-                                        root.save-profile(root.temp-profile);
-                                    }
-                                }
-                                Text { text: "Port:"; color: #34495e; }
-                                LineEdit {
-                                    text: p.port;
-                                    edited(s) => {
-                                        root.temp-profile = p;
-                                        root.temp-profile.port = s;
-                                        root.save-profile(root.temp-profile);
-                                    }
-                                }
-                            }
-
-                            if p.connection-type != "Serial" : VerticalBox {
-                                spacing: 10px;
-                                padding: 0px;
-                                Text { text: "TCP Port:"; color: #34495e; }
-                                LineEdit {
-                                    text: p.tcp-port;
-                                    edited(s) => {
-                                        root.temp-profile = p;
-                                        root.temp-profile.tcp-port = s;
-                                        root.save-profile(root.temp-profile);
-                                    }
-                                }
-                            }
-
-                            Text { text: "Timeout (ms):"; color: #34495e; }
-                            LineEdit {
-                                text: p.timeout-ms;
+                            Text { text: "Port:"; color: #aaaaaa; }
+                            DMInput {
+                                text: p.port;
                                 edited(s) => {
                                     root.temp-profile = p;
-                                    root.temp-profile.timeout-ms = s;
+                                    root.temp-profile.port = s;
                                     root.save-profile(root.temp-profile);
                                 }
                             }
+                        }
 
-                            CheckBox {
-                                text: "Auto Reconnect";
-                                checked: p.auto-reconnect;
-                                toggled => {
+                        if p.connection-type != "Serial" : VerticalBox {
+                            spacing: 10px;
+                            padding: 0px;
+                            Text { text: "TCP Port:"; color: #aaaaaa; }
+                            DMInput {
+                                text: p.tcp-port;
+                                edited(s) => {
                                     root.temp-profile = p;
-                                    root.temp-profile.auto-reconnect = self.checked;
+                                    root.temp-profile.tcp-port = s;
                                     root.save-profile(root.temp-profile);
                                 }
                             }
                         }
+
+                        Text { text: "Timeout (ms):"; color: #aaaaaa; }
+                        DMInput {
+                            text: p.timeout-ms;
+                            edited(s) => {
+                                root.temp-profile = p;
+                                root.temp-profile.timeout-ms = s;
+                                root.save-profile(root.temp-profile);
+                            }
+                        }
+
+                        DMCheckBox {
+                            text: "Auto Reconnect";
+                            checked: p.auto-reconnect;
+                            toggled => {
+                                root.temp-profile = p;
+                                root.temp-profile.auto-reconnect = self.checked;
+                                root.save-profile(root.temp-profile);
+                            }
                         }
                     }
-                    
-                    Tab {
-                        title: "Dimensions";
-                        Flickable {
-                            viewport-height: dimensions-content.preferred-height;
-                            dimensions-content := VerticalBox {
-                            spacing: 10px;
-                            alignment: start;
-                            
-                            HorizontalBox {
-                                Text { text: "X Axis (mm):"; width: 100px; vertical-alignment: center; }
-                                Text { text: "Min:"; vertical-alignment: center; font-size: 10px; }
-                                LineEdit { text: p.x-min; width: 70px; placeholder-text: "0.0"; edited(s) => { root.temp-profile = p; root.temp-profile.x-min = s; root.save-profile(root.temp-profile); } }
-                                Text { text: "Max:"; vertical-alignment: center; font-size: 10px; }
-                                LineEdit { text: p.x-max; width: 70px; placeholder-text: "200.0"; edited(s) => { root.temp-profile = p; root.temp-profile.x-max = s; root.save-profile(root.temp-profile); } }
-                            }
-                            
-                            HorizontalBox {
-                                Text { text: "Y Axis (mm):"; width: 100px; vertical-alignment: center; }
-                                Text { text: "Min:"; vertical-alignment: center; font-size: 10px; }
-                                LineEdit { text: p.y-min; width: 70px; placeholder-text: "0.0"; edited(s) => { root.temp-profile = p; root.temp-profile.y-min = s; root.save-profile(root.temp-profile); } }
-                                Text { text: "Max:"; vertical-alignment: center; font-size: 10px; }
-                                LineEdit { text: p.y-max; width: 70px; placeholder-text: "200.0"; edited(s) => { root.temp-profile = p; root.temp-profile.y-max = s; root.save-profile(root.temp-profile); } }
-                            }
-                            
-                            HorizontalBox {
-                                Text { text: "Z Axis (mm):"; width: 100px; vertical-alignment: center; }
-                                Text { text: "Min:"; vertical-alignment: center; font-size: 10px; }
-                                LineEdit { text: p.z-min; width: 70px; placeholder-text: "0.0"; edited(s) => { root.temp-profile = p; root.temp-profile.z-min = s; root.save-profile(root.temp-profile); } }
-                                Text { text: "Max:"; vertical-alignment: center; font-size: 10px; }
-                                LineEdit { text: p.z-max; width: 70px; placeholder-text: "100.0"; edited(s) => { root.temp-profile = p; root.temp-profile.z-max = s; root.save-profile(root.temp-profile); } }
-                            }
-                        }
-                        }
                     }
                     
-                    Tab {
-                        title: "Capabilities";
-                        Flickable {
-                            viewport-height: capabilities-content.preferred-height;
-                            capabilities-content := VerticalBox {
-                            spacing: 10px;
-                            alignment: start;
-                            
-                            CheckBox {
-                                text: "Has Spindle";
-                                checked: p.has-spindle;
-                                toggled => { root.temp-profile = p; root.temp-profile.has-spindle = self.checked; root.save-profile(root.temp-profile); }
-                            }
-                            
-                            CheckBox {
-                                text: "Has Laser";
-                                checked: p.has-laser;
-                                toggled => { root.temp-profile = p; root.temp-profile.has-laser = self.checked; root.save-profile(root.temp-profile); }
-                            }
-                            
-                            CheckBox {
-                                text: "Has Coolant Control";
-                                checked: p.has-coolant;
-                                toggled => { root.temp-profile = p; root.temp-profile.has-coolant = self.checked; root.save-profile(root.temp-profile); }
-                            }
-                            
-                            Rectangle { height: 10px; }
-                            Text { text: "Power Settings:"; color: #34495e; font-weight: 700; }
-                            
-                            HorizontalBox {
-                                Text { text: "Spindle Power (W):"; width: 140px; vertical-alignment: center; }
-                                LineEdit { 
-                                    text: p.cnc-spindle-watts; 
-                                    width: 100px; 
-                                    enabled: p.has-spindle;
-                                    edited(s) => { root.temp-profile = p; root.temp-profile.cnc-spindle-watts = s; root.save-profile(root.temp-profile); } 
-                                }
-                            }
-                            
-                            HorizontalBox {
-                                Text { text: "Laser Power (W):"; width: 140px; vertical-alignment: center; }
-                                LineEdit { 
-                                    text: p.laser-watts; 
-                                    width: 100px; 
-                                    enabled: p.has-laser;
-                                    edited(s) => { root.temp-profile = p; root.temp-profile.laser-watts = s; root.save-profile(root.temp-profile); } 
-                                }
+                    // Dimensions Tab
+                    if root.active-tab == 1 : Flickable {
+                        viewport-height: dimensions-content.preferred-height;
+                        dimensions-content := VerticalBox {
+                        spacing: 15px;
+                        alignment: start;
+                        padding-top: 15px;
+                        
+                        HorizontalBox {
+                            Text { text: "X Axis (mm):"; width: 100px; vertical-alignment: center; color: #aaaaaa; }
+                            Text { text: "Min:"; vertical-alignment: center; font-size: 10px; color: #aaaaaa; }
+                            DMInput { text: p.x-min; width: 70px; placeholder-text: "0.0"; edited(s) => { root.temp-profile = p; root.temp-profile.x-min = s; root.save-profile(root.temp-profile); } }
+                            Text { text: "Max:"; vertical-alignment: center; font-size: 10px; color: #aaaaaa; }
+                            DMInput { text: p.x-max; width: 70px; placeholder-text: "200.0"; edited(s) => { root.temp-profile = p; root.temp-profile.x-max = s; root.save-profile(root.temp-profile); } }
+                        }
+                        
+                        HorizontalBox {
+                            Text { text: "Y Axis (mm):"; width: 100px; vertical-alignment: center; color: #aaaaaa; }
+                            Text { text: "Min:"; vertical-alignment: center; font-size: 10px; color: #aaaaaa; }
+                            DMInput { text: p.y-min; width: 70px; placeholder-text: "0.0"; edited(s) => { root.temp-profile = p; root.temp-profile.y-min = s; root.save-profile(root.temp-profile); } }
+                            Text { text: "Max:"; vertical-alignment: center; font-size: 10px; color: #aaaaaa; }
+                            DMInput { text: p.y-max; width: 70px; placeholder-text: "200.0"; edited(s) => { root.temp-profile = p; root.temp-profile.y-max = s; root.save-profile(root.temp-profile); } }
+                        }
+                        
+                        HorizontalBox {
+                            Text { text: "Z Axis (mm):"; width: 100px; vertical-alignment: center; color: #aaaaaa; }
+                            Text { text: "Min:"; vertical-alignment: center; font-size: 10px; color: #aaaaaa; }
+                            DMInput { text: p.z-min; width: 70px; placeholder-text: "0.0"; edited(s) => { root.temp-profile = p; root.temp-profile.z-min = s; root.save-profile(root.temp-profile); } }
+                            Text { text: "Max:"; vertical-alignment: center; font-size: 10px; color: #aaaaaa; }
+                            DMInput { text: p.z-max; width: 70px; placeholder-text: "100.0"; edited(s) => { root.temp-profile = p; root.temp-profile.z-max = s; root.save-profile(root.temp-profile); } }
+                        }
+                    }
+                    }
+                    
+                    // Capabilities Tab
+                    if root.active-tab == 2 : Flickable {
+                        viewport-height: capabilities-content.preferred-height;
+                        capabilities-content := VerticalBox {
+                        spacing: 15px;
+                        alignment: start;
+                        padding-top: 15px;
+                        
+                        DMCheckBox {
+                            text: "Has Spindle";
+                            checked: p.has-spindle;
+                            toggled => { root.temp-profile = p; root.temp-profile.has-spindle = self.checked; root.save-profile(root.temp-profile); }
+                        }
+                        
+                        DMCheckBox {
+                            text: "Has Laser";
+                            checked: p.has-laser;
+                            toggled => { root.temp-profile = p; root.temp-profile.has-laser = self.checked; root.save-profile(root.temp-profile); }
+                        }
+                        
+                        DMCheckBox {
+                            text: "Has Coolant Control";
+                            checked: p.has-coolant;
+                            toggled => { root.temp-profile = p; root.temp-profile.has-coolant = self.checked; root.save-profile(root.temp-profile); }
+                        }
+                        
+                        Rectangle { height: 10px; }
+                        Text { text: "Power Settings:"; color: #e0e0e0; font-weight: 700; }
+                        
+                        HorizontalBox {
+                            Text { text: "Spindle Power (W):"; width: 140px; vertical-alignment: center; color: #aaaaaa; }
+                            DMInput { 
+                                text: p.cnc-spindle-watts; 
+                                width: 100px; 
+                                enabled: p.has-spindle;
+                                edited(s) => { root.temp-profile = p; root.temp-profile.cnc-spindle-watts = s; root.save-profile(root.temp-profile); } 
                             }
                         }
+                        
+                        HorizontalBox {
+                            Text { text: "Laser Power (W):"; width: 140px; vertical-alignment: center; color: #aaaaaa; }
+                            DMInput { 
+                                text: p.laser-watts; 
+                                width: 100px; 
+                                enabled: p.has-laser;
+                                edited(s) => { root.temp-profile = p; root.temp-profile.laser-watts = s; root.save-profile(root.temp-profile); } 
+                            }
                         }
+                    }
                     }
                 }
                 
                 HorizontalBox {
                     alignment: end;
-                    Button {
+                    DMButton {
                         text: "Delete Device";
+                        destructive: true;
+                        width: 120px;
                         clicked => { root.delete-profile(p.id); }
                     }
                 }

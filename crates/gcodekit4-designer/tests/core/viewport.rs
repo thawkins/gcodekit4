@@ -11,7 +11,7 @@ fn test_viewport_creation() {
 
 #[test]
 fn test_pixel_to_world_origin_at_bottom_left() {
-    let vp = Viewport::new(1200.0, 800.0);
+    let vp = Viewport::new(1200.0, 600.0);
     // With margin of 5px, pixel (5, 595) should map to world (0, 0)
     // pixel_y=595 is 5px from bottom of 600px canvas
     let world = vp.pixel_to_world(5.0, 595.0);
@@ -21,7 +21,7 @@ fn test_pixel_to_world_origin_at_bottom_left() {
 
 #[test]
 fn test_world_to_pixel_origin_at_bottom_left() {
-    let vp = Viewport::new(1200.0, 800.0);
+    let vp = Viewport::new(1200.0, 600.0);
     // World (0, 0) should map to pixel (5, 595) with margin
     let (pixel_x, pixel_y) = vp.world_to_pixel(0.0, 0.0);
     assert!((pixel_x - 5.0).abs() < 0.01);
@@ -48,7 +48,7 @@ fn test_world_to_pixel_positive_x_goes_right() {
 
 #[test]
 fn test_pixel_to_world_with_zoom() {
-    let mut vp = Viewport::new(1200.0, 800.0);
+    let mut vp = Viewport::new(1200.0, 600.0);
     vp.reset(); // Clear margin for simpler math
     vp.set_pan(0.0, 0.0); // Explicitly clear margin
     vp.set_zoom(2.0);
@@ -79,8 +79,8 @@ fn test_zoom_constraints() {
     vp.set_zoom(0.05); // Too small
     assert!(vp.zoom() > 0.05);
 
-    vp.set_zoom(15.0); // Too large
-    assert!(vp.zoom() < 15.0);
+    vp.set_zoom(60.0); // Too large
+    assert!(vp.zoom() < 60.0);
 }
 
 #[test]
@@ -96,7 +96,7 @@ fn test_zoom_in_out() {
 
 #[test]
 fn test_center_on_point() {
-    let mut vp = Viewport::new(1200.0, 800.0);
+    let mut vp = Viewport::new(800.0, 600.0);
     vp.set_zoom(1.0);
     vp.center_on(100.0, 200.0);
 

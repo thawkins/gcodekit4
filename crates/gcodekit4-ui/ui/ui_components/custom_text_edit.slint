@@ -47,6 +47,7 @@ export component CustomTextEdit inherits Rectangle {
     in-out property <brush> line-number-color: #cccccc;  // Light gray
     in-out property <brush> current-line-color: #2a2a2a;
     in-out property <brush> selection-color: #264f78;
+    in-out property <brush> gutter-background-color: #252526;
     in-out property <length> font-size: 14px;
     in-out property <string> font-family: "Fira Code";
     
@@ -95,7 +96,7 @@ export component CustomTextEdit inherits Rectangle {
         // Line numbers column (optional)
         if root.show-line-numbers: Rectangle {
             width: root.line-number-width;
-            background: #252526;
+            background: root.gutter-background-color;
             
             Flickable {
                 viewport-y: root.sync-scroll-y;

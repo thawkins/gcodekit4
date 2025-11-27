@@ -10,12 +10,61 @@ export struct TextLine {
     is_dirty: bool,
 }
 
-export component GcodeEditorPanel inherits VerticalBox {
+component EditorToolButton inherits Rectangle {
+    in property <string> icon;
+    in property <string> text;
+    in property <string> tooltip;
+    in property <bool> enabled: true;
+    callback clicked;
+    
+    width: 40px;
+    height: 40px;
+    background: touch.has-hover ? #34495e : #2c3e50;
+    border-radius: 4px;
+    border-width: 1px;
+    border-color: #34495e;
+    opacity: root.enabled ? 1.0 : 0.5;
+    
+    Text {
+        text: root.icon;
+        font-size: 20px;
+        color: #ecf0f1;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+    
+    touch := TouchArea { 
+        mouse-cursor: root.enabled ? pointer : default;
+        enabled: root.enabled;
+        clicked => { root.clicked(); } 
+    }
+    
+    if (touch.has-hover && root.tooltip != "") : Rectangle {
+        y: parent.height + 5px;
+        x: (parent.width - self.width) / 2;
+        width: tt-text.preferred-width + 10px;
+        height: 24px;
+        background: #222222;
+        border-radius: 3px;
+        border-width: 1px;
+        border-color: #555555;
+        z: 100;
+        tt-text := Text {
+            text: root.tooltip;
+            color: white;
+            font-size: 11px;
+            vertical-alignment: center;
+            horizontal-alignment: center;
+        }
+    }
+}
+
+export component GcodeEditorPanel inherits Rectangle {
     forward-focus: editor-focus;
    
-    spacing: 0px;
     horizontal-stretch: 1.0;
     vertical-stretch: 1.0;
+    background: #2c3e50;
     
     in-out property <string> gcode-content: "";
     in-out property <string> gcode-filename: "untitled.gcode";
@@ -57,258 +106,217 @@ export component GcodeEditorPanel inherits VerticalBox {
     callback key_pressed_event(string);  // Forward key events
     callback editor_clicked();  // Debug: Track mouse clicks on editor
     
-    // Toolbar with undo/redo and file operations
-    Rectangle {
-        height: 40px;
-        background: #2d2d30;
-        
-        HorizontalBox {
-            padding: 5px;
-            spacing: 5px;
-            
-            Rectangle { width: 10px; }
-            
-            // Transmission buttons
-            Rectangle {
-                width: 40px;
-                height: 30px;
-                border-radius: 3px;
-                border-width: 1px;
-                border-color: #555555;
-                background: send-area.pressed ? #222222 : (send-area.has-hover ? #3e3e42 : #333337);
-                
-                send-area := TouchArea {
-                    enabled: root.gcode-content != "";
-                    clicked => { root.menu-send-to-device(); }
-                }
-                
-                Text {
-                    text: "▶";
-                    color: root.gcode-content != "" ? #ffffff : #666666;
-                    font-size: 16px;
-                    vertical-alignment: center;
-                    horizontal-alignment: center;
-                }
-                
-                if (send-area.has-hover) : Rectangle {
-                    y: parent.height + 2px;
-                    x: (parent.width - self.width) / 2;
-                    width: 40px;
-                    height: 20px;
-                    background: #222222;
-                    border-radius: 3px;
-                    border-width: 1px;
-                    border-color: #555555;
-                    z: 100;
-                    Text {
-                        text: "Send";
-                        color: white;
-                        font-size: 10px;
-                        vertical-alignment: center;
-                        horizontal-alignment: center;
-                    }
-                }
-            }
+    HorizontalLayout {
+        spacing: 0px;
+        padding: 0px;
 
-            Rectangle {
-                width: 40px;
-                height: 30px;
-                border-radius: 3px;
-                border-width: 1px;
-                border-color: #555555;
-                background: stop-area.pressed ? #222222 : (stop-area.has-hover ? #3e3e42 : #333337);
-                
-                stop-area := TouchArea {
-                    clicked => { root.menu-stop-transmission(); }
-                }
-                
-                Text {
-                    text: "⏹";
-                    color: #ffffff;
-                    font-size: 16px;
-                    vertical-alignment: center;
-                    horizontal-alignment: center;
-                }
-                
-                if (stop-area.has-hover) : Rectangle {
-                    y: parent.height + 2px;
-                    x: (parent.width - self.width) / 2;
-                    width: 40px;
-                    height: 20px;
-                    background: #222222;
-                    border-radius: 3px;
-                    border-width: 1px;
-                    border-color: #555555;
-                    z: 100;
-                    Text {
-                        text: "Stop";
-                        color: white;
-                        font-size: 10px;
-                        vertical-alignment: center;
-                        horizontal-alignment: center;
-                    }
-                }
-            }
+        // ═════════════════════════════════════════════
+        // LEFT SIDEBAR: Controls
+        // ═════════════════════════════════════════════
+        Rectangle {
+            width: 200px;
+            horizontal-stretch: 0;
+            background: #2c3e50;
 
-            Rectangle {
-                width: 40px;
-                height: 30px;
-                border-radius: 3px;
-                border-width: 1px;
-                border-color: #555555;
-                background: pause-area.pressed ? #222222 : (pause-area.has-hover ? #3e3e42 : #333337);
-                
-                pause-area := TouchArea {
-                    clicked => { root.menu-pause-transmission(); }
-                }
-                
+            VerticalLayout {
+                padding: 10px;
+                spacing: 10px;
+                alignment: start;
+
                 Text {
-                    text: "⏸";
-                    color: #ffffff;
-                    font-size: 16px;
-                    vertical-alignment: center;
-                    horizontal-alignment: center;
+                    text: "Editor";
+                    font-weight: 700;
+                    font-size: 14px;
+                    color: #ecf0f1;
                 }
-                
-                if (pause-area.has-hover) : Rectangle {
-                    y: parent.height + 2px;
-                    x: (parent.width - self.width) / 2;
-                    width: 40px;
-                    height: 20px;
-                    background: #222222;
-                    border-radius: 3px;
-                    border-width: 1px;
-                    border-color: #555555;
-                    z: 100;
-                    Text {
-                        text: "Pause";
-                        color: white;
-                        font-size: 10px;
-                        vertical-alignment: center;
-                        horizontal-alignment: center;
+
+                Rectangle { height: 10px; }
+
+                Text {
+                    text: "Transmission";
+                    font-weight: 700;
+                    font-size: 12px;
+                    color: #bdc3c7;
+                }
+
+                HorizontalLayout {
+                    spacing: 5px;
+                    EditorToolButton {
+                        icon: "▶";
+                        tooltip: "Send";
+                        enabled: root.gcode-content != "";
+                        clicked => { root.menu-send-to-device(); }
+                    }
+                    EditorToolButton {
+                        icon: "⏸";
+                        tooltip: "Pause";
+                        clicked => { root.menu-pause-transmission(); }
+                    }
+                    EditorToolButton {
+                        icon: "▶"; // Resume icon same as play usually, or maybe ⏯
+                        text: "R"; // Fallback if icon font issue
+                        tooltip: "Resume";
+                        clicked => { root.menu-resume-transmission(); }
+                    }
+                    EditorToolButton {
+                        icon: "⏹";
+                        tooltip: "Stop";
+                        clicked => { root.menu-stop-transmission(); }
                     }
                 }
             }
-            Button {
-                text: "Resume";
-                clicked => {
-                    root.menu-resume-transmission();
-                }
-            }
             
-            // Status on right
+            // Right border separator
             Rectangle {
-                horizontal-stretch: 1;
-            }
-            
-            Text {
-                text: root.gcode-filename;
-                color: #cccccc;
-                font-size: 12px;
-                vertical-alignment: center;
-            }
-            
-            Rectangle { width: 10px; }
-            
-            Text {
-                text: "Line " + root.cursor-line + ":" + root.cursor-column;
-                color: #cccccc;
-                font-size: 12px;
-                vertical-alignment: center;
-            }
-            Rectangle { width: 10px; }
-            Text {
-                text: "lines: " + (root.visible-start-line + 1) + "/" + root.total-lines;
-                color: #cccccc;
-                font-size: 12px;
-                vertical-alignment: center;
+                width: 1px;
+                height: 100%;
+                x: parent.width - 1px;
+                background: #34495e;
             }
         }
-    }
-    
-    // Wrapper FocusScope for editor focus management
-    editor-focus := FocusScope {
-        vertical-stretch: 1;
-        horizontal-stretch: 1;
-        
-        key-pressed(event) => {
-            return reject;  // Let it bubble to CustomTextEdit
-        }
-        
-        touch-area := TouchArea {
-            clicked => {
-                root.editor_clicked();
-                editor-focus.focus();
-            }
-        }
-        
-        // Custom G-Code Editor with virtual scrolling
-        custom-editor := CustomTextEdit {
-            vertical-stretch: 1;
+
+        // ═════════════════════════════════════════════
+        // CENTER: Editor Area
+        // ═════════════════════════════════════════════
+        Rectangle {
             horizontal-stretch: 1;
-            text: root.gcode-content;
-            can-undo: root.can-undo;
-            can-redo: root.can-redo;
-            cursor-line <=> root.cursor-line;
-            cursor-column <=> root.cursor-column;
-            visible-lines <=> root.visible-lines;
-            visible-start-line <=> root.visible-start-line;
-            total-lines <=> root.total-lines;
-            show-line-numbers: true;
-            focus-trigger <=> root.focus-trigger;
-            cursor-blink-visible: root.cursor-blink-visible;
+            vertical-stretch: 1;
+            background: #1e1e1e; // Keep dark editor background
+            clip: true;
             
-            text-changed(text) => {
-            root.gcode-content = text;
-            root.text-changed(text);
-        }
-        
-        undo-requested => {
-            root.undo-requested();
-        }
-        
-        redo-requested => {
-            root.redo-requested();
-        }
-        
-        scroll-changed(line) => {
-            // update panel visible start line for status indicator
-            root.visible-start-line = line;
-            root.scroll-changed(line);
-        }
-        
-        cursor-moved(line, col) => {
-            root.cursor-moved(line, col);
-        }
-        
-        end-key-pressed() => {
-            root.end_key_pressed();
-        }
-        
-        ctrl-home-pressed() => {
-            root.ctrl_home_pressed();
-        }
-        
-        ctrl-end-pressed() => {
-            root.ctrl_end_pressed();
-        }
-        
-        text_inserted(line, col, text) => {
-            root.text_inserted(line, col, text);
-        }
-        
-        text_deleted(start_line, start_col, end_line, end_col) => {
-            root.text_deleted(start_line, start_col, end_line, end_col);
-        }
-        
-        key_pressed(event) => {
-            root.key_pressed-event("key=" + event.text);
-            return accept;
-        }
-        
-        request-focus() => {
-            editor-focus.focus();
-        }
+            // Wrapper FocusScope for editor focus management
+            editor-focus := FocusScope {
+                width: 100%;
+                height: 100%;
+                
+                key-pressed(event) => {
+                    return reject;  // Let it bubble to CustomTextEdit
+                }
+                
+                touch-area := TouchArea {
+                    clicked => {
+                        root.editor_clicked();
+                        editor-focus.focus();
+                    }
+                }
+                
+                // Custom G-Code Editor with virtual scrolling
+                custom-editor := CustomTextEdit {
+                    width: 100%;
+                    height: 100%;
+                    text: root.gcode-content;
+                    can-undo: root.can-undo;
+                    can-redo: root.can-redo;
+                    cursor-line <=> root.cursor-line;
+                    cursor-column <=> root.cursor-column;
+                    visible-lines <=> root.visible-lines;
+                    visible-start-line <=> root.visible-start-line;
+                    total-lines <=> root.total-lines;
+                    show-line-numbers: true;
+                    focus-trigger <=> root.focus-trigger;
+                    cursor-blink-visible: root.cursor-blink-visible;
+                    
+                    // Theme overrides
+                    background-color: #1e1e1e;
+                    gutter-background-color: #2c3e50;
+                    text-color: #ecf0f1;
+                    line-number-color: #bdc3c7;
+                    current-line-color: #34495e;
+                    
+                    text-changed(text) => {
+                        root.gcode-content = text;
+                        root.text-changed(text);
+                    }
+                    
+                    undo-requested => {
+                        root.undo_requested();
+                    }
+                    
+                    redo-requested => {
+                        root.redo_requested();
+                    }
+                    
+                    scroll-changed(line) => {
+                        // update panel visible start line for status indicator
+                        root.visible-start-line = line;
+                        root.scroll-changed(line);
+                    }
+                    
+                    cursor-moved(line, col) => {
+                        root.cursor_moved(line, col);
+                    }
+                    
+                    end-key-pressed() => {
+                        root.end_key_pressed();
+                    }
+                    
+                    ctrl-home-pressed() => {
+                        root.ctrl_home_pressed();
+                    }
+                    
+                    ctrl-end-pressed() => {
+                        root.ctrl_end_pressed();
+                    }
+                    
+                    text-inserted(line, col, text) => {
+                        root.text_inserted(line, col, text);
+                    }
+                    
+                    text-deleted(start-line, start_col, end_line, end_col) => {
+                        root.text_deleted(start_line, start_col, end_line, end_col);
+                    }
+                    
+                    key-pressed(event) => {
+                        root.key_pressed-event("key=" + event.text);
+                        return accept;
+                    }
+                    
+                    request-focus() => {
+                        editor-focus.focus();
+                    }
+                }
+            }
+            
+            // Floating Status Pill (Bottom Right)
+            Rectangle {
+                x: parent.width - status-layout.preferred-width - 30px;
+                y: parent.height - 40px;
+                height: 30px;
+                width: status-layout.preferred-width + 20px;
+                background: #2c3e50;
+                border-radius: 15px;
+                opacity: 0.9;
+                border-width: 1px;
+                border-color: #34495e;
+                
+                status-layout := HorizontalLayout {
+                    padding-left: 10px;
+                    padding-right: 10px;
+                    spacing: 15px;
+                    
+                    Text {
+                        text: root.gcode-filename;
+                        color: #ecf0f1;
+                        font-size: 12px;
+                        font-weight: 700;
+                        vertical-alignment: center;
+                    }
+                    
+                    Text {
+                        text: "Line " + root.cursor-line + ":" + root.cursor-column;
+                        color: #bdc3c7;
+                        font-size: 12px;
+                        vertical-alignment: center;
+                    }
+                    
+                    Text {
+                        text: "Total: " + root.total-lines;
+                        color: #bdc3c7;
+                        font-size: 12px;
+                        vertical-alignment: center;
+                    }
+                }
+            }
         }
     }
 }

@@ -332,6 +332,8 @@ export component MainWindow inherits Window {
     callback key-pressed-event(string);  // Debug callback for keyboard events
     callback editor-clicked();  // Debug callback for editor clicks
     
+    callback device-info-copy-config();
+    
     // Materials Manager callbacks
     callback load_materials();
     callback create_material(MaterialData);
@@ -1304,6 +1306,9 @@ export component MainWindow inherits Window {
                     firmware-version: root.device-firmware-version;
                     device-name: root.device-name;
                     capabilities: root.device-capabilities;
+                    copy-config-clicked => {
+                        root.device-info-copy-config();
+                    }
                 }
 
                 // Device Manager View

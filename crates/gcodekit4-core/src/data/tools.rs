@@ -481,6 +481,7 @@ pub fn init_standard_library() -> ToolLibrary {
     tool6.params.rpm = 1500; // Slower for fly cutters
     tool6.params.rpm_range = (500, 3000);
     tool6.params.feed_rate = 300.0;
+    tool6.params.plunge_rate = 100.0;
     tool6.params.stepover_percent = 70.0; // Large stepover for facing
     tool6.params.depth_per_pass = 0.5;
     library.add_tool(tool6);
