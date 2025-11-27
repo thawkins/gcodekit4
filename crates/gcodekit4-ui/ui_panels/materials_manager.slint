@@ -47,6 +47,132 @@ export struct PPERequirement {
     required: bool,
 }
 
+component MMButton inherits Rectangle {
+    in property <string> text;
+    in property <bool> enabled: true;
+    in property <brush> base-color: #404040;
+    in property <brush> hover-color: #505050;
+    in property <brush> pressed-color: #2980b9;
+    in property <bool> primary: false;
+    in property <bool> destructive: false;
+    
+    callback clicked;
+    
+    height: 35px;
+    border-radius: 4px;
+    
+    background: !root.enabled ? #2c3e50 : 
+                (touch.pressed ? root.pressed-color : 
+                (touch.has-hover ? (root.destructive ? #e74c3c : (root.primary ? #357abd : root.hover-color)) : 
+                (root.destructive ? #c0392b : (root.primary ? #4a90e2 : root.base-color))));
+
+    opacity: root.enabled ? 1.0 : 0.5;
+    
+    Text {
+        text: root.text;
+        color: #ecf0f1;
+        font-size: 13px;
+        vertical-alignment: center;
+        horizontal-alignment: center;
+    }
+    
+    touch := TouchArea {
+        enabled: root.enabled;
+        clicked => { root.clicked(); }
+    }
+}
+
+component MMInput inherits Rectangle {
+    in-out property <string> text <=> input.text;
+    in property <string> placeholder-text <=> input.placeholder-text;
+    in property <bool> enabled <=> input.enabled;
+    in property <InputType> input-type <=> input.input-type;
+    callback edited(string);
+    
+    height: 30px;
+    background: #3e3e3e;
+    border-radius: 4px;
+    border-width: 1px;
+    border-color: input.has-focus ? #4a90e2 : #555555;
+    
+    input := LineEdit {
+        width: 100%;
+        height: 100%;
+        font-size: 13px;
+        edited(s) => { root.edited(s); }
+    }
+}
+
+component MMSpinBox inherits Rectangle {
+    in-out property <int> value <=> spin.value;
+    in property <int> minimum <=> spin.minimum;
+    in property <int> maximum <=> spin.maximum;
+    
+    height: 30px;
+    background: #3e3e3e;
+    border-radius: 4px;
+    border-width: 1px;
+    border-color: #555555;
+    
+    spin := SpinBox {
+        width: 100%;
+        height: 100%;
+    }
+}
+
+
+
+component MMTabButton inherits Rectangle {
+    in property <string> text;
+    in property <bool> selected;
+    callback clicked;
+    
+    height: 35px;
+    background: root.selected ? #2d2d2d : transparent;
+    
+    Text {
+        text: root.text;
+        color: root.selected ? #4a90e2 : #aaaaaa;
+        font-size: 14px;
+        font-weight: root.selected ? 700 : 400;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+    
+    Rectangle {
+        height: 2px;
+        width: 100%;
+        y: parent.height - self.height;
+        background: root.selected ? #4a90e2 : transparent;
+    }
+    
+    touch := TouchArea {
+        clicked => { root.clicked(); }
+    }
+}
+
+component MMCheckBox inherits HorizontalBox {
+    in property <string> text;
+    in-out property <bool> checked;
+    callback toggled;
+    
+    spacing: 5px;
+    padding: 0px;
+    alignment: start;
+    
+    CheckBox {
+        checked <=> root.checked;
+        toggled => { root.toggled(); }
+    }
+    
+    Text {
+        text: root.text;
+        color: #aaaaaa;
+        vertical-alignment: center;
+        font-size: 13px;
+    }
+}
+
 export component MaterialsManager inherits Rectangle {
     // Callbacks for CRUD operations
     callback load_materials();
@@ -83,6 +209,9 @@ export component MaterialsManager inherits Rectangle {
     in-out property <bool> edit_coolant_required: false;
     in-out property <string> edit_notes: "";
     
+    // Internal state
+    private property <int> active-tab: 0;
+    
     // Categories for ComboBox
     property <[string]> categories: [
         "Wood",
@@ -101,216 +230,225 @@ export component MaterialsManager inherits Rectangle {
     property <[string]> hazard_levels: ["None", "Minimal", "Moderate", "High"];
     property <[string]> coolant_types: ["None", "Air Only", "Mineral Oil", "Water Soluble", "Synthetic"];
     
-    background: #ecf0f1;
+    background: #1e1e1e;
     
-    HorizontalBox {
+    VerticalBox {
         padding: 10px;
         spacing: 10px;
         
-        // Left panel - Materials list
-        VerticalBox {
-            width: 350px;
+        // Header with search and actions
+        HorizontalBox {
             spacing: 10px;
+            height: 40px;
             
-            // Search and filter controls
-            GroupBox {
-                title: "Search & Filter";
-                vertical-stretch: 0;
-                
-                VerticalBox {
-                    alignment: start;
-                    spacing: 8px;
-                    
-                    HorizontalBox {
-                        spacing: 5px;
-                        
-                        LineEdit {
-                            height: 32px;
-                            placeholder-text: "Search materials...";
-                            text <=> search_query;
-                            edited => {
-                                root.search_materials(self.text);
-                            }
-                        }
-                        
-                        Button {
-                            text: "🔍";
-                            width: 40px;
-                            height: 32px;
-                            clicked => {
-                                root.search_materials(search_query);
-                            }
-                        }
-                    }
-                    
-                    HorizontalBox {
-                        spacing: 5px;
-                        Text {
-                            text: "Category:";
-                            vertical-alignment: center;
-                            width: 70px;
-                        }
-                        
-                        ComboBox {
-                            height: 32px;
-                            model: ["All", "Wood", "Engineered Wood", "Plastic", 
-                                    "Non-Ferrous Metal", "Ferrous Metal", "Composite", 
-                                    "Stone & Ceramic"];
-                            selected => {
-                                if (self.current-value != "All") {
-                                    root.filter_by_category(self.current-value);
-                                }
-                            }
-                        }
-                    }
+            Text {
+                text: "Materials Manager";
+                font-size: 20px;
+                font-weight: 700;
+                color: #e0e0e0;
+                vertical-alignment: center;
+            }
+            
+            Rectangle {
+                horizontal-stretch: 1;
+            }
+            
+            MMInput {
+                width: 250px;
+                placeholder-text: "Search materials...";
+                text <=> search_query;
+                edited => {
+                    root.search_materials(search_query);
                 }
             }
             
-            // Action buttons
-            HorizontalBox {
-                spacing: 5px;
-                vertical-stretch: 0;
-                
-                Button {
-                    text: "➕ New Material";
-                    height: 32px;
-                    primary: true;
-                    clicked => {
-                        is_creating = true;
-                        is_editing = false;
-                        edit_id = "";
-                        edit_name = "";
-                        edit_category = "Wood";
-                        edit_subcategory = "";
-                        edit_description = "";
-                        edit_density = 750.0;
-                        edit_machinability = 7;
-                        edit_tensile_strength = 0.0;
-                        edit_melting_point = 0.0;
-                        edit_chip_type = "Continuous";
-                        edit_heat_sensitivity = "Low";
-                        edit_abrasiveness = "Low";
-                        edit_surface_finish = "Good";
-                        edit_dust_hazard = "Minimal";
-                        edit_fume_hazard = "None";
-                        edit_coolant_required = false;
-                        edit_notes = "";
-                    }
+            MMButton {
+                text: "➕ New Material";
+                primary: true;
+                width: 120px;
+                clicked => {
+                    is_creating = true;
+                    is_editing = false;
+                    edit_id = "";
+                    edit_name = "";
+                    edit_category = "Wood";
+                    edit_subcategory = "";
+                    edit_description = "";
+                    edit_density = 750.0;
+                    edit_machinability = 7;
+                    edit_tensile_strength = 0.0;
+                    edit_melting_point = 0.0;
+                    edit_chip_type = "Continuous";
+                    edit_heat_sensitivity = "Low";
+                    edit_abrasiveness = "Low";
+                    edit_surface_finish = "Good";
+                    edit_dust_hazard = "Minimal";
+                    edit_fume_hazard = "None";
+                    edit_coolant_required = false;
+                    edit_notes = "";
                 }
-                
-                Button {
-                    text: "🔄 Refresh";
-                    height: 32px;
-                    clicked => {
+            }
+            
+            MMButton {
+                text: "🔄 Refresh";
+                width: 100px;
+                clicked => {
+                    root.load_materials();
+                }
+            }
+        }
+        
+        // Filter by category
+        HorizontalBox {
+            spacing: 10px;
+            height: 30px;
+            
+            Text {
+                text: "Filter by Category:";
+                vertical-alignment: center;
+                color: #aaaaaa;
+            }
+            
+            ComboBox {
+                model: ["All", "Wood", "Engineered Wood", "Plastic", 
+                        "Non-Ferrous Metal", "Ferrous Metal", "Composite", 
+                        "Stone & Ceramic"];
+                current-value: "All";
+                width: 200px;
+                selected => {
+                    if (self.current-value != "All") {
+                        root.filter_by_category(self.current-value);
+                    } else {
                         root.load_materials();
-                    }
-                }
-            }
-            
-            // Materials list
-            GroupBox {
-                title: "Materials (" + materials.length + ")";
-                vertical-stretch: 1;
-                
-                ScrollView {
-                    
-                    VerticalLayout {
-                        spacing: 2px;
-                        
-                        for material[index] in materials: Rectangle {
-                            height: 60px;
-                            background: material.id == selected_material.id ? #3498db : white;
-                            border-radius: 4px;
-                            border-width: 1px;
-                            border-color: material.id == selected_material.id ? #2980b9 : #bdc3c7;
-                            
-                            TouchArea {
-                                clicked => {
-                                    selected_material = material;
-                                    is_editing = true;
-                                    is_creating = false;
-                                    edit_id = material.id;
-                                    edit_name = material.name;
-                                    edit_category = material.category;
-                                    edit_subcategory = material.subcategory;
-                                    edit_description = material.description;
-                                    edit_density = material.density;
-                                    edit_machinability = material.machinability_rating;
-                                    edit_tensile_strength = material.tensile_strength;
-                                    edit_melting_point = material.melting_point;
-                                    edit_chip_type = material.chip_type;
-                                    edit_heat_sensitivity = material.heat_sensitivity;
-                                    edit_abrasiveness = material.abrasiveness;
-                                    edit_surface_finish = material.surface_finish;
-                                    edit_dust_hazard = material.dust_hazard;
-                                    edit_fume_hazard = material.fume_hazard;
-                                    edit_coolant_required = material.coolant_required;
-                                    edit_notes = material.notes;
-                                    root.select_material(material.id);
-                                }
-                            }
-                            
-                            HorizontalBox {
-                                padding: 8px;
-                                spacing: 8px;
-                                
-                                VerticalLayout {
-                                    Text {
-                                        text: material.name;
-                                        font-size: 14px;
-                                        font-weight: 700;
-                                        color: material.id == selected_material.id ? white : #2c3e50;
-                                    }
-                                    
-                                    Text {
-                                        text: material.category + " - " + material.subcategory;
-                                        font-size: 11px;
-                                        color: material.id == selected_material.id ? #ecf0f1 : #7f8c8d;
-                                    }
-                                    
-                                    Text {
-                                        text: "Machinability: " + material.machinability_rating + "/10";
-                                        font-size: 10px;
-                                        color: material.machinability_rating >= 7 ? #27ae60 : 
-                                               material.machinability_rating >= 5 ? #f39c12 : #e74c3c;
-                                    }
-                                }
-                                
-                                if material.custom: Rectangle {
-                                    width: 50px;
-                                    Text {
-                                        text: "Custom";
-                                        font-size: 9px;
-                                        color: material.id == selected_material.id ? white : #3498db;
-                                        font-weight: 600;
-                                    }
-                                }
-                            }
-                        }
                     }
                 }
             }
         }
         
-        // Right panel - Material details/editor
-        VerticalBox {
+        // Main content area
+        HorizontalBox {
             spacing: 10px;
             
-            if !is_editing && !is_creating: VerticalBox {
-                alignment: center;
-                Text {
-                    text: "Select a material to view details\nor create a new material";
-                    font-size: 16px;
-                    color: #7f8c8d;
-                    horizontal-alignment: center;
+            // Left panel - Materials list
+            Rectangle {
+                width: 350px;
+                background: #2d2d2d;
+                border-radius: 5px;
+                
+                VerticalBox {
+                    padding: 10px;
+                    spacing: 10px;
+                    
+                    Text {
+                        text: "Materials (" + materials.length + ")";
+                        font-size: 14px;
+                        font-weight: 600;
+                        color: #e0e0e0;
+                    }
+                    
+                    ScrollView {
+                        VerticalBox {
+                            spacing: 5px;
+                            
+                            for material[index] in materials: Rectangle {
+                                height: 70px;
+                                background: material.id == selected_material.id ? #34495e : (touch.has-hover ? #3e3e3e : #252525);
+                                border-radius: 5px;
+                                border-width: 1px;
+                                border-color: material.id == selected_material.id ? #4a90e2 : #404040;
+                                
+                                touch := TouchArea {
+                                    clicked => {
+                                        selected_material = material;
+                                        is_editing = true;
+                                        is_creating = false;
+                                        edit_id = material.id;
+                                        edit_name = material.name;
+                                        edit_category = material.category;
+                                        edit_subcategory = material.subcategory;
+                                        edit_description = material.description;
+                                        edit_density = material.density;
+                                        edit_machinability = material.machinability_rating;
+                                        edit_tensile_strength = material.tensile_strength;
+                                        edit_melting_point = material.melting_point;
+                                        edit_chip_type = material.chip_type;
+                                        edit_heat_sensitivity = material.heat_sensitivity;
+                                        edit_abrasiveness = material.abrasiveness;
+                                        edit_surface_finish = material.surface_finish;
+                                        edit_dust_hazard = material.dust_hazard;
+                                        edit_fume_hazard = material.fume_hazard;
+                                        edit_coolant_required = material.coolant_required;
+                                        edit_notes = material.notes;
+                                        root.select_material(material.id);
+                                    }
+                                }
+                                
+                                HorizontalBox {
+                                    padding: 10px;
+                                    spacing: 10px;
+                                    
+                                    VerticalBox {
+                                        spacing: 2px;
+                                        
+                                        Text {
+                                            text: material.name;
+                                            font-size: 13px;
+                                            font-weight: 700;
+                                            color: material.id == selected_material.id ? white : #e0e0e0;
+                                        }
+                                        
+                                        Text {
+                                            text: material.category + " - " + material.subcategory;
+                                            font-size: 11px;
+                                            color: material.id == selected_material.id ? #ecf0f1 : #aaaaaa;
+                                        }
+                                        
+                                        Text {
+                                            text: "Machinability: " + material.machinability_rating + "/10";
+                                            font-size: 10px;
+                                            color: material.machinability_rating >= 7 ? #2ecc71 : 
+                                                   material.machinability_rating >= 5 ? #f39c12 : #e74c3c;
+                                        }
+                                    }
+                                    
+                                    Rectangle {
+                                        horizontal-stretch: 1;
+                                    }
+                                    
+                                    if material.custom: Rectangle {
+                                        width: 50px;
+                                        Text {
+                                            text: "Custom";
+                                            font-size: 9px;
+                                            color: material.id == selected_material.id ? white : #4a90e2;
+                                            font-weight: 600;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
             
-            if is_editing || is_creating: ScrollView {
-                VerticalBox {
-                    alignment: start;
-                    spacing: 10px;
-                    padding: 10px;
+            // Right panel - Details or Edit form
+            Rectangle {
+                background: #2d2d2d;
+                border-radius: 5px;
+                
+                if !is_editing && !is_creating: VerticalBox {
+                    alignment: center;
+                    Text {
+                        text: "Select a material to view details\nor create a new material";
+                        font-size: 16px;
+                        color: #7f8c8d;
+                        horizontal-alignment: center;
+                    }
+                }
+                
+                if is_editing || is_creating: VerticalBox {
+                    padding: 20px;
+                    spacing: 15px;
                     
                     // Header
                     HorizontalBox {
@@ -320,7 +458,7 @@ export component MaterialsManager inherits Rectangle {
                             text: is_creating ? "Create New Material" : "Edit Material";
                             font-size: 18px;
                             font-weight: 700;
-                            color: #2c3e50;
+                            color: #e0e0e0;
                             horizontal-alignment: left;
                         }
                         
@@ -328,10 +466,10 @@ export component MaterialsManager inherits Rectangle {
                             horizontal-stretch: 1;
                         }
                         
-                        Button {
+                        MMButton {
                             text: "💾 Save";
-                            height: 32px;
                             primary: true;
+                            width: 80px;
                             clicked => {
                                 selected_material = {
                                     id: edit_id,
@@ -363,18 +501,19 @@ export component MaterialsManager inherits Rectangle {
                             }
                         }
                         
-                        Button {
+                        MMButton {
                             text: "❌ Cancel";
-                            height: 32px;
+                            width: 80px;
                             clicked => {
                                 is_editing = false;
                                 is_creating = false;
                             }
                         }
                         
-                        if !is_creating && selected_material.custom: Button {
+                        if !is_creating && selected_material.custom: MMButton {
                             text: "🗑️ Delete";
-                            height: 32px;
+                            destructive: true;
+                            width: 80px;
                             clicked => {
                                 root.delete_material(selected_material.id);
                                 is_editing = false;
@@ -382,25 +521,35 @@ export component MaterialsManager inherits Rectangle {
                         }
                     }
                     
-                    TabWidget {
-                        Tab {
-                            title: "Basic Info";
-                            
+                    // Custom Tab Bar
+                    HorizontalBox {
+                        spacing: 10px;
+                        alignment: start;
+                        height: 40px;
+                        
+                        MMTabButton { text: "Basic Info"; selected: root.active-tab == 0; width: 100px; clicked => { root.active-tab = 0; } }
+                        MMTabButton { text: "Properties"; selected: root.active-tab == 1; width: 100px; clicked => { root.active-tab = 1; } }
+                        MMTabButton { text: "Machining"; selected: root.active-tab == 2; width: 100px; clicked => { root.active-tab = 2; } }
+                        MMTabButton { text: "Safety"; selected: root.active-tab == 3; width: 100px; clicked => { root.active-tab = 3; } }
+                        MMTabButton { text: "Notes"; selected: root.active-tab == 4; width: 100px; clicked => { root.active-tab = 4; } }
+                    }
+                    
+                    // Tab Content
+                    Rectangle {
+                        vertical-stretch: 1;
+                        
+                        // Basic Info Tab
+                        if root.active-tab == 0 : ScrollView {
                             VerticalBox {
                                 alignment: start;
                                 spacing: 10px;
-                                padding: 10px;
+                                padding-top: 10px;
                                 
                                 // Material ID (only for new materials)
                                 if is_creating: HorizontalBox {
                                     spacing: 8px;
-                                    Text {
-                                        text: "ID:";
-                                        width: 120px;
-                                        vertical-alignment: center;
-                                    }
-                                    LineEdit {
-                                        height: 32px;
+                                    Text { text: "ID:"; width: 120px; vertical-alignment: center; color: #aaaaaa; }
+                                    MMInput {
                                         placeholder-text: "unique_id";
                                         text <=> edit_id;
                                     }
@@ -409,13 +558,8 @@ export component MaterialsManager inherits Rectangle {
                                 // Name
                                 HorizontalBox {
                                     spacing: 8px;
-                                    Text {
-                                        text: "Name:";
-                                        width: 120px;
-                                        vertical-alignment: center;
-                                    }
-                                    LineEdit {
-                                        height: 32px;
+                                    Text { text: "Name:"; width: 120px; vertical-alignment: center; color: #aaaaaa; }
+                                    MMInput {
                                         placeholder-text: "Material name";
                                         text <=> edit_name;
                                     }
@@ -424,13 +568,8 @@ export component MaterialsManager inherits Rectangle {
                                 // Category
                                 HorizontalBox {
                                     spacing: 8px;
-                                    Text {
-                                        text: "Category:";
-                                        width: 120px;
-                                        vertical-alignment: center;
-                                    }
+                                    Text { text: "Category:"; width: 120px; vertical-alignment: center; color: #aaaaaa; }
                                     ComboBox {
-                                        height: 32px;
                                         model: categories;
                                         current-value <=> edit_category;
                                     }
@@ -439,13 +578,8 @@ export component MaterialsManager inherits Rectangle {
                                 // Subcategory
                                 HorizontalBox {
                                     spacing: 8px;
-                                    Text {
-                                        text: "Subcategory:";
-                                        width: 120px;
-                                        vertical-alignment: center;
-                                    }
-                                    LineEdit {
-                                        height: 32px;
+                                    Text { text: "Subcategory:"; width: 120px; vertical-alignment: center; color: #aaaaaa; }
+                                    MMInput {
                                         placeholder-text: "e.g., Hardwood, Alloy";
                                         text <=> edit_subcategory;
                                     }
@@ -454,9 +588,7 @@ export component MaterialsManager inherits Rectangle {
                                 // Description
                                 VerticalBox {
                                     spacing: 4px;
-                                    Text {
-                                        text: "Description:";
-                                    }
+                                    Text { text: "Description:"; color: #aaaaaa; }
                                     TextEdit {
                                         height: 60px;
                                         text <=> edit_description;
@@ -465,28 +597,22 @@ export component MaterialsManager inherits Rectangle {
                             }
                         }
                         
-                        Tab {
-                            title: "Properties";
-                            
+                        // Properties Tab
+                        if root.active-tab == 1 : ScrollView {
                             VerticalBox {
                                 alignment: start;
                                 spacing: 10px;
-                                padding: 10px;
+                                padding-top: 10px;
                                 
                                 // Density
                                 HorizontalBox {
                                     spacing: 8px;
-                                    Text {
-                                        text: "Density (kg/m³):";
-                                        width: 150px;
-                                        vertical-alignment: center;
-                                    }
-                                    LineEdit {
-                                        height: 32px;
+                                    Text { text: "Density (kg/m³):"; width: 150px; vertical-alignment: center; color: #aaaaaa; }
+                                    MMInput {
                                         text: edit_density;
                                         input-type: decimal;
-                                        edited => {
-                                            edit_density = self.text.to-float();
+                                        edited(val) => {
+                                            edit_density = val.to-float();
                                         }
                                     }
                                 }
@@ -494,13 +620,8 @@ export component MaterialsManager inherits Rectangle {
                                 // Machinability rating
                                 HorizontalBox {
                                     spacing: 8px;
-                                    Text {
-                                        text: "Machinability (1-10):";
-                                        width: 150px;
-                                        vertical-alignment: center;
-                                    }
-                                    SpinBox {
-                                        height: 32px;
+                                    Text { text: "Machinability (1-10):"; width: 150px; vertical-alignment: center; color: #aaaaaa; }
+                                    MMSpinBox {
                                         minimum: 1;
                                         maximum: 10;
                                         value <=> edit_machinability;
@@ -510,18 +631,13 @@ export component MaterialsManager inherits Rectangle {
                                 // Tensile strength
                                 HorizontalBox {
                                     spacing: 8px;
-                                    Text {
-                                        text: "Tensile Strength (MPa):";
-                                        width: 150px;
-                                        vertical-alignment: center;
-                                    }
-                                    LineEdit {
-                                        height: 32px;
+                                    Text { text: "Tensile Strength (MPa):"; width: 150px; vertical-alignment: center; color: #aaaaaa; }
+                                    MMInput {
                                         text: edit_tensile_strength;
                                         input-type: decimal;
                                         placeholder-text: "Optional";
-                                        edited => {
-                                            edit_tensile_strength = self.text.to-float();
+                                        edited(val) => {
+                                            edit_tensile_strength = val.to-float();
                                         }
                                     }
                                 }
@@ -529,42 +645,31 @@ export component MaterialsManager inherits Rectangle {
                                 // Melting point
                                 HorizontalBox {
                                     spacing: 8px;
-                                    Text {
-                                        text: "Melting Point (°C):";
-                                        width: 150px;
-                                        vertical-alignment: center;
-                                    }
-                                    LineEdit {
-                                        height: 32px;
+                                    Text { text: "Melting Point (°C):"; width: 150px; vertical-alignment: center; color: #aaaaaa; }
+                                    MMInput {
                                         text: edit_melting_point;
                                         input-type: decimal;
                                         placeholder-text: "Optional";
-                                        edited => {
-                                            edit_melting_point = self.text.to-float();
+                                        edited(val) => {
+                                            edit_melting_point = val.to-float();
                                         }
                                     }
                                 }
                             }
                         }
                         
-                        Tab {
-                            title: "Machining";
-                            
+                        // Machining Tab
+                        if root.active-tab == 2 : ScrollView {
                             VerticalBox {
                                 alignment: start;
                                 spacing: 10px;
-                                padding: 10px;
+                                padding-top: 10px;
                                 
                                 // Chip type
                                 HorizontalBox {
                                     spacing: 8px;
-                                    Text {
-                                        text: "Chip Type:";
-                                        width: 150px;
-                                        vertical-alignment: center;
-                                    }
+                                    Text { text: "Chip Type:"; width: 150px; vertical-alignment: center; color: #aaaaaa; }
                                     ComboBox {
-                                        height: 32px;
                                         model: chip_types;
                                         current-value <=> edit_chip_type;
                                     }
@@ -573,13 +678,8 @@ export component MaterialsManager inherits Rectangle {
                                 // Heat sensitivity
                                 HorizontalBox {
                                     spacing: 8px;
-                                    Text {
-                                        text: "Heat Sensitivity:";
-                                        width: 150px;
-                                        vertical-alignment: center;
-                                    }
+                                    Text { text: "Heat Sensitivity:"; width: 150px; vertical-alignment: center; color: #aaaaaa; }
                                     ComboBox {
-                                        height: 32px;
                                         model: heat_sensitivities;
                                         current-value <=> edit_heat_sensitivity;
                                     }
@@ -588,13 +688,8 @@ export component MaterialsManager inherits Rectangle {
                                 // Abrasiveness
                                 HorizontalBox {
                                     spacing: 8px;
-                                    Text {
-                                        text: "Abrasiveness:";
-                                        width: 150px;
-                                        vertical-alignment: center;
-                                    }
+                                    Text { text: "Abrasiveness:"; width: 150px; vertical-alignment: center; color: #aaaaaa; }
                                     ComboBox {
-                                        height: 32px;
                                         model: abrasiveness_levels;
                                         current-value <=> edit_abrasiveness;
                                     }
@@ -603,13 +698,8 @@ export component MaterialsManager inherits Rectangle {
                                 // Surface finish
                                 HorizontalBox {
                                     spacing: 8px;
-                                    Text {
-                                        text: "Surface Finish:";
-                                        width: 150px;
-                                        vertical-alignment: center;
-                                    }
+                                    Text { text: "Surface Finish:"; width: 150px; vertical-alignment: center; color: #aaaaaa; }
                                     ComboBox {
-                                        height: 32px;
                                         model: surface_finishes;
                                         current-value <=> edit_surface_finish;
                                     }
@@ -617,24 +707,18 @@ export component MaterialsManager inherits Rectangle {
                             }
                         }
                         
-                        Tab {
-                            title: "Safety";
-                            
+                        // Safety Tab
+                        if root.active-tab == 3 : ScrollView {
                             VerticalBox {
                                 alignment: start;
                                 spacing: 10px;
-                                padding: 10px;
+                                padding-top: 10px;
                                 
                                 // Dust hazard
                                 HorizontalBox {
                                     spacing: 8px;
-                                    Text {
-                                        text: "Dust Hazard:";
-                                        width: 150px;
-                                        vertical-alignment: center;
-                                    }
+                                    Text { text: "Dust Hazard:"; width: 150px; vertical-alignment: center; color: #aaaaaa; }
                                     ComboBox {
-                                        height: 32px;
                                         model: hazard_levels;
                                         current-value <=> edit_dust_hazard;
                                     }
@@ -643,13 +727,8 @@ export component MaterialsManager inherits Rectangle {
                                 // Fume hazard
                                 HorizontalBox {
                                     spacing: 8px;
-                                    Text {
-                                        text: "Fume Hazard:";
-                                        width: 150px;
-                                        vertical-alignment: center;
-                                    }
+                                    Text { text: "Fume Hazard:"; width: 150px; vertical-alignment: center; color: #aaaaaa; }
                                     ComboBox {
-                                        height: 32px;
                                         model: hazard_levels;
                                         current-value <=> edit_fume_hazard;
                                     }
@@ -658,8 +737,7 @@ export component MaterialsManager inherits Rectangle {
                                 // Coolant required
                                 HorizontalBox {
                                     spacing: 8px;
-                                    CheckBox {
-                                        height: 32px;
+                                    MMCheckBox {
                                         text: "Coolant Required";
                                         checked <=> edit_coolant_required;
                                     }
@@ -689,16 +767,16 @@ export component MaterialsManager inherits Rectangle {
                             }
                         }
                         
-                        Tab {
-                            title: "Notes";
-                            
+                        // Notes Tab
+                        if root.active-tab == 4 : ScrollView {
                             VerticalBox {
                                 alignment: start;
                                 spacing: 10px;
-                                padding: 10px;
+                                padding-top: 10px;
                                 
                                 Text {
                                     text: "Additional Notes and Tips:";
+                                    color: #aaaaaa;
                                 }
                                 
                                 TextEdit {

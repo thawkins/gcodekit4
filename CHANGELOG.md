@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [0.45.0-alpha] - 2025-11-27
+
+### Changed
+- **CNC Tools View**:
+  - **Dark Theme**: Applied dark theme styling (`#2c3e50` panels, `#34495e` backgrounds).
+  - **Custom Widgets**: Implemented `TMButton`, `TMInput`, `TMComboBox` for consistent look and feel.
+  - **Layout**: Improved layout with proper spacing and alignment.
+- **Materials View**:
+  - **Dark Theme**: Applied dark theme styling.
+  - **Custom Widgets**: Implemented `MMButton`, `MMInput`, `MMComboBox`.
+  - **Layout**: Improved layout.
+
 
 ## [0.43.0-alpha] - 2025-11-26
 

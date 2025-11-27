@@ -1,10 +1,22 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.43.0-alpha  
-**Last Updated**: 2025-11-26  
+**Version**: 0.45.0-alpha  
+**Last Updated**: 2025-11-27  
 **Status**: Feature Release
 
-### Latest Release (v0.43.0-alpha) - Visualizer UI Overhaul
+### Latest Release (v0.45.0-alpha) - UI Standardization
+- ✅ **CNC Tools & Materials Views**
+  - **Dark Theme**: Consistent dark styling across all management views.
+  - **Custom Widgets**: Reusable, theme-aware buttons, inputs, and dropdowns.
+  - **Layout**: Improved spacing and alignment.
+- ✅ **CAM Tools**
+  - **Grid Layout**: Responsive 3-column grid for tool cards.
+  - **Dynamic Icons**: Auto-generated icons for tools without assets.
+- ✅ **General UI**
+  - **Device Manager**: Improved tabs and checkboxes for visibility.
+  - **Consistency**: Unified look and feel across the entire application.
+
+### Previous Release (v0.43.0-alpha) - Visualizer UI Overhaul
 - ✅ **Visualizer Aesthetics**
   - **Dark Theme**: Full adoption of `#2c3e50` / `#34495e` color scheme.
   - **Layout**: Left sidebar for controls, edge-to-edge canvas.

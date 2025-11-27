@@ -24,6 +24,84 @@ export struct ToolData {
     notes: string,
 }
 
+component TMButton inherits Rectangle {
+    in property <string> text;
+    in property <bool> enabled: true;
+    in property <brush> base-color: #404040;
+    in property <brush> hover-color: #505050;
+    in property <brush> pressed-color: #2980b9;
+    in property <bool> primary: false;
+    in property <bool> destructive: false;
+    
+    callback clicked;
+    
+    height: 35px;
+    border-radius: 4px;
+    
+    background: !root.enabled ? #2c3e50 : 
+                (touch.pressed ? root.pressed-color : 
+                (touch.has-hover ? (root.destructive ? #e74c3c : (root.primary ? #357abd : root.hover-color)) : 
+                (root.destructive ? #c0392b : (root.primary ? #4a90e2 : root.base-color))));
+
+    opacity: root.enabled ? 1.0 : 0.5;
+    
+    Text {
+        text: root.text;
+        color: #ecf0f1;
+        font-size: 13px;
+        vertical-alignment: center;
+        horizontal-alignment: center;
+    }
+    
+    touch := TouchArea {
+        enabled: root.enabled;
+        clicked => { root.clicked(); }
+    }
+}
+
+component TMInput inherits Rectangle {
+    in-out property <string> text <=> input.text;
+    in property <string> placeholder-text <=> input.placeholder-text;
+    in property <bool> enabled <=> input.enabled;
+    callback edited(string);
+    
+    height: 30px;
+    background: #3e3e3e;
+    border-radius: 4px;
+    border-width: 1px;
+    border-color: input.has-focus ? #4a90e2 : #555555;
+    
+    input := LineEdit {
+        width: 100%;
+        height: 100%;
+        font-size: 13px;
+        edited(s) => { root.edited(s); }
+    }
+}
+
+component TMSpinBox inherits Rectangle {
+    in-out property <int> value <=> spin.value;
+    in property <int> minimum <=> spin.minimum;
+    in property <int> maximum <=> spin.maximum;
+    
+    height: 30px;
+    background: #3e3e3e;
+    border-radius: 4px;
+    border-width: 1px;
+    border-color: #555555;
+    
+    spin := SpinBox {
+        width: 100%;
+        height: 100%;
+    }
+}
+
+component TMSectionHeader inherits Text {
+    color: #e0e0e0;
+    font-size: 14px;
+    font-weight: 700;
+}
+
 export component ToolsManager inherits Rectangle {
     // Callbacks for CRUD operations
     callback load_tools();
@@ -75,7 +153,7 @@ export component ToolsManager inherits Rectangle {
     property <[string]> materials: ["HSS", "Carbide", "Coated Carbide", "Diamond"];
     property <[string]> coatings: ["None", "TiN", "TiAlN", "DLC", "AlOx"];
     
-    background: #ecf0f1;
+    background: #1e1e1e;
     
     VerticalBox {
         padding: 10px;
@@ -84,12 +162,13 @@ export component ToolsManager inherits Rectangle {
         // Header with search and actions
         HorizontalBox {
             spacing: 10px;
+            height: 40px;
             
             Text {
                 text: "CNC Tools Manager";
                 font-size: 20px;
                 font-weight: 700;
-                color: #2c3e50;
+                color: #e0e0e0;
                 vertical-alignment: center;
             }
             
@@ -97,7 +176,7 @@ export component ToolsManager inherits Rectangle {
                 horizontal-stretch: 1;
             }
             
-            LineEdit {
+            TMInput {
                 width: 250px;
                 placeholder-text: "Search tools...";
                 text <=> search_query;
@@ -106,9 +185,10 @@ export component ToolsManager inherits Rectangle {
                 }
             }
             
-            Button {
+            TMButton {
                 text: "➕ New Tool";
                 primary: true;
+                width: 100px;
                 clicked => {
                     is_creating = true;
                     is_editing = false;
@@ -130,8 +210,9 @@ export component ToolsManager inherits Rectangle {
                 }
             }
             
-            Button {
+            TMButton {
                 text: "📦 Import GTC";
+                width: 100px;
                 clicked => {
                     root.import_gtc_package("");
                 }
@@ -141,16 +222,19 @@ export component ToolsManager inherits Rectangle {
         // Filter by type
         HorizontalBox {
             spacing: 10px;
+            height: 30px;
             
             Text {
                 text: "Filter by Type:";
                 vertical-alignment: center;
+                color: #aaaaaa;
             }
             
             ComboBox {
                 model: ["All Types", "Flat End Mill", "Ball End Mill", "Corner Radius End Mill", 
                         "V-Bit", "Drill Bit", "Spot Drill", "Engraving Bit", "Chamfer Tool", "Specialty"];
                 current-value: "All Types";
+                width: 200px;
                 selected => {
                     if (self.current-value == "All Types") {
                         root.load_tools();
@@ -168,7 +252,7 @@ export component ToolsManager inherits Rectangle {
             // Left panel - Tool list
             Rectangle {
                 width: 350px;
-                background: white;
+                background: #2d2d2d;
                 border-radius: 5px;
                 
                 VerticalBox {
@@ -179,7 +263,7 @@ export component ToolsManager inherits Rectangle {
                         text: "Tools (" + tools.length + ")";
                         font-size: 14px;
                         font-weight: 600;
-                        color: #2c3e50;
+                        color: #e0e0e0;
                     }
                     
                     ScrollView {
@@ -188,12 +272,12 @@ export component ToolsManager inherits Rectangle {
                             
                             for tool[index] in tools: Rectangle {
                                 height: 80px;
-                                background: tool.id == selected_tool.id ? #3498db : white;
+                                background: tool.id == selected_tool.id ? #34495e : (touch.has-hover ? #3e3e3e : #252525);
                                 border-radius: 5px;
                                 border-width: 1px;
-                                border-color: tool.id == selected_tool.id ? #2980b9 : #bdc3c7;
+                                border-color: tool.id == selected_tool.id ? #4a90e2 : #404040;
                                 
-                                TouchArea {
+                                touch := TouchArea {
                                     clicked => {
                                         selected_tool = tool;
                                         root.select_tool(tool.id);
@@ -234,33 +318,33 @@ export component ToolsManager inherits Rectangle {
                                                 text: "T" + tool.number;
                                                 font-size: 12px;
                                                 font-weight: 700;
-                                                color: tool.id == selected_tool.id ? white : #3498db;
+                                                color: tool.id == selected_tool.id ? white : #4a90e2;
                                             }
                                             
                                             Text {
                                                 text: tool.name;
                                                 font-size: 12px;
                                                 font-weight: 600;
-                                                color: tool.id == selected_tool.id ? white : #2c3e50;
+                                                color: tool.id == selected_tool.id ? white : #e0e0e0;
                                             }
                                         }
                                         
                                         Text {
                                             text: tool.tool_type;
                                             font-size: 10px;
-                                            color: tool.id == selected_tool.id ? #ecf0f1 : #7f8c8d;
+                                            color: tool.id == selected_tool.id ? #ecf0f1 : #aaaaaa;
                                         }
                                         
                                         Text {
                                             text: "Ø" + tool.diameter + "mm × " + tool.length + "mm";
                                             font-size: 10px;
-                                            color: tool.id == selected_tool.id ? #ecf0f1 : #7f8c8d;
+                                            color: tool.id == selected_tool.id ? #ecf0f1 : #aaaaaa;
                                         }
                                         
                                         Text {
                                             text: tool.material + (tool.coating != "None" ? " (" + tool.coating + ")" : "");
                                             font-size: 9px;
-                                            color: tool.id == selected_tool.id ? #ecf0f1 : #95a5a6;
+                                            color: tool.id == selected_tool.id ? #ecf0f1 : #7f8c8d;
                                         }
                                     }
                                     
@@ -273,7 +357,7 @@ export component ToolsManager inherits Rectangle {
                                         Text {
                                             text: "Custom";
                                             font-size: 9px;
-                                            color: tool.id == selected_tool.id ? white : #3498db;
+                                            color: tool.id == selected_tool.id ? white : #4a90e2;
                                             font-weight: 600;
                                         }
                                     }
@@ -286,7 +370,7 @@ export component ToolsManager inherits Rectangle {
             
             // Right panel - Details or Edit form
             Rectangle {
-                background: white;
+                background: #2d2d2d;
                 border-radius: 5px;
                 
                 if !is_editing && !is_creating: VerticalBox {
@@ -301,8 +385,8 @@ export component ToolsManager inherits Rectangle {
                 
                 if is_editing || is_creating: ScrollView {
                     VerticalBox {
-                        spacing: 10px;
-                        padding: 10px;
+                        spacing: 15px;
+                        padding: 20px;
                         
                         // Header
                         HorizontalBox {
@@ -312,7 +396,7 @@ export component ToolsManager inherits Rectangle {
                                 text: is_creating ? "Create New Tool" : "Edit Tool";
                                 font-size: 18px;
                                 font-weight: 700;
-                                color: #2c3e50;
+                                color: #e0e0e0;
                                 horizontal-alignment: left;
                             }
                             
@@ -320,9 +404,10 @@ export component ToolsManager inherits Rectangle {
                                 horizontal-stretch: 1;
                             }
                             
-                            Button {
+                            TMButton {
                                 text: "💾 Save";
                                 primary: true;
+                                width: 80px;
                                 clicked => {
                                     selected_tool = {
                                         id: edit_id,
@@ -352,16 +437,19 @@ export component ToolsManager inherits Rectangle {
                                 }
                             }
                             
-                            Button {
+                            TMButton {
                                 text: "❌ Cancel";
+                                width: 80px;
                                 clicked => {
                                     is_editing = false;
                                     is_creating = false;
                                 }
                             }
                             
-                            if !is_creating && selected_tool.custom: Button {
+                            if !is_creating && selected_tool.custom: TMButton {
                                 text: "🗑️ Delete";
+                                destructive: true;
+                                width: 80px;
                                 clicked => {
                                     root.delete_tool(selected_tool.id);
                                     is_editing = false;
@@ -371,189 +459,187 @@ export component ToolsManager inherits Rectangle {
                         }
                         
                         // Basic Information
-                        GroupBox {
-                            title: "Basic Information";
+                        VerticalBox {
+                            spacing: 10px;
+                            TMSectionHeader { text: "Basic Information"; }
                             
-                            VerticalBox {
+                            HorizontalBox {
                                 spacing: 10px;
                                 
-                                HorizontalBox {
-                                    spacing: 10px;
-                                    
-                                    VerticalBox {
-                                        spacing: 5px;
-                                        Text { text: "Tool Number:"; }
-                                        SpinBox {
-                                            value <=> edit_number;
-                                            minimum: 1;
-                                            maximum: 9999;
-                                        }
-                                    }
-                                    
-                                    VerticalBox {
-                                        spacing: 5px;
-                                        horizontal-stretch: 1;
-                                        Text { text: "Tool Name:"; }
-                                        LineEdit {
-                                            text <=> edit_name;
-                                            placeholder-text: "e.g., 6mm Carbide End Mill";
-                                        }
+                                VerticalBox {
+                                    spacing: 5px;
+                                    Text { text: "Tool Number:"; color: #aaaaaa; }
+                                    TMSpinBox {
+                                        value <=> edit_number;
+                                        minimum: 1;
+                                        maximum: 9999;
                                     }
                                 }
                                 
-                                HorizontalBox {
-                                    spacing: 10px;
-                                    
-                                    VerticalBox {
-                                        spacing: 5px;
-                                        Text { text: "Tool Type:"; }
-                                        ComboBox {
-                                            model: tool_types;
-                                            current-value <=> edit_tool_type;
-                                        }
+                                VerticalBox {
+                                    spacing: 5px;
+                                    horizontal-stretch: 1;
+                                    Text { text: "Tool Name:"; color: #aaaaaa; }
+                                    TMInput {
+                                        text <=> edit_name;
+                                        placeholder-text: "e.g., 6mm Carbide End Mill";
                                     }
-                                    
-                                    VerticalBox {
-                                        spacing: 5px;
-                                        Text { text: "Material:"; }
-                                        ComboBox {
-                                            model: materials;
-                                            current-value <=> edit_material;
-                                        }
+                                }
+                            }
+                            
+                            HorizontalBox {
+                                spacing: 10px;
+                                
+                                VerticalBox {
+                                    spacing: 5px;
+                                    Text { text: "Tool Type:"; color: #aaaaaa; }
+                                    ComboBox {
+                                        model: tool_types;
+                                        current-value <=> edit_tool_type;
                                     }
-                                    
-                                    VerticalBox {
-                                        spacing: 5px;
-                                        Text { text: "Coating:"; }
-                                        ComboBox {
-                                            model: coatings;
-                                            current-value <=> edit_coating;
-                                        }
+                                }
+                                
+                                VerticalBox {
+                                    spacing: 5px;
+                                    Text { text: "Material:"; color: #aaaaaa; }
+                                    ComboBox {
+                                        model: materials;
+                                        current-value <=> edit_material;
+                                    }
+                                }
+                                
+                                VerticalBox {
+                                    spacing: 5px;
+                                    Text { text: "Coating:"; color: #aaaaaa; }
+                                    ComboBox {
+                                        model: coatings;
+                                        current-value <=> edit_coating;
                                     }
                                 }
                             }
                         }
+                        
+                        Rectangle { height: 1px; background: #404040; }
                         
                         // Geometry
-                        GroupBox {
-                            title: "Tool Geometry";
+                        VerticalBox {
+                            spacing: 10px;
+                            TMSectionHeader { text: "Tool Geometry"; }
                             
-                            VerticalBox {
+                            HorizontalBox {
                                 spacing: 10px;
                                 
-                                HorizontalBox {
-                                    spacing: 10px;
-                                    
-                                    VerticalBox {
-                                        spacing: 5px;
-                                        Text { text: "Diameter (mm):"; }
-                                        LineEdit {
-                                            text: edit_diameter;
-                                            edited(val) => {
-                                                edit_diameter = val.to-float();
-                                            }
-                                        }
-                                    }
-                                    
-                                    VerticalBox {
-                                        spacing: 5px;
-                                        Text { text: "Overall Length (mm):"; }
-                                        LineEdit {
-                                            text: edit_length;
-                                            edited(val) => {
-                                                edit_length = val.to-float();
-                                            }
-                                        }
-                                    }
-                                    
-                                    VerticalBox {
-                                        spacing: 5px;
-                                        Text { text: "Flute Length (mm):"; }
-                                        LineEdit {
-                                            text: edit_flute_length;
-                                            edited(val) => {
-                                                edit_flute_length = val.to-float();
-                                            }
-                                        }
-                                    }
-                                }
-                                
-                                HorizontalBox {
-                                    spacing: 10px;
-                                    
-                                    VerticalBox {
-                                        spacing: 5px;
-                                        Text { text: "Shaft Diameter (mm):"; }
-                                        LineEdit {
-                                            text: edit_shaft_diameter;
-                                            edited(val) => {
-                                                edit_shaft_diameter = val.to-float();
-                                            }
-                                        }
-                                    }
-                                    
-                                    VerticalBox {
-                                        spacing: 5px;
-                                        Text { text: "Number of Flutes:"; }
-                                        SpinBox {
-                                            value <=> edit_flutes;
-                                            minimum: 1;
-                                            maximum: 12;
-                                        }
-                                    }
-                                    
-                                    Rectangle {
-                                        horizontal-stretch: 1;
-                                    }
-                                }
-                            }
-                        }
-                        
-                        // Manufacturer Info
-                        GroupBox {
-                            title: "Manufacturer Information";
-                            
-                            VerticalBox {
-                                spacing: 10px;
-                                
-                                HorizontalBox {
-                                    spacing: 10px;
-                                    
-                                    VerticalBox {
-                                        spacing: 5px;
-                                        horizontal-stretch: 1;
-                                        Text { text: "Manufacturer:"; }
-                                        LineEdit {
-                                            text <=> edit_manufacturer;
-                                            placeholder-text: "e.g., Harvey Tool";
-                                        }
-                                    }
-                                    
-                                    VerticalBox {
-                                        spacing: 5px;
-                                        horizontal-stretch: 1;
-                                        Text { text: "Part Number:"; }
-                                        LineEdit {
-                                            text <=> edit_part_number;
-                                            placeholder-text: "e.g., EM-6-2F";
+                                VerticalBox {
+                                    spacing: 5px;
+                                    Text { text: "Diameter (mm):"; color: #aaaaaa; }
+                                    TMInput {
+                                        text: edit_diameter;
+                                        edited(val) => {
+                                            edit_diameter = val.to-float();
                                         }
                                     }
                                 }
                                 
                                 VerticalBox {
                                     spacing: 5px;
-                                    Text { text: "Description:"; }
-                                    TextEdit {
-                                        text <=> edit_description;
-                                        height: 60px;
+                                    Text { text: "Overall Length (mm):"; color: #aaaaaa; }
+                                    TMInput {
+                                        text: edit_length;
+                                        edited(val) => {
+                                            edit_length = val.to-float();
+                                        }
                                     }
+                                }
+                                
+                                VerticalBox {
+                                    spacing: 5px;
+                                    Text { text: "Flute Length (mm):"; color: #aaaaaa; }
+                                    TMInput {
+                                        text: edit_flute_length;
+                                        edited(val) => {
+                                            edit_flute_length = val.to-float();
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            HorizontalBox {
+                                spacing: 10px;
+                                
+                                VerticalBox {
+                                    spacing: 5px;
+                                    Text { text: "Shaft Diameter (mm):"; color: #aaaaaa; }
+                                    TMInput {
+                                        text: edit_shaft_diameter;
+                                        edited(val) => {
+                                            edit_shaft_diameter = val.to-float();
+                                        }
+                                    }
+                                }
+                                
+                                VerticalBox {
+                                    spacing: 5px;
+                                    Text { text: "Number of Flutes:"; color: #aaaaaa; }
+                                    TMSpinBox {
+                                        value <=> edit_flutes;
+                                        minimum: 1;
+                                        maximum: 12;
+                                    }
+                                }
+                                
+                                Rectangle {
+                                    horizontal-stretch: 1;
                                 }
                             }
                         }
                         
+                        Rectangle { height: 1px; background: #404040; }
+                        
+                        // Manufacturer Info
+                        VerticalBox {
+                            spacing: 10px;
+                            TMSectionHeader { text: "Manufacturer Information"; }
+                            
+                            HorizontalBox {
+                                spacing: 10px;
+                                
+                                VerticalBox {
+                                    spacing: 5px;
+                                    horizontal-stretch: 1;
+                                    Text { text: "Manufacturer:"; color: #aaaaaa; }
+                                    TMInput {
+                                        text <=> edit_manufacturer;
+                                        placeholder-text: "e.g., Harvey Tool";
+                                    }
+                                }
+                                
+                                VerticalBox {
+                                    spacing: 5px;
+                                    horizontal-stretch: 1;
+                                    Text { text: "Part Number:"; color: #aaaaaa; }
+                                    TMInput {
+                                        text <=> edit_part_number;
+                                        placeholder-text: "e.g., EM-6-2F";
+                                    }
+                                }
+                            }
+                            
+                            VerticalBox {
+                                spacing: 5px;
+                                Text { text: "Description:"; color: #aaaaaa; }
+                                TextEdit {
+                                    text <=> edit_description;
+                                    height: 60px;
+                                }
+                            }
+                        }
+                        
+                        Rectangle { height: 1px; background: #404040; }
+                        
                         // Notes
-                        GroupBox {
-                            title: "Notes";
+                        VerticalBox {
+                            spacing: 10px;
+                            TMSectionHeader { text: "Notes"; }
                             
                             VerticalBox {
                                 spacing: 5px;

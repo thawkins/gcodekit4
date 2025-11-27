@@ -515,3 +515,22 @@ Rectangle {
   - Ensured correct nesting of the Right Sidebar within the main `HorizontalLayout` to prevent it from overlaying the canvas.
   - Fixed selection handle rendering symmetry by normalizing bounding box coordinates in `svg_renderer.rs`.
   - Rounded dimensional values in the UI to 2 decimal places for cleaner display.
+
+### UI Standardization & Dark Theme (2025-11-27)
+- **Goal**: Unify all application views (CNC Tools, Materials, Device Manager, etc.) under a consistent dark theme and component library.
+- **Custom Widget Library**:
+  - Created reusable, theme-aware widgets to replace standard Slint components:
+    - `TMButton` / `MMButton`: Standardized buttons with hover states and consistent styling.
+    - `TMInput` / `MMInput`: Dark-themed text inputs with proper padding and borders.
+    - `TMComboBox` / `MMComboBox`: Custom dropdowns matching the dark aesthetic.
+    - `DMCheckBox`: High-visibility checkbox for dark backgrounds.
+    - `GeneratedIcon`: Dynamic icon generation from text for missing assets.
+- **Layout Patterns**:
+  - **Left Sidebar**: Adopted the "Left Sidebar + Main Content" pattern across all views.
+  - **Grid Layouts**: Replaced list-based layouts with responsive grids where appropriate (e.g., CAM Tools).
+  - **Fixed Widths**: Enforced fixed widths for sidebars (200px-250px) to prevent layout shifts.
+- **Specific View Updates**:
+  - **CNC Tools**: Complete rewrite using `TM*` widgets and dark theme.
+  - **Materials**: Complete rewrite using `MM*` widgets and dark theme.
+  - **CAM Tools**: Fixed layout issues, implemented 3-column grid, and added dynamic icon generation.
+  - **Device Manager**: Replaced standard tabs with custom tab buttons for better visibility.
