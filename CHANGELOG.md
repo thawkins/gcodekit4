@@ -1,5 +1,11 @@
 ## [0.45.0-alpha] - 2025-11-27
 
+### Fixed
+- **Designer Panel Layout**: Fixed right properties panel floating in center - corrected HorizontalLayout structure to properly contain left sidebar, canvas, and right panel
+- **Designer Zoom Controls**: Fixed missing zoom in/out buttons - moved misplaced closing braces to keep all three zoom controls visible
+- **Device Console Layout**: Fixed log entries appearing centered - added proper alignment to display logs from top-left
+- **Tooltip Z-Index**: Fixed tooltips appearing behind buttons - implemented static z-index of 100 for proper layering
+
 ### Changed
 - **UI Refactoring**:
   - **Centralized Theme**: Implemented a global `Theme` singleton for consistent colors and sizing across the application.

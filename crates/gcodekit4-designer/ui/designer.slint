@@ -1512,7 +1512,7 @@ export component DesignerPanel inherits Rectangle {
                                             zoom-out-touch := TouchArea { clicked => { zoom_out(); } }
                                             StandardTooltip { text: "Zoom Out"; show: zoom-out-touch.has-hover; y: parent.height + 5px; x: (parent.width - self.width) / 2; }
                                         }
-                                        }
+                                        
                                         Rectangle {
                                             width: 24px;
                                             height: 24px;
@@ -1531,13 +1531,13 @@ export component DesignerPanel inherits Rectangle {
                                             StandardTooltip { text: "Zoom In"; show: zoom-in-touch.has-hover; y: parent.height + 5px; x: (parent.width - self.width) / 2; }
                                         }
                                     }
+                                    }
                                 }
                             }
                         }
                         }
                     }
                 }
-                    }
         }
         }
 
@@ -1940,9 +1940,8 @@ export component DesignerPanel inherits Rectangle {
                 }
             }
         }
-        
+    }
 
-    
     // Context menu overlay (on top of everything)
     if root.context_menu_visible: ContextMenu {
         show <=> root.context_menu_visible;

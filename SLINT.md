@@ -46,3 +46,9 @@ Common UI elements are defined in `shared.slint` to ensure consistency:
 - **Layout Issues**: Check `horizontal-stretch` and `vertical-stretch` properties.
 - **Focus**: Ensure `FocusScope` is used correctly for keyboard input.
 - **Z-Index**: Slint renders in order of declaration; later elements are on top.
+- **Z-Index Limitation**: The `z` property must be a number literal and cannot be bound to an expression.
+- **Z-Index Best Practice**: Use moderate z-index values (e.g., 10, 50, 100) to avoid creating unintended stacking contexts. Very high values (1000+) can cause layout issues.
+- **Tooltip Z-Index**: Tooltips use `z: 100` to appear above buttons within the same layout context. This works for most use cases without breaking layout flow.
+- **Brace Balance**: Slint files must have balanced braces. Removing or adding braces breaks compilation.
+- **Brace Debugging**: When fixing layout issues caused by misplaced braces, MOVE braces rather than adding/removing them. Use `awk` to count braces in sections to find misplaced ones.
+- **Blank Lines**: Blank lines have NO effect on Slint syntax - focus only on braces, not whitespace.

@@ -11,8 +11,8 @@ export component StandardTooltip inherits Rectangle {
     border-radius: 3px;
     border-width: 1px;
     border-color: #555555;
-    z: 100;
     visible: root.show && root.text != "";
+    z: 100;
     
     tt-text := Text {
         text: root.text;
