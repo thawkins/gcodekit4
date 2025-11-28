@@ -11,6 +11,7 @@ pub use visualizer::{
     Visualizer, Visualizer2D, VisualizerControls, Scene, Camera, Renderer,
     render_grid_to_path, render_origin_to_path, render_rapid_moves_to_path, render_toolpath_to_path,
     render_g1_to_path, render_g2_to_path, render_g3_to_path, render_g4_to_path,
+    render_intensity_overlay,
 };
 
 pub use gcode::{

@@ -1983,6 +1983,7 @@ fn main() -> anyhow::Result<()> {
                     let content_clone = content.clone();
                     let width = window.get_visualizer_canvas_width();
                     let height = window.get_visualizer_canvas_height();
+                    let max_intensity = window.get_visualizer_max_intensity();
 
                     // Use a channel to communicate progress from background thread
                     let (tx, rx) = std::sync::mpsc::channel();
@@ -1992,6 +1993,7 @@ fn main() -> anyhow::Result<()> {
                             content_clone,
                             width as u32,
                             height as u32,
+                            max_intensity,
                             tx,
                         );
                     });
@@ -2001,22 +2003,30 @@ fn main() -> anyhow::Result<()> {
                         while let Ok((
                             progress,
                             status,
-                            path_data,
+                            g1_data,
+                            g2_data,
+                            g3_data,
+                            g4_data,
                             rapid_moves_data,
                             grid_data,
                             origin_data,
                             grid_size,
                             _bbox_info,
                             viewbox,
+                            intensity_layers,
                         )) = rx.recv()
                         {
                             let window_handle = window_weak.clone();
                             let status_clone = status.clone();
-                            let path_clone = path_data.clone();
+                            let g1_clone = g1_data.clone();
+                            let g2_clone = g2_data.clone();
+                            let g3_clone = g3_data.clone();
+                            let g4_clone = g4_data.clone();
                             let rapid_moves_clone = rapid_moves_data.clone();
                             let grid_clone = grid_data.clone();
                             let origin_clone = origin_data.clone();
                             let viewbox_clone = viewbox.clone();
+                            let intensity_clone = intensity_layers.clone();
 
                             slint::invoke_from_event_loop(move || {
                                 if let Some(window) = window_handle.upgrade() {
@@ -2033,10 +2043,17 @@ fn main() -> anyhow::Result<()> {
                                     }
 
                                     // Set canvas path data if available
-                                    if let Some(path) = path_clone {
-                                        window.set_visualization_path_data(
-                                            slint::SharedString::from(path),
-                                        );
+                                    if let Some(path) = g1_clone {
+                                        window.set_visualization_g1_data(slint::SharedString::from(path));
+                                    }
+                                    if let Some(path) = g2_clone {
+                                        window.set_visualization_g2_data(slint::SharedString::from(path));
+                                    }
+                                    if let Some(path) = g3_clone {
+                                        window.set_visualization_g3_data(slint::SharedString::from(path));
+                                    }
+                                    if let Some(path) = g4_clone {
+                                        window.set_visualization_g4_data(slint::SharedString::from(path));
                                     }
                                     if let Some(rapid_moves) = rapid_moves_clone {
                                         window.set_visualization_rapid_moves_data(
@@ -2057,6 +2074,11 @@ fn main() -> anyhow::Result<()> {
                                         window.set_visualizer_grid_size(slint::SharedString::from(
                                             format!("{}mm", size),
                                         ));
+                                    }
+                                    
+                                    if let Some(layers) = intensity_clone {
+                                        let slint_layers: Vec<slint::SharedString> = layers.iter().map(|s| slint::SharedString::from(s)).collect();
+                                        window.set_visualization_intensity_layers(slint::ModelRc::new(slint::VecModel::from(slint_layers)));
                                     }
                                 }
                             })
@@ -3818,13 +3840,14 @@ fn main() -> anyhow::Result<()> {
                                 if let Some(window) = window_weak_retry.upgrade() {
                                     let canvas_width = window.get_visualizer_canvas_width();
                                     let canvas_height = window.get_visualizer_canvas_height();
+                                    let max_intensity = window.get_visualizer_max_intensity();
                                     window
-                                        .invoke_refresh_visualization(canvas_width, canvas_height);
+                                        .invoke_refresh_visualization(canvas_width, canvas_height, max_intensity);
                                 }
                             },
                         );
                     } else {
-                        window.invoke_refresh_visualization(canvas_width, canvas_height);
+                        let max_intensity = window.get_visualizer_max_intensity(); window.invoke_refresh_visualization(canvas_width, canvas_height, max_intensity);
                     }
                 }
             });
@@ -6465,12 +6488,12 @@ fn main() -> anyhow::Result<()> {
                         let offset_y = dlg.get_offset_y().parse::<f32>().unwrap_or(10.0);
                         
                         // Get transformation parameters from dialog
-                        let mirror_x = false;
-                        let mirror_y = false;
-                        let rotation_str = "0°".to_string();
+                        let mirror_x = dlg.get_mirror_x();
+                        let mirror_y = dlg.get_mirror_y();
+                        let rotation_str = dlg.get_rotation().to_string();
                         let halftone_str = dlg.get_halftone();
                         let halftone_dot_size = dlg.get_halftone_dot_size() as usize;
-                        let halftone_threshold = 127;
+                        let halftone_threshold = dlg.get_halftone_threshold() as u8;
 
                         // Show status message and initial progress
                         window.set_connection_status("Generating laser engraving G-code...".into());
@@ -6510,6 +6533,10 @@ fn main() -> anyhow::Result<()> {
                                         _ => RotationAngle::Degrees0,
                                     },
                                     halftone: match halftone_str.as_str() {
+                                        "Threshold" => HalftoneMethod::Threshold,
+                                        "Bayer 4x4" => HalftoneMethod::Bayer4x4,
+                                        "Floyd-Steinberg" => HalftoneMethod::FloydSteinberg,
+                                        "Atkinson" => HalftoneMethod::Atkinson,
                                         "Circle" => HalftoneMethod::Circle,
                                         "Cross" => HalftoneMethod::Cross,
                                         "Ellipse" => HalftoneMethod::Ellipse,
@@ -6863,7 +6890,8 @@ fn main() -> anyhow::Result<()> {
                                                     if let Some(w) = win_weak_viz.upgrade() {
                                                         let canvas_width = w.get_visualizer_canvas_width();
                                                         let canvas_height = w.get_visualizer_canvas_height();
-                                                        w.invoke_refresh_visualization(canvas_width, canvas_height);
+                                                        let max_intensity = w.get_visualizer_max_intensity();
+                                                        w.invoke_refresh_visualization(canvas_width, canvas_height, max_intensity);
                                                     }
                                                 },
                                             );
@@ -7355,7 +7383,7 @@ fn main() -> anyhow::Result<()> {
     let zoom_for_refresh = zoom_scale.clone();
     let pan_for_refresh = pan_offset.clone();
     let visualizer_refresh = visualizer.clone();
-    main_window.on_refresh_visualization(move |canvas_width, canvas_height| {
+    main_window.on_refresh_visualization(move |canvas_width, canvas_height, max_intensity| {
         // Skip if canvas dimensions are invalid (not yet laid out)
         if canvas_width < 100.0 || canvas_height < 100.0 {
             return;
@@ -7374,6 +7402,12 @@ fn main() -> anyhow::Result<()> {
                 window.set_visualizer_status(slint::SharedString::from("Ready"));
                 window.set_visualization_path_data(slint::SharedString::from(""));
                 window.set_visualization_rapid_moves_data(slint::SharedString::from(""));
+                window.set_visualization_g1_data(slint::SharedString::from(""));
+                window.set_visualization_g2_data(slint::SharedString::from(""));
+                window.set_visualization_g3_data(slint::SharedString::from(""));
+                window.set_visualization_g4_data(slint::SharedString::from(""));
+                let empty_layers: Vec<slint::SharedString> = vec!["".into(); 10];
+                window.set_visualization_intensity_layers(slint::ModelRc::new(slint::VecModel::from(empty_layers)));
 
                 // Generate empty visualizer with just grid and origin
                 use gcodekit4::visualizer::{
@@ -7409,7 +7443,7 @@ fn main() -> anyhow::Result<()> {
             // Spawn rendering thread
             let content_owned = content.to_string();
 
-            // Message format: (progress, status, g1_data, g2_data, g3_data, g4_data, rapid_moves_data, grid_data, origin_data, grid_size, bbox_info, viewbox)
+            // Message format: (progress, status, g1_data, g2_data, g3_data, g4_data, rapid_moves_data, grid_data, origin_data, grid_size, bbox_info, viewbox, intensity_layers)
             let (tx, rx) = std::sync::mpsc::channel::<(
                 f32,
                 String,
@@ -7423,6 +7457,7 @@ fn main() -> anyhow::Result<()> {
                 Option<f32>,
                 Option<String>,
                 Option<(f32, f32, f32, f32)>,
+                Option<Vec<String>>,
             )>();
             let window_weak_render = window_weak.clone();
             let zoom_scale_render = zoom_for_refresh.clone();
@@ -7439,11 +7474,13 @@ fn main() -> anyhow::Result<()> {
                     use gcodekit4::visualizer::{
                         render_grid_to_path, render_origin_to_path, render_rapid_moves_to_path,
                         render_g1_to_path, render_g2_to_path, render_g3_to_path, render_g4_to_path,
+                        render_intensity_overlay,
                     };
 
                     let _ = tx.send((
                         0.1,
                         "Parsing G-code...".to_string(),
+                        None,
                         None,
                         None,
                         None,
@@ -7475,6 +7512,7 @@ fn main() -> anyhow::Result<()> {
                         let _ = tx.send((
                             0.3,
                             "Rendering...".to_string(),
+                            None,
                             None,
                             None,
                             None,
@@ -7527,6 +7565,13 @@ fn main() -> anyhow::Result<()> {
                             canvas_width as u32,
                             canvas_height as u32,
                         );
+                        
+                        let intensity_layers = render_intensity_overlay(
+                            &visualizer,
+                            canvas_width as u32,
+                            canvas_height as u32,
+                            max_intensity,
+                        );
 
                         // Calculate bounding box info
                         let bbox_info = if let Some((min_x, max_x, min_y, max_y)) =
@@ -7564,11 +7609,13 @@ fn main() -> anyhow::Result<()> {
                                 Some(grid_size),
                                 bbox_info,
                                 Some(viewbox),
+                                Some(intensity_layers),
                             ));
                         } else {
                             let _ = tx.send((
                                 1.0,
                                 "Error: no data".to_string(),
+                                None,
                                 None,
                                 None,
                                 None,
@@ -7602,6 +7649,7 @@ fn main() -> anyhow::Result<()> {
                     grid_size,
                     bbox_info,
                     viewbox,
+                    intensity_layers,
                 )) = rx.recv()
                 {
                     let window_handle = window_weak_render.clone();
@@ -7615,6 +7663,7 @@ fn main() -> anyhow::Result<()> {
                     let origin_clone = origin_data.clone();
                     let bbox_info_clone = bbox_info.clone();
                     let viewbox_clone = viewbox.clone();
+                    let intensity_clone = intensity_layers.clone();
                     let zoom_for_closure = zoom_scale_for_msg.clone();
                     let pan_for_closure = pan_offset_for_msg.clone();
 
@@ -7673,6 +7722,11 @@ fn main() -> anyhow::Result<()> {
                                 window.set_visualizer_viewbox_width(vw);
                                 window.set_visualizer_viewbox_height(vh);
                             }
+                            
+                            if let Some(layers) = intensity_clone {
+                                let slint_layers: Vec<slint::SharedString> = layers.iter().map(|s| slint::SharedString::from(s)).collect();
+                                window.set_visualization_intensity_layers(slint::ModelRc::new(slint::VecModel::from(slint_layers)));
+                            }
 
                             // Update indicator properties
                             if let Ok(scale) = zoom_for_closure.lock() {
@@ -7706,7 +7760,7 @@ fn main() -> anyhow::Result<()> {
                 window.set_visualizer_zoom_scale(*scale);
                 let canvas_width = window.get_visualizer_canvas_width();
                 let canvas_height = window.get_visualizer_canvas_height();
-                window.invoke_refresh_visualization(canvas_width, canvas_height);
+                let max_intensity = window.get_visualizer_max_intensity(); window.invoke_refresh_visualization(canvas_width, canvas_height, max_intensity);
             }
         }
     });
@@ -7727,7 +7781,7 @@ fn main() -> anyhow::Result<()> {
                 window.set_visualizer_zoom_scale(*scale);
                 let canvas_width = window.get_visualizer_canvas_width();
                 let canvas_height = window.get_visualizer_canvas_height();
-                window.invoke_refresh_visualization(canvas_width, canvas_height);
+                let max_intensity = window.get_visualizer_max_intensity(); window.invoke_refresh_visualization(canvas_width, canvas_height, max_intensity);
             }
         }
     });
@@ -7754,7 +7808,7 @@ fn main() -> anyhow::Result<()> {
             window.set_visualizer_y_offset(0.0);
             let canvas_width = window.get_visualizer_canvas_width();
             let canvas_height = window.get_visualizer_canvas_height();
-            window.invoke_refresh_visualization(canvas_width, canvas_height);
+            let max_intensity = window.get_visualizer_max_intensity(); window.invoke_refresh_visualization(canvas_width, canvas_height, max_intensity);
         }
     });
 
@@ -7839,7 +7893,8 @@ fn main() -> anyhow::Result<()> {
                             if progress >= 1.0 {
                                 let canvas_width = window.get_visualizer_canvas_width();
                                 let canvas_height = window.get_visualizer_canvas_height();
-                                window.invoke_refresh_visualization(canvas_width, canvas_height);
+                                let max_intensity = window.get_visualizer_max_intensity();
+                                window.invoke_refresh_visualization(canvas_width, canvas_height, max_intensity);
                             }
                         }
                     })
@@ -7863,7 +7918,7 @@ fn main() -> anyhow::Result<()> {
                 window.set_visualizer_y_offset(offsets.1);
                 let canvas_width = window.get_visualizer_canvas_width();
                 let canvas_height = window.get_visualizer_canvas_height();
-                window.invoke_refresh_visualization(canvas_width, canvas_height);
+                let max_intensity = window.get_visualizer_max_intensity(); window.invoke_refresh_visualization(canvas_width, canvas_height, max_intensity);
             }
         }
     });
@@ -7874,7 +7929,7 @@ fn main() -> anyhow::Result<()> {
         if let Some(window) = window_weak_grid.upgrade() {
             let canvas_width = window.get_visualizer_canvas_width();
             let canvas_height = window.get_visualizer_canvas_height();
-            window.invoke_refresh_visualization(canvas_width, canvas_height);
+            let max_intensity = window.get_visualizer_max_intensity(); window.invoke_refresh_visualization(canvas_width, canvas_height, max_intensity);
         }
     });
 
@@ -7971,6 +8026,7 @@ fn render_gcode_visualization_background_channel(
     gcode_content: String,
     width: u32,
     height: u32,
+    max_intensity: f32,
     tx: std::sync::mpsc::Sender<(
         f32,
         String,
@@ -7978,19 +8034,34 @@ fn render_gcode_visualization_background_channel(
         Option<String>,
         Option<String>,
         Option<String>,
+        Option<String>,
+        Option<String>,
+        Option<String>,
         Option<f32>,
         Option<String>,
         Option<(f32, f32, f32, f32)>,
+        Option<Vec<String>>,
     )>,
 ) {
     use gcodekit4::visualizer::{
         render_grid_to_path, render_origin_to_path, render_rapid_moves_to_path,
-        render_toolpath_to_path, Visualizer2D,
+        render_g1_to_path, render_g2_to_path, render_g3_to_path, render_g4_to_path,
+        Visualizer2D,
     };
+    // Import render_intensity_overlay from canvas_renderer via crate root re-export if available, 
+    // or we might need to update lib.rs to export it.
+    // Assuming I'll update lib.rs next. For now, let's assume it's available.
+    // Actually, I should check lib.rs exports.
+    // I'll use the full path if needed or update lib.rs.
+    // Let's assume I'll update lib.rs to export `render_intensity_overlay`.
 
     let _ = tx.send((
         0.1,
         "Parsing G-code...".to_string(),
+        None,
+        None,
+        None,
+        None,
         None,
         None,
         None,
@@ -8017,32 +8088,54 @@ fn render_gcode_visualization_background_channel(
         None,
         None,
         None,
+        None,
+        None,
+        None,
+        None,
     ));
 
     // Generate canvas path data
-    let path_data = render_toolpath_to_path(&visualizer, width, height);
+    let g1_data = render_g1_to_path(&visualizer, width, height);
+    let g2_data = render_g2_to_path(&visualizer, width, height);
+    let g3_data = render_g3_to_path(&visualizer, width, height);
+    let g4_data = render_g4_to_path(&visualizer, width, height);
     let rapid_moves_data = render_rapid_moves_to_path(&visualizer, width, height);
     let (grid_data, grid_size) = render_grid_to_path(&visualizer, width, height);
     let origin_data = render_origin_to_path(&visualizer, width, height);
+    
+    // Generate intensity layers
+    // We need to access render_intensity_overlay. It's in canvas_renderer.
+    // I'll need to make sure it's exported.
+    // For now, I'll use the crate path if possible, but I'm in main.rs so I use `gcodekit4::visualizer::...`
+    // I'll update lib.rs to export it.
+    let intensity_layers = gcodekit4::visualizer::render_intensity_overlay(&visualizer, width, height, max_intensity);
 
     let viewbox = visualizer.get_viewbox(width as f32, height as f32);
 
-    if !path_data.is_empty() || !rapid_moves_data.is_empty() || !grid_data.is_empty() {
+    if !g1_data.is_empty() || !g2_data.is_empty() || !g3_data.is_empty() || !g4_data.is_empty() || !rapid_moves_data.is_empty() || !grid_data.is_empty() {
         let _ = tx.send((
             1.0,
             "Complete".to_string(),
-            Some(path_data),
+            Some(g1_data),
+            Some(g2_data),
+            Some(g3_data),
+            Some(g4_data),
             Some(rapid_moves_data),
             Some(grid_data),
             Some(origin_data),
             Some(grid_size),
             None,
             Some(viewbox),
+            Some(intensity_layers),
         ));
     } else {
         let _ = tx.send((
             1.0,
             "Error: no data".to_string(),
+            None,
+            None,
+            None,
+            None,
             None,
             None,
             None,

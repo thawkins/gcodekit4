@@ -86,7 +86,7 @@ impl ToolpathCache {
 
         for cmd in &self.commands {
             match cmd {
-                GCodeCommand::Move { from, to, rapid } => {
+                GCodeCommand::Move { from, to, rapid, intensity: _ } => {
                     if *rapid {
                         let _ = write!(
                             self.cached_rapid_path,
@@ -116,6 +116,7 @@ impl ToolpathCache {
                     to,
                     center,
                     clockwise,
+                    intensity: _,
                 } => {
                     let radius = ((from.x - center.x).powi(2) + (from.y - center.y).powi(2)).sqrt();
 

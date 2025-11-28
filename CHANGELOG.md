@@ -1,3 +1,15 @@
+## [0.51.0-alpha] - 2025-11-28
+
+### Added
+- **Visualizer**: Added intensity visualization (heatmap) for laser/spindle power ('S' value).
+  - Renders toolpath with varying opacity based on S value (10 levels).
+  - Added "Show Intensity" toggle and "Max S" control to Visualizer sidebar.
+  - Added "Show Cutting Moves" toggle to hide standard toolpath lines.
+  - Added white background mode when intensity visualization is active.
+- **CAM Tools**: Implemented halftoning algorithms for image engraving.
+  - Added Threshold, Bayer 4x4 (Ordered), Floyd-Steinberg (Error Diffusion), and Atkinson algorithms.
+  - Integrated algorithms into the Laser Engraver toolpath generator.
+
 ## [0.50.0-alpha] - 2025-11-28
 
 ### Fixed

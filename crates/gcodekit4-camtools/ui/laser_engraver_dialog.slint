@@ -338,7 +338,7 @@ export component LaserEngraverDialog inherits Dialog {
                             HorizontalBox {
                                 Text { text: "Halftoning:"; width: 120px; }
                                 ComboBox {
-                                    model: ["None", "Circle", "Cross", "Ellipse", "Line", "Inverted Line"];
+                                    model: ["None", "Threshold", "Bayer 4x4", "Floyd-Steinberg", "Atkinson", "Circle", "Cross", "Ellipse", "Line", "Inverted Line"];
                                     current-value <=> halftone;
                                     horizontal-stretch: 1;
                                     selected(idx) => {

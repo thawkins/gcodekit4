@@ -1,7 +1,7 @@
 //! Canvas-based G-Code Visualizer using SVG Path Commands
 //! Renders G-Code toolpaths as SVG path data for Slint Path elements
 
-use super::visualizer_2d::Visualizer2D;
+use super::visualizer_2d::{GCodeCommand, Visualizer2D};
 
 const GRID_MAJOR_STEP_MM: f32 = 10.0;
 
@@ -125,6 +125,107 @@ pub fn render_grid_to_path(visualizer: &Visualizer2D, width: u32, height: u32) -
     }
 
     (path, step)
+}
+
+/// Render intensity overlay as multiple SVG path layers (buckets)
+/// Returns 10 layers corresponding to 10%, 20%, ..., 100% opacity
+pub fn render_intensity_overlay(
+    visualizer: &Visualizer2D,
+    _width: u32,
+    _height: u32,
+    max_intensity: f32,
+) -> Vec<String> {
+    let mut layers = vec![String::new(); 10];
+    
+    // Pre-allocate some capacity
+    let estimated_capacity = visualizer.get_command_count() * 10;
+    for layer in &mut layers {
+        layer.reserve(estimated_capacity / 10);
+    }
+
+    let mut last_pos: [Option<super::visualizer_2d::Point2D>; 10] = [None; 10];
+    use std::fmt::Write;
+
+    for cmd in visualizer.commands() {
+        match cmd {
+            GCodeCommand::Move { from, to, rapid, intensity } => {
+                if *rapid {
+                    // Reset last positions on rapid moves
+                    last_pos = [None; 10];
+                    continue;
+                }
+
+                if let Some(s) = intensity {
+                    if *s <= 0.0 { continue; }
+                    
+                    let ratio = (*s / max_intensity).clamp(0.0, 1.0);
+                    if ratio <= 0.0 { continue; }
+
+                    // Map 0.0-1.0 to 0-9 bucket
+                    let bucket = ((ratio - 0.001) * 10.0).floor() as usize;
+                    let bucket = bucket.clamp(0, 9);
+
+                    let layer = &mut layers[bucket];
+                    let last = &mut last_pos[bucket];
+
+                    if last.is_none() || *last != Some(*from) {
+                        let _ = write!(layer, "M {:.2} {:.2} ", from.x, -from.y);
+                    }
+                    let _ = write!(layer, "L {:.2} {:.2} ", to.x, -to.y);
+                    *last = Some(*to);
+                }
+            }
+            GCodeCommand::Arc { from, to, center, clockwise, intensity } => {
+                if let Some(s) = intensity {
+                    if *s <= 0.0 { continue; }
+                    
+                    let ratio = (*s / max_intensity).clamp(0.0, 1.0);
+                    if ratio <= 0.0 { continue; }
+
+                    let bucket = ((ratio - 0.001) * 10.0).floor() as usize;
+                    let bucket = bucket.clamp(0, 9);
+
+                    let layer = &mut layers[bucket];
+                    let last = &mut last_pos[bucket];
+
+                    let radius = ((from.x - center.x).powi(2) + (from.y - center.y).powi(2)).sqrt();
+                    let sweep = if *clockwise { 0 } else { 1 };
+
+                    use std::f32::consts::PI;
+                    let start_angle = (from.y - center.y).atan2(from.x - center.x);
+                    let end_angle = (to.y - center.y).atan2(to.x - center.x);
+                    let mut angle_diff = if *clockwise {
+                        start_angle - end_angle
+                    } else {
+                        end_angle - start_angle
+                    };
+
+                    while angle_diff < 0.0 {
+                        angle_diff += 2.0 * PI;
+                    }
+                    while angle_diff >= 2.0 * PI {
+                        angle_diff -= 2.0 * PI;
+                    }
+
+                    let large_arc = if angle_diff > PI { 1 } else { 0 };
+
+                    if last.is_none() || *last != Some(*from) {
+                        let _ = write!(layer, "M {:.2} {:.2} ", from.x, -from.y);
+                    }
+
+                    let _ = write!(
+                        layer,
+                        "A {:.2} {:.2} 0 {} {} {:.2} {:.2} ",
+                        radius, radius, large_arc, sweep, to.x, -to.y
+                    );
+                    *last = Some(*to);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    layers
 }
 
 /// Render origin marker at (0,0) as yellow cross

@@ -30,6 +30,14 @@ pub enum RotationAngle {
 pub enum HalftoneMethod {
     /// No halftoning (direct intensity mapping)
     None,
+    /// Simple thresholding
+    Threshold,
+    /// Ordered dithering (Bayer 4x4)
+    Bayer4x4,
+    /// Error diffusion (Floyd-Steinberg)
+    FloydSteinberg,
+    /// Error diffusion (Atkinson)
+    Atkinson,
     /// Circle dot halftoning (pepecore)
     Circle,
     /// Cross dot halftoning (pepecore)
@@ -181,7 +189,12 @@ impl BitmapImageEngraver {
         }
 
         if params.transformations.halftone != HalftoneMethod::None {
-            Self::apply_halftoning_svec(&mut svec, params.transformations.halftone, params.transformations.halftone_dot_size)?;
+            Self::apply_halftoning_svec(
+                &mut svec, 
+                params.transformations.halftone, 
+                params.transformations.halftone_dot_size,
+                params.transformations.halftone_threshold
+            )?;
         }
 
         let (shape_h, shape_w, _) = svec.shape();
@@ -403,18 +416,167 @@ impl BitmapImageEngraver {
     }
 
     /// Apply halftoning using pepecore on SVec with configurable dot size
-    fn apply_halftoning_svec(svec: &mut SVec, method: HalftoneMethod, dot_size: usize) -> Result<()> {
-        let dot_type = match method {
-            HalftoneMethod::Circle => DotType::CIRCLE,
-            HalftoneMethod::Cross => DotType::CROSS,
-            HalftoneMethod::Ellipse => DotType::ELLIPSE,
-            HalftoneMethod::Line => DotType::LINE,
-            HalftoneMethod::InvertedLine => DotType::INVLINE,
-            HalftoneMethod::None => return Ok(()),
-        };
+    fn apply_halftoning_svec(svec: &mut SVec, method: HalftoneMethod, dot_size: usize, threshold: u8) -> Result<()> {
+        match method {
+            HalftoneMethod::Threshold => Self::apply_threshold_svec(svec, threshold),
+            HalftoneMethod::Bayer4x4 => Self::apply_bayer_svec(svec),
+            HalftoneMethod::FloydSteinberg => Self::apply_floyd_steinberg_svec(svec),
+            HalftoneMethod::Atkinson => Self::apply_atkinson_svec(svec),
+            HalftoneMethod::None => Ok(()),
+            _ => {
+                let dot_type = match method {
+                    HalftoneMethod::Circle => DotType::CIRCLE,
+                    HalftoneMethod::Cross => DotType::CROSS,
+                    HalftoneMethod::Ellipse => DotType::ELLIPSE,
+                    HalftoneMethod::Line => DotType::LINE,
+                    HalftoneMethod::InvertedLine => DotType::INVLINE,
+                    _ => return Ok(()),
+                };
 
-        pepecore::halftone(svec, &[dot_size], &[dot_type])
-            .context("Failed to apply halftone effect")
+                pepecore::halftone(svec, &[dot_size], &[dot_type])
+                    .context("Failed to apply halftone effect")
+            }
+        }
+    }
+
+    /// Apply simple thresholding
+    fn apply_threshold_svec(svec: &mut SVec, threshold: u8) -> Result<()> {
+        match &mut svec.data {
+            ImgData::U8(data) => {
+                for pixel in data.iter_mut() {
+                    *pixel = if *pixel >= threshold { 255 } else { 0 };
+                }
+                Ok(())
+            }
+            _ => Ok(()), // Only U8 supported for now
+        }
+    }
+
+    /// Apply Bayer 4x4 ordered dithering
+    fn apply_bayer_svec(svec: &mut SVec) -> Result<()> {
+        let (height, width, _) = svec.shape();
+        
+        // Bayer 4x4 matrix
+        let bayer_matrix = [
+            [ 0,  8,  2, 10],
+            [12,  4, 14,  6],
+            [ 3, 11,  1,  9],
+            [15,  7, 13,  5],
+        ];
+
+        match &mut svec.data {
+            ImgData::U8(data) => {
+                for y in 0..height {
+                    for x in 0..width {
+                        let idx = y * width + x;
+                        let pixel = data[idx];
+                        
+                        // Scale matrix value to 0-255 range
+                        // Matrix values are 0-15, so we multiply by 17 (15*17 = 255)
+                        // Or more precisely: (value + 0.5) * (255/16)
+                        let matrix_val = bayer_matrix[y % 4][x % 4];
+                        let threshold = (matrix_val as f32 * 16.0 + 8.0) as u8;
+                        
+                        data[idx] = if pixel >= threshold { 255 } else { 0 };
+                    }
+                }
+                Ok(())
+            }
+            _ => Ok(()),
+        }
+    }
+
+    /// Apply Floyd-Steinberg error diffusion
+    fn apply_floyd_steinberg_svec(svec: &mut SVec) -> Result<()> {
+        let (height, width, _) = svec.shape();
+        
+        match &mut svec.data {
+            ImgData::U8(data) => {
+                // We need to work with i16 to handle error propagation without overflow
+                let mut buffer: Vec<i16> = data.iter().map(|&p| p as i16).collect();
+                
+                for y in 0..height {
+                    for x in 0..width {
+                        let idx = y * width + x;
+                        let old_pixel = buffer[idx];
+                        let new_pixel = if old_pixel > 127 { 255 } else { 0 };
+                        
+                        buffer[idx] = new_pixel;
+                        let error = old_pixel - new_pixel;
+                        
+                        // Distribute error
+                        if x + 1 < width {
+                            let neighbor_idx = y * width + (x + 1);
+                            buffer[neighbor_idx] = buffer[neighbor_idx].saturating_add(error * 7 / 16);
+                        }
+                        if x > 0 && y + 1 < height {
+                            let neighbor_idx = (y + 1) * width + (x - 1);
+                            buffer[neighbor_idx] = buffer[neighbor_idx].saturating_add(error * 3 / 16);
+                        }
+                        if y + 1 < height {
+                            let neighbor_idx = (y + 1) * width + x;
+                            buffer[neighbor_idx] = buffer[neighbor_idx].saturating_add(error * 5 / 16);
+                        }
+                        if x + 1 < width && y + 1 < height {
+                            let neighbor_idx = (y + 1) * width + (x + 1);
+                            buffer[neighbor_idx] = buffer[neighbor_idx].saturating_add(error * 1 / 16);
+                        }
+                    }
+                }
+                
+                // Copy back to u8
+                for (i, &val) in buffer.iter().enumerate() {
+                    data[i] = val.clamp(0, 255) as u8;
+                }
+                Ok(())
+            }
+            _ => Ok(()),
+        }
+    }
+
+    /// Apply Atkinson error diffusion
+    fn apply_atkinson_svec(svec: &mut SVec) -> Result<()> {
+        let (height, width, _) = svec.shape();
+        
+        match &mut svec.data {
+            ImgData::U8(data) => {
+                let mut buffer: Vec<i16> = data.iter().map(|&p| p as i16).collect();
+                
+                for y in 0..height {
+                    for x in 0..width {
+                        let idx = y * width + x;
+                        let old_pixel = buffer[idx];
+                        let new_pixel = if old_pixel > 127 { 255 } else { 0 };
+                        
+                        buffer[idx] = new_pixel;
+                        let error = old_pixel - new_pixel;
+                        
+                        // Atkinson distributes 1/8 of error to 6 neighbors
+                        let neighbors = [
+                            (1, 0), (2, 0),
+                            (-1, 1), (0, 1), (1, 1),
+                            (0, 2)
+                        ];
+                        
+                        for (dx, dy) in neighbors {
+                            let nx = x as isize + dx;
+                            let ny = y as isize + dy;
+                            
+                            if nx >= 0 && nx < width as isize && ny >= 0 && ny < height as isize {
+                                let n_idx = ny as usize * width + nx as usize;
+                                buffer[n_idx] = buffer[n_idx].saturating_add(error / 8);
+                            }
+                        }
+                    }
+                }
+                
+                for (i, &val) in buffer.iter().enumerate() {
+                    data[i] = val.clamp(0, 255) as u8;
+                }
+                Ok(())
+            }
+            _ => Ok(()),
+        }
     }
 
     /// Get pixel at (x, y) in the processed image

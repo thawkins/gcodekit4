@@ -46,12 +46,14 @@ pub enum GCodeCommand {
         from: Point2D,
         to: Point2D,
         rapid: bool,
+        intensity: Option<f32>,
     },
     Arc {
         from: Point2D,
         to: Point2D,
         center: Point2D,
         clockwise: bool,
+        intensity: Option<f32>,
     },
     Dwell {
         pos: Point2D,
@@ -114,6 +116,7 @@ pub struct Visualizer2D {
     pub min_y: f32,
     pub max_y: f32,
     pub current_pos: Point2D,
+    pub current_intensity: f32,
     /// Zoom/scale factor for rendering (1.0 = 100%)
     pub zoom_scale: f32,
     /// X-offset for panning the view (in pixels)
@@ -137,6 +140,7 @@ impl Visualizer2D {
             min_y: -1000.0,
             max_y: 1000.0,
             current_pos: Point2D::new(0.0, 0.0),
+            current_intensity: 0.0,
             zoom_scale: 1.0,
             x_offset: 0.0,
             y_offset: 0.0,
@@ -219,6 +223,7 @@ impl Visualizer2D {
 
         let mut commands = Vec::new();
         let mut current_pos = Point2D::new(0.0, 0.0);
+        self.current_intensity = 0.0;
         let mut bounds = Bounds::new();
         let mut _g0_count = 0;
         let mut _g1_count = 0;
@@ -240,6 +245,7 @@ impl Visualizer2D {
                             &mut commands,
                             line,
                             &mut current_pos,
+                            &mut self.current_intensity,
                             &mut bounds,
                             true,
                         );
@@ -250,6 +256,7 @@ impl Visualizer2D {
                             &mut commands,
                             line,
                             &mut current_pos,
+                            &mut self.current_intensity,
                             &mut bounds,
                             false,
                         );
@@ -260,6 +267,7 @@ impl Visualizer2D {
                             &mut commands,
                             line,
                             &mut current_pos,
+                            &mut self.current_intensity,
                             &mut bounds,
                             true,
                         );
@@ -270,6 +278,7 @@ impl Visualizer2D {
                             &mut commands,
                             line,
                             &mut current_pos,
+                            &mut self.current_intensity,
                             &mut bounds,
                             false,
                         );
@@ -335,6 +344,7 @@ impl Visualizer2D {
         commands: &mut Vec<GCodeCommand>,
         line: &str,
         current_pos: &mut Point2D,
+        current_intensity: &mut f32,
         bounds: &mut Bounds,
         is_rapid: bool,
     ) {
@@ -362,6 +372,11 @@ impl Visualizer2D {
                         y_found = true;
                     }
                 }
+                'S' => {
+                    if let Ok(val) = part[1..].parse::<f32>() {
+                        *current_intensity = val;
+                    }
+                }
                 _ => {}
             }
         }
@@ -373,6 +388,7 @@ impl Visualizer2D {
                 from: *current_pos,
                 to,
                 rapid: is_rapid,
+                intensity: Some(*current_intensity),
             });
 
             bounds.update(current_pos.x, current_pos.y);
@@ -385,6 +401,7 @@ impl Visualizer2D {
         commands: &mut Vec<GCodeCommand>,
         line: &str,
         current_pos: &mut Point2D,
+        current_intensity: &mut f32,
         bounds: &mut Bounds,
         clockwise: bool,
     ) {
@@ -419,6 +436,11 @@ impl Visualizer2D {
                         offset_j = Some(val);
                     }
                 }
+                'S' => {
+                    if let Ok(val) = part[1..].parse::<f32>() {
+                        *current_intensity = val;
+                    }
+                }
                 _ => {}
             }
         }
@@ -432,6 +454,7 @@ impl Visualizer2D {
                 to,
                 center,
                 clockwise,
+                intensity: Some(*current_intensity),
             });
 
             bounds.update(current_pos.x, current_pos.y);

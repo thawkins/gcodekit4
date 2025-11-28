@@ -202,6 +202,9 @@ export component MainWindow inherits Window {
     in property <string> visualizer-bounding-box-info: "";
     in-out property <bool> visualizer-show-grid: true;
     in-out property <bool> visualizer-show-rapid-moves: true;
+    in-out property <bool> visualizer-show-cutting-moves: true;
+    in-out property <bool> visualizer-show-intensity: false;
+    in-out property <float> visualizer-max-intensity: 1000.0;
     in property <float> visualizer-viewbox-x: 0;
     in property <float> visualizer-viewbox-y: 0;
     in property <float> visualizer-viewbox-width: 100;
@@ -217,6 +220,7 @@ export component MainWindow inherits Window {
     in-out property <string> visualization-rapid-moves-data: "";
     in-out property <string> visualization-grid-data: "";
     in-out property <string> visualization-origin-data: "";
+    in-out property <[string]> visualization-intensity-layers: ["", "", "", "", "", "", "", "", "", ""];
     
     // Designer panel properties (Phase 2)
     in-out property <float> designer-canvas-width: 800.0;
@@ -423,7 +427,7 @@ export component MainWindow inherits Window {
     callback console-clear-clicked();
     callback console-copy-clicked();
     callback send-command(string);
-    callback refresh-visualization(/* canvas_width */ float, /* canvas_height */ float);
+    callback refresh-visualization(/* canvas_width */ float, /* canvas_height */ float, /* max_intensity */ float);
     callback zoom-in(/* canvas_width */ float, /* canvas_height */ float);
     callback zoom-out(/* canvas_width */ float, /* canvas_height */ float);
     callback reset-view(/* canvas_width */ float, /* canvas_height */ float);
@@ -988,15 +992,19 @@ export component MainWindow inherits Window {
                         bounding-box-info: root.visualizer-bounding-box-info;
                         show-grid <=> root.visualizer-show-grid;
                         show-rapid-moves <=> root.visualizer-show-rapid-moves;
+                        show-cutting-moves <=> root.visualizer-show-cutting-moves;
+                        show-intensity <=> root.visualizer-show-intensity;
+                        max-intensity <=> root.visualizer-max-intensity;
+                        visualization-intensity-layers: root.visualization-intensity-layers;
                         viewbox-x: root.visualizer-viewbox-x;
                         viewbox-y: root.visualizer-viewbox-y;
                         viewbox-width: root.visualizer-viewbox-width;
                         viewbox-height: root.visualizer-viewbox-height;
                         
-                        refresh-visualization(canvas-width, canvas-height) => {
+                        refresh-visualization(canvas-width, canvas-height, max-intensity) => {
                             root.visualizer-canvas-width = canvas-width;
                             root.visualizer-canvas-height = canvas-height;
-                            root.refresh-visualization(canvas-width, canvas-height);
+                            root.refresh-visualization(canvas-width, canvas-height, max-intensity);
                         }
                         
                         zoom-in(canvas-width, canvas-height) => {

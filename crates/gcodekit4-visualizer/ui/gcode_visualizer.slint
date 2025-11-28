@@ -36,6 +36,10 @@ export component GcodeVisualizerPanel inherits Rectangle {
     in property <string> bounding-box-info: "";
     in-out property <bool> show-grid: true;
     in-out property <bool> show-rapid-moves: true;
+    in-out property <bool> show-cutting-moves: true;
+    in-out property <bool> show-intensity: false;
+    in-out property <float> max-intensity: 1000.0;
+    in property <[string]> visualization-intensity-layers: ["", "", "", "", "", "", "", "", "", ""];
     in property <float> viewbox-x: 0;
     in property <float> viewbox-y: 0;
     in property <float> viewbox-width: 100;
@@ -45,7 +49,7 @@ export component GcodeVisualizerPanel inherits Rectangle {
     
     private property <bool> space-pressed: false;
     
-    callback refresh-visualization(/* canvas_width */ float, /* canvas_height */ float);
+    callback refresh-visualization(/* canvas_width */ float, /* canvas_height */ float, /* max_intensity */ float);
     callback zoom-in(/* canvas_width */ float, /* canvas_height */ float);
     callback zoom-out(/* canvas_width */ float, /* canvas_height */ float);
     callback fit-to-view(/* canvas_width */ float, /* canvas_height */ float);
@@ -88,7 +92,7 @@ export component GcodeVisualizerPanel inherits Rectangle {
                         icon: "🔄";
                         tooltip: "Refresh";
                         width: 40px;
-                        clicked => { root.refresh-visualization(root.canvas-width, root.canvas-height); }
+                        clicked => { root.refresh-visualization(root.canvas-width, root.canvas-height, root.max-intensity); }
                     }
                     StandardButton {
                         icon: "⊡";
@@ -116,6 +120,52 @@ export component GcodeVisualizerPanel inherits Rectangle {
                 StandardCheckBox {
                     text: "Show Rapid Moves";
                     checked <=> root.show-rapid-moves;
+                }
+
+                StandardCheckBox {
+                    text: "Show Cutting Moves";
+                    checked <=> root.show-cutting-moves;
+                }
+
+                StandardCheckBox {
+                    text: "Show Intensity";
+                    checked <=> root.show-intensity;
+                }
+
+                if root.show-intensity : HorizontalLayout {
+                    spacing: 5px;
+                    Text {
+                        text: "Max S:";
+                        vertical-alignment: center;
+                        color: Theme.text-secondary;
+                        font-size: 12px;
+                    }
+                    // Simple input simulation using a button that cycles values for now, 
+                    // or we can rely on the main window to set this via a proper input field if available.
+                    // For now, let's just display it and assume it's set from outside or defaults.
+                    // Actually, let's make it editable via a simple text input if possible, 
+                    // but StandardTextInput might not be imported.
+                    // We'll just show the value and rely on the refresh button to pick it up if we add an input.
+                    // Since we don't have a numeric input widget handy in this context without importing more,
+                    // we'll add a simple way to adjust it: +/- buttons.
+                    
+                    Button {
+                        text: "-";
+                        width: 20px;
+                        clicked => { root.max-intensity = Math.max(100.0, root.max-intensity - 100.0); }
+                    }
+                    Text {
+                        text: Math.round(root.max-intensity);
+                        vertical-alignment: center;
+                        horizontal-alignment: center;
+                        color: Theme.text-primary;
+                        width: 40px;
+                    }
+                    Button {
+                        text: "+";
+                        width: 20px;
+                        clicked => { root.max-intensity = root.max-intensity + 100.0; }
+                    }
                 }
 
                 StandardCheckBox {
@@ -183,6 +233,15 @@ export component GcodeVisualizerPanel inherits Rectangle {
                         width: 100%;
                         height: 100%;
                     
+                    // White background for intensity map
+                    if root.show-intensity : Rectangle {
+                        x: 0;
+                        y: 0;
+                        width: 100%;
+                        height: 100%;
+                        background: white;
+                    }
+
                     // Grid layer
                     if root.show-grid && root.visualization-grid-data != "" : Path {
                         viewbox-x: root.viewbox-x;
@@ -226,7 +285,7 @@ export component GcodeVisualizerPanel inherits Rectangle {
                     }
                     
                     // G1 layer - Yellow
-                    if root.visualization-g1-data != "" : Path {
+                    if root.show-cutting-moves && root.visualization-g1-data != "" : Path {
                         viewbox-x: root.viewbox-x;
                         viewbox-y: root.viewbox-y;
                         viewbox-width: root.viewbox-width;
@@ -240,7 +299,7 @@ export component GcodeVisualizerPanel inherits Rectangle {
                     }
 
                     // G2 layer - Green
-                    if root.visualization-g2-data != "" : Path {
+                    if root.show-cutting-moves && root.visualization-g2-data != "" : Path {
                         viewbox-x: root.viewbox-x;
                         viewbox-y: root.viewbox-y;
                         viewbox-width: root.viewbox-width;
@@ -254,7 +313,7 @@ export component GcodeVisualizerPanel inherits Rectangle {
                     }
 
                     // G3 layer - Bright Red
-                    if root.visualization-g3-data != "" : Path {
+                    if root.show-cutting-moves && root.visualization-g3-data != "" : Path {
                         viewbox-x: root.viewbox-x;
                         viewbox-y: root.viewbox-y;
                         viewbox-width: root.viewbox-width;
@@ -265,6 +324,148 @@ export component GcodeVisualizerPanel inherits Rectangle {
                         stroke: #FF0000;
                         stroke-width: 1px;
                         commands: root.visualization-g3-data;
+                    }
+
+                    // Intensity Layers (Black/Dark Red with varying opacity)
+                    // Layer 0: 10% opacity
+                    if root.show-intensity && root.visualization-intensity-layers[0] != "" : Path {
+                        viewbox-x: root.viewbox-x;
+                        viewbox-y: root.viewbox-y;
+                        viewbox-width: root.viewbox-width;
+                        viewbox-height: root.viewbox-height;
+                        width: 100%;
+                        height: 100%;
+                        fill: transparent;
+                        stroke: #000000;
+                        stroke-width: 1px;
+                        opacity: 0.1;
+                        commands: root.visualization-intensity-layers[0];
+                    }
+                    // Layer 1: 20% opacity
+                    if root.show-intensity && root.visualization-intensity-layers[1] != "" : Path {
+                        viewbox-x: root.viewbox-x;
+                        viewbox-y: root.viewbox-y;
+                        viewbox-width: root.viewbox-width;
+                        viewbox-height: root.viewbox-height;
+                        width: 100%;
+                        height: 100%;
+                        fill: transparent;
+                        stroke: #000000;
+                        stroke-width: 1px;
+                        opacity: 0.2;
+                        commands: root.visualization-intensity-layers[1];
+                    }
+                    // Layer 2: 30% opacity
+                    if root.show-intensity && root.visualization-intensity-layers[2] != "" : Path {
+                        viewbox-x: root.viewbox-x;
+                        viewbox-y: root.viewbox-y;
+                        viewbox-width: root.viewbox-width;
+                        viewbox-height: root.viewbox-height;
+                        width: 100%;
+                        height: 100%;
+                        fill: transparent;
+                        stroke: #000000;
+                        stroke-width: 1px;
+                        opacity: 0.3;
+                        commands: root.visualization-intensity-layers[2];
+                    }
+                    // Layer 3: 40% opacity
+                    if root.show-intensity && root.visualization-intensity-layers[3] != "" : Path {
+                        viewbox-x: root.viewbox-x;
+                        viewbox-y: root.viewbox-y;
+                        viewbox-width: root.viewbox-width;
+                        viewbox-height: root.viewbox-height;
+                        width: 100%;
+                        height: 100%;
+                        fill: transparent;
+                        stroke: #000000;
+                        stroke-width: 1px;
+                        opacity: 0.4;
+                        commands: root.visualization-intensity-layers[3];
+                    }
+                    // Layer 4: 50% opacity
+                    if root.show-intensity && root.visualization-intensity-layers[4] != "" : Path {
+                        viewbox-x: root.viewbox-x;
+                        viewbox-y: root.viewbox-y;
+                        viewbox-width: root.viewbox-width;
+                        viewbox-height: root.viewbox-height;
+                        width: 100%;
+                        height: 100%;
+                        fill: transparent;
+                        stroke: #000000;
+                        stroke-width: 1px;
+                        opacity: 0.5;
+                        commands: root.visualization-intensity-layers[4];
+                    }
+                    // Layer 5: 60% opacity
+                    if root.show-intensity && root.visualization-intensity-layers[5] != "" : Path {
+                        viewbox-x: root.viewbox-x;
+                        viewbox-y: root.viewbox-y;
+                        viewbox-width: root.viewbox-width;
+                        viewbox-height: root.viewbox-height;
+                        width: 100%;
+                        height: 100%;
+                        fill: transparent;
+                        stroke: #000000;
+                        stroke-width: 1px;
+                        opacity: 0.6;
+                        commands: root.visualization-intensity-layers[5];
+                    }
+                    // Layer 6: 70% opacity
+                    if root.show-intensity && root.visualization-intensity-layers[6] != "" : Path {
+                        viewbox-x: root.viewbox-x;
+                        viewbox-y: root.viewbox-y;
+                        viewbox-width: root.viewbox-width;
+                        viewbox-height: root.viewbox-height;
+                        width: 100%;
+                        height: 100%;
+                        fill: transparent;
+                        stroke: #000000;
+                        stroke-width: 1px;
+                        opacity: 0.7;
+                        commands: root.visualization-intensity-layers[6];
+                    }
+                    // Layer 7: 80% opacity
+                    if root.show-intensity && root.visualization-intensity-layers[7] != "" : Path {
+                        viewbox-x: root.viewbox-x;
+                        viewbox-y: root.viewbox-y;
+                        viewbox-width: root.viewbox-width;
+                        viewbox-height: root.viewbox-height;
+                        width: 100%;
+                        height: 100%;
+                        fill: transparent;
+                        stroke: #000000;
+                        stroke-width: 1px;
+                        opacity: 0.8;
+                        commands: root.visualization-intensity-layers[7];
+                    }
+                    // Layer 8: 90% opacity
+                    if root.show-intensity && root.visualization-intensity-layers[8] != "" : Path {
+                        viewbox-x: root.viewbox-x;
+                        viewbox-y: root.viewbox-y;
+                        viewbox-width: root.viewbox-width;
+                        viewbox-height: root.viewbox-height;
+                        width: 100%;
+                        height: 100%;
+                        fill: transparent;
+                        stroke: #000000;
+                        stroke-width: 1px;
+                        opacity: 0.9;
+                        commands: root.visualization-intensity-layers[8];
+                    }
+                    // Layer 9: 100% opacity
+                    if root.show-intensity && root.visualization-intensity-layers[9] != "" : Path {
+                        viewbox-x: root.viewbox-x;
+                        viewbox-y: root.viewbox-y;
+                        viewbox-width: root.viewbox-width;
+                        viewbox-height: root.viewbox-height;
+                        width: 100%;
+                        height: 100%;
+                        fill: transparent;
+                        stroke: #000000;
+                        stroke-width: 1px;
+                        opacity: 1.0;
+                        commands: root.visualization-intensity-layers[9];
                     }
 
                     // G4 layer - Bright Blue
