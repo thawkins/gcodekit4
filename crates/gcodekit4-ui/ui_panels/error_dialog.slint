@@ -2,11 +2,14 @@
 //! Simple modal dialog for displaying error messages
 
 import { Button, VerticalBox, HorizontalBox, ScrollView } from "std-widgets.slint";
+import { Theme } from "../ui/theme.slint";
+import { StandardButton } from "../ui/ui_components/shared.slint";
 
 export component ErrorDialog inherits Window {
     title: "Error";
     width: 800px;
     height: 200px;
+    background: Theme.background;
     
     in-out property <string> error-message: "An error occurred";
     
@@ -25,7 +28,7 @@ export component ErrorDialog inherits Window {
                 width: 48px;
                 height: 48px;
                 border-radius: 24px;
-                background: #ff4444;
+                background: Theme.danger;
                 
                 Text {
                     text: "✖";
@@ -45,7 +48,7 @@ export component ErrorDialog inherits Window {
                     Text {
                         text: error-message;
                         font-size: 14px;
-                        color: #333;
+                        color: Theme.text-primary;
                         wrap: word-wrap;
                         width: 100%;
                         horizontal-alignment: left;
@@ -58,10 +61,10 @@ export component ErrorDialog inherits Window {
         HorizontalBox {
             alignment: center;
             
-            Button {
+            StandardButton {
                 text: "OK";
                 primary: true;
-                min-width: 100px;
+                width: 100px;
                 clicked => {
                     root.close-dialog();
                 }

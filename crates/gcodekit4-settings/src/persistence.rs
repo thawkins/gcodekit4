@@ -89,14 +89,14 @@ impl SettingsPersistence {
         let ui = &self.config.ui;
 
         // Theme
-        let themes = vec!["Dark".to_string(), "Light".to_string()];
+        let themes = vec!["Dark".to_string(), "Light".to_string(), "System".to_string()];
         dialog.add_setting(
             Setting::new(
                 "theme",
                 "Theme",
                 SettingValue::Enum(ui.theme.clone(), themes),
             )
-            .with_description("Application color theme")
+            .with_description("Application color theme (Light, Dark, or System default)")
             .with_category(SettingsCategory::UserInterface),
         );
 
@@ -146,6 +146,17 @@ impl SettingsPersistence {
                 ),
             )
             .with_description("Show the status bar at the bottom")
+            .with_category(SettingsCategory::UserInterface),
+        );
+
+        // Show Menu Shortcuts
+        dialog.add_setting(
+            Setting::new(
+                "show_menu_shortcuts",
+                "Show Menu Shortcuts",
+                SettingValue::Boolean(ui.show_menu_shortcuts),
+            )
+            .with_description("Display keyboard shortcuts in menu items")
             .with_category(SettingsCategory::UserInterface),
         );
     }
@@ -245,6 +256,12 @@ impl SettingsPersistence {
                     .ui
                     .panel_visibility
                     .insert("status_bar".to_string(), value);
+            }
+        }
+
+        if let Some(setting) = dialog.get_setting("show_menu_shortcuts") {
+            if let Ok(value) = setting.value.as_str().parse::<bool>() {
+                self.config.ui.show_menu_shortcuts = value;
             }
         }
 

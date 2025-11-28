@@ -2,3 +2,5 @@
 2. add a closed property to polyline( path) objects to close the start to the end if they are not colocated. 
 3. Add the ability to convert a polyline (path) object to a rectangle based on its bounding box, support multiple selected shapes. this provides a simple way of converting polyline slots into a rectangle that can be set to a slot. 
 4. There is a bug in changing the dimension properties of a multiselect set. 
+5. setup menu to use a mono font for menus, put the menubar inside a rectangle with the correct font family. 
+6. work on switching themes. 

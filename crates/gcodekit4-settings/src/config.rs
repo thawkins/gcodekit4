@@ -76,12 +76,14 @@ pub struct UiSettings {
     pub window_height: u32,
     /// Whether panels are visible (by name)
     pub panel_visibility: HashMap<String, bool>,
-    /// Selected theme (light/dark)
+    /// Selected theme (light/dark/system)
     pub theme: String,
     /// Font size in points
     pub font_size: u8,
     /// UI language code (e.g., "en", "es", "fr")
     pub language: String,
+    /// Show keyboard shortcuts in menus
+    pub show_menu_shortcuts: bool,
 }
 
 impl Default for UiSettings {
@@ -99,6 +101,7 @@ impl Default for UiSettings {
             theme: "dark".to_string(),
             font_size: 12,
             language: "en".to_string(),
+            show_menu_shortcuts: true,
         }
     }
 }

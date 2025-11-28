@@ -36,8 +36,8 @@ impl fmt::Display for GrblResponse {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Ok => write!(f, "ok"),
-            Self::Error(code) => write!(f, "error:{}", code),
-            Self::Alarm(code) => write!(f, "alarm:{}", code),
+            Self::Error(code) => write!(f, "{}", super::error_decoder::format_error(*code)),
+            Self::Alarm(code) => write!(f, "{}", super::error_decoder::format_alarm(*code)),
             Self::Status(_) => write!(f, "status"),
             Self::Setting { number, value } => write!(f, "setting:${}={}", number, value),
             Self::ParserState(state) => write!(f, "parser_state:{}", state),

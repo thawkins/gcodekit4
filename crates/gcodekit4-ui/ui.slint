@@ -126,6 +126,7 @@ export component MainWindow inherits Window {
     in-out property <string> selected-port: "";
     in property <bool> connected: false;
     in property <string> connection-status: "Disconnected";
+    in property <bool> show-menu-shortcuts: true;
     in-out property <float> progress-value: 0.0;
     in property <string> device-version: "Unknown";
     in property <string> firmware-capabilities: "No firmware detected";
@@ -1689,7 +1690,7 @@ export component MainWindow inherits Window {
     // Settings Dialog
     SettingsDialog {
         visible: settings-dialog-visible;
-        dialog-visible: settings-dialog-visible;
+        dialog-visible <=> settings-dialog-visible;
         settings-category: settings-category;
         current-settings: current-settings;
         menu-settings-save => { root.menu-settings-save(); }
@@ -1713,7 +1714,7 @@ export component MainWindow inherits Window {
                 enabled: false;
             }
             MenuItem {
-                title: @tr("New");
+                title: root.show-menu-shortcuts ? "New                             Ctrl+N" : "New";
                 activated => {
                     if (root.current-view == "designer") {
                         root.designer-file-new();
@@ -1723,7 +1724,7 @@ export component MainWindow inherits Window {
                 }
             }
             MenuItem {
-                title: @tr("Open File");
+                title: root.show-menu-shortcuts ? "Open File                        Ctrl+O" : "Open File";
                 activated => {
                     if (root.current-view == "designer") {
                         root.designer-file-open();
@@ -1733,7 +1734,7 @@ export component MainWindow inherits Window {
                 }
             }
             MenuItem {
-                title: @tr("Save File");
+                title: root.show-menu-shortcuts ? "Save File                        Ctrl+S" : "Save File";
                 activated => {
                     if (root.current-view == "designer") {
                         root.designer-file-save();
@@ -1743,7 +1744,7 @@ export component MainWindow inherits Window {
                 }
             }
             MenuItem {
-                title: @tr("Save As");
+                title: root.show-menu-shortcuts ? "Save As                     Ctrl+Shift+S" : "Save As";
                 activated => {
                     if (root.current-view == "designer") {
                         root.designer-file-save-as();
@@ -1800,7 +1801,7 @@ export component MainWindow inherits Window {
                 }
             }
             MenuItem {
-                title: @tr("Exit");
+                title: root.show-menu-shortcuts ? "Exit                            Ctrl+Q" : "Exit";
                 activated => { root.menu-file-exit(); }
             }
         }
@@ -1808,14 +1809,14 @@ export component MainWindow inherits Window {
         Menu {
             title: @tr("Edit");
             MenuItem {
-                title: @tr("Select All");
+                title: root.show-menu-shortcuts ? "Select All                      Ctrl+A" : "Select All";
                 enabled: root.current-view == "designer" && root.designer-shapes.length > 0;
                 activated => {
                     root.designer-select-all();
                 }
             }
             MenuItem {
-                title: @tr("Undo");
+                title: root.show-menu-shortcuts ? "Undo                             Ctrl+Z" : "Undo";
                 enabled: root.current-view == "designer" ? root.designer-state.can_undo : root.can-undo;
                 activated => {
                     if (root.current-view == "designer") {
@@ -1826,7 +1827,7 @@ export component MainWindow inherits Window {
                 }
             }
             MenuItem {
-                title: @tr("Redo");
+                title: root.show-menu-shortcuts ? "Redo                        Ctrl+Shift+Z" : "Redo";
                 enabled: root.current-view == "designer" ? root.designer-state.can_redo : root.can-redo;
                 activated => {
                     if (root.current-view == "designer") {
@@ -1852,7 +1853,7 @@ export component MainWindow inherits Window {
         Menu {
             title: @tr("View");
             MenuItem {
-                title: @tr("Zoom In");
+                title: root.show-menu-shortcuts ? "Zoom In                              +" : "Zoom In";
                 enabled: root.current-view == "designer" || root.current-view == "gcode-visualizer";
                 activated => {
                     if (root.current-view == "designer") {
@@ -1863,7 +1864,7 @@ export component MainWindow inherits Window {
                 }
             }
             MenuItem {
-                title: @tr("Zoom Out");
+                title: root.show-menu-shortcuts ? "Zoom Out                             -" : "Zoom Out";
                 enabled: root.current-view == "designer" || root.current-view == "gcode-visualizer";
                 activated => {
                     if (root.current-view == "designer") {

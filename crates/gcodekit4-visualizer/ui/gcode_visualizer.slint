@@ -43,6 +43,8 @@ export component GcodeVisualizerPanel inherits Rectangle {
     out property <float> canvas-width: canvas-rect.width / 1px;
     out property <float> canvas-height: canvas-rect.height / 1px;
     
+    private property <bool> space-pressed: false;
+    
     callback refresh-visualization(/* canvas_width */ float, /* canvas_height */ float);
     callback zoom-in(/* canvas_width */ float, /* canvas_height */ float);
     callback zoom-out(/* canvas_width */ float, /* canvas_height */ float);
@@ -155,11 +157,31 @@ export component GcodeVisualizerPanel inherits Rectangle {
             canvas-focus := FocusScope {
                 width: 100%;
                 height: 100%;
+                
+                key-pressed(event) => {
+                    if event.text == " " {
+                        root.space-pressed = true;
+                        return accept;
+                    }
+                    reject
+                }
+                
+                key-released(event) => {
+                    if event.text == " " {
+                        root.space-pressed = false;
+                        return accept;
+                    }
+                    reject
+                }
 
-                // Main visualization area
-                canvas-rect := Rectangle {
+                ScrollView {
                     width: 100%;
                     height: 100%;
+                    
+                    // Main visualization area
+                    canvas-rect := Rectangle {
+                        width: 100%;
+                        height: 100%;
                     
                     // Grid layer
                     if root.show-grid && root.visualization-grid-data != "" : Path {
@@ -388,6 +410,7 @@ export component GcodeVisualizerPanel inherits Rectangle {
                             StandardTooltip { text: "Zoom In"; show: zoom-in-touch.has-hover; y: parent.height + 5px; x: (parent.width - self.width) / 2; }
                         }
                     }
+                }
                 }
             }
         }

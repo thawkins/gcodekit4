@@ -1,3 +1,12 @@
+## [0.46.3-alpha] - 2025-11-28
+
+### Added
+- **Error Decoding**: Added dedicated `error_decoder` module to `gcodekit4-communication` for better GRBL error handling.
+
+### Changed
+- **UI Updates**: Minor updates to Designer, Settings, and Visualizer UI components.
+- **Configuration**: Updated settings persistence and configuration logic.
+
 ## [0.46.2-alpha] - 2025-11-28
 
 ### Fixed

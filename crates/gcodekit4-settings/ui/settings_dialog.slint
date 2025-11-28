@@ -2,6 +2,8 @@
 //! Preferences/settings dialog UI with category sidebar and dynamic settings rendering.
 
 import { Button, CheckBox, ComboBox, LineEdit, ScrollView, VerticalBox, HorizontalBox, ListView } from "std-widgets.slint";
+import { Theme } from "../../gcodekit4-ui/ui/theme.slint";
+import { StandardButton, StandardInput, StandardCheckBox } from "../../gcodekit4-ui/ui/ui_components/shared.slint";
 
 export struct SettingItem {
     id: string,
@@ -30,7 +32,7 @@ component SettingRow inherits Rectangle {
         Text {
             text: root.setting.name + ":";
             font-size: 12px;
-            color: #34495e;
+            color: Theme.text-primary;
             width: 140px;
             vertical-alignment: center;
         }
@@ -58,7 +60,7 @@ component SettingRow inherits Rectangle {
         if root.setting.description != "" : Text {
             text: root.setting.description;
             font-size: 11px;
-            color: #7f8c8d;
+            color: Theme.text-secondary;
             vertical-alignment: center;
             overflow: elide;
             horizontal-stretch: 1;
@@ -73,14 +75,14 @@ component CategoryItem inherits Rectangle {
     callback clicked();
     
     height: 40px;
-    background: root.selected ? #3d5470 : transparent;
+    background: root.selected ? Theme.sidebar-item-selected : transparent;
     
     HorizontalBox {
         padding-left: 15px;
         alignment: start;
         Text { 
             text: root.name; 
-            color: white; 
+            color: Theme.text-primary; 
             font-size: 13px; 
             font-weight: root.selected ? 700 : 400;
             vertical-alignment: center;
@@ -115,7 +117,7 @@ export component SettingsDialog inherits Rectangle {
         y: (parent.height - 600px) / 2;
         width: 800px;
         height: 600px;
-        background: #ecf0f1;
+        background: Theme.background;
         border-radius: 8px;
         clip: true;
         z: 2001;
@@ -127,7 +129,7 @@ export component SettingsDialog inherits Rectangle {
             // Header
             Rectangle {
                 height: 50px;
-                background: #2c3e50;
+                background: Theme.sidebar-background;
                 VerticalBox {
                     padding-left: 20px;
                     alignment: center;
@@ -135,7 +137,7 @@ export component SettingsDialog inherits Rectangle {
                         text: "Preferences";
                         font-size: 18px;
                         font-weight: 700;
-                        color: white;
+                        color: Theme.text-primary;
                     }
                 }
             }
@@ -209,7 +211,7 @@ export component SettingsDialog inherits Rectangle {
                 
                 // Settings Panel
                 Rectangle {
-                    background: #ecf0f1;
+                    background: Theme.panel-background;
                     VerticalBox {
                         padding: 20px;
                         spacing: 15px;
@@ -222,17 +224,17 @@ export component SettingsDialog inherits Rectangle {
                                   "Advanced Settings";
                             font-size: 16px;
                             font-weight: 700;
-                            color: #2c3e50;
+                            color: Theme.text-primary;
                         }
                         
                         Rectangle {
                             height: 1px;
-                            background: #bdc3c7;
+                            background: Theme.border;
                         }
                         
                         if root.settings-category == "controller" : Text {
                             text: "Connection settings have been moved to Device Manager.";
-                            color: #7f8c8d;
+                            color: Theme.text-secondary;
                             horizontal-alignment: center;
                             vertical-alignment: center;
                             height: 100px;
@@ -253,35 +255,32 @@ export component SettingsDialog inherits Rectangle {
             // Buttons
             Rectangle {
                 height: 60px;
-                background: #ecf0f1;
+                background: Theme.panel-background;
                 border-width: 1px;
-                border-color: #bdc3c7;
+                border-color: Theme.border;
                 HorizontalBox {
                     padding: 12px;
                     spacing: 12px;
                     alignment: end;
                     
-                    Button {
+                    StandardButton {
                         text: "Restore Defaults";
                         width: 140px;
-                        height: 36px;
                         clicked => { root.menu-settings-restore-defaults(); }
                     }
                     
-                    Button {
+                    StandardButton {
                         text: "Cancel";
                         width: 90px;
-                        height: 36px;
                         clicked => {
                             root.dialog-visible = false;
                             root.menu-settings-cancel();
                         }
                     }
                     
-                    Button {
+                    StandardButton {
                         text: "OK";
                         width: 90px;
-                        height: 36px;
                         primary: true;
                         clicked => {
                             root.dialog-visible = false;

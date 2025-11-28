@@ -59,6 +59,7 @@ impl SettingsController {
                 SettingValue::Boolean(_) => "Boolean",
                 SettingValue::Integer(_) => "Integer",
                 SettingValue::Float(_) => "Float",
+                SettingValue::Enum(_, _) => "Enum",
                 _ => "String",
             };
 
