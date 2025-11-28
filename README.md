@@ -549,6 +549,7 @@ You may choose either license for your use of this software.
 **Stability**: Alpha (breaking changes may occur)
 
 ### Recent Updates (v0.46.3)
+- **CI/CD**: Updated release workflow to use PAT for secure uploads.
 - **Maintenance**: Added error decoder module and updated UI components.
 
 ### Recent Updates (v0.46.2)

@@ -5,6 +5,8 @@
 **Status**: Feature Release
 
 ### Latest Release (v0.46.3-alpha) - Maintenance
+- ✅ **CI/CD**
+  - Updated release workflow to use PAT for secure uploads.
 - ✅ **Error Handling**
   - Added dedicated error decoder module.
 - ✅ **UI Polish**
