@@ -1,10 +1,14 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.46.3-alpha  
+**Version**: 0.46.4-alpha  
 **Last Updated**: 2025-11-28  
 **Status**: Feature Release
 
-### Latest Release (v0.46.3-alpha) - Maintenance
+### Latest Release (v0.46.4-alpha) - CI/CD Fix
+- ✅ **CI/CD**
+  - Triggering new release build with updated workflow configuration.
+
+### Previous Release (v0.46.3-alpha) - Maintenance
 - ✅ **CI/CD**
   - Updated release workflow to use PAT for secure uploads.
 - ✅ **Error Handling**

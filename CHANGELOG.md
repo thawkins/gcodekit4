@@ -1,3 +1,8 @@
+## [0.46.4-alpha] - 2025-11-28
+
+### Fixed
+- **CI/CD**: Triggering new release build with updated workflow configuration using PAT token.
+
 ## [0.46.3-alpha] - 2025-11-28
 
 ### Added
