@@ -4,7 +4,7 @@ A modern, cross-platform G-Code sender and CNC machine controller written in Rus
 
 [![Build Status](https://github.com/thawkins/gcodekit4/workflows/Build%20and%20Release/badge.svg)](https://github.com/thawkins/gcodekit4/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-0.45.0--alpha-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-0.46.0--alpha-brightgreen.svg)](CHANGELOG.md)
 
 ## Overview
 
@@ -544,9 +544,13 @@ You may choose either license for your use of this software.
 
 ## Project Status
 
-**Current Version**: 0.44.0-alpha
+**Current Version**: 0.46.0-alpha
 **Status**: Active Development
 **Stability**: Alpha (breaking changes may occur)
+
+### Recent Updates (v0.46.0)
+- **CI/CD**: Added GitHub Actions workflow to build and release binaries for Linux, Windows, and macOS on every push and tag.
+- **Jog Command Latency**: Fixed 5-10 second delay when sending jog commands by reducing serial port read timeout from 5000ms to 50ms.
 
 ### Recent Updates (v0.45.0)
 - **UI Refactoring**:

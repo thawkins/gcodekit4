@@ -1,10 +1,16 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.45.0-alpha  
-**Last Updated**: 2025-11-27  
+**Version**: 0.46.0-alpha  
+**Last Updated**: 2025-11-28  
 **Status**: Feature Release
 
-### Latest Release (v0.45.0-alpha) - UI Standardization
+### Latest Release (v0.46.0-alpha) - CI/CD & Performance
+- ✅ **CI/CD**
+  - **GitHub Actions**: Automated build and release workflow for Linux, Windows, and macOS.
+- ✅ **Performance**
+  - **Jog Latency**: Fixed 5-10s delay in jog commands by optimizing serial timeout.
+
+### Previous Release (v0.45.0-alpha) - UI Standardization
 - ✅ **CNC Tools & Materials Views**
   - **Dark Theme**: Consistent dark styling across all management views.
   - **Custom Widgets**: Reusable, theme-aware buttons, inputs, and dropdowns.

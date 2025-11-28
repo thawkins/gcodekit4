@@ -1,11 +1,14 @@
-## [0.45.0-alpha] - 2025-11-27
+## [0.46.0-alpha] - 2025-11-28
 
 ### Added
 - **CI/CD**: Added GitHub Actions workflow to build and release binaries for Linux, Windows, and macOS on every push and tag.
 
 ### Fixed
 - **Jog Command Latency**: Fixed 5-10 second delay when sending jog commands by reducing serial port read timeout from 5000ms to 50ms in `src/main.rs`.
-- **Designer Panel Layout**: Fixed right properties panel floating in center - corrected HorizontalLayout structure to properly contain left sidebar, canvas, and right panel
+
+## [0.45.0-alpha] - 2025-11-27
+
+### Fixed
 - **Designer Zoom Controls**: Fixed missing zoom in/out buttons - moved misplaced closing braces to keep all three zoom controls visible
 - **Device Console Layout**: Fixed log entries appearing centered - added proper alignment to display logs from top-left
 - **Tooltip Z-Index**: Fixed tooltips appearing behind buttons - implemented static z-index of 100 for proper layering
