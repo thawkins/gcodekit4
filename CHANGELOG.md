@@ -1,3 +1,8 @@
+## [0.46.5-alpha] - 2025-11-28
+
+### Fixed
+- **CI/CD**: Triggering release with updated secret configuration (`RELEASE`).
+
 ## [0.46.4-alpha] - 2025-11-28
 
 ### Fixed

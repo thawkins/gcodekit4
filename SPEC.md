@@ -1,10 +1,14 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.46.4-alpha  
+**Version**: 0.46.5-alpha  
 **Last Updated**: 2025-11-28  
 **Status**: Feature Release
 
-### Latest Release (v0.46.4-alpha) - CI/CD Fix
+### Latest Release (v0.46.5-alpha) - CI/CD Fix 2
+- ✅ **CI/CD**
+  - Triggering release with updated secret configuration.
+
+### Previous Release (v0.46.4-alpha) - CI/CD Fix
 - ✅ **CI/CD**
   - Triggering new release build with updated workflow configuration.
 
