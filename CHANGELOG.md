@@ -4,6 +4,7 @@
 - **Error Decoding**: Added dedicated `error_decoder` module to `gcodekit4-communication` for better GRBL error handling.
 
 ### Changed
+- **CI/CD**: Updated release workflow to use `PAT` secret for GitHub release uploads to ensure proper permissions.
 - **UI Updates**: Minor updates to Designer, Settings, and Visualizer UI components.
 - **Configuration**: Updated settings persistence and configuration logic.
 
