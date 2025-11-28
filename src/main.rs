@@ -7,7 +7,7 @@ use gcodekit4::{
     SpeedsFeedsCalculator, SpoilboardSurfacingGenerator, SpoilboardSurfacingParameters,
     TabbedBoxMaker, BUILD_DATE, VERSION,
 };
-use gcodekit4_communication::firmware::grbl::error_decoder;
+use gcodekit4_communication::firmware::grbl::format_error;
 use gcodekit4_devicedb::{
     DeviceManager, DeviceProfileUiModel as DbDeviceProfile, DeviceUiController,
 };
@@ -1056,7 +1056,7 @@ fn main() -> anyhow::Result<()> {
         drop(dialog);
         
         // Apply UI settings to window
-        main_window.set_show_menu_shortcuts(persistence.config().ui.show_menu_shortcuts);
+        // main_window.set_show_menu_shortcuts(persistence.config().ui.show_menu_shortcuts);
     }
 
     // Initialize Settings Controller
@@ -1260,9 +1260,9 @@ fn main() -> anyhow::Result<()> {
                 Ok(_) => {
                     warn!("Settings saved to file");
                     // Apply UI settings
-                    if let Some(window) = window_weak.upgrade() {
-                        let persistence = persistence_clone.borrow();
-                        window.set_show_menu_shortcuts(persistence.config().ui.show_menu_shortcuts);
+                    if let Some(_window) = window_weak.upgrade() {
+                        let _persistence = persistence_clone.borrow();
+                        // window.set_show_menu_shortcuts(persistence.config().ui.show_menu_shortcuts);
                     }
                 }
                 Err(e) => warn!("Failed to save settings: {}", e),
@@ -1474,7 +1474,7 @@ fn main() -> anyhow::Result<()> {
                                             // Decode error code if present
                                             let error_msg = if let Some(code_str) = line.strip_prefix("error:") {
                                                 if let Ok(code) = code_str.trim().parse::<u8>() {
-                                                    error_decoder::format_error(code)
+                                                    format_error(code)
                                                 } else {
                                                     format!("GRBL error: {}", line)
                                                 }
