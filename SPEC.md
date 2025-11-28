@@ -1,10 +1,14 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.46.6-alpha  
+**Version**: 0.46.7-alpha  
 **Last Updated**: 2025-11-28  
 **Status**: Feature Release
 
-### Latest Release (v0.46.6-alpha) - CI/CD Trigger
+### Latest Release (v0.46.7-alpha) - Bug Fix
+- ✅ **Designer**
+  - Fixed incorrect properties display for multiple selections.
+
+### Previous Release (v0.46.6-alpha) - CI/CD Trigger
 - ✅ **CI/CD**
   - Triggering release build.
 

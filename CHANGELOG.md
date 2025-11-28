@@ -1,3 +1,8 @@
+## [0.46.7-alpha] - 2025-11-28
+
+### Fixed
+- **Designer**: Fixed incorrect X/Y/W/H values in properties panel when multiple items are selected. Now correctly shows the bounding box of the entire selection.
+
 ## [0.46.6-alpha] - 2025-11-28
 
 ### Fixed
