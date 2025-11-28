@@ -1708,13 +1708,13 @@ export component DesignerPanel inherits Rectangle {
                                     Text { text: "X:"; vertical-alignment: center; width: 20px; color: #bdc3c7; }
                                     CompactSpinBox { 
                                         value: root.selected_shape_x;
-                                        minimum: -1000.0; maximum: 1000.0; step: 0.1;
+                                        minimum: -100000.0; maximum: 100000.0; step: 0.1;
                                         value-changed(v) => { root.update_shape_property(0, v); }
                                     }
                                     Text { text: "Y:"; vertical-alignment: center; width: 20px; color: #bdc3c7; }
                                     CompactSpinBox { 
                                         value: root.selected_shape_y;
-                                        minimum: -1000.0; maximum: 1000.0; step: 0.1;
+                                        minimum: -100000.0; maximum: 100000.0; step: 0.1;
                                         value-changed(v) => { root.update_shape_property(1, v); }
                                     }
                                 }
@@ -1724,13 +1724,13 @@ export component DesignerPanel inherits Rectangle {
                                     Text { text: "W:"; vertical-alignment: center; width: 20px; color: #bdc3c7; }
                                     CompactSpinBox { 
                                         value: root.selected_shape_w;
-                                        minimum: 0.1; maximum: 1000.0; step: 0.1;
+                                        minimum: 0.1; maximum: 100000.0; step: 0.1;
                                         value-changed(v) => { root.update_shape_property(2, v); }
                                     }
                                     Text { text: "H:"; vertical-alignment: center; width: 20px; color: #bdc3c7; }
                                     CompactSpinBox { 
                                         value: root.selected_shape_h;
-                                        minimum: 0.1; maximum: 1000.0; step: 0.1;
+                                        minimum: 0.1; maximum: 100000.0; step: 0.1;
                                         value-changed(v) => { root.update_shape_property(3, v); }
                                     }
                                 }
