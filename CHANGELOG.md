@@ -1,3 +1,8 @@
+## [0.46.2-alpha] - 2025-11-28
+
+### Fixed
+- **Compilation Errors**: Fixed unresolved import `format_error` in `main.rs` by using the explicit path `gcodekit4_communication::firmware::grbl::error_decoder::format_error`.
+
 ## [0.46.1-alpha] - 2025-11-28
 
 ### Fixed

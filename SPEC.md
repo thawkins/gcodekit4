@@ -1,10 +1,14 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.46.1-alpha  
+**Version**: 0.46.2-alpha  
 **Last Updated**: 2025-11-28  
 **Status**: Feature Release
 
-### Latest Release (v0.46.1-alpha) - Hotfix
+### Latest Release (v0.46.2-alpha) - Hotfix 2
+- ✅ **Build Fixes**
+  - Fixed unresolved import `format_error` in `main.rs`.
+
+### Previous Release (v0.46.1-alpha) - Hotfix
 - ✅ **Build Fixes**
   - Resolved compilation errors in `main.rs`.
 
