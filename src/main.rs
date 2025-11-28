@@ -5620,13 +5620,27 @@ fn main() -> anyhow::Result<()> {
         if let Some(window) = window_weak_prop.upgrade() {
             let mut state = designer_mgr_prop.borrow_mut();
             
-            // Get current values from state
-            let (cur_x, cur_y, cur_w, cur_h) = if let Some(id) = state.canvas.selected_id() {
-                if let Some(obj) = state.canvas.get_shape(id) {
-                    let (x1, y1, x2, y2) = obj.shape.bounding_box();
-                    (x1, y1, (x2-x1).abs(), (y2-y1).abs())
-                } else { (0.0, 0.0, 0.0, 0.0) }
-            } else { (0.0, 0.0, 0.0, 0.0) };
+            // Get current values from state (union of all selected)
+            let mut min_x = f64::INFINITY;
+            let mut min_y = f64::INFINITY;
+            let mut max_x = f64::NEG_INFINITY;
+            let mut max_y = f64::NEG_INFINITY;
+            let mut has_selected = false;
+
+            for obj in state.canvas.shapes().filter(|s| s.selected) {
+                let (x1, y1, x2, y2) = obj.shape.bounding_box();
+                min_x = min_x.min(x1);
+                min_y = min_y.min(y1);
+                max_x = max_x.max(x2);
+                max_y = max_y.max(y2);
+                has_selected = true;
+            }
+
+            let (cur_x, cur_y, cur_w, cur_h) = if has_selected {
+                (min_x, min_y, (max_x - min_x).abs(), (max_y - min_y).abs())
+            } else {
+                (0.0, 0.0, 0.0, 0.0)
+            };
 
             match prop_id {
                 0 => state.set_selected_position_and_size_with_flags(value as f64, cur_y, cur_w, cur_h, true, false),

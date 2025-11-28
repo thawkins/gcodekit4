@@ -949,74 +949,62 @@ impl Canvas {
 
         let mut updates = Vec::new();
         
+        // 1. Calculate union bounding box of all selected items
+        let mut min_x = f64::INFINITY;
+        let mut min_y = f64::INFINITY;
+        let mut max_x = f64::NEG_INFINITY;
+        let mut max_y = f64::NEG_INFINITY;
+        let mut has_selected = false;
+
         for obj in self.shape_store.iter().filter(|o| o.selected) {
-            let (old_x, old_y, old_x2, old_y2) = obj.shape.bounding_box();
-            let old_w = old_x2 - old_x;
-            let old_h = old_y2 - old_y;
+            let (x1, y1, x2, y2) = obj.shape.bounding_box();
+            min_x = min_x.min(x1);
+            min_y = min_y.min(y1);
+            max_x = max_x.max(x2);
+            max_y = max_y.max(y2);
+            has_selected = true;
+        }
 
-            let target_x = if update_position { x } else { old_x };
-            let target_y = if update_position { y } else { old_y };
-            let target_w = if update_size { w } else { old_w };
-            let target_h = if update_size { h } else { old_h };
+        if !has_selected {
+            return updates;
+        }
 
-            let new_shape = match &obj.shape {
-                Shape::Rectangle(_) => Shape::Rectangle(Rectangle::new(target_x, target_y, target_w, target_h)),
-                Shape::Circle(_) => {
-                    let radius = target_w.min(target_h) / 2.0;
-                    Shape::Circle(Circle::new(
-                        Point::new(target_x + radius, target_y + radius),
-                        radius,
-                    ))
-                }
-                Shape::Line(_) => Shape::Line(Line::new(
-                    Point::new(target_x, target_y),
-                    Point::new(target_x + target_w, target_y + target_h),
-                )),
-                Shape::Ellipse(_) => {
-                    let center = Point::new(target_x + target_w / 2.0, target_y + target_h / 2.0);
-                    Shape::Ellipse(Ellipse::new(center, target_w / 2.0, target_h / 2.0))
-                }
-                Shape::Path(path_shape) => {
-                    let (path_x1, path_y1, path_x2, path_y2) = path_shape.bounding_box();
-                    let path_w = path_x2 - path_x1;
-                    let path_h = path_y2 - path_y1;
+        let old_w = max_x - min_x;
+        let old_h = max_y - min_y;
+        let old_x = min_x;
+        let old_y = min_y;
 
-                    let scale_x = if update_size && path_w.abs() > 1e-6 {
-                        target_w / path_w
-                    } else {
-                        1.0
-                    };
-                    let scale_y = if update_size && path_h.abs() > 1e-6 {
-                        target_h / path_h
-                    } else {
-                        1.0
-                    };
+        // 2. Determine target values
+        let target_x = if update_position { x } else { old_x };
+        let target_y = if update_position { y } else { old_y };
+        let target_w = if update_size { w } else { old_w };
+        let target_h = if update_size { h } else { old_h };
 
-                    let center_x = (path_x1 + path_x2) / 2.0;
-                    let center_y = (path_y1 + path_y2) / 2.0;
+        // 3. Calculate scale factors
+        let sx = if update_size && old_w.abs() > 1e-6 { target_w / old_w } else { 1.0 };
+        let sy = if update_size && old_h.abs() > 1e-6 { target_h / old_h } else { 1.0 };
 
-                    let mut scaled = path_shape.clone();
-                    scaled.scale(scale_x, scale_y, Point::new(center_x, center_y));
+        // Center of the original group
+        let group_center_x = min_x + old_w / 2.0;
+        let group_center_y = min_y + old_h / 2.0;
 
-                    let new_center_x = target_x + target_w / 2.0;
-                    let new_center_y = target_y + target_h / 2.0;
-
-                    let dx = new_center_x - center_x;
-                    let dy = new_center_y - center_y;
-
-                    scaled.translate(dx, dy);
-                    Shape::Path(scaled)
-                }
-                Shape::Text(text) => Shape::Text(TextShape::new(
-                    text.text.clone(),
-                    target_x,
-                    target_y,
-                    text.font_size,
-                )),
-            };
-            
+        for obj in self.shape_store.iter().filter(|o| o.selected) {
             let mut new_obj = obj.clone();
-            new_obj.shape = new_shape;
+            
+            // Apply scaling relative to group center
+            new_obj.shape.scale(sx, sy, Point::new(group_center_x, group_center_y));
+
+            // Calculate translation to move to target position
+            // The group's new center after scaling is still (group_center_x, group_center_y)
+            // But its size is (target_w, target_h), so its new top-left is:
+            let current_new_x = group_center_x - target_w / 2.0;
+            let current_new_y = group_center_y - target_h / 2.0;
+
+            let dx = target_x - current_new_x;
+            let dy = target_y - current_new_y;
+
+            new_obj.shape.translate(dx, dy);
+            
             updates.push((obj.id, new_obj));
         }
         
@@ -1034,6 +1022,45 @@ impl Canvas {
     ) -> bool {
         use crate::shapes::*;
 
+        // 1. Calculate union bounding box
+        let mut min_x = f64::INFINITY;
+        let mut min_y = f64::INFINITY;
+        let mut max_x = f64::NEG_INFINITY;
+        let mut max_y = f64::NEG_INFINITY;
+        let mut has_selected = false;
+
+        for obj in self.shape_store.iter().filter(|o| o.selected) {
+            let (x1, y1, x2, y2) = obj.shape.bounding_box();
+            min_x = min_x.min(x1);
+            min_y = min_y.min(y1);
+            max_x = max_x.max(x2);
+            max_y = max_y.max(y2);
+            has_selected = true;
+        }
+
+        if !has_selected {
+            return false;
+        }
+
+        let old_w = max_x - min_x;
+        let old_h = max_y - min_y;
+        let old_x = min_x;
+        let old_y = min_y;
+
+        // 2. Determine target values
+        let target_x = if update_position { x } else { old_x };
+        let target_y = if update_position { y } else { old_y };
+        let target_w = if update_size { w } else { old_w };
+        let target_h = if update_size { h } else { old_h };
+
+        // 3. Calculate scale factors
+        let sx = if update_size && old_w.abs() > 1e-6 { target_w / old_w } else { 1.0 };
+        let sy = if update_size && old_h.abs() > 1e-6 { target_h / old_h } else { 1.0 };
+
+        // Center of the original group
+        let group_center_x = min_x + old_w / 2.0;
+        let group_center_y = min_y + old_h / 2.0;
+
         let mut changed_any = false;
         let mut updates = Vec::new();
         
@@ -1043,92 +1070,23 @@ impl Canvas {
             }
 
             let (old_x, old_y, old_x2, old_y2) = obj.shape.bounding_box();
-            let old_w = old_x2 - old_x;
-            let old_h = old_y2 - old_y;
 
-            let target_x = if update_position { x } else { old_x };
-            let target_y = if update_position { y } else { old_y };
-            let target_w = if update_size { w } else { old_w };
-            let target_h = if update_size { h } else { old_h };
+            // Apply scaling relative to group center
+            obj.shape.scale(sx, sy, Point::new(group_center_x, group_center_y));
 
-            match obj.shape.shape_type() {
-                crate::ShapeType::Rectangle => {
-                    obj.shape = Shape::Rectangle(Rectangle::new(target_x, target_y, target_w, target_h));
-                    changed_any = true;
-                }
-                crate::ShapeType::Circle => {
-                    let radius = target_w.min(target_h) / 2.0;
-                    obj.shape = Shape::Circle(Circle::new(
-                        Point::new(target_x + radius, target_y + radius),
-                        radius,
-                    ));
-                    changed_any = true;
-                }
-                crate::ShapeType::Line => {
-                    obj.shape = Shape::Line(Line::new(
-                        Point::new(target_x, target_y),
-                        Point::new(target_x + target_w, target_y + target_h),
-                    ));
-                    changed_any = true;
-                }
-                crate::ShapeType::Ellipse => {
-                    let center = Point::new(target_x + target_w / 2.0, target_y + target_h / 2.0);
-                    obj.shape = Shape::Ellipse(Ellipse::new(center, target_w / 2.0, target_h / 2.0));
-                    changed_any = true;
-                }
-                crate::ShapeType::Path => {
-                    if let Some(path_shape) =
-                        obj.shape.as_any().downcast_ref::<crate::shapes::PathShape>()
-                    {
-                        let (path_x1, path_y1, path_x2, path_y2) = path_shape.bounding_box();
-                        let path_w = path_x2 - path_x1;
-                        let path_h = path_y2 - path_y1;
+            // Calculate translation to move to target position
+            let current_new_x = group_center_x - target_w / 2.0;
+            let current_new_y = group_center_y - target_h / 2.0;
 
-                        let scale_x = if update_size && path_w.abs() > 1e-6 {
-                            target_w / path_w
-                        } else {
-                            1.0
-                        };
-                        let scale_y = if update_size && path_h.abs() > 1e-6 {
-                            target_h / path_h
-                        } else {
-                            1.0
-                        };
+            let dx = target_x - current_new_x;
+            let dy = target_y - current_new_y;
 
-                        let center_x = (path_x1 + path_x2) / 2.0;
-                        let center_y = (path_y1 + path_y2) / 2.0;
-
-                        let mut scaled = path_shape.clone();
-                        scaled.scale(scale_x, scale_y, Point::new(center_x, center_y));
-
-                        let new_center_x = target_x + target_w / 2.0;
-                        let new_center_y = target_y + target_h / 2.0;
-
-                        let dx = new_center_x - center_x;
-                        let dy = new_center_y - center_y;
-
-                        scaled.translate(dx, dy);
-                        obj.shape = Shape::Path(scaled);
-                        changed_any = true;
-                    }
-                }
-                crate::ShapeType::Text => {
-                    if let Some(text) = obj.shape.as_any().downcast_ref::<TextShape>() {
-                        obj.shape = Shape::Text(TextShape::new(
-                            text.text.clone(),
-                            target_x,
-                            target_y,
-                            text.font_size,
-                        ));
-                        changed_any = true;
-                    }
-                }
-            }
+            obj.shape.translate(dx, dy);
             
-            if changed_any {
-                let (new_x1, new_y1, new_x2, new_y2) = obj.shape.bounding_box();
-                updates.push((obj.id, Bounds::new(old_x, old_y, old_x2, old_y2), Bounds::new(new_x1, new_y1, new_x2, new_y2)));
-            }
+            changed_any = true;
+            
+            let (new_x1, new_y1, new_x2, new_y2) = obj.shape.bounding_box();
+            updates.push((obj.id, Bounds::new(old_x, old_y, old_x2, old_y2), Bounds::new(new_x1, new_y1, new_x2, new_y2)));
         }
         
         for (id, old_bounds, new_bounds) in updates {
