@@ -1,10 +1,16 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.46.7-alpha  
+**Version**: 0.50.0-alpha  
 **Last Updated**: 2025-11-28  
 **Status**: Feature Release
 
-### Latest Release (v0.46.7-alpha) - Bug Fix
+### Latest Release (v0.50.0-alpha) - Designer Fixes
+- ✅ **Designer**
+  - Fixed incorrect properties display for multiple selections.
+  - Fixed resizing logic for multiple selections.
+  - Fixed property input limits for large shapes.
+
+### Previous Release (v0.46.7-alpha) - Bug Fix
 - ✅ **Designer**
   - Fixed incorrect properties display for multiple selections.
 

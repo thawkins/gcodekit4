@@ -1,3 +1,10 @@
+## [0.50.0-alpha] - 2025-11-28
+
+### Fixed
+- **Designer**: Fixed incorrect X/Y/W/H values in properties panel when multiple items are selected. Now correctly shows the bounding box of the entire selection.
+- **Designer**: Fixed resizing logic for multiple selections to scale relative to group bounds, preventing distortion.
+- **Designer**: Increased property panel input limits to prevent clamping large shapes (fixes square resizing bug).
+
 ## [0.46.7-alpha] - 2025-11-28
 
 ### Fixed

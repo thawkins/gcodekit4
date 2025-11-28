@@ -4,7 +4,7 @@ A modern, cross-platform G-Code sender and CNC machine controller written in Rus
 
 [![Build Status](https://github.com/thawkins/gcodekit4/workflows/Build%20and%20Release/badge.svg)](https://github.com/thawkins/gcodekit4/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-0.46.7--alpha-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-0.50.0--alpha-brightgreen.svg)](CHANGELOG.md)
 
 ## Overview
 
@@ -544,9 +544,12 @@ You may choose either license for your use of this software.
 
 ## Project Status
 
-**Current Version**: 0.46.7-alpha
+**Current Version**: 0.50.0-alpha
 **Status**: Active Development
 **Stability**: Alpha (breaking changes may occur)
+
+### Recent Updates (v0.50.0)
+- **Designer**: Fixed multiple selection properties and resizing behavior.
 
 ### Recent Updates (v0.46.7)
 - **Designer**: Fixed incorrect properties display for multiple selections.
