@@ -1,3 +1,8 @@
+## [0.46.1-alpha] - 2025-11-28
+
+### Fixed
+- **Compilation Errors**: Resolved `error_decoder` import issue in `main.rs` and fixed missing `set_show_menu_shortcuts` method call.
+
 ## [0.46.0-alpha] - 2025-11-28
 
 ### Added

@@ -1,10 +1,14 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.46.0-alpha  
+**Version**: 0.46.1-alpha  
 **Last Updated**: 2025-11-28  
 **Status**: Feature Release
 
-### Latest Release (v0.46.0-alpha) - CI/CD & Performance
+### Latest Release (v0.46.1-alpha) - Hotfix
+- ✅ **Build Fixes**
+  - Resolved compilation errors in `main.rs`.
+
+### Previous Release (v0.46.0-alpha) - CI/CD & Performance
 - ✅ **CI/CD**
   - **GitHub Actions**: Automated build and release workflow for Linux, Windows, and macOS.
 - ✅ **Performance**
