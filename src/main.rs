@@ -7,7 +7,7 @@ use gcodekit4::{
     SpeedsFeedsCalculator, SpoilboardSurfacingGenerator, SpoilboardSurfacingParameters,
     TabbedBoxMaker, BUILD_DATE, VERSION,
 };
-use gcodekit4_communication::firmware::grbl::format_error;
+use gcodekit4_communication::firmware::grbl::error_decoder::format_error;
 use gcodekit4_devicedb::{
     DeviceManager, DeviceProfileUiModel as DbDeviceProfile, DeviceUiController,
 };
