@@ -1,5 +1,8 @@
 ## [0.45.0-alpha] - 2025-11-27
 
+### Added
+- **CI/CD**: Added GitHub Actions workflow to build and release binaries for Linux, Windows, and macOS on every push and tag.
+
 ### Fixed
 - **Jog Command Latency**: Fixed 5-10 second delay when sending jog commands by reducing serial port read timeout from 5000ms to 50ms in `src/main.rs`.
 - **Designer Panel Layout**: Fixed right properties panel floating in center - corrected HorizontalLayout structure to properly contain left sidebar, canvas, and right panel
