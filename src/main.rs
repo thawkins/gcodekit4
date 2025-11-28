@@ -486,7 +486,68 @@ fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState)
     window.set_designer_shapes(slint::ModelRc::from(shapes_model));
 
     // Update shape indicator with selected shape info
-    if let Some(id) = state.canvas.selected_id() {
+    let selected_count = state.canvas.selected_count();
+    if selected_count > 1 {
+        // Multiple selection - calculate bounding box of all selected shapes
+        let mut min_x = f64::INFINITY;
+        let mut min_y = f64::INFINITY;
+        let mut max_x = f64::NEG_INFINITY;
+        let mut max_y = f64::NEG_INFINITY;
+        let mut mixed_types = false;
+        let mut first_type = None;
+
+        for obj in state.canvas.shapes().filter(|s| s.selected) {
+            let (x1, y1, x2, y2) = obj.shape.bounding_box();
+            min_x = min_x.min(x1);
+            min_y = min_y.min(y1);
+            max_x = max_x.max(x2);
+            max_y = max_y.max(y2);
+
+            let shape_type = match obj.shape.shape_type() {
+                gcodekit4::ShapeType::Rectangle => 0,
+                gcodekit4::ShapeType::Circle => 1,
+                gcodekit4::ShapeType::Line => 2,
+                gcodekit4::ShapeType::Ellipse => 3,
+                gcodekit4::ShapeType::Path => 4,
+                gcodekit4::ShapeType::Text => 6,
+            };
+
+            if let Some(t) = first_type {
+                if t != shape_type {
+                    mixed_types = true;
+                }
+            } else {
+                first_type = Some(shape_type);
+            }
+        }
+
+        let width = (max_x - min_x).abs();
+        let height = (max_y - min_y).abs();
+
+        window.set_designer_selected_shape_x(min_x as f32);
+        window.set_designer_selected_shape_y(min_y as f32);
+        window.set_designer_selected_shape_w(width as f32);
+        window.set_designer_selected_shape_h(height as f32);
+        
+        // Set type to mixed (-1) or the common type
+        window.set_designer_selected_shape_type(if mixed_types { -1 } else { first_type.unwrap_or(0) });
+        
+        // Reset specific properties
+        window.set_designer_selected_shape_radius(0.0);
+        window.set_designer_selected_shape_corner_radius(0.0);
+        window.set_designer_selected_shape_is_slot(false);
+        window.set_designer_selected_shape_name(slint::SharedString::from("Multiple Selection"));
+        window.set_designer_selected_shape_text_content(slint::SharedString::from(""));
+        window.set_designer_selected_shape_font_size(0.0);
+        
+        // For CAM properties, we could show common values or defaults
+        // For now, just show defaults/mixed
+        window.set_designer_selected_shape_is_pocket(false);
+        window.set_designer_selected_shape_pocket_depth(0.0);
+        window.set_designer_selected_shape_step_down(0.0);
+        window.set_designer_selected_shape_step_in(0.0);
+        
+    } else if let Some(id) = state.canvas.selected_id() {
         if let Some(obj) = state.canvas.shapes().find(|o| o.id == id) {
             let (x1, y1, x2, y2) = obj.shape.bounding_box();
             let width = (x2 - x1).abs();
