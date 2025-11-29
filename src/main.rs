@@ -719,6 +719,30 @@ struct VectorEngravingParams {
     vector_path: String,
 }
 
+#[derive(serde::Serialize, serde::Deserialize)]
+struct BitmapEngravingParams {
+    width_mm: f32,
+    feed_rate: f32,
+    travel_rate: f32,
+    min_power: f32,
+    max_power: f32,
+    pixels_per_mm: f32,
+    scan_direction: String,
+    bidirectional: bool,
+    invert: bool,
+    line_spacing: f32,
+    power_scale: f32,
+    mirror_x: bool,
+    mirror_y: bool,
+    rotation: String,
+    halftone: String,
+    halftone_dot_size: i32,
+    halftone_threshold: i32,
+    offset_x: String,
+    offset_y: String,
+    image_path: String,
+}
+
 fn main() -> anyhow::Result<()> {
     // Initialize logging
     init_logging()?;
@@ -6408,6 +6432,107 @@ fn main() -> anyhow::Result<()> {
             dialog.set_invert(false);
             dialog.set_line_spacing(1.0);
             dialog.set_power_scale(1000.0);
+
+            // Load params callback
+            let dialog_weak_load_params = dialog.as_weak();
+            dialog.on_load_params(move || {
+                if let Some(dlg) = dialog_weak_load_params.upgrade() {
+                    use rfd::FileDialog;
+                    if let Some(path) = FileDialog::new()
+                        .add_filter("JSON Files", &["json"])
+                        .pick_file()
+                    {
+                        if let Ok(content) = std::fs::read_to_string(&path) {
+                            if let Ok(params) = serde_json::from_str::<BitmapEngravingParams>(&content) {
+                                dlg.set_width_mm(params.width_mm);
+                                dlg.set_feed_rate(params.feed_rate);
+                                dlg.set_travel_rate(params.travel_rate);
+                                dlg.set_min_power(params.min_power);
+                                dlg.set_max_power(params.max_power);
+                                dlg.set_pixels_per_mm(params.pixels_per_mm);
+                                dlg.set_scan_direction(params.scan_direction.into());
+                                dlg.set_bidirectional(params.bidirectional);
+                                dlg.set_invert(params.invert);
+                                dlg.set_line_spacing(params.line_spacing);
+                                dlg.set_power_scale(params.power_scale);
+                                dlg.set_mirror_x(params.mirror_x);
+                                dlg.set_mirror_y(params.mirror_y);
+                                dlg.set_rotation(params.rotation.into());
+                                dlg.set_halftone(params.halftone.into());
+                                dlg.set_halftone_dot_size(params.halftone_dot_size);
+                                dlg.set_halftone_threshold(params.halftone_threshold);
+                                dlg.set_offset_x(params.offset_x.into());
+                                dlg.set_offset_y(params.offset_y.into());
+                                
+                                // Load image path and update preview
+                                let image_path = params.image_path;
+                                if !image_path.is_empty() {
+                                    dlg.set_image_path(image_path.clone().into());
+                                    
+                                    // Load and convert image to Slint format for preview
+                                    if let Ok(img) = image::open(&image_path) {
+                                        // Convert to RGB8 for display
+                                        let rgb_img = img.to_rgb8();
+                                        let width = rgb_img.width();
+                                        let height = rgb_img.height();
+
+                                        // Create Slint image buffer
+                                        let buffer =
+                                            slint::SharedPixelBuffer::<slint::Rgb8Pixel>::clone_from_slice(
+                                                rgb_img.as_raw(),
+                                                width,
+                                                height,
+                                            );
+                                        dlg.set_preview_image(slint::Image::from_rgb8(buffer));
+                                    }
+                                }
+
+                                // Trigger preview update
+                                dlg.invoke_update_preview();
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Save params callback
+            let dialog_weak_save_params = dialog.as_weak();
+            dialog.on_save_params(move || {
+                if let Some(dlg) = dialog_weak_save_params.upgrade() {
+                    use rfd::FileDialog;
+                    if let Some(path) = FileDialog::new()
+                        .add_filter("JSON Files", &["json"])
+                        .save_file()
+                    {
+                        let params = BitmapEngravingParams {
+                            width_mm: dlg.get_width_mm(),
+                            feed_rate: dlg.get_feed_rate(),
+                            travel_rate: dlg.get_travel_rate(),
+                            min_power: dlg.get_min_power(),
+                            max_power: dlg.get_max_power(),
+                            pixels_per_mm: dlg.get_pixels_per_mm(),
+                            scan_direction: dlg.get_scan_direction().to_string(),
+                            bidirectional: dlg.get_bidirectional(),
+                            invert: dlg.get_invert(),
+                            line_spacing: dlg.get_line_spacing(),
+                            power_scale: dlg.get_power_scale(),
+                            mirror_x: dlg.get_mirror_x(),
+                            mirror_y: dlg.get_mirror_y(),
+                            rotation: dlg.get_rotation().to_string(),
+                            halftone: dlg.get_halftone().to_string(),
+                            halftone_dot_size: dlg.get_halftone_dot_size(),
+                            halftone_threshold: dlg.get_halftone_threshold(),
+                            offset_x: dlg.get_offset_x().to_string(),
+                            offset_y: dlg.get_offset_y().to_string(),
+                            image_path: dlg.get_image_path().to_string(),
+                        };
+                        
+                        if let Ok(content) = serde_json::to_string_pretty(&params) {
+                            let _ = std::fs::write(path, content);
+                        }
+                    }
+                }
+            });
 
             // Load image callback
             let dialog_weak_load = dialog.as_weak();

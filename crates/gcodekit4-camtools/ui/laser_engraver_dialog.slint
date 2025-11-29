@@ -52,6 +52,8 @@ export component LaserEngraverDialog inherits Dialog {
     callback generate-gcode();
     callback update-preview();
     callback close-dialog();
+    callback load-params();
+    callback save-params();
     
     title: "Laser Image Engraving";
     preferred-width: 800px;
@@ -427,6 +429,20 @@ export component LaserEngraverDialog inherits Dialog {
             spacing: 10px;
             alignment: end;
             
+            Button {
+                text: "Load";
+                clicked => {
+                    load-params();
+                }
+            }
+
+            Button {
+                text: "Save";
+                clicked => {
+                    save-params();
+                }
+            }
+
             Button {
                 text: "Generate G-code";
                 primary: true;
