@@ -1,3 +1,16 @@
+### Added
+- Added "Convert to" context menu in Designer with "Rectangle" and "Path" options.
+- Added confirmation dialog for shape conversion operations.
+- Implemented shape conversion logic (Rectangle, Path) with Undo/Redo support.
+- Added `to_path_shape` implementation for all shape types.
+
+### Changed
+- Updated `DesignerState` to support shape conversion commands.
+- Updated `ContextMenu` in Designer to support submenus.
+
+### Fixed
+- Fixed `match` arm return type issue in `convert_selected_to_path`.
+
 ## [0.51.1-alpha] - 2025-11-29
 
 ### Added

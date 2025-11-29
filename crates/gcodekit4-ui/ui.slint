@@ -128,6 +128,8 @@ export component MainWindow inherits Window {
     in property <string> connection-status: "Disconnected";
     in property <bool> show-menu-shortcuts: true;
     in-out property <float> progress-value: 0.0;
+    in property <string> job-elapsed-time: "";
+    in property <string> job-estimated-time: "";
     in property <string> device-version: "Unknown";
     in property <string> firmware-capabilities: "No firmware detected";
     in property <bool> cap-supports-arcs: false;
@@ -492,6 +494,7 @@ export component MainWindow inherits Window {
     callback invoke-designer-gcode-generated(string);
     callback show-delete-confirmation(int);
     callback designer-confirm-delete();
+    callback designer-confirm-convert(string);
     
      // CAM Tool callbacks
     callback generate-tabbed-box();
@@ -1224,6 +1227,10 @@ export component MainWindow inherits Window {
                             root.designer-confirm-delete();
                         }
                         
+                        confirm_convert(type) => {
+                            root.designer-confirm-convert(type);
+                        }
+                        
                         align_horizontal_left => {
                             root.designer-align-horizontal-left();
                         }
@@ -1557,10 +1564,48 @@ export component MainWindow inherits Window {
             HorizontalBox {
                 x: parent.width - self.width - 30px;
                 y: -1px;
-                width: 150px;
+                width: 450px;
                 spacing: 5px;
                 alignment: end;
                 
+                Text {
+                    text: "Elapsed:";
+                    color: white;
+                    font-size: 13.2px;
+                    visible: root.progress-value > 0.0;
+                }
+
+                Text {
+                    text: root.job-elapsed-time;
+                    color: white;
+                    font-size: 13.2px;
+                    visible: root.progress-value > 0.0;
+                }
+
+                Text {
+                    text: "  ";
+                    visible: root.progress-value > 0.0;
+                }
+
+                Text {
+                    text: "Remaining:";
+                    color: white;
+                    font-size: 13.2px;
+                    visible: root.progress-value > 0.0 && root.job-estimated-time != "";
+                }
+
+                Text {
+                    text: root.job-estimated-time;
+                    color: white;
+                    font-size: 13.2px;
+                    visible: root.progress-value > 0.0;
+                }
+
+                Text {
+                    text: "  ";
+                    visible: root.progress-value > 0.0;
+                }
+
                 Text {
                     text: "Progress:";
                     color: white;

@@ -5897,6 +5897,21 @@ fn main() -> anyhow::Result<()> {
     // Removed on_designer_save_shape_properties as updates are now immediate
     main_window.on_designer_save_shape_properties(move || {});
 
+    // Designer: Confirm Convert
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_confirm_convert(move |conversion_type: slint::SharedString| {
+        let mut state = designer_mgr_clone.borrow_mut();
+        match conversion_type.as_str() {
+            "Rectangle" => state.convert_selected_to_rectangle(),
+            "Path" => state.convert_selected_to_path(),
+            _ => {}
+        }
+        if let Some(window) = window_weak.upgrade() {
+            update_designer_ui(&window, &mut state);
+        }
+    });
+
     // Designer: Canvas pan callback (drag on empty canvas)
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();

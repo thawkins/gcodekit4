@@ -154,6 +154,17 @@ impl Shape {
             Shape::Text(s) => s,
         }
     }
+
+    pub fn to_path_shape(&self) -> PathShape {
+        match self {
+            Shape::Rectangle(s) => s.to_path_shape(),
+            Shape::Circle(s) => s.to_path_shape(),
+            Shape::Line(s) => s.to_path_shape(),
+            Shape::Ellipse(s) => s.to_path_shape(),
+            Shape::Path(s) => s.clone(),
+            Shape::Text(s) => s.to_path_shape(),
+        }
+    }
 }
 
 /// A rectangle defined by its top-left corner and dimensions.
@@ -240,6 +251,35 @@ impl Rectangle {
             self.corner_radius = self.corner_radius.min(max_radius);
         }
     }
+
+    pub fn to_path_shape(&self) -> PathShape {
+        let mut builder = Path::builder();
+        if self.corner_radius > 0.0 {
+            let r = self.corner_radius as f32;
+            let x = self.x as f32;
+            let y = self.y as f32;
+            let w = self.width as f32;
+            let h = self.height as f32;
+            
+            builder.begin(point(x + r, y));
+            builder.line_to(point(x + w - r, y));
+            builder.quadratic_bezier_to(point(x + w, y), point(x + w, y + r));
+            builder.line_to(point(x + w, y + h - r));
+            builder.quadratic_bezier_to(point(x + w, y + h), point(x + w - r, y + h));
+            builder.line_to(point(x + r, y + h));
+            builder.quadratic_bezier_to(point(x, y + h), point(x, y + h - r));
+            builder.line_to(point(x, y + r));
+            builder.quadratic_bezier_to(point(x, y), point(x + r, y));
+            builder.close();
+        } else {
+            builder.begin(point(self.x as f32, self.y as f32));
+            builder.line_to(point((self.x + self.width) as f32, self.y as f32));
+            builder.line_to(point((self.x + self.width) as f32, (self.y + self.height) as f32));
+            builder.line_to(point(self.x as f32, (self.y + self.height) as f32));
+            builder.close();
+        }
+        PathShape { path: builder.build() }
+    }
 }
 
 /// A circle defined by its center and radius.
@@ -301,6 +341,16 @@ impl Circle {
             }
             _ => {}
         }
+    }
+
+    pub fn to_path_shape(&self) -> PathShape {
+        let mut builder = Path::builder();
+        builder.add_circle(
+            point(self.center.x as f32, self.center.y as f32),
+            self.radius as f32,
+            lyon::path::Winding::Positive,
+        );
+        PathShape { path: builder.build() }
     }
 }
 
@@ -368,6 +418,14 @@ impl Line {
             _ => {}
         }
     }
+
+    pub fn to_path_shape(&self) -> PathShape {
+        let mut builder = Path::builder();
+        builder.begin(point(self.start.x as f32, self.start.y as f32));
+        builder.line_to(point(self.end.x as f32, self.end.y as f32));
+        builder.end(false);
+        PathShape { path: builder.build() }
+    }
 }
 
 /// An ellipse defined by its center, horizontal radius, and vertical radius.
@@ -434,6 +492,17 @@ impl Ellipse {
             }
             _ => {}
         }
+    }
+
+    pub fn to_path_shape(&self) -> PathShape {
+        let mut builder = Path::builder();
+        builder.add_ellipse(
+            point(self.center.x as f32, self.center.y as f32),
+            lyon::math::vector(self.rx as f32, self.ry as f32),
+            lyon::math::Angle::radians(0.0),
+            lyon::path::Winding::Positive,
+        );
+        PathShape { path: builder.build() }
     }
 }
 
@@ -963,6 +1032,12 @@ impl TextShape {
         if handle == 4 {
             self.translate(dx, dy);
         }
+    }
+
+    pub fn to_path_shape(&self) -> PathShape {
+        let (x1, y1, x2, y2) = self.bounding_box();
+        let rect = Rectangle::new(x1, y1, x2 - x1, y2 - y1);
+        rect.to_path_shape()
     }
 }
 

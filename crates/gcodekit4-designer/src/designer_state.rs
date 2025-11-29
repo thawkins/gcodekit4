@@ -1218,6 +1218,82 @@ impl DesignerState {
             self.push_command(cmd);
         }
     }
+
+    /// Converts selected shapes to a single bounding rectangle.
+    pub fn convert_selected_to_rectangle(&mut self) {
+        let selected: Vec<_> = self.canvas.shapes().filter(|s| s.selected).cloned().collect();
+        if selected.is_empty() { return; }
+
+        let mut min_x = f64::INFINITY;
+        let mut min_y = f64::INFINITY;
+        let mut max_x = f64::NEG_INFINITY;
+        let mut max_y = f64::NEG_INFINITY;
+
+        for obj in &selected {
+            let (x1, y1, x2, y2) = obj.shape.bounding_box();
+            min_x = min_x.min(x1);
+            min_y = min_y.min(y1);
+            max_x = max_x.max(x2);
+            max_y = max_y.max(y2);
+        }
+        
+        let rect = Rectangle::new(min_x, min_y, max_x - min_x, max_y - min_y);
+        let new_id = self.canvas.generate_id();
+        let mut new_obj = DrawingObject::new(new_id, Shape::Rectangle(rect));
+        new_obj.selected = true;
+        
+        let mut commands = Vec::new();
+        for obj in selected {
+            commands.push(DesignerCommand::RemoveShape(RemoveShape { id: obj.id, object: Some(obj) }));
+        }
+        commands.push(DesignerCommand::AddShape(AddShape { id: new_id, object: Some(new_obj) }));
+        
+        let cmd = DesignerCommand::CompositeCommand(CompositeCommand {
+            commands,
+            name: "Convert to Rectangle".to_string(),
+        });
+        self.push_command(cmd);
+    }
+
+    /// Converts selected shapes to a single path.
+    pub fn convert_selected_to_path(&mut self) {
+        let selected: Vec<_> = self.canvas.shapes().filter(|s| s.selected).cloned().collect();
+        if selected.is_empty() { return; }
+
+        let mut builder = lyon::path::Path::builder();
+        
+        for obj in &selected {
+            let path_shape = obj.shape.to_path_shape();
+            for event in path_shape.path.iter() {
+                match event {
+                    lyon::path::Event::Begin { at } => { builder.begin(at); }
+                    lyon::path::Event::Line { from: _, to } => { builder.line_to(to); }
+                    lyon::path::Event::Quadratic { from: _, ctrl, to } => { builder.quadratic_bezier_to(ctrl, to); }
+                    lyon::path::Event::Cubic { from: _, ctrl1, ctrl2, to } => { builder.cubic_bezier_to(ctrl1, ctrl2, to); }
+                    lyon::path::Event::End { last: _, first: _, close } => {
+                        if close { builder.close(); } else { builder.end(false); }
+                    }
+                }
+            }
+        }
+        
+        let new_path = PathShape { path: builder.build() };
+        let new_id = self.canvas.generate_id();
+        let mut new_obj = DrawingObject::new(new_id, Shape::Path(new_path));
+        new_obj.selected = true;
+        
+        let mut commands = Vec::new();
+        for obj in selected {
+            commands.push(DesignerCommand::RemoveShape(RemoveShape { id: obj.id, object: Some(obj) }));
+        }
+        commands.push(DesignerCommand::AddShape(AddShape { id: new_id, object: Some(new_obj) }));
+        
+        let cmd = DesignerCommand::CompositeCommand(CompositeCommand {
+            commands,
+            name: "Convert to Path".to_string(),
+        });
+        self.push_command(cmd);
+    }
 }
 
 impl Default for DesignerState {
