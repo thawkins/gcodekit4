@@ -1,3 +1,5 @@
+## [0.51.2-alpha] - 2025-11-29
+
 ### Added
 - Added "Convert to" context menu in Designer with "Rectangle" and "Path" options.
 - Added confirmation dialog for shape conversion operations.
