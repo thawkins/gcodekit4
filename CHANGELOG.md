@@ -1,7 +1,11 @@
 ## [0.51.1-alpha] - 2025-11-29
 
+### Added
+- **Status Bar**: Added elapsed time and estimated remaining time indicators to the status bar during job execution.
+
 ### Changed
 - **Logging**: Removed noisy "GRBL error in response" warning log from standard output.
+- **Logging**: Suppressed "Send error: Broken pipe" error log which occurs during normal disconnects.
 - **Logging**: Removed noisy "Failed to parse startup message" warning log from device console manager.
 - **Error Handling**: Verified GRBL error code decoding is enabled and functioning correctly for UI console messages.
 

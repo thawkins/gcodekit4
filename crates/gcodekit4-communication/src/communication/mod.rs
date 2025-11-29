@@ -479,7 +479,10 @@ impl Communicator for SerialCommunicator {
                 }
                 Err(e) => {
                     let msg = format!("Send error: {}", e);
-                    tracing::error!("{}", msg);
+                    // Suppress BrokenPipe errors which happen during disconnect
+                    if e.kind() != std::io::ErrorKind::BrokenPipe {
+                        tracing::error!("{}", msg);
+                    }
                     self.notify_listeners(CommunicatorEvent::Error, &msg);
                     Err(gcodekit4_core::Error::other(msg))
                 }
