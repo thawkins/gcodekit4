@@ -1530,8 +1530,6 @@ fn main() -> anyhow::Result<()> {
 
                                         // Check for errors and handle them
                                         if is_error {
-                                            warn!("GRBL error in response: {}", line);
-                                            
                                             // Decode error code if present
                                             let error_msg = if let Some(code_str) = line.strip_prefix("error:") {
                                                 if let Ok(code) = code_str.trim().parse::<u8>() {

@@ -1,3 +1,10 @@
+## [0.51.1-alpha] - 2025-11-29
+
+### Changed
+- **Logging**: Removed noisy "GRBL error in response" warning log from standard output.
+- **Logging**: Removed noisy "Failed to parse startup message" warning log from device console manager.
+- **Error Handling**: Verified GRBL error code decoding is enabled and functioning correctly for UI console messages.
+
 ## [0.51.0-alpha] - 2025-11-28
 
 ### Added

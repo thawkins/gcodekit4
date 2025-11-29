@@ -309,8 +309,8 @@ impl CommunicatorListener for ConsoleListener {
                         // Don't show the raw startup message - we already showed the detection
                         return;
                     }
-                    Err(e) => {
-                        tracing::warn!("Failed to parse startup message: {}", e);
+                    Err(_) => {
+                        // Ignore parsing errors, just treat as normal output
                     }
                 }
             }
