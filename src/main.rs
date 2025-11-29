@@ -695,6 +695,29 @@ fn update_visible_lines(window: &MainWindow, bridge: &EditorBridge) {
     window.set_visible_lines(slint::ModelRc::new(VecModel::from(lines)));
 }
 
+#[derive(serde::Serialize, serde::Deserialize)]
+struct VectorEngravingParams {
+    feed_rate: f32,
+    travel_rate: f32,
+    cut_power: f32,
+    engrave_power: f32,
+    power_scale: f32,
+    multi_pass: bool,
+    num_passes: i32,
+    z_increment: f32,
+    invert_power: bool,
+    desired_width: f32,
+    offset_x: String,
+    offset_y: String,
+    enable_hatch: bool,
+    hatch_angle: f32,
+    hatch_spacing: f32,
+    hatch_tolerance: f32,
+    cross_hatch: bool,
+    enable_dwell: bool,
+    dwell_time: f32,
+}
+
 fn main() -> anyhow::Result<()> {
     // Initialize logging
     init_logging()?;
@@ -756,6 +779,7 @@ fn main() -> anyhow::Result<()> {
         line_lengths: VecDeque<usize>,
         total_sent: usize,
         total_lines: usize,
+        start_time: Option<std::time::Instant>,
     }
     let gcode_send_state = Arc::new(Mutex::new(GcodeSendState {
         lines: VecDeque::new(),
@@ -763,6 +787,7 @@ fn main() -> anyhow::Result<()> {
         line_lengths: VecDeque::new(),
         total_sent: 0,
         total_lines: 0,
+        start_time: None,
     }));
 
     // Initialize device console manager early to register listeners
@@ -1658,6 +1683,26 @@ fn main() -> anyhow::Result<()> {
                                                     let sent = gstate.total_sent;
                                                     let total = gstate.total_lines;
                                                     let progress = if total > 0 { (sent as f32 / total as f32) * 100.0 } else { 0.0 };
+                                                    
+                                                    // Calculate times
+                                                    let (elapsed_str, estimated_str) = if let Some(start) = gstate.start_time {
+                                                        let elapsed = start.elapsed();
+                                                        let elapsed_secs = elapsed.as_secs();
+                                                        let elapsed_formatted = format!("{:02}:{:02}:{:02}", elapsed_secs / 3600, (elapsed_secs % 3600) / 60, elapsed_secs % 60);
+                                                        
+                                                        let estimated_formatted = if progress > 0.0 {
+                                                            let total_secs = (elapsed_secs as f32 / (progress / 100.0)) as u64;
+                                                            let remaining_secs = total_secs.saturating_sub(elapsed_secs);
+                                                            format!("{:02}:{:02}:{:02}", remaining_secs / 3600, (remaining_secs % 3600) / 60, remaining_secs % 60)
+                                                        } else {
+                                                            "--:--:--".to_string()
+                                                        };
+                                                        
+                                                        (elapsed_formatted, estimated_formatted)
+                                                    } else {
+                                                        ("--:--:--".to_string(), "--:--:--".to_string())
+                                                    };
+
                                                     let wh = window_weak_poll.clone();
                                                     slint::invoke_from_event_loop(move || {
                                                         if let Some(w) = wh.upgrade() {
@@ -1665,6 +1710,8 @@ fn main() -> anyhow::Result<()> {
                                                                 format!("Sending: {}/{}", sent, total)
                                                             ));
                                                             w.set_progress_value(progress);
+                                                            w.set_job_elapsed_time(slint::SharedString::from(elapsed_str));
+                                                            w.set_job_estimated_time(slint::SharedString::from(estimated_str));
                                                         }
                                                     }).ok();
                                                 }
@@ -2321,6 +2368,7 @@ fn main() -> anyhow::Result<()> {
                 gstate.total_sent = 0;
                 gstate.pending_bytes = 0;
                 gstate.line_lengths.clear();
+                gstate.start_time = Some(std::time::Instant::now());
             }
 
             // Update UI
@@ -6697,6 +6745,83 @@ fn main() -> anyhow::Result<()> {
             dialog.set_num_passes(1);
             dialog.set_z_increment(0.5);
             dialog.set_invert_power(false);
+
+            // Load params callback
+            let dialog_weak_load_params = dialog.as_weak();
+            dialog.on_load_params(move || {
+                if let Some(dlg) = dialog_weak_load_params.upgrade() {
+                    use rfd::FileDialog;
+                    if let Some(path) = FileDialog::new()
+                        .add_filter("JSON Files", &["json"])
+                        .pick_file()
+                    {
+                        if let Ok(content) = std::fs::read_to_string(&path) {
+                            if let Ok(params) = serde_json::from_str::<VectorEngravingParams>(&content) {
+                                dlg.set_feed_rate(params.feed_rate);
+                                dlg.set_travel_rate(params.travel_rate);
+                                dlg.set_cut_power(params.cut_power);
+                                dlg.set_engrave_power(params.engrave_power);
+                                dlg.set_power_scale(params.power_scale);
+                                dlg.set_multi_pass(params.multi_pass);
+                                dlg.set_num_passes(params.num_passes);
+                                dlg.set_z_increment(params.z_increment);
+                                dlg.set_invert_power(params.invert_power);
+                                dlg.set_desired_width(params.desired_width);
+                                dlg.set_offset_x(params.offset_x.into());
+                                dlg.set_offset_y(params.offset_y.into());
+                                dlg.set_enable_hatch(params.enable_hatch);
+                                dlg.set_hatch_angle(params.hatch_angle);
+                                dlg.set_hatch_spacing(params.hatch_spacing);
+                                dlg.set_hatch_tolerance(params.hatch_tolerance);
+                                dlg.set_cross_hatch(params.cross_hatch);
+                                dlg.set_enable_dwell(params.enable_dwell);
+                                dlg.set_dwell_time(params.dwell_time);
+                                
+                                // Trigger preview update
+                                dlg.invoke_update_preview();
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Save params callback
+            let dialog_weak_save_params = dialog.as_weak();
+            dialog.on_save_params(move || {
+                if let Some(dlg) = dialog_weak_save_params.upgrade() {
+                    use rfd::FileDialog;
+                    if let Some(path) = FileDialog::new()
+                        .add_filter("JSON Files", &["json"])
+                        .save_file()
+                    {
+                        let params = VectorEngravingParams {
+                            feed_rate: dlg.get_feed_rate(),
+                            travel_rate: dlg.get_travel_rate(),
+                            cut_power: dlg.get_cut_power(),
+                            engrave_power: dlg.get_engrave_power(),
+                            power_scale: dlg.get_power_scale(),
+                            multi_pass: dlg.get_multi_pass(),
+                            num_passes: dlg.get_num_passes(),
+                            z_increment: dlg.get_z_increment(),
+                            invert_power: dlg.get_invert_power(),
+                            desired_width: dlg.get_desired_width(),
+                            offset_x: dlg.get_offset_x().to_string(),
+                            offset_y: dlg.get_offset_y().to_string(),
+                            enable_hatch: dlg.get_enable_hatch(),
+                            hatch_angle: dlg.get_hatch_angle(),
+                            hatch_spacing: dlg.get_hatch_spacing(),
+                            hatch_tolerance: dlg.get_hatch_tolerance(),
+                            cross_hatch: dlg.get_cross_hatch(),
+                            enable_dwell: dlg.get_enable_dwell(),
+                            dwell_time: dlg.get_dwell_time(),
+                        };
+                        
+                        if let Ok(content) = serde_json::to_string_pretty(&params) {
+                            let _ = std::fs::write(path, content);
+                        }
+                    }
+                }
+            });
 
             // Load vector file callback
             let dialog_weak_load = dialog.as_weak();

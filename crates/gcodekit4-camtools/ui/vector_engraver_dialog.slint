@@ -52,6 +52,8 @@ export component VectorEngraverDialog inherits Dialog {
     callback generate-gcode();
     callback update-preview();
     callback close-dialog();
+    callback load-params();
+    callback save-params();
     
     title: "Laser Vector Image Engraver";
     preferred-width: 700px;
@@ -426,6 +428,20 @@ export component VectorEngraverDialog inherits Dialog {
             spacing: 10px;
             alignment: end;
             
+            Button {
+                text: "Load";
+                clicked => {
+                    load-params();
+                }
+            }
+
+            Button {
+                text: "Save";
+                clicked => {
+                    save-params();
+                }
+            }
+
             Button {
                 text: "Generate G-code";
                 primary: true;
