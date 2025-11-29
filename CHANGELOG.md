@@ -5,6 +5,7 @@
 - **CAM Tools**: Added "Load" and "Save" buttons to the Vector Engraving Dialog to save/restore parameters.
 
 ### Changed
+- **CAM Tools**: Updated Vector Engraving Dialog save/load to include the vector file path.
 - **Logging**: Removed noisy "GRBL error in response" warning log from standard output.
 - **Logging**: Suppressed "Send error: Broken pipe" error log which occurs during normal disconnects.
 - **Logging**: Removed all tracing error reports from communication layer to reduce noise.

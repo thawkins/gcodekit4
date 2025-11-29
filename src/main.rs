@@ -716,6 +716,7 @@ struct VectorEngravingParams {
     cross_hatch: bool,
     enable_dwell: bool,
     dwell_time: f32,
+    vector_path: String,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -6777,6 +6778,24 @@ fn main() -> anyhow::Result<()> {
                                 dlg.set_enable_dwell(params.enable_dwell);
                                 dlg.set_dwell_time(params.dwell_time);
                                 
+                                // Load vector path and update file info
+                                let vector_path = params.vector_path;
+                                if !vector_path.is_empty() {
+                                    dlg.set_vector_path(vector_path.clone().into());
+                                    
+                                    let path = std::path::Path::new(&vector_path);
+                                    let file_name = path
+                                        .file_name()
+                                        .and_then(|n| n.to_str())
+                                        .unwrap_or("Unknown");
+                                    let file_info = format!("{} ({})", file_name, 
+                                        path.extension()
+                                            .and_then(|e| e.to_str())
+                                            .unwrap_or("unknown")
+                                            .to_uppercase());
+                                    dlg.set_file_info(file_info.into());
+                                }
+
                                 // Trigger preview update
                                 dlg.invoke_update_preview();
                             }
@@ -6814,6 +6833,7 @@ fn main() -> anyhow::Result<()> {
                             cross_hatch: dlg.get_cross_hatch(),
                             enable_dwell: dlg.get_enable_dwell(),
                             dwell_time: dlg.get_dwell_time(),
+                            vector_path: dlg.get_vector_path().to_string(),
                         };
                         
                         if let Ok(content) = serde_json::to_string_pretty(&params) {
