@@ -4,6 +4,8 @@
 - **Status Bar**: Added elapsed time and estimated remaining time indicators to the status bar during job execution.
 - **CAM Tools**: Added "Load" and "Save" buttons to the Vector Engraving Dialog to save/restore parameters.
 - **CAM Tools**: Added "Load" and "Save" buttons to the Laser Image Engraving Dialog to save/restore parameters.
+- **CAM Tools**: Added "Load" and "Save" buttons to the Tabbed Box Maker Dialog to save/restore parameters.
+- **CAM Tools**: Added "Load" and "Save" buttons to the Jigsaw Puzzle Maker Dialog to save/restore parameters.
 
 ### Changed
 - **CAM Tools**: Updated Vector Engraving Dialog save/load to include the vector file path.

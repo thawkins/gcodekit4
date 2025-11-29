@@ -35,6 +35,8 @@ export component TabbedBoxDialog inherits Window {
     
     callback generate-box();
     callback cancel-dialog();
+    callback load-params();
+    callback save-params();
     
     VerticalBox {
         padding: 20px;
@@ -314,6 +316,20 @@ export component TabbedBoxDialog inherits Window {
                 horizontal-stretch: 0;
                 alignment: end;
                 
+                Button {
+                    text: "Load";
+                    clicked => {
+                        root.load-params();
+                    }
+                }
+
+                Button {
+                    text: "Save";
+                    clicked => {
+                        root.save-params();
+                    }
+                }
+
                 Button {
                     text: "Cancel";
                     clicked => {
