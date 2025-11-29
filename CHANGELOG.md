@@ -6,6 +6,7 @@
 ### Changed
 - **Logging**: Removed noisy "GRBL error in response" warning log from standard output.
 - **Logging**: Suppressed "Send error: Broken pipe" error log which occurs during normal disconnects.
+- **Logging**: Removed all tracing error reports from communication layer to reduce noise.
 - **Logging**: Removed noisy "Failed to parse startup message" warning log from device console manager.
 - **Error Handling**: Verified GRBL error code decoding is enabled and functioning correctly for UI console messages.
 

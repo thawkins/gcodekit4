@@ -437,7 +437,7 @@ impl Communicator for SerialCommunicator {
             }
             Err(e) => {
                 let msg = format!("Failed to connect: {}", e);
-                tracing::error!("{}", msg);
+                // tracing::error!("{}", msg);
                 self.notify_listeners(CommunicatorEvent::Error, &msg);
                 Err(e)
             }
@@ -456,7 +456,7 @@ impl Communicator for SerialCommunicator {
                 }
                 Err(e) => {
                     let msg = format!("Error closing port: {}", e);
-                    tracing::error!("{}", msg);
+                    // tracing::error!("{}", msg);
                     self.notify_listeners(CommunicatorEvent::Error, &msg);
                     Err(gcodekit4_core::Error::other(msg))
                 }
@@ -480,9 +480,9 @@ impl Communicator for SerialCommunicator {
                 Err(e) => {
                     let msg = format!("Send error: {}", e);
                     // Suppress BrokenPipe errors which happen during disconnect
-                    if e.kind() != std::io::ErrorKind::BrokenPipe {
-                        tracing::error!("{}", msg);
-                    }
+                    // if e.kind() != std::io::ErrorKind::BrokenPipe {
+                    //     tracing::error!("{}", msg);
+                    // }
                     self.notify_listeners(CommunicatorEvent::Error, &msg);
                     Err(gcodekit4_core::Error::other(msg))
                 }
@@ -516,7 +516,7 @@ impl Communicator for SerialCommunicator {
                         Ok(vec![])
                     } else {
                         let msg = format!("Receive error: {}", e);
-                        tracing::error!("{}", msg);
+                        // tracing::error!("{}", msg);
                         self.notify_listeners(CommunicatorEvent::Error, &msg);
                         Err(gcodekit4_core::Error::other(msg))
                     }
@@ -606,7 +606,7 @@ impl Communicator for TcpCommunicator {
             }
             Err(e) => {
                 let msg = format!("Failed to connect: {}", e);
-                tracing::error!("{}", msg);
+                // tracing::error!("{}", msg);
                 self.notify_listeners(CommunicatorEvent::Error, &msg);
                 Err(e)
             }
@@ -625,7 +625,7 @@ impl Communicator for TcpCommunicator {
                 }
                 Err(e) => {
                     let msg = format!("Error closing port: {}", e);
-                    tracing::error!("{}", msg);
+                    // tracing::error!("{}", msg);
                     self.notify_listeners(CommunicatorEvent::Error, &msg);
                     Err(gcodekit4_core::Error::other(msg))
                 }
@@ -653,7 +653,7 @@ impl Communicator for TcpCommunicator {
                         Ok(0)
                     } else {
                         let msg = format!("Send error: {}", e);
-                        tracing::error!("{}", msg);
+                        // tracing::error!("{}", msg);
                         self.notify_listeners(CommunicatorEvent::Error, &msg);
                         Err(gcodekit4_core::Error::other(msg))
                     }
@@ -689,7 +689,7 @@ impl Communicator for TcpCommunicator {
                         Ok(vec![])
                     } else {
                         let msg = format!("Receive error: {}", e);
-                        tracing::error!("{}", msg);
+                        // tracing::error!("{}", msg);
                         self.notify_listeners(CommunicatorEvent::Error, &msg);
                         Err(gcodekit4_core::Error::other(msg))
                     }
