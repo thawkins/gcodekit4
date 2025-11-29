@@ -2,6 +2,7 @@
 
 ### Added
 - **Status Bar**: Added elapsed time and estimated remaining time indicators to the status bar during job execution.
+- **CAM Tools**: Added "Load" and "Save" buttons to the Vector Engraving Dialog to save/restore parameters.
 
 ### Changed
 - **Logging**: Removed noisy "GRBL error in response" warning log from standard output.
