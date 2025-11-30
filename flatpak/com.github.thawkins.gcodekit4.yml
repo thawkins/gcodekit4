@@ -19,7 +19,7 @@ modules:
       - install -D com.github.thawkins.gcodekit4.metainfo.xml /app/share/metainfo/com.github.thawkins.gcodekit4.metainfo.xml
     sources:
       - type: file
-        path: ../target/release/gcodekit4
+        path: ../gcodekit4-linux-x86_64
         dest-filename: gcodekit4
       - type: file
         path: ../assets/Pictures/gcodekit4.png

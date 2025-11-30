@@ -1,3 +1,8 @@
+## [0.54.2-alpha.0] - 2025-11-30
+
+### Fixed
+- **CI/CD**: Fixed Flatpak build failure by pointing the manifest to the renamed binary (`gcodekit4-linux-x86_64`) in the root directory, as the standard target directory structure varies with cross-compilation flags.
+
 ## [0.54.1-alpha.0] - 2025-11-30
 
 ### Fixed
