@@ -1,3 +1,8 @@
+## [0.56.1-alpha.0] - 2025-11-30
+
+### Fixed
+- **Windows**: Fixed "Failed to write device profiles file" error on startup by storing `devices.json` in the user's AppData directory instead of the application installation directory.
+
 ## [0.56.0-alpha.0] - 2025-11-30
 
 ### Started

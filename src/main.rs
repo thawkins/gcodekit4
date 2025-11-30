@@ -343,7 +343,8 @@ fn main() -> anyhow::Result<()> {
     ));
 
     // Initialize Device Manager
-    let device_manager = std::sync::Arc::new(DeviceManager::new(PathBuf::from("devices.json")));
+    let config_dir = SettingsManager::config_directory().unwrap_or_else(|_| PathBuf::from("."));
+    let device_manager = std::sync::Arc::new(DeviceManager::new(config_dir.join("devices.json")));
     if let Err(e) = device_manager.load() {
         warn!("Failed to load device profiles: {}", e);
     }
