@@ -1,6 +1,5 @@
 use crate::{CapabilityItem, ConfigSetting, MainWindow};
 use gcodekit4::{CapabilityManager, list_ports};
-use slint::Model;
 use gcodekit4_ui::EditorBridge;
 use crate::TextLine;
 

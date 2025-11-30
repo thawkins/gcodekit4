@@ -3032,6 +3032,7 @@ fn get_available_ports() -> anyhow::Result<Vec<slint::SharedString>> {
 }
 
 /// Render G-code visualization in background thread using message passing
+#[allow(dead_code)]
 fn render_gcode_visualization_background_channel(
     gcode_content: String,
     width: u32,

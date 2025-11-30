@@ -1,4 +1,4 @@
-# Release 0.57.0-alpha.0
+# Release 0.58.0-alpha.0
 
 ## Fixed
-- **Windows Installer**: Fixed MSI installer error 2819 by adding the required `WIXUI_INSTALLDIR` property to bind the directory chooser dialog to `APPLICATIONFOLDER`. This resolves the "Control Folder on dialog InstallDirDlg needs a property linked to it" error that prevented installation.
+- **Windows GUI**: Fixed console window appearing when running the Windows GUI application by configuring the Windows subsystem to hide the console window using `/SUBSYSTEM:WINDOWS` linker flag in build.rs.
