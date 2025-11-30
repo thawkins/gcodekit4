@@ -28,6 +28,21 @@ impl Point {
     }
 }
 
+pub fn rotate_point(p: Point, center: Point, angle_deg: f64) -> Point {
+    if angle_deg.abs() < 1e-6 {
+        return p;
+    }
+    let angle_rad = angle_deg.to_radians();
+    let cos_a = angle_rad.cos();
+    let sin_a = angle_rad.sin();
+    let dx = p.x - center.x;
+    let dy = p.y - center.y;
+    Point {
+        x: center.x + dx * cos_a - dy * sin_a,
+        y: center.y + dx * sin_a + dy * cos_a
+    }
+}
+
 /// Types of shapes that can be drawn on the canvas.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ShapeType {
@@ -81,6 +96,17 @@ impl Shape {
             Shape::Ellipse(s) => s.contains_point(point),
             Shape::Path(s) => s.contains_point(point),
             Shape::Text(s) => s.contains_point(point),
+        }
+    }
+
+    pub fn rotation(&self) -> f64 {
+        match self {
+            Shape::Rectangle(s) => s.rotation,
+            Shape::Circle(s) => s.rotation,
+            Shape::Line(s) => s.rotation,
+            Shape::Ellipse(s) => s.rotation,
+            Shape::Path(s) => s.rotation,
+            Shape::Text(s) => s.rotation,
         }
     }
 
@@ -176,31 +202,68 @@ pub struct Rectangle {
     pub height: f64,
     pub corner_radius: f64,
     pub is_slot: bool,
+    pub rotation: f64,
 }
 
 impl Rectangle {
     pub fn new(x: f64, y: f64, width: f64, height: f64) -> Self {
-        Self { x, y, width, height, corner_radius: 0.0, is_slot: false }
+        Self { x, y, width, height, corner_radius: 0.0, is_slot: false, rotation: 0.0 }
     }
 
     pub fn corners(&self) -> [Point; 4] {
-        [
+        let center = Point::new(self.x + self.width / 2.0, self.y + self.height / 2.0);
+        let corners = [
             Point::new(self.x, self.y),
             Point::new(self.x + self.width, self.y),
             Point::new(self.x + self.width, self.y + self.height),
             Point::new(self.x, self.y + self.height),
+        ];
+        
+        if self.rotation.abs() < 1e-6 {
+            return corners;
+        }
+        
+        [
+            rotate_point(corners[0], center, self.rotation),
+            rotate_point(corners[1], center, self.rotation),
+            rotate_point(corners[2], center, self.rotation),
+            rotate_point(corners[3], center, self.rotation),
         ]
     }
 
     pub fn bounding_box(&self) -> (f64, f64, f64, f64) {
-        (self.x, self.y, self.x + self.width, self.y + self.height)
+        if self.rotation.abs() < 1e-6 {
+            return (self.x, self.y, self.x + self.width, self.y + self.height);
+        }
+        let center = Point::new(self.x + self.width / 2.0, self.y + self.height / 2.0);
+        let corners = [
+            Point::new(self.x, self.y),
+            Point::new(self.x + self.width, self.y),
+            Point::new(self.x + self.width, self.y + self.height),
+            Point::new(self.x, self.y + self.height),
+        ];
+        let mut min_x = f64::INFINITY;
+        let mut min_y = f64::INFINITY;
+        let mut max_x = f64::NEG_INFINITY;
+        let mut max_y = f64::NEG_INFINITY;
+        
+        for c in corners {
+            let p = rotate_point(c, center, self.rotation);
+            min_x = min_x.min(p.x);
+            min_y = min_y.min(p.y);
+            max_x = max_x.max(p.x);
+            max_y = max_y.max(p.y);
+        }
+        (min_x, min_y, max_x, max_y)
     }
 
     pub fn contains_point(&self, point: &Point) -> bool {
-        point.x >= self.x
-            && point.x <= self.x + self.width
-            && point.y >= self.y
-            && point.y <= self.y + self.height
+        let center = Point::new(self.x + self.width / 2.0, self.y + self.height / 2.0);
+        let p = rotate_point(*point, center, -self.rotation);
+        p.x >= self.x
+            && p.x <= self.x + self.width
+            && p.y >= self.y
+            && p.y <= self.y + self.height
     }
 
     pub fn translate(&mut self, dx: f64, dy: f64) {
@@ -278,7 +341,7 @@ impl Rectangle {
             builder.line_to(point(self.x as f32, (self.y + self.height) as f32));
             builder.close();
         }
-        PathShape { path: builder.build() }
+        PathShape { path: builder.build(), rotation: self.rotation }
     }
 }
 
@@ -287,11 +350,12 @@ impl Rectangle {
 pub struct Circle {
     pub center: Point,
     pub radius: f64,
+    pub rotation: f64,
 }
 
 impl Circle {
     pub fn new(center: Point, radius: f64) -> Self {
-        Self { center, radius }
+        Self { center, radius, rotation: 0.0 }
     }
 
     pub fn bounding_box(&self) -> (f64, f64, f64, f64) {
@@ -350,7 +414,7 @@ impl Circle {
             self.radius as f32,
             lyon::path::Winding::Positive,
         );
-        PathShape { path: builder.build() }
+        PathShape { path: builder.build(), rotation: self.rotation }
     }
 }
 
@@ -359,11 +423,12 @@ impl Circle {
 pub struct Line {
     pub start: Point,
     pub end: Point,
+    pub rotation: f64,
 }
 
 impl Line {
     pub fn new(start: Point, end: Point) -> Self {
-        Self { start, end }
+        Self { start, end, rotation: 0.0 }
     }
 
     pub fn length(&self) -> f64 {
@@ -424,7 +489,7 @@ impl Line {
         builder.begin(point(self.start.x as f32, self.start.y as f32));
         builder.line_to(point(self.end.x as f32, self.end.y as f32));
         builder.end(false);
-        PathShape { path: builder.build() }
+        PathShape { path: builder.build(), rotation: self.rotation }
     }
 }
 
@@ -434,11 +499,12 @@ pub struct Ellipse {
     pub center: Point,
     pub rx: f64,
     pub ry: f64,
+    pub rotation: f64,
 }
 
 impl Ellipse {
     pub fn new(center: Point, rx: f64, ry: f64) -> Self {
-        Self { center, rx, ry }
+        Self { center, rx, ry, rotation: 0.0 }
     }
 
     pub fn bounding_box(&self) -> (f64, f64, f64, f64) {
@@ -502,7 +568,7 @@ impl Ellipse {
             lyon::math::Angle::radians(0.0),
             lyon::path::Winding::Positive,
         );
-        PathShape { path: builder.build() }
+        PathShape { path: builder.build(), rotation: self.rotation }
     }
 }
 
@@ -510,11 +576,12 @@ impl Ellipse {
 #[derive(Debug, Clone)]
 pub struct PathShape {
     pub path: Path,
+    pub rotation: f64,
 }
 
 impl PathShape {
     pub fn new(path: Path) -> Self {
-        Self { path }
+        Self { path, rotation: 0.0 }
     }
 
     pub fn from_points(points: &[Point], closed: bool) -> Self {
@@ -530,7 +597,7 @@ impl PathShape {
                 builder.end(false);
             }
         }
-        Self { path: builder.build() }
+        Self { path: builder.build(), rotation: 0.0 }
     }
 
     pub fn bounding_box(&self) -> (f64, f64, f64, f64) {
@@ -917,7 +984,7 @@ impl PathShape {
         if subpath_active {
             builder.end(false);
         }
-        Some(Self { path: builder.build() })
+        Some(Self { path: builder.build(), rotation: 0.0 })
     }
 
     fn tokenize_svg_path(path_data: &str) -> Vec<String> {
@@ -958,6 +1025,7 @@ pub struct TextShape {
     pub x: f64,
     pub y: f64,
     pub font_size: f64,
+    pub rotation: f64,
 }
 
 impl TextShape {
@@ -967,6 +1035,7 @@ impl TextShape {
             x,
             y,
             font_size,
+            rotation: 0.0,
         }
     }
 
@@ -979,39 +1048,105 @@ impl TextShape {
         
         let glyphs: Vec<_> = font.layout(&self.text, scale, start).collect();
         
-        if glyphs.is_empty() {
-             return (self.x, self.y, self.x, self.y + self.font_size);
-        }
+        let (min_x, min_y, max_x, max_y) = if glyphs.is_empty() {
+             (self.x, self.y, self.x, self.y + self.font_size)
+        } else {
+            let mut min_x = f32::MAX;
+            let mut min_y = f32::MAX;
+            let mut max_x = f32::MIN;
+            let mut max_y = f32::MIN;
+            
+            let mut has_bounds = false;
 
-        let mut min_x = f32::MAX;
-        let mut min_y = f32::MAX;
-        let mut max_x = f32::MIN;
-        let mut max_y = f32::MIN;
-        
-        let mut has_bounds = false;
-
-        for glyph in &glyphs {
-            if let Some(bb) = glyph.unpositioned().exact_bounding_box() {
-                let pos = glyph.position();
-                min_x = min_x.min(pos.x + bb.min.x);
-                min_y = min_y.min(pos.y + bb.min.y);
-                max_x = max_x.max(pos.x + bb.max.x);
-                max_y = max_y.max(pos.y + bb.max.y);
-                has_bounds = true;
+            for glyph in &glyphs {
+                if let Some(bb) = glyph.unpositioned().exact_bounding_box() {
+                    let pos = glyph.position();
+                    min_x = min_x.min(pos.x + bb.min.x);
+                    min_y = min_y.min(pos.y + bb.min.y);
+                    max_x = max_x.max(pos.x + bb.max.x);
+                    max_y = max_y.max(pos.y + bb.max.y);
+                    has_bounds = true;
+                }
             }
+            
+            if !has_bounds {
+                 let width = self.text.len() as f64 * self.font_size * 0.6;
+                 (self.x, self.y, self.x + width, self.y + self.font_size)
+            } else {
+                (min_x as f64, min_y as f64, max_x as f64, max_y as f64)
+            }
+        };
+        
+        if self.rotation.abs() < 1e-6 {
+            return (min_x, min_y, max_x, max_y);
         }
         
-        if !has_bounds {
-             let width = self.text.len() as f64 * self.font_size * 0.6;
-             return (self.x, self.y, self.x + width, self.y + self.font_size);
-        }
+        let center = Point::new((min_x + max_x) / 2.0, (min_y + max_y) / 2.0);
+        let corners = [
+            Point::new(min_x, min_y),
+            Point::new(max_x, min_y),
+            Point::new(max_x, max_y),
+            Point::new(min_x, max_y),
+        ];
         
-        (min_x as f64, min_y as f64, max_x as f64, max_y as f64)
+        let mut r_min_x = f64::INFINITY;
+        let mut r_min_y = f64::INFINITY;
+        let mut r_max_x = f64::NEG_INFINITY;
+        let mut r_max_y = f64::NEG_INFINITY;
+        
+        for c in corners {
+            let p = rotate_point(c, center, self.rotation);
+            r_min_x = r_min_x.min(p.x);
+            r_min_y = r_min_y.min(p.y);
+            r_max_x = r_max_x.max(p.x);
+            r_max_y = r_max_y.max(p.y);
+        }
+        (r_min_x, r_min_y, r_max_x, r_max_y)
     }
 
     pub fn contains_point(&self, point: &Point) -> bool {
-        let (min_x, min_y, max_x, max_y) = self.bounding_box();
-        point.x >= min_x && point.x <= max_x && point.y >= min_y && point.y <= max_y
+        // For hit testing, we need unrotated bounding box
+        // So we rotate point backwards around center of unrotated box
+        // But we need to calculate unrotated box first.
+        // This is inefficient to do every time.
+        // But for now it's fine.
+        
+        // Duplicate logic to get unrotated bounds
+        let font = font_manager::get_font();
+        let scale = Scale::uniform(self.font_size as f32);
+        let v_metrics = font.v_metrics(scale);
+        let start = rt_point(self.x as f32, self.y as f32 + v_metrics.ascent);
+        let glyphs: Vec<_> = font.layout(&self.text, scale, start).collect();
+        
+        let (min_x, min_y, max_x, max_y) = if glyphs.is_empty() {
+             (self.x, self.y, self.x, self.y + self.font_size)
+        } else {
+            let mut min_x = f32::MAX;
+            let mut min_y = f32::MAX;
+            let mut max_x = f32::MIN;
+            let mut max_y = f32::MIN;
+            let mut has_bounds = false;
+            for glyph in &glyphs {
+                if let Some(bb) = glyph.unpositioned().exact_bounding_box() {
+                    let pos = glyph.position();
+                    min_x = min_x.min(pos.x + bb.min.x);
+                    min_y = min_y.min(pos.y + bb.min.y);
+                    max_x = max_x.max(pos.x + bb.max.x);
+                    max_y = max_y.max(pos.y + bb.max.y);
+                    has_bounds = true;
+                }
+            }
+            if !has_bounds {
+                 let width = self.text.len() as f64 * self.font_size * 0.6;
+                 (self.x, self.y, self.x + width, self.y + self.font_size)
+            } else {
+                (min_x as f64, min_y as f64, max_x as f64, max_y as f64)
+            }
+        };
+        
+        let center = Point::new((min_x + max_x) / 2.0, (min_y + max_y) / 2.0);
+        let p = rotate_point(*point, center, -self.rotation);
+        p.x >= min_x && p.x <= max_x && p.y >= min_y && p.y <= max_y
     }
 
     pub fn translate(&mut self, dx: f64, dy: f64) {
@@ -1037,7 +1172,9 @@ impl TextShape {
     pub fn to_path_shape(&self) -> PathShape {
         let (x1, y1, x2, y2) = self.bounding_box();
         let rect = Rectangle::new(x1, y1, x2 - x1, y2 - y1);
-        rect.to_path_shape()
+        let mut path = rect.to_path_shape();
+        path.rotation = self.rotation;
+        path
     }
 }
 

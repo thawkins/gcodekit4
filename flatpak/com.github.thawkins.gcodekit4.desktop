@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=GCodeKit4
+Comment=Universal G-Code Sender for CNC machines
+Exec=gcodekit4
+Icon=com.github.thawkins.gcodekit4
+Terminal=false
+Type=Application
+Categories=Development;Engineering;
+Keywords=GCode;CNC;GRBL;
+StartupNotify=true

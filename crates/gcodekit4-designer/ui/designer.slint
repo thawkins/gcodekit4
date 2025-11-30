@@ -156,6 +156,7 @@ export struct DesignerShape {
     raster_angle: float,
     bidirectional: bool,
     use_custom_values: bool,
+    rotation: float,
 }
 
 export struct DesignerState {
@@ -919,6 +920,7 @@ export component DesignerPanel inherits Rectangle {
     in property <string> selected_shape_name: "";
     in property <float> selected_shape_corner_radius: 0.0;
     in property <bool> selected_shape_is_slot: false;
+    in property <float> selected_shape_rotation: 0.0;
     in property <int> delete_confirmation_trigger: 0;
     in property <int> delete_confirmation_count: 0;
     
@@ -1893,6 +1895,16 @@ export component DesignerPanel inherits Rectangle {
                                         value: root.selected_shape_h;
                                         minimum: 0.1; maximum: 100000.0; step: 0.1;
                                         value-changed(v) => { root.update_shape_property(3, v); }
+                                    }
+                                }
+                                
+                                HorizontalBox {
+                                    spacing: 5px;
+                                    Text { text: "Rot:"; vertical-alignment: center; width: 20px; color: #bdc3c7; }
+                                    CompactSpinBox { 
+                                        value: root.selected_shape_rotation;
+                                        minimum: -360.0; maximum: 360.0; step: 1.0;
+                                        value-changed(v) => { root.update_shape_property(11, v); }
                                     }
                                 }
                                 

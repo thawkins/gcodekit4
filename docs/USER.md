@@ -34,14 +34,14 @@ GCodeKit4 is a modern, cross-platform CNC machine controller application written
 
 ### 1.2 Key Features
 
-- **Multi-Controller Support**: Works with GRBL, grblHAL, TinyG, g2core, Smoothieware, and FluidNC
+- **Multi-Controller Support**: Works with GRBL, (grblHAL, TinyG, g2core, Smoothieware, DSP, and FluidNC) are under development
 - **Real-Time Control**: Live position tracking, status monitoring, and machine state display
-- **6-Axis Support**: Control X, Y, Z linear axes plus A, B, C rotary axes
-- **G-Code Editor**: Syntax highlighting, line numbers, and file operations
-- **2D CAD/CAM Designer**: Create vector drawings and generate G-Code toolpaths
+- **6-Axis Support**: Control X, Y, Z linear axes plus A, B, C rotary axes if device supports them
+- **G-Code Editor**: large file support (1M line Gcode) line numbers, and file operations
+- **2D CAD/CAM Designer**: Create vector drawings and generate G-Code toolpaths, supports pocketing and profile cuts
 - **Advanced CAM Tools**: Laser engraving, box generation, surfacing, and more
-- **Visualizer**: 3D/2D preview with intensity heatmaps for laser operations
-- **Smart Console**: Filtered command history with color-coded messages
+- **Visualizer**: 2D preview with intensity heatmaps for laser operations
+- **Smart Console**: Filtered command history
 - **Configuration Management**: Edit and save controller settings
 - **Cross-Platform**: Runs on Linux, macOS, and Windows
 
@@ -264,7 +264,10 @@ Real-time adjustments to machine operation:
 ### 5.2 File Operations
 
 - **Open**: Load .gcode, .nc, .ngc, .tap files.
-- **Save**: Save changes to disk.
+- **Save**: Save ck execution progress.
+- **Editing**: Cut, Copy, Paste, Undo, Redo, Find/Replace.
+- **Cursor Tracking**: Real-time line/column display.
+- **Blinking Cursor**: Visual feedback fchanges to disk.
 - **Send to Device**: Stream current file to connected controller.
 
 ### 5.3 Execution Control

@@ -3,13 +3,10 @@
 
 import { Button, LineEdit, ComboBox, VerticalBox, HorizontalBox, GridBox, ScrollView, GroupBox } from "std-widgets.slint";
 
-export component SpeedsFeedsDialog inherits Rectangle {
+export component SpeedsFeedsDialog inherits Window {
     width: 500px;
     height: 600px;
     background: white;
-    border-radius: 5px;
-    border-width: 1px;
-    border-color: #bdc3c7;
     
     in property <[string]> materials: [];
     in property <[string]> tools: [];

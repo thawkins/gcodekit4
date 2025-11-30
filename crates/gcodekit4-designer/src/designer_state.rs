@@ -1085,6 +1085,40 @@ impl DesignerState {
         }
     }
 
+    pub fn set_selected_rotation(&mut self, rotation: f64) {
+        let mut commands = Vec::new();
+        for obj in self.canvas.shapes_mut() {
+            if obj.selected {
+                let mut new_obj = obj.clone();
+                match &mut new_obj.shape {
+                    crate::shapes::Shape::Rectangle(s) => s.rotation = rotation,
+                    crate::shapes::Shape::Circle(s) => s.rotation = rotation,
+                    crate::shapes::Shape::Line(s) => s.rotation = rotation,
+                    crate::shapes::Shape::Ellipse(s) => s.rotation = rotation,
+                    crate::shapes::Shape::Path(s) => s.rotation = rotation,
+                    crate::shapes::Shape::Text(s) => s.rotation = rotation,
+                }
+                
+                if (obj.shape.rotation() - rotation).abs() > f64::EPSILON {
+                     commands.push(DesignerCommand::ChangeProperty(ChangeProperty {
+                        id: obj.id,
+                        old_state: obj.clone(),
+                        new_state: new_obj.clone(),
+                    }));
+                    *obj = new_obj;
+                }
+            }
+        }
+        
+        if !commands.is_empty() {
+            let cmd = DesignerCommand::CompositeCommand(CompositeCommand {
+                commands,
+                name: "Change Rotation".to_string(),
+            });
+            self.push_command(cmd);
+        }
+    }
+
     pub fn set_selected_is_slot(&mut self, is_slot: bool) {
         let mut commands = Vec::new();
         for obj in self.canvas.shapes_mut() {
@@ -1277,7 +1311,7 @@ impl DesignerState {
             }
         }
         
-        let new_path = PathShape { path: builder.build() };
+        let new_path = PathShape { path: builder.build(), rotation: 0.0 };
         let new_id = self.canvas.generate_id();
         let mut new_obj = DrawingObject::new(new_id, Shape::Path(new_path));
         new_obj.selected = true;

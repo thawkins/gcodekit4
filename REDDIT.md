@@ -1,4 +1,4 @@
-I have been working on a new multiplatform tool for Driving Laser engravers and CNCs called gcodekit4, this started as an exercise in building a complex desktop application using AI, and I belive that has largely been successfull. 
+I have been working on a new multiplatform tool for Driving Laser engravers and CNCs called gcodekit4, this started as an exercise in building a complex desktop application using AI, and I belive that has largely been successfull. For reference 90% wass built using copilot-cli and either Claude Sonnet 4.5 or Gemini Pro 3.0. 
 
 You can find both source code and binary releases at: https://github.com/thawkins/gcodekit4 
 
@@ -23,4 +23,4 @@ Some Caveats.
     b) tooltips are sometimes displayed under ui controls. 
     c) before you can use the gcode editor, you have to click into it with the mouse, there is a focus issue in Slint. 
 
-im looking for all and any feedback, please create issues on github, bugs, feature requests all will be gratefully welcomed, and I will try to keep up with things. 
+im looking for all and any feedback, please create issues on github, bugs, feature requests all will be gratefully welcomed, and I will try to keep up with things. I would also welcome pull requests from other developers. 

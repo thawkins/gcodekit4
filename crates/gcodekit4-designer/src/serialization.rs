@@ -82,6 +82,8 @@ pub struct ShapeData {
     pub corner_radius: f64,
     #[serde(default)]
     pub is_slot: bool,
+    #[serde(default)]
+    pub rotation: f64,
 }
 
 /// Toolpath generation parameters
@@ -224,6 +226,7 @@ impl DesignFile {
             group_id: obj.group_id,
             corner_radius,
             is_slot,
+            rotation: obj.shape.rotation(),
         }
     }
 
@@ -282,6 +285,17 @@ impl DesignFile {
             },
             _ => anyhow::bail!("Unknown shape type: {}", data.shape_type),
         };
+        
+        // Apply rotation
+        let mut shape = shape;
+        match &mut shape {
+            Shape::Rectangle(s) => s.rotation = data.rotation,
+            Shape::Circle(s) => s.rotation = data.rotation,
+            Shape::Line(s) => s.rotation = data.rotation,
+            Shape::Ellipse(s) => s.rotation = data.rotation,
+            Shape::Path(s) => s.rotation = data.rotation,
+            Shape::Text(s) => s.rotation = data.rotation,
+        }
 
         let operation_type = match data.operation_type.as_str() {
             "pocket" => OperationType::Pocket,

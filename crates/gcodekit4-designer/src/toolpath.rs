@@ -459,47 +459,72 @@ impl ToolpathGenerator {
     pub fn generate_rectangle_pocket(&self, rect: &Rectangle, pocket_depth: f64, step_down: f64, step_in: f64) -> Vec<Toolpath> {
         let r = rect.corner_radius.min(rect.width.abs() / 2.0).min(rect.height.abs() / 2.0);
         
-        if r > 0.001 {
-            // Convert rounded rectangle to polygon for pocketing
+        if r > 0.001 || rect.rotation.abs() > 1e-6 {
+            // Convert rounded or rotated rectangle to polygon for pocketing
             let mut vertices = Vec::new();
-            let (x1, y1, x2, y2) = rect.bounding_box();
-            let min_x = x1.min(x2);
-            let max_x = x1.max(x2);
-            let min_y = y1.min(y2);
-            let max_y = y1.max(y2);
-            let w = max_x - min_x;
-            let h = max_y - min_y;
-            let x = min_x;
-            let y = min_y;
+            let x = rect.x;
+            let y = rect.y;
+            let w = rect.width;
+            let h = rect.height;
             
-            let segments = 8;
-            
-            // Helper to add arc points
-            let mut add_arc_points = |center: Point, start_angle: f64, end_angle: f64| {
-                let start_rad = start_angle.to_radians();
-                let end_rad = end_angle.to_radians();
-                let step = (end_rad - start_rad) / segments as f64;
+            if r > 0.001 {
+                let segments = 8;
                 
-                for i in 0..=segments {
-                    let angle = start_rad + step * i as f64;
-                    vertices.push(Point::new(
-                        center.x + r * angle.cos(),
-                        center.y + r * angle.sin()
-                    ));
+                // Helper to add arc points
+                let mut add_arc_points = |center: Point, start_angle: f64, end_angle: f64| {
+                    let start_rad = start_angle.to_radians();
+                    let end_rad = end_angle.to_radians();
+                    let step = (end_rad - start_rad) / segments as f64;
+                    
+                    for i in 0..=segments {
+                        let angle = start_rad + step * i as f64;
+                        vertices.push(Point::new(
+                            center.x + r * angle.cos(),
+                            center.y + r * angle.sin()
+                        ));
+                    }
+                };
+                
+                // BR Corner (270 -> 360) (assuming y up? or y down?)
+                // In standard math (y up), 0 is right, 90 is up.
+                // If y is down (SVG), 90 is down.
+                // Let's assume standard Cartesian for generation, consistent with arc logic.
+                
+                // BR Corner
+                add_arc_points(Point::new(x + w - r, y + h - r), 0.0, 90.0); // This looks like TR in Cartesian if y+ is up
+                
+                // Let's stick to the order in original code but use x,y,w,h
+                // Original:
+                // BR Corner (270 -> 360) -> Point(x + w - r, y + r) -> This assumes y is down (y+ is down)?
+                // If y+ is down, y+r is top (visually), y+h-r is bottom.
+                
+                // Let's just use the corners logic from original but with x,y,w,h
+                
+                // BR Corner (270 -> 360)
+                add_arc_points(Point::new(x + w - r, y + r), 270.0, 360.0);
+                
+                // TR Corner (0 -> 90)
+                add_arc_points(Point::new(x + w - r, y + h - r), 0.0, 90.0);
+                
+                // TL Corner (90 -> 180)
+                add_arc_points(Point::new(x + r, y + h - r), 90.0, 180.0);
+                
+                // BL Corner (180 -> 270)
+                add_arc_points(Point::new(x + r, y + r), 180.0, 270.0);
+            } else {
+                vertices.push(Point::new(x, y));
+                vertices.push(Point::new(x + w, y));
+                vertices.push(Point::new(x + w, y + h));
+                vertices.push(Point::new(x, y + h));
+            }
+            
+            // Apply rotation
+            if rect.rotation.abs() > 1e-6 {
+                let center = Point::new(x + w / 2.0, y + h / 2.0);
+                for p in &mut vertices {
+                    *p = crate::shapes::rotate_point(*p, center, rect.rotation);
                 }
-            };
-            
-            // BR Corner (270 -> 360)
-            add_arc_points(Point::new(x + w - r, y + r), 270.0, 360.0);
-            
-            // TR Corner (0 -> 90)
-            add_arc_points(Point::new(x + w - r, y + h - r), 0.0, 90.0);
-            
-            // TL Corner (90 -> 180)
-            add_arc_points(Point::new(x + r, y + h - r), 90.0, 180.0);
-            
-            // BL Corner (180 -> 270)
-            add_arc_points(Point::new(x + r, y + r), 180.0, 270.0);
+            }
             
             return self.generate_polyline_pocket(&vertices, pocket_depth, step_down, step_in);
         }
@@ -538,10 +563,21 @@ impl ToolpathGenerator {
         let mut current_point = Point::new(0.0, 0.0);
         let mut start_point = Point::new(0.0, 0.0);
         
+        // Calculate center for rotation (unrotated bounding box)
+        let rect = lyon::algorithms::aabb::bounding_box(&path_shape.path);
+        let center = Point::new(
+            (rect.min.x + rect.max.x) as f64 / 2.0,
+            (rect.min.y + rect.max.y) as f64 / 2.0
+        );
+        let rotation = path_shape.rotation;
+        
         for event in path_shape.path.iter().flattened(tolerance) {
             match event {
                 lyon::path::Event::Begin { at } => {
-                    let p = Point::new(at.x as f64, at.y as f64);
+                    let mut p = Point::new(at.x as f64, at.y as f64);
+                    if rotation.abs() > 1e-6 {
+                        p = crate::shapes::rotate_point(p, center, rotation);
+                    }
                     toolpath.add_segment(ToolpathSegment::new(
                         ToolpathSegmentType::RapidMove,
                         current_point,
@@ -553,7 +589,10 @@ impl ToolpathGenerator {
                     start_point = p;
                 },
                 lyon::path::Event::Line { from: _, to } => {
-                    let p = Point::new(to.x as f64, to.y as f64);
+                    let mut p = Point::new(to.x as f64, to.y as f64);
+                    if rotation.abs() > 1e-6 {
+                        p = crate::shapes::rotate_point(p, center, rotation);
+                    }
                     toolpath.add_segment(ToolpathSegment::new(
                         ToolpathSegmentType::LinearMove,
                         current_point,
@@ -597,10 +636,30 @@ impl ToolpathGenerator {
         let tolerance = 0.1; // mm
         let mut vertices = Vec::new();
         
+        // Calculate center for rotation
+        let rect = lyon::algorithms::aabb::bounding_box(&path_shape.path);
+        let center = Point::new(
+            (rect.min.x + rect.max.x) as f64 / 2.0,
+            (rect.min.y + rect.max.y) as f64 / 2.0
+        );
+        let rotation = path_shape.rotation;
+        
         for event in path_shape.path.iter().flattened(tolerance) {
              match event {
-                 lyon::path::Event::Begin { at } => vertices.push(Point::new(at.x as f64, at.y as f64)),
-                 lyon::path::Event::Line { from: _, to } => vertices.push(Point::new(to.x as f64, to.y as f64)),
+                 lyon::path::Event::Begin { at } => {
+                     let mut p = Point::new(at.x as f64, at.y as f64);
+                     if rotation.abs() > 1e-6 {
+                         p = crate::shapes::rotate_point(p, center, rotation);
+                     }
+                     vertices.push(p);
+                 },
+                 lyon::path::Event::Line { from: _, to } => {
+                     let mut p = Point::new(to.x as f64, to.y as f64);
+                     if rotation.abs() > 1e-6 {
+                         p = crate::shapes::rotate_point(p, center, rotation);
+                     }
+                     vertices.push(p);
+                 },
                  _ => {} 
              }
         }

@@ -8,6 +8,7 @@ import { Button, ComboBox, LineEdit, TextEdit, VerticalBox, HorizontalBox, Scrol
 
 // Import all panel components
 import { GcodeEditorPanel, TextLine } from "ui_panels/gcode_editor.slint";
+export { TextLine }
 import { DeviceConsolePanel } from "ui_panels/device_console.slint";
 import { MachineControlPanel } from "ui_panels/machine_control.slint";
 import { ConfigSettingsPanel, ConfigSetting } from "ui_panels/config_settings.slint";
@@ -23,6 +24,17 @@ import { TabbedBoxDialog } from "../gcodekit4-camtools/ui/tabbed_box_dialog.slin
 import { SpoilboardSurfacingDialog } from "../gcodekit4-camtools/ui/spoilboard_surfacing_dialog.slint";
 import { SpoilboardGridDialog } from "../gcodekit4-camtools/ui/spoilboard_grid_dialog.slint";
 import { SpeedsFeedsDialog } from "../gcodekit4-camtools/ui/speeds_feeds_dialog.slint";
+import { JigsawPuzzleDialog } from "../gcodekit4-camtools/ui/jigsaw_puzzle_dialog.slint";
+import { LaserEngraverDialog } from "../gcodekit4-camtools/ui/laser_engraver_dialog.slint";
+import { VectorEngraverDialog } from "../gcodekit4-camtools/ui/vector_engraver_dialog.slint";
+import { ErrorDialog } from "ui_panels/error_dialog.slint";
+
+export { 
+    TabbedBoxDialog, SpoilboardSurfacingDialog, SpoilboardGridDialog, 
+    SpeedsFeedsDialog, JigsawPuzzleDialog, LaserEngraverDialog, 
+    VectorEngraverDialog, ErrorDialog 
+}
+
 import { Theme } from "ui/theme.slint";
 
 component TabItem inherits Rectangle {
@@ -82,6 +94,7 @@ export struct DesignerShape {
     raster_angle: float,
     bidirectional: bool,
     use_custom_values: bool,
+    rotation: float,
 }
 
 export struct DesignerState {
@@ -272,6 +285,7 @@ export component MainWindow inherits Window {
     in property <string> designer-selected-shape-name: "";
     in property <float> designer-selected-shape-corner-radius: 0.0;
     in property <bool> designer-selected-shape-is-slot: false;
+    in property <float> designer-selected-shape-rotation: 0.0;
     in-out property <bool> designer-is-editing-defaults: false;
     
     // Materials Manager properties
@@ -1119,6 +1133,7 @@ export component MainWindow inherits Window {
                         selected_shape_name: root.designer-selected-shape-name;
                         selected_shape_corner_radius: root.designer-selected-shape-corner-radius;
                         selected_shape_is_slot: root.designer-selected-shape-is-slot;
+                        selected_shape_rotation: root.designer-selected-shape-rotation;
                         is_editing_defaults <=> root.designer-is-editing-defaults;
                         
                         set_mode(m) => {

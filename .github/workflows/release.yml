@@ -38,7 +38,9 @@ jobs:
       if: matrix.platform.os == 'ubuntu-latest'
       run: |
         sudo apt-get update
-        sudo apt-get install -y libfontconfig1-dev libxcb1-dev libxkbcommon-dev libx11-dev libwayland-cursor0 libwayland-egl1 libwayland-dev libxkbcommon-x11-dev libudev-dev
+        sudo apt-get install -y libfontconfig1-dev libxcb1-dev libxkbcommon-dev libx11-dev libwayland-cursor0 libwayland-egl1 libwayland-dev libxkbcommon-x11-dev libudev-dev flatpak flatpak-builder
+        flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+        flatpak install --user -y flathub org.freedesktop.Platform//23.08 org.freedesktop.Sdk//23.08
 
     - name: Install Rust toolchain
       uses: dtolnay/rust-toolchain@stable
@@ -50,6 +52,10 @@ jobs:
       run: |
         cargo build --release --target ${{ matrix.platform.target }}
         cp target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }} ${{ matrix.platform.name }}
+        
+        # Build Flatpak
+        flatpak-builder --user --install-deps-from=flathub --force-clean build-dir flatpak/com.github.thawkins.gcodekit4.yml --repo=repo
+        flatpak build-bundle repo gcodekit4-linux-x86_64.flatpak com.github.thawkins.gcodekit4
 
     - name: Build (macOS)
       if: matrix.platform.os_name == 'macOS-x86_64'
@@ -73,12 +79,16 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: ${{ matrix.platform.name }}
-        path: ${{ matrix.platform.name }}
-        if-no-files-found: error
+        path: |
+          ${{ matrix.platform.name }}
+          *.flatpak
+        if-no-files-found: warn
 
     - name: Release
       uses: softprops/action-gh-release@v2
       if: startsWith(github.ref, 'refs/tags/')
       with:
         token: ${{ secrets.RELEASE }}
-        files: ${{ matrix.platform.name }}
+        files: |
+          ${{ matrix.platform.name }}
+          *.flatpak
