@@ -1,3 +1,11 @@
+## [0.55.0-alpha.0] - 2025-11-30
+
+### Added
+- **CI/CD**: Full Flatpak support for Linux distribution.
+  - Automated build and bundling in GitHub Actions.
+  - AppStream metadata and desktop integration.
+  - Validated icon sizing and manifest configuration.
+
 ## [0.54.3-alpha.0] - 2025-11-30
 
 ### Fixed

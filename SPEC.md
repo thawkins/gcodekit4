@@ -1,10 +1,17 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.54.0-alpha.0
+**Version**: 0.55.0-alpha.0
 **Last Updated**: 2025-11-30
 **Status**: Feature Release
 
-### Latest Release (v0.54.0-alpha.0) - Flatpak Support
+### Latest Release (v0.55.0-alpha.0) - Flatpak Support
+- ✅ **CI/CD**
+  - Full Flatpak support for Linux distribution.
+  - Automated build and bundling in GitHub Actions.
+  - AppStream metadata and desktop integration.
+  - Validated icon sizing and manifest configuration.
+
+### Previous Release (v0.54.0-alpha.0) - Flatpak Support
 - ✅ **CI/CD**
   - Added Flatpak support for Linux builds.
   - Created `flatpak/` directory with desktop entry, AppStream metainfo, and Flatpak manifest.

@@ -548,6 +548,12 @@ You may choose either license for your use of this software.
 **Status**: Active Development
 **Stability**: Alpha (breaking changes may occur)
 
+### Recent Updates (v0.55.0)
+- **CI/CD**: Full Flatpak support for Linux distribution.
+  - Automated build and bundling in GitHub Actions.
+  - AppStream metadata and desktop integration.
+  - Validated icon sizing and manifest configuration.
+
 ### Recent Updates (v0.54.0)
 - **CI/CD**: Added Flatpak support for Linux builds.
   - Created `flatpak/` directory with desktop entry, AppStream metainfo, and Flatpak manifest.
