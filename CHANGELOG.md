@@ -1,3 +1,8 @@
+## [0.56.5-alpha.0] - 2025-11-30
+
+### Fixed
+- **Windows Installer**: Fixed ICE38 and ICE64 validation errors in WiX configuration by adding registry keys for per-user components and explicit folder removal instructions.
+
 ## [0.56.4-alpha.0] - 2025-11-30
 
 ### Fixed

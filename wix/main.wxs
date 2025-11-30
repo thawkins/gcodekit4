@@ -45,12 +45,16 @@
                 <Directory Id='APPLICATIONFOLDER' Name='GCodeKit4'>
                     
                     <Component Id='License' Guid='*' Win64='$(var.Win64)'>
-                        <File Id='LicenseFile' Name='License.rtf' DiskId='1' Source='wix/License.rtf' KeyPath='yes'/>
+                        <File Id='LicenseFile' Name='License.rtf' DiskId='1' Source='wix/License.rtf' />
+                        <RegistryValue Root='HKCU' Key='Software\GCodeKit Contributors\GCodeKit4' Name='License' Type='integer' Value='1' KeyPath='yes' />
+                        <RemoveFolder Id='RemoveAppFolder' Directory='APPLICATIONFOLDER' On='uninstall' />
                     </Component>
                     
                     <Directory Id='Bin' Name='bin'>
-                        <Component Id='Path' Guid='9D8E7F6A-5B4C-3D2E-1F0A-9B8C7D6E5F4A' KeyPath='yes' Win64='$(var.Win64)'>
+                        <Component Id='Path' Guid='9D8E7F6A-5B4C-3D2E-1F0A-9B8C7D6E5F4A' Win64='$(var.Win64)'>
                             <File Id='ExecutableFile' Name='gcodekit4.exe' DiskId='1' Source='target\$(var.Profile)\gcodekit4.exe' />
+                            <RegistryValue Root='HKCU' Key='Software\GCodeKit Contributors\GCodeKit4' Name='Executable' Type='integer' Value='1' KeyPath='yes' />
+                            <RemoveFolder Id='RemoveBinDir' Directory='Bin' On='uninstall' />
                         </Component>
                     </Directory>
                 </Directory>
