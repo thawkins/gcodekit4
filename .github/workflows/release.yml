@@ -71,7 +71,6 @@ jobs:
       if: matrix.platform.os_name == 'Windows-x86_64'
       run: |
         cargo install cargo-wix
-        cargo wix init --package gcodekit4
         cargo wix --package gcodekit4 --target ${{ matrix.platform.target }} --nocapture
         mv target/wix/*.msi ${{ matrix.platform.name }}
 

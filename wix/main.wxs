@@ -1,0 +1,100 @@
+<?xml version='1.0' encoding='windows-1252'?>
+<!--
+  Copyright (C) 2017 Christopher R. Field.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!--
+  Please do not remove these pre-processor If-Else blocks. These are used with
+  the `cargo wix` subcommand to automatically determine the installation
+  destination for 32-bit versus 64-bit installers. Removal of these lines will
+  cause installation errors.
+-->
+<?if $(var.Platform) = x64 ?>
+    <?define Win64 = "yes" ?>
+    <?define PlatformProgramFilesFolder = "ProgramFiles64Folder" ?>
+<?else ?>
+  <?define Win64 = "no" ?>
+  <?define PlatformProgramFilesFolder = "ProgramFilesFolder" ?>
+<?endif ?>
+
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+
+    <Product Id='*' Name='GCodeKit4' UpgradeCode='8C2504E5-4839-4F2B-8B8C-9E6D0C18C5C9' Manufacturer='GCodeKit Contributors' Language='1033' Codepage='1252' Version='$(var.Version)'>
+
+        <Package Id='*' Keywords='Installer' Description='GCodeKit4 Installer' Manufacturer='GCodeKit Contributors' InstallerVersion='450' Languages='1033' Compressed='yes' InstallScope='perUser' SummaryCodepage='1252' />
+
+        <MajorUpgrade Schedule='afterInstallInitialize' DowngradeErrorMessage='A newer version of [ProductName] is already installed. Setup will now exit.' />
+
+        <Media Id='1' Cabinet='media1.cab' EmbedCab='yes' DiskPrompt='CD-ROM #1' />
+        <Property Id='DiskPrompt' Value='GCodeKit4 Installation [1]' />
+
+        <Directory Id='TARGETDIR' Name='SourceDir'>
+            <Directory Id='LocalAppDataFolder'>
+                <Directory Id='APPLICATIONFOLDER' Name='GCodeKit4'>
+                    
+                    <Component Id='License' Guid='*' Win64='$(var.Win64)'>
+                        <File Id='LicenseFile' Name='License.rtf' DiskId='1' Source='wix/License.rtf' KeyPath='yes'/>
+                    </Component>
+                    
+                    <Directory Id='Bin' Name='bin'>
+                        <Component Id='Path' Guid='9D8E7F6A-5B4C-3D2E-1F0A-9B8C7D6E5F4A' KeyPath='yes' Win64='$(var.Win64)'>
+                            <File Id='ExecutableFile' Name='gcodekit4.exe' DiskId='1' Source='target\$(var.Profile)\gcodekit4.exe' />
+                        </Component>
+                    </Directory>
+                </Directory>
+            </Directory>
+            
+            <Directory Id="ProgramMenuFolder">
+                <Directory Id="ApplicationProgramsFolder" Name="GCodeKit4"/>
+            </Directory>
+        </Directory>
+
+        <DirectoryRef Id="ApplicationProgramsFolder">
+            <Component Id="ApplicationShortcut" Guid="A1B2C3D4-E5F6-7890-1234-567890ABCDEF">
+                <Shortcut Id="ApplicationStartMenuShortcut" 
+                          Name="GCodeKit4" 
+                          Description="Universal G-Code Sender"
+                          Target="[APPLICATIONFOLDER]bin\gcodekit4.exe"
+                          WorkingDirectory="APPLICATIONFOLDER"
+                          Icon="ProductICO"/>
+                <RemoveFolder Id="CleanUpShortCut" Directory="ApplicationProgramsFolder" On="uninstall"/>
+                <RegistryValue Root="HKCU" Key="Software\GCodeKit Contributors\GCodeKit4" Name="installed" Type="integer" Value="1" KeyPath="yes"/>
+            </Component>
+        </DirectoryRef>
+
+        <Feature Id='MainProgram' Title='Application' Description='Installs the main program.' Level='1' ConfigurableDirectory='APPLICATIONFOLDER' AllowAdvertise='no' Display='expand' Absent='disallow'>
+            <ComponentRef Id='License' />
+            <ComponentRef Id='Path' />
+            <ComponentRef Id='ApplicationShortcut' />
+        </Feature>
+
+        <SetProperty Id='ARPINSTALLLOCATION' Value='[APPLICATIONFOLDER]' After='CostFinalize'/>
+
+        <Icon Id='ProductICO' SourceFile='wix/Product.ico'/>
+        <Property Id='ARPPRODUCTICON' Value='ProductICO' />
+
+        <Property Id='ARPHELPLINK' Value='https://github.com/thawkins/gcodekit4'/>
+        
+        <UI>
+            <UIRef Id='WixUI_InstallDir'/>
+            <Publish Dialog='WelcomeDlg' Control='Next' Event='NewDialog' Value='InstallDirDlg' Order='2'>1</Publish>
+            <Publish Dialog='InstallDirDlg' Control='Back' Event='NewDialog' Value='WelcomeDlg' Order='2'>1</Publish>
+        </UI>
+
+        <WixVariable Id='WixUILicenseRtf' Value='wix/License.rtf'/>
+
+    </Product>
+
+</Wix>

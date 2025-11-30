@@ -1,3 +1,8 @@
+## [0.56.2-alpha.0] - 2025-11-30
+
+### Fixed
+- **Windows Installer**: Updated WiX configuration to perform a per-user installation (no admin rights required) and create a Start Menu shortcut.
+
 ## [0.56.1-alpha.0] - 2025-11-30
 
 ### Fixed
