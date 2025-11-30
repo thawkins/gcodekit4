@@ -1,6 +1,21 @@
+## [0.51.3-alpha] - 2025-11-30
+
+### Added
+- **CI/CD**: Updated release workflow to generate platform-specific packages:
+  - **macOS**: Generates `.dmg` disk image using `cargo-bundle`.
+  - **Windows**: Generates `.msi` installer using `cargo-wix`.
+  - **Linux**: Generates binary executable (unchanged).
+
 ## [0.51.2-alpha] - 2025-11-29
 
 ### Added
+- Added rotation support to designer shapes (Rectangle, Circle, Line, Ellipse, Path, Text).
+- Added rotation input field to designer properties panel.
+- Updated shape rendering to support rotation.
+- Updated selection logic to support rotated shapes.
+- Updated G-code generation to support rotated shapes.
+- Updated serialization to save/load rotation.
+- Refactored `src/main.rs` into modular structure (`src/app/`).
 - Added "Convert to" context menu in Designer with "Rectangle" and "Path" options.
 - Added confirmation dialog for shape conversion operations.
 - Implemented shape conversion logic (Rectangle, Path) with Undo/Redo support.

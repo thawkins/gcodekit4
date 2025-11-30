@@ -24,12 +24,12 @@ jobs:
             os: windows-latest
             target: x86_64-pc-windows-msvc
             bin: gcodekit4.exe
-            name: gcodekit4-windows-x86_64.exe
+            name: gcodekit4-windows-x86_64.msi
           - os_name: macOS-x86_64
             os: macos-13
             target: x86_64-apple-darwin
             bin: gcodekit4
-            name: gcodekit4-macos-x86_64
+            name: gcodekit4-macos-x86_64.dmg
 
     steps:
     - uses: actions/checkout@v4
@@ -45,13 +45,29 @@ jobs:
       with:
         targets: ${{ matrix.platform.target }}
 
-    - name: Build
-      run: cargo build --release --target ${{ matrix.platform.target }}
-
-    - name: Rename binary
-      shell: bash
+    - name: Build (Linux)
+      if: matrix.platform.os_name == 'Linux-x86_64'
       run: |
+        cargo build --release --target ${{ matrix.platform.target }}
         cp target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }} ${{ matrix.platform.name }}
+
+    - name: Build (macOS)
+      if: matrix.platform.os_name == 'macOS-x86_64'
+      run: |
+        cargo install cargo-bundle
+        # Add bundle metadata to Cargo.toml
+        echo '[package.metadata.bundle]' >> Cargo.toml
+        echo 'identifier = "com.github.thawkins.gcodekit4"' >> Cargo.toml
+        cargo bundle --release --target ${{ matrix.platform.target }} --format dmg
+        mv target/${{ matrix.platform.target }}/release/bundle/dmg/*.dmg ${{ matrix.platform.name }}
+
+    - name: Build (Windows)
+      if: matrix.platform.os_name == 'Windows-x86_64'
+      run: |
+        cargo install cargo-wix
+        cargo wix init
+        cargo wix --target ${{ matrix.platform.target }} --nocapture
+        mv target/wix/*.msi ${{ matrix.platform.name }}
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
