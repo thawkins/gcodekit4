@@ -1,6 +1,6 @@
 app-id: com.github.thawkins.gcodekit4
 runtime: org.freedesktop.Platform
-runtime-version: '23.08'
+runtime-version: '24.08'
 sdk: org.freedesktop.Sdk
 command: gcodekit4
 finish-args:
@@ -19,12 +19,12 @@ modules:
       - install -D com.github.thawkins.gcodekit4.metainfo.xml /app/share/metainfo/com.github.thawkins.gcodekit4.metainfo.xml
     sources:
       - type: file
-        path: target/release/gcodekit4
+        path: ../target/release/gcodekit4
         dest-filename: gcodekit4
       - type: file
-        path: assets/Pictures/gcodekit4.png
+        path: ../assets/Pictures/gcodekit4.png
         dest-filename: gcodekit4.png
       - type: file
-        path: flatpak/com.github.thawkins.gcodekit4.desktop
+        path: com.github.thawkins.gcodekit4.desktop
       - type: file
-        path: flatpak/com.github.thawkins.gcodekit4.metainfo.xml
+        path: com.github.thawkins.gcodekit4.metainfo.xml

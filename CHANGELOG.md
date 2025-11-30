@@ -1,3 +1,9 @@
+## [0.54.1-alpha.0] - 2025-11-30
+
+### Fixed
+- **CI/CD**: Fixed Flatpak build failure by correcting source paths in the manifest to be relative to the manifest file location.
+- **CI/CD**: Updated Flatpak runtime version to `24.08` to avoid EOL warnings.
+
 ## [0.54.0-alpha.0] - 2025-11-30
 
 ### Added
