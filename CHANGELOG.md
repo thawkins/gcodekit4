@@ -1,3 +1,13 @@
+## [0.58.2-alpha.0] - 2025-12-01
+
+### Changed
+- **Designer**: Disabled rotation control in the properties panel when multiple shapes are selected to prevent ambiguous behavior.
+
+## [0.58.1-alpha.0] - 2025-12-01
+
+### Fixed
+- **Designer**: Fixed rendering of rotated rectangles and lines to prevent distortion (double rotation application). Rotated shapes now display correctly instead of being distorted into squares or incorrect lines.
+
 ## [0.58.0-alpha.0] - 2025-11-30
 
 ### Fixed

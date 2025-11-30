@@ -347,12 +347,11 @@ fn render_shape_trait(
 
     match shape {
         crate::shapes::Shape::Rectangle(rect) => {
-            let (x1, y1, x2, y2) = rect.bounding_box();
-            // Normalize coordinates
-            let min_x = x1.min(x2);
-            let max_x = x1.max(x2);
-            let min_y = y1.min(y2);
-            let max_y = y1.max(y2);
+            // Use unrotated dimensions directly from the rect struct
+            let min_x = rect.x;
+            let min_y = rect.y;
+            let max_x = rect.x + rect.width;
+            let max_y = rect.y + rect.height;
 
             let (sx1_raw, sy1_raw) = viewport.world_to_pixel(min_x, min_y);
             let (sx2_raw, sy2_raw) = viewport.world_to_pixel(max_x, max_y);
@@ -366,9 +365,8 @@ fn render_shape_trait(
             let r_pixel = r.min(max_r);
             
             // We need to work in world coordinates for rotation, then convert to pixel
-            // But radius is in world units for calculation?
             // rect.corner_radius is in world units.
-            let r_world = rect.corner_radius.min((max_x - min_x).abs() / 2.0).min((max_y - min_y).abs() / 2.0);
+            let r_world = rect.corner_radius.min(rect.width / 2.0).min(rect.height / 2.0);
 
             if r_world < 0.001 {
                 // Sharp rectangle
@@ -418,17 +416,6 @@ fn render_shape_trait(
                 // Radius in pixels
                 let r = r_pixel;
                 
-                // Note: SVG coordinate system has Y down.
-                // viewport.world_to_pixel handles the flip.
-                // If rotation is 0:
-                // min_y in world -> max_y in pixel (bottom of screen) if y up
-                // But let's assume standard mapping.
-                
-                // We use A rx ry x-axis-rotation large-arc-flag sweep-flag x y
-                // x-axis-rotation should be -rotation (because SVG Y is down vs World Y up?)
-                // Or just rotation.
-                // Also sweep-flag depends on coordinate system.
-                
                 format!(
                     "M {} {} L {} {} A {} {} {} 0 0 {} {} L {} {} A {} {} {} 0 0 {} {} L {} {} A {} {} {} 0 0 {} {} L {} {} A {} {} {} 0 0 {} {} Z ",
                     s_pts[0].0, s_pts[0].1,
@@ -458,9 +445,9 @@ fn render_shape_trait(
                 screen_radius, screen_radius, cx + screen_radius, cy
             )
         }
-        crate::shapes::Shape::Line(_) => {
-            let p1 = rotate_point(x1, y1, center_x, center_y, rotation);
-            let p2 = rotate_point(x2, y2, center_x, center_y, rotation);
+        crate::shapes::Shape::Line(line) => {
+            let p1 = rotate_point(line.start.x, line.start.y, center_x, center_y, rotation);
+            let p2 = rotate_point(line.end.x, line.end.y, center_x, center_y, rotation);
             
             let (sx1, sy1) = viewport.world_to_pixel(p1.0, p1.1);
             let (sx2, sy2) = viewport.world_to_pixel(p2.0, p2.1);
