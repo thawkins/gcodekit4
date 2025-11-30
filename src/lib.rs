@@ -107,19 +107,65 @@ pub fn init_logging() -> anyhow::Result<()> {
 
     let env_filter = EnvFilter::from_default_env().add_directive(tracing::Level::INFO.into());
 
-    let fmt_layer = fmt::layer()
-        .with_writer(std::io::stdout)
-        .with_target(true)
-        .with_level(true)
-        .with_thread_ids(true)
-        .with_thread_names(true)
-        .with_line_number(true)
-        .pretty();
+    // In Windows GUI mode (release builds), log to a file instead of stdout
+    #[cfg(all(target_os = "windows", not(debug_assertions)))]
+    {
+        use std::fs::OpenOptions;
+        
+        let log_dir = std::env::current_exe()
+            .ok()
+            .and_then(|p| p.parent().map(|p| p.to_path_buf()))
+            .unwrap_or_else(|| std::path::PathBuf::from("."));
+        
+        let log_file = log_dir.join("gcodekit4.log");
+        
+        // Try to open log file, but if it fails, just disable logging rather than crash
+        match OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&log_file)
+        {
+            Ok(file) => {
+                let fmt_layer = fmt::layer()
+                    .with_writer(file)
+                    .with_target(true)
+                    .with_level(true)
+                    .with_thread_ids(true)
+                    .with_thread_names(true)
+                    .with_line_number(true)
+                    .pretty();
 
-    tracing_subscriber::registry()
-        .with(env_filter)
-        .with(fmt_layer)
-        .init();
+                tracing_subscriber::registry()
+                    .with(env_filter)
+                    .with(fmt_layer)
+                    .init();
+            }
+            Err(_) => {
+                // If file creation fails, just use a no-op subscriber
+                tracing_subscriber::registry()
+                    .with(env_filter)
+                    .init();
+            }
+        }
+    }
+
+    // In debug mode or non-Windows, log to stdout as before
+    #[cfg(not(all(target_os = "windows", not(debug_assertions))))]
+    {
+        let fmt_layer = fmt::layer()
+            .with_writer(std::io::stdout)
+            .with_target(true)
+            .with_level(true)
+            .with_thread_ids(true)
+            .with_thread_names(true)
+            .with_line_number(true)
+            .pretty();
+
+        tracing_subscriber::registry()
+            .with(env_filter)
+            .with(fmt_layer)
+            .init();
+    }
 
     Ok(())
 }
