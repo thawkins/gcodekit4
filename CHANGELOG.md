@@ -1,3 +1,8 @@
+## [0.56.0-alpha.0] - 2025-11-30
+
+### Started
+- Next development iteration.
+
 ## [0.55.0-alpha.0] - 2025-11-30
 
 ### Added

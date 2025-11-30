@@ -1,10 +1,14 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.55.0-alpha.0
+**Version**: 0.56.0-alpha.0
 **Last Updated**: 2025-11-30
 **Status**: Feature Release
 
-### Latest Release (v0.55.0-alpha.0) - Flatpak Support
+### Latest Release (v0.56.0-alpha.0) - Maintenance
+- ✅ **Maintenance**
+  - Version bump for next development iteration.
+
+### Previous Release (v0.55.0-alpha.0) - Flatpak Support
 - ✅ **CI/CD**
   - Full Flatpak support for Linux distribution.
   - Automated build and bundling in GitHub Actions.

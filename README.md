@@ -548,6 +548,9 @@ You may choose either license for your use of this software.
 **Status**: Active Development
 **Stability**: Alpha (breaking changes may occur)
 
+### Recent Updates (v0.56.0)
+- **Maintenance**: Version bump for next development iteration.
+
 ### Recent Updates (v0.55.0)
 - **CI/CD**: Full Flatpak support for Linux distribution.
   - Automated build and bundling in GitHub Actions.
