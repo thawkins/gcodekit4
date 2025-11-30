@@ -1,3 +1,8 @@
+## [0.56.4-alpha.0] - 2025-11-30
+
+### Fixed
+- **CI/CD**: Fixed Windows installer build failure by manually moving the cross-compiled binary to the default release directory expected by WiX.
+
 ## [0.56.3-alpha.0] - 2025-11-30
 
 ### Fixed

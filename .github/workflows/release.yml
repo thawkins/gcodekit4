@@ -73,7 +73,16 @@ jobs:
         cargo install cargo-wix
         # Ensure custom WiX configuration is used
         if (Test-Path "wix/main.wxs") { Write-Host "Using custom wix/main.wxs" } else { Write-Error "Custom wix/main.wxs not found" }
-        cargo wix --package gcodekit4 --target ${{ matrix.platform.target }} --nocapture
+        
+        # Build manually to ensure we have the binary in the target directory
+        cargo build --release --target ${{ matrix.platform.target }}
+        
+        # Move binary to where WiX expects it (target/release) because cargo wix doesn't handle target dirs in WXS source paths automatically
+        New-Item -ItemType Directory -Force -Path target/release
+        Copy-Item "target/${{ matrix.platform.target }}/release/gcodekit4.exe" "target/release/gcodekit4.exe"
+        
+        # Run WiX without building
+        cargo wix --no-build --package gcodekit4 --nocapture
         mv target/wix/*.msi ${{ matrix.platform.name }}
 
     - name: Upload Artifact
