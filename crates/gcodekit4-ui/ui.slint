@@ -509,6 +509,9 @@ export component MainWindow inherits Window {
     callback show-delete-confirmation(int);
     callback designer-confirm-delete();
     callback designer-confirm-convert(string);
+    callback designer-create-linear-array(int, int, float, float);
+    callback designer-create-circular-array(int, float, float, float, float, bool);
+    callback designer-create-grid-array(int, int, float, float);
     
      // CAM Tool callbacks
     callback generate-tabbed-box();
@@ -1244,6 +1247,18 @@ export component MainWindow inherits Window {
                         
                         confirm_convert(type) => {
                             root.designer-confirm-convert(type);
+                        }
+                        
+                        create_linear_array(cx, cy, sx, sy) => {
+                            root.designer-create-linear-array(cx, cy, sx, sy);
+                        }
+                        
+                        create_circular_array(c, cx, cy, r, sa, cw) => {
+                            root.designer-create-circular-array(c, cx, cy, r, sa, cw);
+                        }
+                        
+                        create_grid_array(c, r, cs, rs) => {
+                            root.designer-create-grid-array(c, r, cs, rs);
                         }
                         
                         align_horizontal_left => {

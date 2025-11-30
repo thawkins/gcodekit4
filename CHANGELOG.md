@@ -1,3 +1,10 @@
+## [0.58.3-alpha.0] - 2025-12-01
+
+### Added
+- **Designer**: Added array tools (Linear, Circular, Grid) to Designer context menu.
+- **Designer**: Implemented array generation logic in DesignerState.
+- **Designer**: Added UI dialogs for array parameters.
+
 ## [0.58.2-alpha.0] - 2025-12-01
 
 ### Changed

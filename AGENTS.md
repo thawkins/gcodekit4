@@ -49,6 +49,7 @@ All tests **MUST** be located in the `tests/` inside each crate, if the test is 
 - When asked to "push release to remote", update the release number, and then follow the "push to remote" process. **Commit Message Rule**: Do not use "chore: bump version to ...", instead use "Version: <version_number>".
 - When initializing a new repo, add BUG, FEATURE, TASK and CHANGE issue templates only do this once. 
 - Do not push changes to remote unless specifically told to. 
+- Do not tag releases unless specifically told to. 
 
 ## Changelog Management
 - **CHANGELOG.md**: Maintain a changelog in the root directory documenting all changes before each push to remote.

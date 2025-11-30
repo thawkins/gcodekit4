@@ -1328,6 +1328,102 @@ impl DesignerState {
         });
         self.push_command(cmd);
     }
+    /// Creates an array of copies for the selected shapes.
+    pub fn create_array(&mut self, operation: crate::arrays::ArrayOperation) {
+        let selected: Vec<_> = self.canvas.shapes().filter(|s| s.selected).cloned().collect();
+        if selected.is_empty() { return; }
+
+        let (is_circular, center) = if let crate::arrays::ArrayOperation::Circular(params) = &operation {
+            (true, params.center)
+        } else {
+            (false, Point::new(0.0, 0.0))
+        };
+
+        let offsets = match crate::arrays::ArrayGenerator::generate(&operation) {
+            Ok(offsets) => offsets,
+            Err(e) => {
+                eprintln!("Failed to generate array offsets: {}", e);
+                return;
+            }
+        };
+
+        let mut commands = Vec::new();
+        let mut group_map = std::collections::HashMap::new();
+
+        // Deselect original shapes
+        self.canvas.deselect_all();
+
+        for obj in &selected {
+            let (x1, y1, x2, y2) = obj.shape.bounding_box();
+            let orig_x = (x1 + x2) / 2.0;
+            let orig_y = (y1 + y2) / 2.0;
+            
+            for (i, (off_x, off_y)) in offsets.iter().enumerate() {
+                let (dx, dy) = if is_circular {
+                    // Circular: off_x, off_y are positions relative to center
+                    let target_x = center.x + off_x;
+                    let target_y = center.y + off_y;
+                    (target_x - orig_x, target_y - orig_y)
+                } else {
+                    // Linear/Grid: off_x, off_y are deltas
+                    (*off_x, *off_y)
+                };
+
+                // Skip if delta is negligible (original position)
+                if dx.abs() < 0.001 && dy.abs() < 0.001 {
+                    continue;
+                }
+
+                let mut new_obj = obj.clone();
+                let id = self.canvas.generate_id();
+                new_obj.id = id;
+                
+                if let Some(gid) = obj.group_id {
+                    let new_gid = *group_map.entry((i, gid)).or_insert_with(|| {
+                        self.canvas.generate_id()
+                    });
+                    new_obj.group_id = Some(new_gid);
+                }
+
+                new_obj.shape.translate(dx, dy);
+                
+                // For circular arrays, rotate the shape to match the position angle
+                if is_circular {
+                    if let crate::arrays::ArrayOperation::Circular(params) = &operation {
+                        // Calculate angle of this copy
+                        let angle_step = params.angle_step();
+                        let angle_delta = if params.clockwise {
+                            -(i as f64) * angle_step
+                        } else {
+                            (i as f64) * angle_step
+                        };
+                        
+                        // Rotate shape around its own center
+                        // We need to access the rotation property of the shape
+                        match &mut new_obj.shape {
+                            crate::shapes::Shape::Rectangle(s) => s.rotation += angle_delta,
+                            crate::shapes::Shape::Circle(s) => s.rotation += angle_delta,
+                            crate::shapes::Shape::Line(s) => s.rotation += angle_delta,
+                            crate::shapes::Shape::Ellipse(s) => s.rotation += angle_delta,
+                            crate::shapes::Shape::Path(s) => s.rotation += angle_delta,
+                            crate::shapes::Shape::Text(s) => s.rotation += angle_delta,
+                        }
+                    }
+                }
+
+                new_obj.selected = true;
+                commands.push(DesignerCommand::AddShape(AddShape { id, object: Some(new_obj) }));
+            }
+        }
+        
+        if !commands.is_empty() {
+            let cmd = DesignerCommand::CompositeCommand(CompositeCommand {
+                commands,
+                name: "Create Array".to_string(),
+            });
+            self.push_command(cmd);
+        }
+    }
 }
 
 impl Default for DesignerState {

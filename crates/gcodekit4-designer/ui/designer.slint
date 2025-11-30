@@ -299,6 +299,166 @@ component ConvertConfirmationDialog inherits Dialog {
     }
 }
 
+component ArrayLinearDialog inherits Dialog {
+    in-out property <int> count_x: 2;
+    in-out property <int> count_y: 1;
+    in-out property <float> spacing_x: 10.0;
+    in-out property <float> spacing_y: 10.0;
+    callback confirm(int, int, float, float);
+    callback cancel();
+    
+    width: 300px;
+    height: 280px;
+    background: #2c3e50;
+    
+    VerticalBox {
+        padding: 20px;
+        spacing: 10px;
+        alignment: center;
+        
+        Text {
+            text: "Linear Array";
+            font-size: 16px;
+            font-weight: 700;
+            horizontal-alignment: center;
+            color: #ecf0f1;
+        }
+        
+        HorizontalBox {
+            Text { text: "Count X:"; vertical-alignment: center; width: 80px; color: #bdc3c7; }
+            CompactSpinBox { value: root.count_x; minimum: 1; maximum: 100; step: 1; value-changed(v) => { root.count_x = Math.round(v); } }
+        }
+        HorizontalBox {
+            Text { text: "Count Y:"; vertical-alignment: center; width: 80px; color: #bdc3c7; }
+            CompactSpinBox { value: root.count_y; minimum: 1; maximum: 100; step: 1; value-changed(v) => { root.count_y = Math.round(v); } }
+        }
+        HorizontalBox {
+            Text { text: "Spacing X:"; vertical-alignment: center; width: 80px; color: #bdc3c7; }
+            CompactSpinBox { value: root.spacing_x; minimum: -1000.0; maximum: 1000.0; step: 1.0; value-changed(v) => { root.spacing_x = v; } }
+        }
+        HorizontalBox {
+            Text { text: "Spacing Y:"; vertical-alignment: center; width: 80px; color: #bdc3c7; }
+            CompactSpinBox { value: root.spacing_y; minimum: -1000.0; maximum: 1000.0; step: 1.0; value-changed(v) => { root.spacing_y = v; } }
+        }
+        
+        HorizontalBox {
+            alignment: center;
+            spacing: 20px;
+            StandardButton { text: "Create"; primary: true; clicked => { root.confirm(root.count_x, root.count_y, root.spacing_x, root.spacing_y); } }
+            StandardButton { text: "Cancel"; clicked => { root.cancel(); } }
+        }
+    }
+}
+
+component ArrayCircularDialog inherits Dialog {
+    in-out property <int> count: 4;
+    in-out property <float> center_x: 0.0;
+    in-out property <float> center_y: 0.0;
+    in-out property <float> radius: 50.0;
+    in-out property <float> start_angle: 0.0;
+    in-out property <bool> clockwise: true;
+    callback confirm(int, float, float, float, float, bool);
+    callback cancel();
+    
+    width: 300px;
+    height: 350px;
+    background: #2c3e50;
+    
+    VerticalBox {
+        padding: 20px;
+        spacing: 10px;
+        alignment: center;
+        
+        Text {
+            text: "Circular Array";
+            font-size: 16px;
+            font-weight: 700;
+            horizontal-alignment: center;
+            color: #ecf0f1;
+        }
+        
+        HorizontalBox {
+            Text { text: "Count:"; vertical-alignment: center; width: 80px; color: #bdc3c7; }
+            CompactSpinBox { value: root.count; minimum: 1; maximum: 100; step: 1; value-changed(v) => { root.count = Math.round(v); } }
+        }
+        HorizontalBox {
+            Text { text: "Center X:"; vertical-alignment: center; width: 80px; color: #bdc3c7; }
+            CompactSpinBox { value: root.center_x; minimum: -1000.0; maximum: 1000.0; step: 1.0; value-changed(v) => { root.center_x = v; } }
+        }
+        HorizontalBox {
+            Text { text: "Center Y:"; vertical-alignment: center; width: 80px; color: #bdc3c7; }
+            CompactSpinBox { value: root.center_y; minimum: -1000.0; maximum: 1000.0; step: 1.0; value-changed(v) => { root.center_y = v; } }
+        }
+        HorizontalBox {
+            Text { text: "Radius:"; vertical-alignment: center; width: 80px; color: #bdc3c7; }
+            CompactSpinBox { value: root.radius; minimum: 0.0; maximum: 1000.0; step: 1.0; value-changed(v) => { root.radius = v; } }
+        }
+        HorizontalBox {
+            Text { text: "Start Angle:"; vertical-alignment: center; width: 80px; color: #bdc3c7; }
+            CompactSpinBox { value: root.start_angle; minimum: -360.0; maximum: 360.0; step: 15.0; value-changed(v) => { root.start_angle = v; } }
+        }
+        DarkCheckBox { text: "Clockwise"; checked <=> root.clockwise; }
+        
+        HorizontalBox {
+            alignment: center;
+            spacing: 20px;
+            StandardButton { text: "Create"; primary: true; clicked => { root.confirm(root.count, root.center_x, root.center_y, root.radius, root.start_angle, root.clockwise); } }
+            StandardButton { text: "Cancel"; clicked => { root.cancel(); } }
+        }
+    }
+}
+
+component ArrayGridDialog inherits Dialog {
+    in-out property <int> columns: 2;
+    in-out property <int> rows: 2;
+    in-out property <float> col_spacing: 10.0;
+    in-out property <float> row_spacing: 10.0;
+    callback confirm(int, int, float, float);
+    callback cancel();
+    
+    width: 300px;
+    height: 280px;
+    background: #2c3e50;
+    
+    VerticalBox {
+        padding: 20px;
+        spacing: 10px;
+        alignment: center;
+        
+        Text {
+            text: "Grid Array";
+            font-size: 16px;
+            font-weight: 700;
+            horizontal-alignment: center;
+            color: #ecf0f1;
+        }
+        
+        HorizontalBox {
+            Text { text: "Columns:"; vertical-alignment: center; width: 80px; color: #bdc3c7; }
+            CompactSpinBox { value: root.columns; minimum: 1; maximum: 100; step: 1; value-changed(v) => { root.columns = Math.round(v); } }
+        }
+        HorizontalBox {
+            Text { text: "Rows:"; vertical-alignment: center; width: 80px; color: #bdc3c7; }
+            CompactSpinBox { value: root.rows; minimum: 1; maximum: 100; step: 1; value-changed(v) => { root.rows = Math.round(v); } }
+        }
+        HorizontalBox {
+            Text { text: "Col Spacing:"; vertical-alignment: center; width: 80px; color: #bdc3c7; }
+            CompactSpinBox { value: root.col_spacing; minimum: -1000.0; maximum: 1000.0; step: 1.0; value-changed(v) => { root.col_spacing = v; } }
+        }
+        HorizontalBox {
+            Text { text: "Row Spacing:"; vertical-alignment: center; width: 80px; color: #bdc3c7; }
+            CompactSpinBox { value: root.row_spacing; minimum: -1000.0; maximum: 1000.0; step: 1.0; value-changed(v) => { root.row_spacing = v; } }
+        }
+        
+        HorizontalBox {
+            alignment: center;
+            spacing: 20px;
+            StandardButton { text: "Create"; primary: true; clicked => { root.confirm(root.columns, root.rows, root.col_spacing, root.row_spacing); } }
+            StandardButton { text: "Cancel"; clicked => { root.cancel(); } }
+        }
+    }
+}
+
 
 // Context Menu for shapes
 component ContextMenu inherits Rectangle {
@@ -324,17 +484,22 @@ component ContextMenu inherits Rectangle {
     callback align_vertical_bottom();
     callback convert_to_rectangle();
     callback convert_to_path();
+    callback create_linear_array();
+    callback create_circular_array();
+    callback create_grid_array();
     
     private property <bool> align_submenu_visible: false;
     private property <bool> convert_submenu_visible: false;
+    private property <bool> array_submenu_visible: false;
     private property <bool> horizontal_submenu_visible: false;
     private property <bool> vertical_submenu_visible: false;
     private property <length> item_height: 28px;
     private property <length> align_item_y: root.item_height * 4;
     private property <length> convert_item_y: root.item_height * 5;
+    private property <length> array_item_y: root.item_height * 6;
     
     width: 150px;
-    height: (1 + (root.has-selection ? 5 : 0) + (root.can-group ? 1 : 0) + (root.can-ungroup ? 1 : 0)) * root.item_height + 4px;
+    height: (1 + (root.has-selection ? 6 : 0) + (root.can-group ? 1 : 0) + (root.can-ungroup ? 1 : 0)) * root.item_height + 4px;
     x: root.menu_x * 1px;
     y: root.menu_y * 1px;
     background: Theme.panel-background;
@@ -578,6 +743,43 @@ component ContextMenu inherits Rectangle {
                 clicked => {
                     root.convert_submenu_visible = !root.convert_submenu_visible;
                     root.align_submenu_visible = false;
+                    root.array_submenu_visible = false;
+                    root.horizontal_submenu_visible = false;
+                    root.vertical_submenu_visible = false;
+                }
+            }
+        }
+
+        if root.has-selection : Rectangle {
+            height: root.item_height;
+            background: menu-item-array.has-hover ? Theme.sidebar-item-hover : transparent;
+            
+            HorizontalBox {
+                padding-left: 10px;
+                padding-right: 10px;
+                spacing: 6px;
+                
+                Text {
+                    text: "Array";
+                    vertical-alignment: center;
+                    font-size: 13px;
+                    font-family: "Fira Code";
+                    color: Theme.text-primary;
+                }
+                Text {
+                    text: "▸";
+                    vertical-alignment: center;
+                    font-size: 12px;
+                    font-family: "Fira Code";
+                    color: Theme.text-primary;
+                }
+            }
+            
+            menu-item-array := TouchArea {
+                clicked => {
+                    root.array_submenu_visible = !root.array_submenu_visible;
+                    root.align_submenu_visible = false;
+                    root.convert_submenu_visible = false;
                     root.horizontal_submenu_visible = false;
                     root.vertical_submenu_visible = false;
                 }
@@ -643,6 +845,66 @@ component ContextMenu inherits Rectangle {
                 convert-path := TouchArea {
                     clicked => {
                         root.convert_to_path();
+                        root.show = false;
+                    }
+                }
+            }
+        }
+    }
+
+    if root.array_submenu_visible: Rectangle {
+        width: 140px;
+        height: root.item_height * 3;
+        x: root.width - 2px;
+        y: root.array_item_y;
+        background: Theme.panel-background;
+        border-width: 1px;
+        border-color: Theme.border;
+        drop-shadow-blur: 4px;
+        drop-shadow-color: #00000040;
+        
+        VerticalBox {
+            spacing: 0px;
+            padding: 0px;
+            
+            Rectangle {
+                height: root.item_height;
+                background: array-linear.has-hover ? Theme.sidebar-item-hover : transparent;
+                HorizontalBox {
+                    padding-left: 10px;
+                    Text { text: "Linear"; vertical-alignment: center; font-size: 13px; font-family: "Fira Code"; color: Theme.text-primary; }
+                }
+                array-linear := TouchArea {
+                    clicked => {
+                        root.create_linear_array();
+                        root.show = false;
+                    }
+                }
+            }
+            Rectangle {
+                height: root.item_height;
+                background: array-circular.has-hover ? Theme.sidebar-item-hover : transparent;
+                HorizontalBox {
+                    padding-left: 10px;
+                    Text { text: "Circular"; vertical-alignment: center; font-size: 13px; font-family: "Fira Code"; color: Theme.text-primary; }
+                }
+                array-circular := TouchArea {
+                    clicked => {
+                        root.create_circular_array();
+                        root.show = false;
+                    }
+                }
+            }
+            Rectangle {
+                height: root.item_height;
+                background: array-grid.has-hover ? Theme.sidebar-item-hover : transparent;
+                HorizontalBox {
+                    padding-left: 10px;
+                    Text { text: "Grid"; vertical-alignment: center; font-size: 13px; font-family: "Fira Code"; color: Theme.text-primary; }
+                }
+                array-grid := TouchArea {
+                    clicked => {
+                        root.create_grid_array();
                         root.show = false;
                     }
                 }
@@ -1001,6 +1263,9 @@ export component DesignerPanel inherits Rectangle {
     callback convert_to_rectangle();
     callback convert_to_path();
     callback confirm_convert(string); // "Rectangle" or "Path"
+    callback create_linear_array(int, int, float, float);
+    callback create_circular_array(int, float, float, float, float, bool);
+    callback create_grid_array(int, int, float, float);
     
     // File operation callbacks
     callback file_new();
@@ -1015,6 +1280,9 @@ export component DesignerPanel inherits Rectangle {
     private property <bool> properties_dialog_visible: false;
     private property <bool> delete_confirmation_visible: false;
     private property <bool> convert_confirmation_visible: false;
+    private property <bool> array_linear_visible: false;
+    private property <bool> array_circular_visible: false;
+    private property <bool> array_grid_visible: false;
     private property <string> convert_type: "";
     private property <int> delete_count: 0;
     private property <int> last_delete_confirmation_trigger: -1;
@@ -2227,6 +2495,18 @@ export component DesignerPanel inherits Rectangle {
             root.convert_type = "Path";
             root.convert_confirmation_visible = true;
         }
+        
+        create_linear_array => {
+            root.array_linear_visible = true;
+        }
+        
+        create_circular_array => {
+            root.array_circular_visible = true;
+        }
+        
+        create_grid_array => {
+            root.array_grid_visible = true;
+        }
     }
     
     // Delete confirmation dialog overlay
@@ -2275,6 +2555,57 @@ export component DesignerPanel inherits Rectangle {
             cancel => {
                 root.convert_confirmation_visible = false;
             }
+        }
+    }
+
+    // Array Linear Dialog Overlay
+    if root.array_linear_visible: Rectangle {
+        width: 100%;
+        height: 100%;
+        background: #00000080;
+        
+        TouchArea { clicked => { root.array_linear_visible = false; } }
+        
+        ArrayLinearDialog {
+            confirm(cx, cy, sx, sy) => {
+                root.array_linear_visible = false;
+                root.create_linear_array(cx, cy, sx, sy);
+            }
+            cancel => { root.array_linear_visible = false; }
+        }
+    }
+
+    // Array Circular Dialog Overlay
+    if root.array_circular_visible: Rectangle {
+        width: 100%;
+        height: 100%;
+        background: #00000080;
+        
+        TouchArea { clicked => { root.array_circular_visible = false; } }
+        
+        ArrayCircularDialog {
+            confirm(c, cx, cy, r, sa, cw) => {
+                root.array_circular_visible = false;
+                root.create_circular_array(c, cx, cy, r, sa, cw);
+            }
+            cancel => { root.array_circular_visible = false; }
+        }
+    }
+
+    // Array Grid Dialog Overlay
+    if root.array_grid_visible: Rectangle {
+        width: 100%;
+        height: 100%;
+        background: #00000080;
+        
+        TouchArea { clicked => { root.array_grid_visible = false; } }
+        
+        ArrayGridDialog {
+            confirm(c, r, cs, rs) => {
+                root.array_grid_visible = false;
+                root.create_grid_array(c, r, cs, rs);
+            }
+            cancel => { root.array_grid_visible = false; }
         }
     }
 }

@@ -1376,4 +1376,56 @@ pub fn setup_designer_callbacks(
             }
         });
     }
+
+    // Designer: Create Linear Array
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_create_linear_array(move |count_x, count_y, spacing_x, spacing_y| {
+        let mut state = designer_mgr_clone.borrow_mut();
+        let params = gcodekit4_designer::LinearArrayParams::new(
+            count_x as u32,
+            count_y as u32,
+            spacing_x as f64,
+            spacing_y as f64,
+        );
+        state.create_array(gcodekit4_designer::ArrayOperation::Linear(params));
+        if let Some(window) = window_weak.upgrade() {
+            update_designer_ui(&window, &mut state);
+        }
+    });
+
+    // Designer: Create Circular Array
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_create_circular_array(move |count, center_x, center_y, radius, start_angle, clockwise| {
+        let mut state = designer_mgr_clone.borrow_mut();
+        let params = gcodekit4_designer::CircularArrayParams::new(
+            count as u32,
+            gcodekit4_designer::Point::new(center_x as f64, center_y as f64),
+            radius as f64,
+            start_angle as f64,
+            clockwise,
+        );
+        state.create_array(gcodekit4_designer::ArrayOperation::Circular(params));
+        if let Some(window) = window_weak.upgrade() {
+            update_designer_ui(&window, &mut state);
+        }
+    });
+
+    // Designer: Create Grid Array
+    let designer_mgr_clone = designer_mgr.clone();
+    let window_weak = main_window.as_weak();
+    main_window.on_designer_create_grid_array(move |columns, rows, col_spacing, row_spacing| {
+        let mut state = designer_mgr_clone.borrow_mut();
+        let params = gcodekit4_designer::GridArrayParams::new(
+            columns as u32,
+            rows as u32,
+            col_spacing as f64,
+            row_spacing as f64,
+        );
+        state.create_array(gcodekit4_designer::ArrayOperation::Grid(params));
+        if let Some(window) = window_weak.upgrade() {
+            update_designer_ui(&window, &mut state);
+        }
+    });
 }
