@@ -1,3 +1,8 @@
+## [0.56.3-alpha.0] - 2025-11-30
+
+### Fixed
+- **CI/CD**: Updated Windows release workflow to explicitly verify the usage of the custom `wix/main.wxs` configuration file.
+
 ## [0.56.2-alpha.0] - 2025-11-30
 
 ### Fixed
