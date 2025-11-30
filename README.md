@@ -118,13 +118,15 @@ This modular structure enables:
   - Example: 37-path tiger head design converts to 26,000+ precise movement commands with optimal path breaks
 - **Interactive Editing**:
   - Zoom, pan, and fit-to-view controls
+  - **NEW**: Array Tools (Linear, Circular, Grid) with automatic grouping
   - **NEW**: Dynamic grid and origin indicator
   - **NEW**: View controls (Zoom In/Out, Fit, Reset)
   - Precise positioning (X, Y, Width, Height inputs)
   - Properties dialog for detailed shape adjustments
   - Dual-grid system (10mm major + 1mm minor)
 - **SVG Canvas Rendering**: High-quality vector-based canvas
-- **Context Menu**: Right-click for Delete, Properties, and the new multi-level Align menu
+- **Context Menu**: Right-click for Delete, Properties, Array, and the new multi-level Align menu
+  - Array operations (Linear, Circular, Grid) with dedicated dialogs
   - Align horizontally (Left/Center/Right) or vertically (Top/Center/Bottom) across multi-selection groups
   - Selecting "Properties" with multiple shapes opens a "Multiple Shapes" dialog that applies pocket/text/toolpath settings to every selected object while keeping individual positions intact
 - **Toolpath Generation**: Convert designs to executable G-code

@@ -1,10 +1,23 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.58.0-alpha.0
-**Last Updated**: 2025-11-30
-**Status**: Bug Fix Release
+**Version**: 0.58.5-alpha.0
+**Last Updated**: 2025-12-01
+**Status**: Feature Release
 
-### Latest Release (v0.58.0-alpha.0) - Windows Console Fix
+### Latest Release (v0.58.5-alpha.0) - Designer Array Tools
+- ✅ **Designer Array Tools**
+  - Added Linear, Circular, and Grid array generation tools.
+  - Implemented automatic grouping of array results.
+  - Improved circular array logic to integrate original shape into the pattern.
+  - Added context menu integration for array operations.
+  - Added dedicated UI dialogs for array parameters.
+
+### Previous Release (v0.58.2-alpha.0) - Designer Fixes
+- ✅ **Designer**
+  - Disabled rotation control for multiple selections.
+  - Fixed rendering of rotated shapes.
+
+### Previous Release (v0.58.0-alpha.0) - Windows Console Fix
 - ✅ **Windows GUI**
   - Fixed console window appearing when running the Windows GUI application by configuring the Windows subsystem to hide the console window.
   - Uses `/SUBSYSTEM:WINDOWS` and `/ENTRY:mainCRTStartup` linker flags in build.rs for clean GUI experience.

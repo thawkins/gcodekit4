@@ -1,0 +1,22 @@
+{
+  "width_mm": 100.0,
+  "feed_rate": 1000.0,
+  "travel_rate": 3000.0,
+  "min_power": 0.0,
+  "max_power": 61.188618,
+  "pixels_per_mm": 5.0,
+  "scan_direction": "Horizontal",
+  "bidirectional": true,
+  "invert": true,
+  "line_spacing": 1.0,
+  "power_scale": 1000.0,
+  "mirror_x": false,
+  "mirror_y": false,
+  "rotation": "0°",
+  "halftone": "Atkinson",
+  "halftone_dot_size": 4,
+  "halftone_threshold": 127,
+  "offset_x": "0",
+  "offset_y": "0",
+  "image_path": "/home/thawkins/Pictures/BingWallpaper/20251111-ExternsteineSunset_ROW3073183805_UHD.jpg"
+}

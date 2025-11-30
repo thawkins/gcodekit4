@@ -42,6 +42,23 @@ Common UI elements are defined in `shared.slint` to ensure consistency:
 3.  **Layouts**: Use `StandardSidebar` for panel layouts that require a left navigation pane.
 4.  **Consistency**: Follow the established patterns for headers, spacing, and alignment.
 
+## Designer Features
+- **Array Tools**:
+    - **Linear Array**: Creates copies in a grid pattern defined by X/Y counts and spacing.
+    - **Circular Array**: Creates copies arranged in a circle defined by center, radius, start angle, and total count.
+    - **Grid Array**: Alias for Linear Array with specific grid terminology (Columns/Rows).
+    - **Grouping**: All array operations automatically group the resulting shapes (including the original) into a single group for easy manipulation.
+    - **Dialogs**: Dedicated modal dialogs (`ArrayLinearDialog`, `ArrayCircularDialog`, `ArrayGridDialog`) for parameter input.
+- **Context Menu**:
+    - **Right-Click**: Opens a context menu for the selected shape(s).
+    - **Operations**:
+        - Copy/Paste
+        - Group/Ungroup
+        - Align (Horizontal/Vertical)
+        - Convert To (Rectangle, Path)
+        - Array (Linear, Circular, Grid)
+        - Delete
+
 ## Troubleshooting
 - **Layout Issues**: Check `horizontal-stretch` and `vertical-stretch` properties.
 - **Focus**: Ensure `FocusScope` is used correctly for keyboard input.
