@@ -1,3 +1,11 @@
+## [0.54.0-alpha.0] - 2025-11-30
+
+### Added
+- **CI/CD**: Added Flatpak support for Linux builds.
+  - Created `flatpak/` directory with desktop entry, AppStream metainfo, and Flatpak manifest.
+  - Updated release workflow to install `flatpak-builder` and generate a `.flatpak` bundle.
+  - Configured application icon and desktop integration.
+
 ## [0.53.1-alpha.0] - 2025-11-30
 
 ### Fixed
