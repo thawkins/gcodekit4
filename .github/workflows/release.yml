@@ -58,8 +58,8 @@ jobs:
         # Add bundle metadata to Cargo.toml
         echo '[package.metadata.bundle]' >> Cargo.toml
         echo 'identifier = "com.github.thawkins.gcodekit4"' >> Cargo.toml
-        cargo bundle --package gcodekit4 --release --target ${{ matrix.platform.target }} --format dmg
-        mv target/${{ matrix.platform.target }}/release/bundle/dmg/*.dmg ${{ matrix.platform.name }}
+        cargo bundle --package gcodekit4 --release --target ${{ matrix.platform.target }} --format osx
+        hdiutil create -volname "GCodeKit4" -srcfolder "target/${{ matrix.platform.target }}/release/bundle/osx/gcodekit4.app" -ov -format UDZO "${{ matrix.platform.name }}"
 
     - name: Build (Windows)
       if: matrix.platform.os_name == 'Windows-x86_64'

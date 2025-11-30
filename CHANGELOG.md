@@ -1,3 +1,13 @@
+## [0.53.1-alpha.0] - 2025-11-30
+
+### Fixed
+- **CI/CD**: Fixed macOS build failure by using `osx` format for `cargo-bundle` (which creates a `.app` bundle) and then using `hdiutil` to package it into a `.dmg` disk image. The `dmg` format flag is not directly supported by the `cargo-bundle` CLI.
+
+## [0.53.0-alpha.0] - 2025-11-30
+
+### Fixed
+- **CI/CD**: Updated version format to `0.53.0-alpha.0` to satisfy WiX/MSI requirements for Windows installer generation. The previous format `0.51.4-alpha` caused build failures because prerelease components must be convertible to integers.
+
 ## [0.51.4-alpha] - 2025-11-30
 
 ### Fixed
