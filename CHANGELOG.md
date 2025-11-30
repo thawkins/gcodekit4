@@ -1,3 +1,8 @@
+## [0.56.6-alpha.0] - 2025-11-30
+
+### Fixed
+- **Windows Installer**: Fixed WiX build error `CNDL0230` by assigning a static GUID to the License component, which is required when using a registry key as the KeyPath.
+
 ## [0.56.5-alpha.0] - 2025-11-30
 
 ### Fixed
