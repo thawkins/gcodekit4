@@ -1,3 +1,9 @@
+// On Windows, hide the console window for GUI applications
+#![cfg_attr(
+    all(target_os = "windows", not(debug_assertions)),
+    windows_subsystem = "windows"
+)]
+
 use std::sync::{Arc, Mutex};
 use gcodekit4::{
     init_logging, list_ports, CapabilityManager, Communicator,
