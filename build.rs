@@ -1,4 +1,11 @@
 fn main() {
+    // On Windows, set the subsystem to "windows" to hide the console window
+    #[cfg(target_os = "windows")]
+    println!("cargo:rustc-link-arg=/SUBSYSTEM:WINDOWS");
+    
+    #[cfg(target_os = "windows")]
+    println!("cargo:rustc-link-arg=/ENTRY:mainCRTStartup");
+    
     // Set include path for Slint compiler (used by both compile_with_config and inline slint! macros)
     let include_path = std::path::PathBuf::from("crates/gcodekit4-ui");
     println!(
