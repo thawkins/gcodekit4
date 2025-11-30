@@ -70,9 +70,9 @@ Pre-compiled binaries are available for Linux, Windows, and macOS.
 1.  Go to the [GCodeKit4 Releases Page](https://github.com/thawkins/gcodekit4/releases).
 2.  Find the latest release (e.g., `v0.51.0-alpha`).
 3.  Download the archive for your operating system:
-    *   **Linux**: `gcodekit4-linux-x86_64.tar.gz`
-    *   **Windows**: `gcodekit4-windows-x86_64.zip`
-    *   **macOS**: `gcodekit4-macos-x86_64.tar.gz` (or `.dmg` if available)
+    *   **Linux**: `gcodekit4-linux-x86_64.flatpak`
+    *   **Windows**: `gcodekit4-windows-x86_64.msi`
+    *   **macOS**: `gcodekit4-macos-x86_64.dmg`
 4.  Extract the archive to a folder of your choice.
 5.  Run the `gcodekit4` executable (or `gcodekit4.exe` on Windows).
 
@@ -99,7 +99,7 @@ When you first launch GCodeKit4, you'll see:
 1. **Main Window**: Tabbed interface with Machine Control, G-Code Editor, Designer, and other panels
 2. **Menu Bar**: File, Machine, Tools, and Help menus
 3. **Connection Status**: Disconnected indicator in the status bar
-4. **Empty Console**: Ready to display device communication
+4. **Empty ConsolGcode-editor**: Ready to enter gcode to send to your device.
 
 ### 2.3 Connecting to Your CNC Controller
 
@@ -109,6 +109,7 @@ When you first launch GCodeKit4, you'll see:
 2. Click the **"Refresh Ports"** button
 3. The port dropdown will populate with available serial devices
 
+
 #### Step 2: Select Connection Parameters
 
 1. **Port**: Choose your controller's serial port from the dropdown
@@ -116,17 +117,12 @@ When you first launch GCodeKit4, you'll see:
    - macOS: `/dev/cu.usbserial-*` or `/dev/tty.usbserial-*`
    - Windows: `COM3`, `COM4`, etc.
 
-2. **Baud Rate**: Select the appropriate baud rate
-   - GRBL: 115200 (most common)
-   - TinyG: 115200
-   - Other controllers: Check documentation
-
 #### Step 3: Connect
 
 1. Click the **"Connect"** button
 2. Wait for "Device connected" message in the console
 3. The status indicator will turn green
-4. Device information will populate (firmware version, build info)
+4. Device information tab will populate (firmware version, build info)
 
 ### 2.4 Initial Machine Setup
 
