@@ -91,6 +91,9 @@
 
         <Property Id='ARPHELPLINK' Value='https://github.com/thawkins/gcodekit4'/>
         
+        <!-- Set the property that WixUI_InstallDir expects -->
+        <Property Id='WIXUI_INSTALLDIR' Value='APPLICATIONFOLDER' />
+        
         <UI>
             <UIRef Id='WixUI_InstallDir'/>
             <Publish Dialog='WelcomeDlg' Control='Next' Event='NewDialog' Value='InstallDirDlg' Order='2'>1</Publish>

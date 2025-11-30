@@ -1,10 +1,15 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.56.0-alpha.0
+**Version**: 0.57.0-alpha.0
 **Last Updated**: 2025-11-30
-**Status**: Feature Release
+**Status**: Bug Fix Release
 
-### Latest Release (v0.56.0-alpha.0) - Maintenance
+### Latest Release (v0.57.0-alpha.0) - Windows Installer Fix
+- ✅ **Windows Installer**
+  - Fixed MSI installer error 2819 by adding the required `WIXUI_INSTALLDIR` property to bind the directory chooser dialog to `APPLICATIONFOLDER`.
+  - Resolves installation failure that prevented users from completing the Windows installation process.
+
+### Previous Release (v0.56.0-alpha.0) - Maintenance
 - ✅ **Maintenance**
   - Version bump for next development iteration.
 
