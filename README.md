@@ -548,6 +548,32 @@ You may choose either license for your use of this software.
 **Status**: Active Development
 **Stability**: Alpha (breaking changes may occur)
 
+### Recent Updates (v0.54.0)
+- **CI/CD**: Added Flatpak support for Linux builds.
+  - Created `flatpak/` directory with desktop entry, AppStream metainfo, and Flatpak manifest.
+  - Updated release workflow to install `flatpak-builder` and generate a `.flatpak` bundle.
+  - Configured application icon and desktop integration.
+
+### Recent Updates (v0.53.1)
+- **CI/CD**: Fixed macOS build failure by using `osx` format for `cargo-bundle` and `hdiutil` for `.dmg` creation.
+
+### Recent Updates (v0.53.0)
+- **CI/CD**: Updated version format to satisfy WiX/MSI requirements for Windows installer generation.
+
+### Recent Updates (v0.51.4)
+- **CI/CD**: Fixed Windows and macOS build failures by explicitly specifying package name in workspace.
+
+### Recent Updates (v0.51.3)
+- **CI/CD**: Updated release workflow to generate platform-specific packages:
+  - **macOS**: Generates `.dmg` disk image.
+  - **Windows**: Generates `.msi` installer.
+  - **Linux**: Generates binary executable.
+
+### Recent Updates (v0.51.2)
+- **Visualizer**: Fixed rendering issues by implementing backend callbacks for refresh, zoom, and pan operations.
+- **Designer**: Added rotation support to shapes and properties panel.
+- **Designer**: Added "Convert to" context menu (Rectangle, Path).
+
 ### Recent Updates (v0.50.0)
 - **Designer**: Fixed multiple selection properties and resizing behavior.
 

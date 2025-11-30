@@ -46,7 +46,7 @@ All tests **MUST** be located in the `tests/` inside each crate, if the test is 
 ## GitHub Access
 - Use "gh" to access all GitHub repositories.
 - When asked to "push to remote", update the SPEC.md, README.md, STATS.md, SLINT.md and CHANGELOG.md files with all recent activity and spec changes, construct a suitable commit message based on recent activity, commit all changes and push the changes to the remote repository.
-- When asked to "push release to remote", update the release number, and then follow the "push to remote" process.
+- When asked to "push release to remote", update the release number, and then follow the "push to remote" process. **Commit Message Rule**: Do not use "chore: bump version to ...", instead use "Version: <version_number>".
 - When initializing a new repo, add BUG, FEATURE, TASK and CHANGE issue templates only do this once. 
 - Do not push changes to remote unless specifically told to. 
 

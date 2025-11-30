@@ -1,10 +1,38 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.50.0-alpha  
-**Last Updated**: 2025-11-28  
+**Version**: 0.54.0-alpha.0
+**Last Updated**: 2025-11-30
 **Status**: Feature Release
 
-### Latest Release (v0.50.0-alpha) - Designer Fixes
+### Latest Release (v0.54.0-alpha.0) - Flatpak Support
+- ✅ **CI/CD**
+  - Added Flatpak support for Linux builds.
+  - Created `flatpak/` directory with desktop entry, AppStream metainfo, and Flatpak manifest.
+  - Updated release workflow to install `flatpak-builder` and generate a `.flatpak` bundle.
+
+### Previous Release (v0.53.1-alpha.0) - macOS Build Fix
+- ✅ **CI/CD**
+  - Fixed macOS build failure by using `osx` format for `cargo-bundle` and `hdiutil` for `.dmg` creation.
+
+### Previous Release (v0.53.0-alpha.0) - Windows Version Fix
+- ✅ **CI/CD**
+  - Updated version format to satisfy WiX/MSI requirements.
+
+### Previous Release (v0.51.4-alpha) - CI/CD Fix
+- ✅ **CI/CD**
+  - Fixed Windows and macOS build failures by explicitly specifying package name.
+
+### Previous Release (v0.51.3-alpha) - Package Formats
+- ✅ **CI/CD**
+  - Updated release workflow to generate `.dmg` (macOS) and `.msi` (Windows).
+
+### Previous Release (v0.51.2-alpha) - Visualizer Fixes
+- ✅ **Visualizer**
+  - Fixed rendering issues by implementing backend callbacks.
+- ✅ **Designer**
+  - Added rotation support and "Convert to" context menu.
+
+### Previous Release (v0.50.0-alpha) - Designer Fixes
 - ✅ **Designer**
   - Fixed incorrect properties display for multiple selections.
   - Fixed resizing logic for multiple selections.
