@@ -1,3 +1,8 @@
+## [0.54.3-alpha.0] - 2025-11-30
+
+### Fixed
+- **CI/CD**: Fixed Flatpak build failure by resizing the application icon to 128x128 pixels (`assets/Pictures/gcodekit4_128.png`) to meet the size requirements for `share/icons/hicolor/128x128/apps/`.
+
 ## [0.54.2-alpha.0] - 2025-11-30
 
 ### Fixed
