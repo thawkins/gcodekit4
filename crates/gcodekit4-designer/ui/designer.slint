@@ -308,7 +308,7 @@ component ArrayLinearDialog inherits Dialog {
     callback cancel();
     
     width: 300px;
-    height: 280px;
+    height: 350px;
     background: #2c3e50;
     
     VerticalBox {
@@ -361,7 +361,7 @@ component ArrayCircularDialog inherits Dialog {
     callback cancel();
     
     width: 300px;
-    height: 350px;
+    height: 450px;
     background: #2c3e50;
     
     VerticalBox {
@@ -417,7 +417,7 @@ component ArrayGridDialog inherits Dialog {
     callback cancel();
     
     width: 300px;
-    height: 280px;
+    height: 350px;
     background: #2c3e50;
     
     VerticalBox {
@@ -1188,6 +1188,11 @@ export component DesignerPanel inherits Rectangle {
     
     private property <bool> properties_multiple_selection: false;
     in-out property <bool> is_editing_defaults: false;
+    
+    // Array dialog initial values
+    property <float> array_center_x: 0.0;
+    property <float> array_center_y: 0.0;
+
     private property <float> original_shape_x: 0.0;
     private property <float> original_shape_y: 0.0;
     private property <float> original_shape_w: 0.0;
@@ -2501,6 +2506,8 @@ export component DesignerPanel inherits Rectangle {
         }
         
         create_circular_array => {
+            root.array_center_x = root.selected_shape_x + root.selected_shape_w / 2.0;
+            root.array_center_y = root.selected_shape_y + root.selected_shape_h / 2.0;
             root.array_circular_visible = true;
         }
         
@@ -2584,6 +2591,8 @@ export component DesignerPanel inherits Rectangle {
         TouchArea { clicked => { root.array_circular_visible = false; } }
         
         ArrayCircularDialog {
+            center_x: root.array_center_x;
+            center_y: root.array_center_y;
             confirm(c, cx, cy, r, sa, cw) => {
                 root.array_circular_visible = false;
                 root.create_circular_array(c, cx, cy, r, sa, cw);

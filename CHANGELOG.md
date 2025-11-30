@@ -1,7 +1,10 @@
-## [0.58.4-alpha.0] - 2025-12-01
+## [0.58.5-alpha.0] - 2025-12-01
 
 ### Changed
 - **Designer**: Updated array generation to group all resulting shapes (originals + copies) into a single unique group.
+- **Designer**: Circular array now positions the original shape as the first item in the circle, moving/rotating it to match the pattern.
+- **Designer**: Circular array dialog now initializes center coordinates to the center of the selected shape(s).
+- **UI**: Increased height of array dialogs to prevent buttons from being cut off.
 
 ## [0.58.3-alpha.0] - 2025-12-01
 
