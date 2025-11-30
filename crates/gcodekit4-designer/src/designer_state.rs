@@ -1348,12 +1348,24 @@ impl DesignerState {
         };
 
         let mut commands = Vec::new();
-        let mut group_map = std::collections::HashMap::new();
+        // Create a single group ID for the entire array
+        let array_group_id = self.canvas.generate_id();
 
-        // Deselect original shapes
+        // Deselect original shapes (will be re-selected as part of the group)
         self.canvas.deselect_all();
 
         for obj in &selected {
+            // Update original shape to be part of the new group
+            let mut new_original = obj.clone();
+            new_original.group_id = Some(array_group_id);
+            new_original.selected = true;
+            
+            commands.push(DesignerCommand::ChangeProperty(ChangeProperty {
+                id: obj.id,
+                old_state: obj.clone(),
+                new_state: new_original,
+            }));
+
             let (x1, y1, x2, y2) = obj.shape.bounding_box();
             let orig_x = (x1 + x2) / 2.0;
             let orig_y = (y1 + y2) / 2.0;
@@ -1377,13 +1389,8 @@ impl DesignerState {
                 let mut new_obj = obj.clone();
                 let id = self.canvas.generate_id();
                 new_obj.id = id;
-                
-                if let Some(gid) = obj.group_id {
-                    let new_gid = *group_map.entry((i, gid)).or_insert_with(|| {
-                        self.canvas.generate_id()
-                    });
-                    new_obj.group_id = Some(new_gid);
-                }
+                new_obj.group_id = Some(array_group_id);
+                new_obj.selected = true;
 
                 new_obj.shape.translate(dx, dy);
                 
@@ -1411,7 +1418,6 @@ impl DesignerState {
                     }
                 }
 
-                new_obj.selected = true;
                 commands.push(DesignerCommand::AddShape(AddShape { id, object: Some(new_obj) }));
             }
         }
