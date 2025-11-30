@@ -1,3 +1,8 @@
+## [0.51.4-alpha] - 2025-11-30
+
+### Fixed
+- **CI/CD**: Fixed Windows and macOS build failures in GitHub Actions by explicitly specifying the package name (`--package gcodekit4`) for `cargo wix` and `cargo bundle` commands in the workspace environment.
+
 ## [0.51.3-alpha] - 2025-11-30
 
 ### Added
