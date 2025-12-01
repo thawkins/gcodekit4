@@ -1,3 +1,10 @@
+## [0.58.6-alpha.0] - 2025-12-01
+
+### Added
+- **CAM Tools**: Added image preview to Vector Engraving Dialog.
+- **CAM Tools**: Updated Vector Engraving Dialog layout to match Bitmap Engraving tool (split view).
+- **CAM Tools**: Added automatic output size calculation based on vector aspect ratio.
+
 ## [0.58.5-alpha.0] - 2025-12-01
 
 ### Changed

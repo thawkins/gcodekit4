@@ -961,6 +961,33 @@ pub fn register_callbacks(
                                 .unwrap_or("unknown")
                                 .to_uppercase());
                         dlg.set_file_info(file_info.into());
+
+                        // Load preview if possible (SVG)
+                        if let Some(extension) = path.extension().and_then(|e| e.to_str()) {
+                            if extension.to_lowercase() == "svg" {
+                                if let Ok(image) = slint::Image::load_from_path(&path) {
+                                    let size = image.size();
+                                    let width = size.width as f32;
+                                    let height = size.height as f32;
+                                    
+                                    if width > 0.0 {
+                                        let aspect_ratio = height / width;
+                                        let desired_width = dlg.get_desired_width();
+                                        let output_height = desired_width * aspect_ratio;
+                                        
+                                        dlg.set_output_width(desired_width);
+                                        dlg.set_output_height(output_height);
+                                    }
+                                    
+                                    dlg.set_preview_image(image);
+                                }
+                            } else {
+                                // Clear preview for non-image formats (DXF)
+                                dlg.set_preview_image(slint::Image::default());
+                                dlg.set_output_width(0.0);
+                                dlg.set_output_height(0.0);
+                            }
+                        }
                     }
                 }
             });
@@ -971,6 +998,17 @@ pub fn register_callbacks(
                 if let Some(dlg) = dialog_weak_update.upgrade() {
                     let vector_path = dlg.get_vector_path().to_string();
                     if !vector_path.is_empty() {
+                        // Update dimensions if preview image is available
+                        let image = dlg.get_preview_image();
+                        let size = image.size();
+                        if size.width > 0 {
+                            let aspect_ratio = size.height as f32 / size.width as f32;
+                            let desired_width = dlg.get_desired_width();
+                            let output_height = desired_width * aspect_ratio;
+                            dlg.set_output_width(desired_width);
+                            dlg.set_output_height(output_height);
+                        }
+
                         let _feed_rate = dlg.get_feed_rate();
                         let _travel_rate = dlg.get_travel_rate();
                         let multi_pass = dlg.get_multi_pass();

@@ -23,6 +23,7 @@ export struct VectorEngravingParams {
 export component VectorEngraverDialog inherits Dialog {
     in-out property <string> vector-path: "";
     in property <string> file-info: "No file selected";
+    in property <image> preview-image;
     in property <string> estimated-time: "0:00";
     
     // Individual parameter properties for two-way binding
@@ -56,7 +57,7 @@ export component VectorEngraverDialog inherits Dialog {
     callback save-params();
     
     title: "Laser Vector Image Engraver";
-    preferred-width: 700px;
+    preferred-width: 800px;
     preferred-height: 600px;
     
     VerticalBox {
@@ -88,335 +89,350 @@ export component VectorEngraverDialog inherits Dialog {
             }
         }
         
-        // File info display
-        Rectangle {
-            background: #3a3a3a;
-            border-color: #555;
-            border-width: 1px;
-            border-radius: 4px;
-            height: 30px;
-            
-            HorizontalBox {
-                padding: 5px;
-                spacing: 10px;
-                
-                Text {
-                    text: "File:";
-                    color: #aaa;
-                }
-                
-                Text {
-                    text: file-info;
-                    color: #4a9eff;
-                    font-weight: 500;
-                }
-            }
-        }
-        
-        // Main content area with parameters
-        ScrollView {
+        // Main content area with preview and parameters
+        HorizontalBox {
+            spacing: 10px;
             vertical-stretch: 1;
             
-            VerticalBox {
-                spacing: 15px;
-                padding: 5px;
+            // Left side - Image preview
+            GroupBox {
+                title: "Preview";
+                horizontal-stretch: 1;
                 
-                // Cutting parameters
-                GroupBox {
-                    title: "Cutting Parameters";
-                    
-                    VerticalBox {
-                        spacing: 8px;
+                VerticalBox {
+                    Rectangle {
+                        background: #2a2a2a;
+                        border-color: #555;
+                        border-width: 1px;
                         
-                        HorizontalBox {
-                            Text { text: "Cut Power (%):"; width: 140px; }
-                            Slider {
-                                minimum: 0;
-                                maximum: 100;
-                                value <=> cut-power;
-                                horizontal-stretch: 1;
-                            }
-                            Text {
-                                text: cut-power;
-                                width: 40px;
-                            }
+                        if preview-image.width > 0: Image {
+                            source: preview-image;
+                            image-fit: contain;
+                            width: 100%;
+                            height: 100%;
                         }
                         
-                        HorizontalBox {
-                            Text { text: "Engrave Power (%):"; width: 140px; }
-                            Slider {
-                                minimum: 0;
-                                maximum: 100;
-                                value <=> engrave-power;
-                                horizontal-stretch: 1;
-                            }
-                            Text {
-                                text: engrave-power;
-                                width: 40px;
-                            }
-                        }
-                        
-                        HorizontalBox {
-                            CheckBox {
-                                text: "Invert Power";
-                                checked <=> invert-power;
-                            }
+                        if preview-image.width == 0: Text {
+                            text: "No file loaded";
+                            color: #888;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
                         }
                     }
-                }
-                
-                // Speed parameters
-                GroupBox {
-                    title: "Speed";
                     
-                    VerticalBox {
-                        spacing: 8px;
-                        
-                        HorizontalBox {
-                            Text { text: "Feed Rate (mm/min):"; width: 140px; }
-                            LineEdit {
-                                text: feed-rate;
-                                horizontal-stretch: 1;
-                                edited => {
-                                    feed-rate = self.text.to-float();
-                                    update-preview();
-                                }
-                            }
-                        }
-                        
-                        HorizontalBox {
-                            Text { text: "Travel Rate (mm/min):"; width: 140px; }
-                            LineEdit {
-                                text: travel-rate;
-                                horizontal-stretch: 1;
-                                edited => {
-                                    travel-rate = self.text.to-float();
-                                }
-                            }
-                        }
+                    Text {
+                        text: file-info;
+                        horizontal-alignment: center;
+                        color: #aaa;
                     }
                 }
+            }
+            
+            // Right side - Parameters
+            ScrollView {
+                width: 350px;
                 
-                // Multi-pass options
-                GroupBox {
-                    title: "Multi-Pass Cutting";
+                VerticalBox {
+                    spacing: 15px;
+                    padding: 5px;
                     
-                    VerticalBox {
-                        spacing: 8px;
+                    // Cutting parameters
+                    GroupBox {
+                        title: "Cutting Parameters";
                         
-                        HorizontalBox {
-                            CheckBox {
-                                text: "Enable Multi-Pass";
-                                checked <=> multi-pass;
-                                toggled => {
-                                    update-preview();
-                                }
-                            }
-                        }
-                        
-                        if multi-pass: HorizontalBox {
-                            Text { text: "Number of Passes:"; width: 140px; }
-                            Slider {
-                                minimum: 1;
-                                maximum: 10;
-                                value: num-passes;
-                                changed(val) => {
-                                    num-passes = round(val);
-                                    update-preview();
-                                }
-                                horizontal-stretch: 1;
-                            }
-                            Text {
-                                text: num-passes;
-                                width: 40px;
-                            }
-                        }
-                        
-                        if multi-pass: HorizontalBox {
-                            Text { text: "Z Increment (mm):"; width: 140px; }
-                            LineEdit {
-                                text: z-increment;
-                                horizontal-stretch: 1;
-                                edited => {
-                                    z-increment = self.text.to-float();
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                // Laser power scale
-                GroupBox {
-                    title: "Laser Configuration";
-                    
-                    VerticalBox {
-                        spacing: 8px;
-                        
-                        HorizontalBox {
-                            Text { text: "Desired Width (mm):"; width: 140px; }
-                            LineEdit {
-                                text: desired-width;
-                                placeholder-text: "100";
-                                horizontal-stretch: 1;
-                                edited => {
-                                    desired-width = self.text.to-float();
-                                    update-preview();
-                                }
-                            }
-                        }
-                        
-                        HorizontalBox {
-                            Text { text: "Output Size (mm):"; width: 140px; }
-                            Text {
-                                text: output-width > 0 ? root.output-width.round() + " × " + root.output-height.round() : "—";
-                                color: #4a9eff;
-                                font-weight: 500;
-                                horizontal-stretch: 1;
-                            }
-                        }
-                        
-                        HorizontalBox {
-                            Text { text: "Power Scale:"; width: 140px; }
-                            LineEdit {
-                                text: power-scale;
-                                placeholder-text: "1000 for GRBL";
-                                horizontal-stretch: 1;
-                                edited => {
-                                    power-scale = self.text.to-float();
-                                }
-                            }
-                        }
-
-                        HorizontalBox {
-                            CheckBox {
-                                text: "Enable Laser Dwell";
-                                checked <=> enable-dwell;
-                            }
-                        }
-
-                        if enable-dwell: HorizontalBox {
-                            Text { text: "Dwell Time (s):"; width: 140px; }
-                            LineEdit {
-                                text: dwell-time;
-                                horizontal-stretch: 1;
-                                edited => {
-                                    dwell-time = self.text.to-float();
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                // Work Origin Offsets
-                GroupBox {
-                    title: "Work Origin Offsets (mm)";
-                    
-                    VerticalBox {
-                        spacing: 8px;
-                        
-                        HorizontalBox {
-                            Text { text: "Offset X:"; width: 140px; }
-                            LineEdit {
-                                text <=> offset-x;
-                                placeholder-text: "10.0";
-                                horizontal-stretch: 1;
-                            }
-                        }
-                        
-                        HorizontalBox {
-                            Text { text: "Offset Y:"; width: 140px; }
-                            LineEdit {
-                                text <=> offset-y;
-                                placeholder-text: "10.0";
-                                horizontal-stretch: 1;
-                            }
-                        }
-                    }
-                }
-
-                // Hatching (Fill)
-                GroupBox {
-                    title: "Hatching (Fill)";
-                    
-                    VerticalBox {
-                        spacing: 8px;
-                        
-                        HorizontalBox {
-                            CheckBox {
-                                text: "Enable Hatching";
-                                checked <=> enable-hatch;
-                                toggled => { update-preview(); }
-                            }
-                            
-                            if enable-hatch: CheckBox {
-                                text: "Cross Hatch (+90°)";
-                                checked <=> cross-hatch;
-                                toggled => { update-preview(); }
-                            }
-                        }
-                        
-                        if enable-hatch: VerticalBox {
+                        VerticalBox {
                             spacing: 8px;
                             
                             HorizontalBox {
-                                Text { text: "Angle (deg):"; width: 140px; }
+                                Text { text: "Cut Power (%):"; width: 140px; }
                                 Slider {
                                     minimum: 0;
-                                    maximum: 180;
-                                    value <=> hatch-angle;
+                                    maximum: 100;
+                                    value <=> cut-power;
                                     horizontal-stretch: 1;
-                                    changed => { update-preview(); }
                                 }
-                                Text { text: round(hatch-angle); width: 40px; }
+                                Text {
+                                    text: cut-power;
+                                    width: 40px;
+                                }
                             }
                             
                             HorizontalBox {
-                                Text { text: "Spacing (mm):"; width: 140px; }
+                                Text { text: "Engrave Power (%):"; width: 140px; }
+                                Slider {
+                                    minimum: 0;
+                                    maximum: 100;
+                                    value <=> engrave-power;
+                                    horizontal-stretch: 1;
+                                }
+                                Text {
+                                    text: engrave-power;
+                                    width: 40px;
+                                }
+                            }
+                            
+                            HorizontalBox {
+                                CheckBox {
+                                    text: "Invert Power";
+                                    checked <=> invert-power;
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Speed parameters
+                    GroupBox {
+                        title: "Speed";
+                        
+                        VerticalBox {
+                            spacing: 8px;
+                            
+                            HorizontalBox {
+                                Text { text: "Feed Rate (mm/min):"; width: 140px; }
                                 LineEdit {
-                                    text: hatch-spacing;
+                                    text: feed-rate;
                                     horizontal-stretch: 1;
                                     edited => {
-                                        hatch-spacing = self.text.to-float();
+                                        feed-rate = self.text.to-float();
                                         update-preview();
                                     }
                                 }
                             }
                             
                             HorizontalBox {
-                                Text { text: "Tolerance (mm):"; width: 140px; }
+                                Text { text: "Travel Rate (mm/min):"; width: 140px; }
                                 LineEdit {
-                                    text: hatch-tolerance;
+                                    text: travel-rate;
                                     horizontal-stretch: 1;
                                     edited => {
-                                        hatch-tolerance = self.text.to-float();
-                                        update-preview();
+                                        travel-rate = self.text.to-float();
                                     }
                                 }
                             }
                         }
                     }
-                }
-                
-                // Estimated time
-                Rectangle {
-                    background: #3a3a3a;
-                    border-color: #555;
-                    border-width: 1px;
-                    border-radius: 4px;
                     
-                    HorizontalBox {
-                        padding: 10px;
-                        spacing: 10px;
+                    // Multi-pass options
+                    GroupBox {
+                        title: "Multi-Pass Cutting";
                         
-                        Text {
-                            text: "Estimated Time:";
-                            color: #aaa;
+                        VerticalBox {
+                            spacing: 8px;
+                            
+                            HorizontalBox {
+                                CheckBox {
+                                    text: "Enable Multi-Pass";
+                                    checked <=> multi-pass;
+                                    toggled => {
+                                        update-preview();
+                                    }
+                                }
+                            }
+                            
+                            if multi-pass: HorizontalBox {
+                                Text { text: "Number of Passes:"; width: 140px; }
+                                Slider {
+                                    minimum: 1;
+                                    maximum: 10;
+                                    value: num-passes;
+                                    changed(val) => {
+                                        num-passes = round(val);
+                                        update-preview();
+                                    }
+                                    horizontal-stretch: 1;
+                                }
+                                Text {
+                                    text: num-passes;
+                                    width: 40px;
+                                }
+                            }
+                            
+                            if multi-pass: HorizontalBox {
+                                Text { text: "Z Increment (mm):"; width: 140px; }
+                                LineEdit {
+                                    text: z-increment;
+                                    horizontal-stretch: 1;
+                                    edited => {
+                                        z-increment = self.text.to-float();
+                                    }
+                                }
+                            }
                         }
+                    }
+                    
+                    // Laser power scale
+                    GroupBox {
+                        title: "Laser Configuration";
                         
-                        Text {
-                            text: estimated-time;
-                            color: #4a9eff;
-                            font-weight: 700;
+                        VerticalBox {
+                            spacing: 8px;
+                            
+                            HorizontalBox {
+                                Text { text: "Desired Width (mm):"; width: 140px; }
+                                LineEdit {
+                                    text: desired-width;
+                                    placeholder-text: "100";
+                                    horizontal-stretch: 1;
+                                    edited => {
+                                        desired-width = self.text.to-float();
+                                        update-preview();
+                                    }
+                                }
+                            }
+                            
+                            HorizontalBox {
+                                Text { text: "Output Size (mm):"; width: 140px; }
+                                Text {
+                                    text: output-width > 0 ? root.output-width.round() + " × " + root.output-height.round() : "—";
+                                    color: #4a9eff;
+                                    font-weight: 500;
+                                    horizontal-stretch: 1;
+                                }
+                            }
+                            
+                            HorizontalBox {
+                                Text { text: "Power Scale:"; width: 140px; }
+                                LineEdit {
+                                    text: power-scale;
+                                    placeholder-text: "1000 for GRBL";
+                                    horizontal-stretch: 1;
+                                    edited => {
+                                        power-scale = self.text.to-float();
+                                    }
+                                }
+                            }
+    
+                            HorizontalBox {
+                                CheckBox {
+                                    text: "Enable Laser Dwell";
+                                    checked <=> enable-dwell;
+                                }
+                            }
+    
+                            if enable-dwell: HorizontalBox {
+                                Text { text: "Dwell Time (s):"; width: 140px; }
+                                LineEdit {
+                                    text: dwell-time;
+                                    horizontal-stretch: 1;
+                                    edited => {
+                                        dwell-time = self.text.to-float();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Work Origin Offsets
+                    GroupBox {
+                        title: "Work Origin Offsets (mm)";
+                        
+                        VerticalBox {
+                            spacing: 8px;
+                            
+                            HorizontalBox {
+                                Text { text: "Offset X:"; width: 140px; }
+                                LineEdit {
+                                    text <=> offset-x;
+                                    placeholder-text: "10.0";
+                                    horizontal-stretch: 1;
+                                }
+                            }
+                            
+                            HorizontalBox {
+                                Text { text: "Offset Y:"; width: 140px; }
+                                LineEdit {
+                                    text <=> offset-y;
+                                    placeholder-text: "10.0";
+                                    horizontal-stretch: 1;
+                                }
+                            }
+                        }
+                    }
+    
+                    // Hatching (Fill)
+                    GroupBox {
+                        title: "Hatching (Fill)";
+                        
+                        VerticalBox {
+                            spacing: 8px;
+                            
+                            HorizontalBox {
+                                CheckBox {
+                                    text: "Enable Hatching";
+                                    checked <=> enable-hatch;
+                                    toggled => { update-preview(); }
+                                }
+                                
+                                if enable-hatch: CheckBox {
+                                    text: "Cross Hatch (+90°)";
+                                    checked <=> cross-hatch;
+                                    toggled => { update-preview(); }
+                                }
+                            }
+                            
+                            if enable-hatch: VerticalBox {
+                                spacing: 8px;
+                                
+                                HorizontalBox {
+                                    Text { text: "Angle (deg):"; width: 140px; }
+                                    Slider {
+                                        minimum: 0;
+                                        maximum: 180;
+                                        value <=> hatch-angle;
+                                        horizontal-stretch: 1;
+                                        changed => { update-preview(); }
+                                    }
+                                    Text { text: round(hatch-angle); width: 40px; }
+                                }
+                                
+                                HorizontalBox {
+                                    Text { text: "Spacing (mm):"; width: 140px; }
+                                    LineEdit {
+                                        text: hatch-spacing;
+                                        horizontal-stretch: 1;
+                                        edited => {
+                                            hatch-spacing = self.text.to-float();
+                                            update-preview();
+                                        }
+                                    }
+                                }
+                                
+                                HorizontalBox {
+                                    Text { text: "Tolerance (mm):"; width: 140px; }
+                                    LineEdit {
+                                        text: hatch-tolerance;
+                                        horizontal-stretch: 1;
+                                        edited => {
+                                            hatch-tolerance = self.text.to-float();
+                                            update-preview();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Estimated time
+                    Rectangle {
+                        background: #3a3a3a;
+                        border-color: #555;
+                        border-width: 1px;
+                        border-radius: 4px;
+                        
+                        HorizontalBox {
+                            padding: 10px;
+                            spacing: 10px;
+                            
+                            Text {
+                                text: "Estimated Time:";
+                                color: #aaa;
+                            }
+                            
+                            Text {
+                                text: estimated-time;
+                                color: #4a9eff;
+                                font-weight: 700;
+                            }
                         }
                     }
                 }
