@@ -35,6 +35,7 @@ pub fn register_callbacks(
     let gcode_editor_clone = gcode_editor.clone();
     let console_manager_clone = console_manager.clone();
     let editor_bridge_clone = editor_bridge.clone();
+    let settings_persistence_tabbed_box = settings_persistence.clone();
     main_window.on_generate_tabbed_box(move || {
         if let Some(window) = window_weak.upgrade() {
             let dialog = TabbedBoxDialog::new().unwrap();
@@ -49,7 +50,7 @@ pub fn register_callbacks(
 
             // Load params callback
             let dialog_weak_load_params = dialog.as_weak();
-            let settings_persistence_load_params = settings_persistence.clone();
+            let settings_persistence_load_params = settings_persistence_tabbed_box.clone();
             dialog.on_load_params(move || {
                 if let Some(dlg) = dialog_weak_load_params.upgrade() {
                     // Get default directory
@@ -296,6 +297,7 @@ pub fn register_callbacks(
     let gcode_editor_clone = gcode_editor.clone();
     let console_manager_clone = console_manager.clone();
     let editor_bridge_clone = editor_bridge.clone();
+    let settings_persistence_puzzle = settings_persistence.clone();
     main_window.on_generate_jigsaw_puzzle(move || {
         if let Some(window) = window_weak.upgrade() {
             let dialog = JigsawPuzzleDialog::new().unwrap();
@@ -310,7 +312,7 @@ pub fn register_callbacks(
 
             // Load params callback
             let dialog_weak_load_params = dialog.as_weak();
-            let settings_persistence_load_params = settings_persistence.clone();
+            let settings_persistence_load_params = settings_persistence_puzzle.clone();
             dialog.on_load_params(move || {
                 if let Some(dlg) = dialog_weak_load_params.upgrade() {
                     // Get default directory
