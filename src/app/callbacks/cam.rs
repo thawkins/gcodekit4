@@ -99,7 +99,7 @@ pub fn register_callbacks(
 
             // Save params callback
             let dialog_weak_save_params = dialog.as_weak();
-            let settings_persistence_save_params = settings_persistence.clone();
+            let settings_persistence_save_params = settings_persistence_tabbed_box.clone();
             dialog.on_save_params(move || {
                 if let Some(dlg) = dialog_weak_save_params.upgrade() {
                     // Get default directory
@@ -351,7 +351,7 @@ pub fn register_callbacks(
 
             // Save params callback
             let dialog_weak_save_params = dialog.as_weak();
-            let settings_persistence_save_params = settings_persistence.clone();
+            let settings_persistence_save_params = settings_persistence_puzzle.clone();
             dialog.on_save_params(move || {
                 if let Some(dlg) = dialog_weak_save_params.upgrade() {
                     // Get default directory
