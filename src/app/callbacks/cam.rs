@@ -9,7 +9,7 @@ use crate::slint_generatedMainWindow::{
 use gcodekit4_ui::GcodeEditor;
 use gcodekit4::{DeviceConsoleManager as ConsoleManager, DeviceMessageType};
 use gcodekit4_ui::EditorBridge;
-use crate::app::types::{BitmapEngravingParams, VectorEngravingParams};
+use crate::app::types::{BitmapEngravingParams, VectorEngravingParams, TabbedBoxParams, JigsawPuzzleParams};
 use gcodekit4::{
     TabbedBoxMaker, JigsawPuzzleMaker, SpoilboardSurfacingGenerator,
     BoxParameters, BoxType, FingerJointSettings, FingerStyle,
@@ -46,6 +46,106 @@ pub fn register_callbacks(
             let console_manager_dialog = console_manager_clone.clone();
             let editor_bridge_dialog = editor_bridge_clone.clone();
             let window_handle = window.as_weak();
+
+            // Load params callback
+            let dialog_weak_load_params = dialog.as_weak();
+            let settings_persistence_load_params = settings_persistence.clone();
+            dialog.on_load_params(move || {
+                if let Some(dlg) = dialog_weak_load_params.upgrade() {
+                    // Get default directory
+                    let default_dir = {
+                        let persistence = settings_persistence_load_params.borrow();
+                        persistence.config().file_processing.output_directory.clone()
+                    };
+
+                    use rfd::FileDialog;
+                    if let Some(path) = FileDialog::new()
+                        .set_directory(&default_dir)
+                        .add_filter("JSON Files", &["json"])
+                        .pick_file()
+                    {
+                        if let Ok(content) = std::fs::read_to_string(&path) {
+                            if let Ok(params) = serde_json::from_str::<TabbedBoxParams>(&content) {
+                                dlg.set_box_x(params.box_x.into());
+                                dlg.set_box_y(params.box_y.into());
+                                dlg.set_box_h(params.box_h.into());
+                                dlg.set_material_thickness(params.material_thickness.into());
+                                dlg.set_burn(params.burn.into());
+                                dlg.set_finger_width(params.finger_width.into());
+                                dlg.set_space_width(params.space_width.into());
+                                dlg.set_surrounding_spaces(params.surrounding_spaces.into());
+                                dlg.set_play(params.play.into());
+                                dlg.set_extra_length(params.extra_length.into());
+                                dlg.set_dimple_height(params.dimple_height.into());
+                                dlg.set_dimple_length(params.dimple_length.into());
+                                dlg.set_finger_style(params.finger_style);
+                                dlg.set_box_type(params.box_type);
+                                dlg.set_outside_dimensions(params.outside_dimensions);
+                                dlg.set_laser_passes(params.laser_passes.into());
+                                dlg.set_laser_power(params.laser_power.into());
+                                dlg.set_feed_rate(params.feed_rate.into());
+                                dlg.set_offset_x(params.offset_x.into());
+                                dlg.set_offset_y(params.offset_y.into());
+                                dlg.set_dividers_x(params.dividers_x.into());
+                                dlg.set_dividers_y(params.dividers_y.into());
+                                dlg.set_optimize_layout(params.optimize_layout);
+                                dlg.set_key_divider_type(params.key_divider_type);
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Save params callback
+            let dialog_weak_save_params = dialog.as_weak();
+            let settings_persistence_save_params = settings_persistence.clone();
+            dialog.on_save_params(move || {
+                if let Some(dlg) = dialog_weak_save_params.upgrade() {
+                    // Get default directory
+                    let default_dir = {
+                        let persistence = settings_persistence_save_params.borrow();
+                        persistence.config().file_processing.output_directory.clone()
+                    };
+
+                    use rfd::FileDialog;
+                    if let Some(path) = FileDialog::new()
+                        .set_directory(&default_dir)
+                        .add_filter("JSON Files", &["json"])
+                        .save_file()
+                    {
+                        let params = TabbedBoxParams {
+                            box_x: dlg.get_box_x().to_string(),
+                            box_y: dlg.get_box_y().to_string(),
+                            box_h: dlg.get_box_h().to_string(),
+                            material_thickness: dlg.get_material_thickness().to_string(),
+                            burn: dlg.get_burn().to_string(),
+                            finger_width: dlg.get_finger_width().to_string(),
+                            space_width: dlg.get_space_width().to_string(),
+                            surrounding_spaces: dlg.get_surrounding_spaces().to_string(),
+                            play: dlg.get_play().to_string(),
+                            extra_length: dlg.get_extra_length().to_string(),
+                            dimple_height: dlg.get_dimple_height().to_string(),
+                            dimple_length: dlg.get_dimple_length().to_string(),
+                            finger_style: dlg.get_finger_style(),
+                            box_type: dlg.get_box_type(),
+                            outside_dimensions: dlg.get_outside_dimensions(),
+                            laser_passes: dlg.get_laser_passes().to_string(),
+                            laser_power: dlg.get_laser_power().to_string(),
+                            feed_rate: dlg.get_feed_rate().to_string(),
+                            offset_x: dlg.get_offset_x().to_string(),
+                            offset_y: dlg.get_offset_y().to_string(),
+                            dividers_x: dlg.get_dividers_x().to_string(),
+                            dividers_y: dlg.get_dividers_y().to_string(),
+                            optimize_layout: dlg.get_optimize_layout(),
+                            key_divider_type: dlg.get_key_divider_type(),
+                        };
+                        
+                        if let Ok(content) = serde_json::to_string_pretty(&params) {
+                            let _ = std::fs::write(path, content);
+                        }
+                    }
+                }
+            });
 
             dialog.on_generate_box(move || {
                 if let Some(d) = dialog_weak_generate.upgrade() {
@@ -207,6 +307,86 @@ pub fn register_callbacks(
             let console_manager_dialog = console_manager_clone.clone();
             let editor_bridge_dialog = editor_bridge_clone.clone();
             let window_handle = window.as_weak();
+
+            // Load params callback
+            let dialog_weak_load_params = dialog.as_weak();
+            let settings_persistence_load_params = settings_persistence.clone();
+            dialog.on_load_params(move || {
+                if let Some(dlg) = dialog_weak_load_params.upgrade() {
+                    // Get default directory
+                    let default_dir = {
+                        let persistence = settings_persistence_load_params.borrow();
+                        persistence.config().file_processing.output_directory.clone()
+                    };
+
+                    use rfd::FileDialog;
+                    if let Some(path) = FileDialog::new()
+                        .set_directory(&default_dir)
+                        .add_filter("JSON Files", &["json"])
+                        .pick_file()
+                    {
+                        if let Ok(content) = std::fs::read_to_string(&path) {
+                            if let Ok(params) = serde_json::from_str::<JigsawPuzzleParams>(&content) {
+                                dlg.set_puzzle_width(params.puzzle_width.into());
+                                dlg.set_puzzle_height(params.puzzle_height.into());
+                                dlg.set_pieces_across(params.pieces_across.into());
+                                dlg.set_pieces_down(params.pieces_down.into());
+                                dlg.set_kerf(params.kerf.into());
+                                dlg.set_laser_passes(params.laser_passes.into());
+                                dlg.set_laser_power(params.laser_power.into());
+                                dlg.set_feed_rate(params.feed_rate.into());
+                                dlg.set_seed(params.seed.into());
+                                dlg.set_tab_size(params.tab_size.into());
+                                dlg.set_jitter(params.jitter.into());
+                                dlg.set_corner_radius(params.corner_radius.into());
+                                dlg.set_offset_x(params.offset_x.into());
+                                dlg.set_offset_y(params.offset_y.into());
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Save params callback
+            let dialog_weak_save_params = dialog.as_weak();
+            let settings_persistence_save_params = settings_persistence.clone();
+            dialog.on_save_params(move || {
+                if let Some(dlg) = dialog_weak_save_params.upgrade() {
+                    // Get default directory
+                    let default_dir = {
+                        let persistence = settings_persistence_save_params.borrow();
+                        persistence.config().file_processing.output_directory.clone()
+                    };
+
+                    use rfd::FileDialog;
+                    if let Some(path) = FileDialog::new()
+                        .set_directory(&default_dir)
+                        .add_filter("JSON Files", &["json"])
+                        .save_file()
+                    {
+                        let params = JigsawPuzzleParams {
+                            puzzle_width: dlg.get_puzzle_width().to_string(),
+                            puzzle_height: dlg.get_puzzle_height().to_string(),
+                            pieces_across: dlg.get_pieces_across().to_string(),
+                            pieces_down: dlg.get_pieces_down().to_string(),
+                            kerf: dlg.get_kerf().to_string(),
+                            laser_passes: dlg.get_laser_passes().to_string(),
+                            laser_power: dlg.get_laser_power().to_string(),
+                            feed_rate: dlg.get_feed_rate().to_string(),
+                            seed: dlg.get_seed().to_string(),
+                            tab_size: dlg.get_tab_size().to_string(),
+                            jitter: dlg.get_jitter().to_string(),
+                            corner_radius: dlg.get_corner_radius().to_string(),
+                            offset_x: dlg.get_offset_x().to_string(),
+                            offset_y: dlg.get_offset_y().to_string(),
+                        };
+                        
+                        if let Ok(content) = serde_json::to_string_pretty(&params) {
+                            let _ = std::fs::write(path, content);
+                        }
+                    }
+                }
+            });
 
             dialog.on_generate_puzzle(move || {
                 if let Some(d) = dialog_weak_generate.upgrade() {
@@ -412,10 +592,18 @@ pub fn register_callbacks(
 
             // Load params callback
             let dialog_weak_load_params = dialog.as_weak();
+            let settings_persistence_load_params = settings_persistence_laser.clone();
             dialog.on_load_params(move || {
                 if let Some(dlg) = dialog_weak_load_params.upgrade() {
+                    // Get default directory
+                    let default_dir = {
+                        let persistence = settings_persistence_load_params.borrow();
+                        persistence.config().file_processing.output_directory.clone()
+                    };
+
                     use rfd::FileDialog;
                     if let Some(path) = FileDialog::new()
+                        .set_directory(&default_dir)
                         .add_filter("JSON Files", &["json"])
                         .pick_file()
                     {
@@ -474,10 +662,18 @@ pub fn register_callbacks(
 
             // Save params callback
             let dialog_weak_save_params = dialog.as_weak();
+            let settings_persistence_save_params = settings_persistence_laser.clone();
             dialog.on_save_params(move || {
                 if let Some(dlg) = dialog_weak_save_params.upgrade() {
+                    // Get default directory
+                    let default_dir = {
+                        let persistence = settings_persistence_save_params.borrow();
+                        persistence.config().file_processing.output_directory.clone()
+                    };
+
                     use rfd::FileDialog;
                     if let Some(path) = FileDialog::new()
+                        .set_directory(&default_dir)
                         .add_filter("JSON Files", &["json"])
                         .save_file()
                     {
@@ -855,10 +1051,18 @@ pub fn register_callbacks(
 
             // Load params callback
             let dialog_weak_load_params = dialog.as_weak();
+            let settings_persistence_load_params = settings_persistence_vector.clone();
             dialog.on_load_params(move || {
                 if let Some(dlg) = dialog_weak_load_params.upgrade() {
+                    // Get default directory
+                    let default_dir = {
+                        let persistence = settings_persistence_load_params.borrow();
+                        persistence.config().file_processing.output_directory.clone()
+                    };
+
                     use rfd::FileDialog;
                     if let Some(path) = FileDialog::new()
+                        .set_directory(&default_dir)
                         .add_filter("JSON Files", &["json"])
                         .pick_file()
                     {
@@ -975,10 +1179,18 @@ pub fn register_callbacks(
 
             // Save params callback
             let dialog_weak_save_params = dialog.as_weak();
+            let settings_persistence_save_params = settings_persistence_vector.clone();
             dialog.on_save_params(move || {
                 if let Some(dlg) = dialog_weak_save_params.upgrade() {
+                    // Get default directory
+                    let default_dir = {
+                        let persistence = settings_persistence_save_params.borrow();
+                        persistence.config().file_processing.output_directory.clone()
+                    };
+
                     use rfd::FileDialog;
                     if let Some(path) = FileDialog::new()
+                        .set_directory(&default_dir)
                         .add_filter("JSON Files", &["json"])
                         .save_file()
                     {

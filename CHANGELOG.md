@@ -5,6 +5,8 @@
 - **Settings**: Implemented directory browsing for default directory setting.
 - **Settings**: Updated all file dialogs to use the configured default directory.
 - **Settings**: Set default directory to user's home directory by default.
+- **CAM Tools**: Implemented load/save functionality for Tabbed Box Maker and Jigsaw Puzzle Maker.
+- **CAM Tools**: Updated all CAM tool load/save dialogs to use the default directory setting.
 
 ## [0.58.6-alpha.0] - 2025-12-01
 

@@ -72,3 +72,49 @@ pub struct BitmapEngravingParams {
     pub image_path: String,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct TabbedBoxParams {
+    pub box_x: String,
+    pub box_y: String,
+    pub box_h: String,
+    pub material_thickness: String,
+    pub burn: String,
+    pub finger_width: String,
+    pub space_width: String,
+    pub surrounding_spaces: String,
+    pub play: String,
+    pub extra_length: String,
+    pub dimple_height: String,
+    pub dimple_length: String,
+    pub finger_style: i32,
+    pub box_type: i32,
+    pub outside_dimensions: bool,
+    pub laser_passes: String,
+    pub laser_power: String,
+    pub feed_rate: String,
+    pub offset_x: String,
+    pub offset_y: String,
+    pub dividers_x: String,
+    pub dividers_y: String,
+    pub optimize_layout: bool,
+    pub key_divider_type: i32,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct JigsawPuzzleParams {
+    pub puzzle_width: String,
+    pub puzzle_height: String,
+    pub pieces_across: String,
+    pub pieces_down: String,
+    pub kerf: String,
+    pub laser_passes: String,
+    pub laser_power: String,
+    pub feed_rate: String,
+    pub seed: String,
+    pub tab_size: String,
+    pub jitter: String,
+    pub corner_radius: String,
+    pub offset_x: String,
+    pub offset_y: String,
+}
+
