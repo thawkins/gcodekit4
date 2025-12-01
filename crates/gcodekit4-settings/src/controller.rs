@@ -59,6 +59,7 @@ impl SettingsController {
                 SettingValue::Boolean(_) => "Boolean",
                 SettingValue::Integer(_) => "Integer",
                 SettingValue::Float(_) => "Float",
+                SettingValue::Path(_) => "Path",
                 SettingValue::Enum(_, _) => "Enum",
                 _ => "String",
             };
@@ -112,6 +113,9 @@ impl SettingsController {
                 SettingValue::Boolean(_) => {
                     Some(SettingValue::Boolean(value == "true"))
                 }
+                SettingValue::Path(_) => {
+                    Some(SettingValue::Path(value.to_string()))
+                }
                 SettingValue::Enum(_, options) => {
                     if options.contains(&value.to_string()) {
                         Some(SettingValue::Enum(value.to_string(), options.clone()))
@@ -158,6 +162,7 @@ impl SettingsController {
     pub fn get_category_from_string(cat: &str) -> SettingsCategory {
         match cat {
             "controller" => SettingsCategory::Controller,
+            "general" => SettingsCategory::General,
             "ui" => SettingsCategory::UserInterface,
             "file" => SettingsCategory::FileProcessing,
             "shortcuts" => SettingsCategory::KeyboardShortcuts,

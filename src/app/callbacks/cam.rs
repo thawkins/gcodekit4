@@ -14,7 +14,7 @@ use gcodekit4::{
     TabbedBoxMaker, JigsawPuzzleMaker, SpoilboardSurfacingGenerator,
     BoxParameters, BoxType, FingerJointSettings, FingerStyle,
     PuzzleParameters, SpoilboardSurfacingParameters,
-    SpeedsFeedsCalculator,
+    SpeedsFeedsCalculator, SettingsPersistence,
 };
 use gcodekit4::ui::{MaterialsManagerBackend, ToolsManagerBackend};
 use gcodekit4_devicedb::DeviceManager;
@@ -28,6 +28,7 @@ pub fn register_callbacks(
     materials_backend: Rc<RefCell<MaterialsManagerBackend>>,
     tools_backend: Rc<RefCell<ToolsManagerBackend>>,
     device_manager: Arc<DeviceManager>,
+    settings_persistence: Rc<RefCell<SettingsPersistence>>,
 ) {
     // Set up generate-tabbed-box callback
     let window_weak = main_window.as_weak();
@@ -511,11 +512,19 @@ pub fn register_callbacks(
 
             // Load image callback
             let dialog_weak_load = dialog.as_weak();
+            let settings_persistence_load = settings_persistence.clone();
             dialog.on_load_image(move || {
                 if let Some(dlg) = dialog_weak_load.upgrade() {
+                    // Get default directory
+                    let default_dir = {
+                        let persistence = settings_persistence_load.borrow();
+                        persistence.config().file_processing.output_directory.clone()
+                    };
+
                     // Open file dialog to select image
                     use rfd::FileDialog;
                     if let Some(path) = FileDialog::new()
+                        .set_directory(&default_dir)
                         .add_filter("Image Files", &["png", "jpg", "jpeg", "bmp", "gif", "tiff"])
                         .pick_file()
                     {
@@ -889,6 +898,69 @@ pub fn register_callbacks(
                                             .unwrap_or("unknown")
                                             .to_uppercase());
                                     dlg.set_file_info(file_info.into());
+
+                                    // Load preview if possible (SVG or DXF)
+                                    if let Some(extension) = path.extension().and_then(|e| e.to_str()) {
+                                        let ext = extension.to_lowercase();
+                                        if ext == "svg" {
+                                            if let Ok(image) = slint::Image::load_from_path(&path) {
+                                                let size = image.size();
+                                                let width = size.width as f32;
+                                                let height = size.height as f32;
+                                                
+                                                if width > 0.0 {
+                                                    let aspect_ratio = height / width;
+                                                    let desired_width = dlg.get_desired_width();
+                                                    let output_height = desired_width * aspect_ratio;
+                                                    
+                                                    dlg.set_output_width(desired_width);
+                                                    dlg.set_output_height(output_height);
+                                                }
+                                                
+                                                dlg.set_preview_image(image);
+                                            }
+                                        } else if ext == "dxf" {
+                                            // DXF Preview
+                                            use gcodekit4_camtools::{VectorEngraver, VectorEngravingParameters};
+                                            
+                                            // Parse DXF using VectorEngraver with default params
+                                            if let Ok(engraver) = VectorEngraver::from_file(&path, VectorEngravingParameters::default()) {
+                                                // Render paths to image (800x600 max resolution for preview)
+                                                let preview_img = engraver.render_preview(800, 600);
+                                                
+                                                // Convert to Slint image
+                                                let width = preview_img.width();
+                                                let height = preview_img.height();
+                                                let buffer = slint::SharedPixelBuffer::<slint::Rgb8Pixel>::clone_from_slice(
+                                                    preview_img.as_raw(),
+                                                    width,
+                                                    height,
+                                                );
+                                                let image = slint::Image::from_rgb8(buffer);
+                                                
+                                                // Calculate aspect ratio from bounds
+                                                let (min_x, min_y, max_x, max_y) = engraver.get_bounds();
+                                                let data_width = max_x - min_x;
+                                                let data_height = max_y - min_y;
+                                                
+                                                if data_width > 0.0 {
+                                                    let aspect_ratio = data_height / data_width;
+                                                    let desired_width = dlg.get_desired_width();
+                                                    let output_height = desired_width * aspect_ratio;
+                                                    
+                                                    dlg.set_output_width(desired_width);
+                                                    dlg.set_output_height(output_height);
+                                                }
+                                                
+                                                dlg.set_preview_image(image);
+                                            }
+                                        } else {
+                                            // Clear preview for non-image formats
+                                            dlg.set_preview_image(slint::Image::default());
+                                            dlg.set_output_width(0.0);
+                                            dlg.set_output_height(0.0);
+                                        }
+                                    }
                                 }
 
                                 // Trigger preview update
@@ -940,11 +1012,19 @@ pub fn register_callbacks(
 
             // Load vector file callback
             let dialog_weak_load = dialog.as_weak();
+            let settings_persistence_load = settings_persistence.clone();
             dialog.on_load_vector_file(move || {
                 if let Some(dlg) = dialog_weak_load.upgrade() {
+                    // Get default directory
+                    let default_dir = {
+                        let persistence = settings_persistence_load.borrow();
+                        persistence.config().file_processing.output_directory.clone()
+                    };
+
                     // Open file dialog to select vector file
                     use rfd::FileDialog;
                     if let Some(path) = FileDialog::new()
+                        .set_directory(&default_dir)
                         .add_filter("Vector Files", &["svg", "dxf"])
                         .pick_file()
                     {
@@ -962,9 +1042,10 @@ pub fn register_callbacks(
                                 .to_uppercase());
                         dlg.set_file_info(file_info.into());
 
-                        // Load preview if possible (SVG)
+                        // Load preview if possible (SVG or DXF)
                         if let Some(extension) = path.extension().and_then(|e| e.to_str()) {
-                            if extension.to_lowercase() == "svg" {
+                            let ext = extension.to_lowercase();
+                            if ext == "svg" {
                                 if let Ok(image) = slint::Image::load_from_path(&path) {
                                     let size = image.size();
                                     let width = size.width as f32;
@@ -981,8 +1062,43 @@ pub fn register_callbacks(
                                     
                                     dlg.set_preview_image(image);
                                 }
+                            } else if ext == "dxf" {
+                                // DXF Preview
+                                use gcodekit4_camtools::{VectorEngraver, VectorEngravingParameters};
+                                
+                                // Parse DXF using VectorEngraver with default params
+                                if let Ok(engraver) = VectorEngraver::from_file(&path, VectorEngravingParameters::default()) {
+                                    // Render paths to image (800x600 max resolution for preview)
+                                    let preview_img = engraver.render_preview(800, 600);
+                                    
+                                    // Convert to Slint image
+                                    let width = preview_img.width();
+                                    let height = preview_img.height();
+                                    let buffer = slint::SharedPixelBuffer::<slint::Rgb8Pixel>::clone_from_slice(
+                                        preview_img.as_raw(),
+                                        width,
+                                        height,
+                                    );
+                                    let image = slint::Image::from_rgb8(buffer);
+                                    
+                                    // Calculate aspect ratio from bounds
+                                    let (min_x, min_y, max_x, max_y) = engraver.get_bounds();
+                                    let data_width = max_x - min_x;
+                                    let data_height = max_y - min_y;
+                                    
+                                    if data_width > 0.0 {
+                                        let aspect_ratio = data_height / data_width;
+                                        let desired_width = dlg.get_desired_width();
+                                        let output_height = desired_width * aspect_ratio;
+                                        
+                                        dlg.set_output_width(desired_width);
+                                        dlg.set_output_height(output_height);
+                                    }
+                                    
+                                    dlg.set_preview_image(image);
+                                }
                             } else {
-                                // Clear preview for non-image formats (DXF)
+                                // Clear preview for non-image formats
                                 dlg.set_preview_image(slint::Image::default());
                                 dlg.set_output_width(0.0);
                                 dlg.set_output_height(0.0);

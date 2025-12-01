@@ -222,4 +222,20 @@ pub fn register_callbacks(
                 .set_connection_status(slint::SharedString::from("Settings restored to defaults"));
         }
     });
+
+    // Set up browse-path callback
+    let window_weak = main_window.as_weak();
+    let controller_clone = settings_controller.clone();
+    main_window.on_browse_path(move |id| {
+        use rfd::FileDialog;
+        if let Some(path) = FileDialog::new().pick_folder() {
+            let path_str = path.to_string_lossy().to_string();
+            controller_clone.update_setting(&id, &path_str);
+            
+            // Refresh UI
+            if let Some(window) = window_weak.upgrade() {
+                window.invoke_config_retrieve_settings();
+            }
+        }
+    });
 }

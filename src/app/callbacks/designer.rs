@@ -1,7 +1,7 @@
 use crate::app::designer::update_designer_ui;
 use crate::app::helpers::snap_to_mm;
 use crate::MainWindow;
-use gcodekit4::DesignerState;
+use gcodekit4::{DesignerState, SettingsPersistence};
 use gcodekit4_ui::EditorBridge;
 use slint::ComponentHandle;
 use std::cell::RefCell;
@@ -12,6 +12,7 @@ pub fn setup_designer_callbacks(
     designer_mgr: Rc<RefCell<DesignerState>>,
     editor_bridge: Rc<EditorBridge>,
     shift_pressed: Rc<RefCell<bool>>,
+    settings_persistence: Rc<RefCell<SettingsPersistence>>,
 ) {
     // Designer: Set Mode callback
     let designer_mgr_clone = designer_mgr.clone();
@@ -315,11 +316,18 @@ pub fn setup_designer_callbacks(
     // Designer: Import DXF callback
     let window_weak = main_window.as_weak();
     let designer_mgr_clone = designer_mgr.clone();
+    let settings_persistence_dxf = settings_persistence.clone();
     main_window.on_designer_import_dxf(move || {
         use gcodekit4::designer::{DxfImporter, DxfParser};
         use rfd::FileDialog;
 
+        let default_dir = {
+            let persistence = settings_persistence_dxf.borrow();
+            persistence.config().file_processing.output_directory.clone()
+        };
+
         if let Some(path) = FileDialog::new()
+            .set_directory(&default_dir)
             .add_filter("DXF Files", &["dxf"])
             .set_title("Import DXF File")
             .pick_file()
@@ -392,11 +400,18 @@ pub fn setup_designer_callbacks(
     // Designer: Import SVG callback
     let window_weak = main_window.as_weak();
     let designer_mgr_clone = designer_mgr.clone();
+    let settings_persistence_svg = settings_persistence.clone();
     main_window.on_designer_import_svg(move || {
         use gcodekit4::designer::SvgImporter;
         use rfd::FileDialog;
 
+        let default_dir = {
+            let persistence = settings_persistence_svg.borrow();
+            persistence.config().file_processing.output_directory.clone()
+        };
+
         if let Some(path) = FileDialog::new()
+            .set_directory(&default_dir)
             .add_filter("SVG Files", &["svg"])
             .set_title("Import SVG File")
             .pick_file()
@@ -461,11 +476,18 @@ pub fn setup_designer_callbacks(
     // Designer: Add DXF callback
     let window_weak = main_window.as_weak();
     let designer_mgr_clone = designer_mgr.clone();
+    let settings_persistence_add_dxf = settings_persistence.clone();
     main_window.on_designer_add_dxf(move || {
         use gcodekit4::designer::{DxfImporter, DxfParser};
         use rfd::FileDialog;
 
+        let default_dir = {
+            let persistence = settings_persistence_add_dxf.borrow();
+            persistence.config().file_processing.output_directory.clone()
+        };
+
         if let Some(path) = FileDialog::new()
+            .set_directory(&default_dir)
             .add_filter("DXF Files", &["dxf"])
             .set_title("Add DXF File")
             .pick_file()
@@ -541,11 +563,18 @@ pub fn setup_designer_callbacks(
     // Designer: Add SVG callback
     let window_weak = main_window.as_weak();
     let designer_mgr_clone = designer_mgr.clone();
+    let settings_persistence_add_svg = settings_persistence.clone();
     main_window.on_designer_add_svg(move || {
         use gcodekit4::designer::SvgImporter;
         use rfd::FileDialog;
 
+        let default_dir = {
+            let persistence = settings_persistence_add_svg.borrow();
+            persistence.config().file_processing.output_directory.clone()
+        };
+
         if let Some(path) = FileDialog::new()
+            .set_directory(&default_dir)
             .add_filter("SVG Files", &["svg"])
             .set_title("Add SVG File")
             .pick_file()
@@ -648,8 +677,15 @@ pub fn setup_designer_callbacks(
     // Designer: File Open callback
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
+    let settings_persistence_open = settings_persistence.clone();
     main_window.on_designer_file_open(move || {
+        let default_dir = {
+            let persistence = settings_persistence_open.borrow();
+            persistence.config().file_processing.output_directory.clone()
+        };
+
         if let Some(path) = rfd::FileDialog::new()
+            .set_directory(&default_dir)
             .add_filter("GCodeKit4 Design", &["gck4", "json"])
             .pick_file()
         {
@@ -718,20 +754,29 @@ pub fn setup_designer_callbacks(
     // Designer: File Save callback
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
+    let settings_persistence_save = settings_persistence.clone();
     main_window.on_designer_file_save(move || {
         let mut state = designer_mgr_clone.borrow_mut();
 
         // If no current file, prompt for filename
         let path = if let Some(existing_path) = &state.current_file_path {
             existing_path.clone()
-        } else if let Some(new_path) = rfd::FileDialog::new()
-            .add_filter("GCodeKit4 Design", &["gck4"])
-            .set_file_name("design.gck4")
-            .save_file()
-        {
-            new_path
         } else {
-            return; // User cancelled
+            let default_dir = {
+                let persistence = settings_persistence_save.borrow();
+                persistence.config().file_processing.output_directory.clone()
+            };
+
+            if let Some(new_path) = rfd::FileDialog::new()
+                .set_directory(&default_dir)
+                .add_filter("GCodeKit4 Design", &["gck4"])
+                .set_file_name("design.gck4")
+                .save_file()
+            {
+                new_path
+            } else {
+                return; // User cancelled
+            }
         };
 
         match state.save_to_file(&path) {
@@ -757,8 +802,15 @@ pub fn setup_designer_callbacks(
     // Designer: File Save As callback
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
+    let settings_persistence_save_as = settings_persistence.clone();
     main_window.on_designer_file_save_as(move || {
+        let default_dir = {
+            let persistence = settings_persistence_save_as.borrow();
+            persistence.config().file_processing.output_directory.clone()
+        };
+
         if let Some(path) = rfd::FileDialog::new()
+            .set_directory(&default_dir)
             .add_filter("GCodeKit4 Design", &["gck4"])
             .set_file_name("design.gck4")
             .save_file()

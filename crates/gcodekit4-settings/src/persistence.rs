@@ -42,6 +42,9 @@ impl SettingsPersistence {
         // Connection Settings - Moved to DeviceDB
         // self.add_connection_settings(dialog);
 
+        // General Settings
+        self.add_general_settings(dialog);
+
         // UI Settings
         self.add_ui_settings(dialog);
 
@@ -56,6 +59,9 @@ impl SettingsPersistence {
     pub fn load_from_dialog(&mut self, dialog: &SettingsDialog) -> Result<()> {
         // Update connection settings - Moved to DeviceDB
         // self.update_connection_settings(dialog)?;
+
+        // Update General settings
+        self.update_general_settings(dialog)?;
 
         // Update UI settings
         self.update_ui_settings(dialog)?;
@@ -82,6 +88,22 @@ impl SettingsPersistence {
     /// Validate settings
     pub fn validate(&self) -> Result<()> {
         self.config.validate()
+    }
+
+    /// Add General settings to dialog
+    fn add_general_settings(&self, dialog: &mut SettingsDialog) {
+        let file = &self.config.file_processing;
+
+        // Default Directory
+        dialog.add_setting(
+            Setting::new(
+                "default_directory",
+                "Default Directory",
+                SettingValue::Path(file.output_directory.to_string_lossy().to_string()),
+            )
+            .with_description("Default directory for file operations")
+            .with_category(SettingsCategory::General),
+        );
     }
 
     /// Add UI settings to dialog
@@ -221,6 +243,17 @@ impl SettingsPersistence {
         for shortcut in shortcuts {
             dialog.add_shortcut(shortcut);
         }
+    }
+
+    /// Update General settings in config from dialog
+    fn update_general_settings(&mut self, dialog: &SettingsDialog) -> Result<()> {
+        if let Some(setting) = dialog.get_setting("default_directory") {
+            let path_str = setting.value.as_str();
+            if !path_str.is_empty() {
+                self.config.file_processing.output_directory = std::path::PathBuf::from(path_str);
+            }
+        }
+        Ok(())
     }
 
     /// Update UI settings in config from dialog

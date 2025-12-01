@@ -1,3 +1,11 @@
+## [0.58.7-alpha.0] - 2025-12-01
+
+### Added
+- **Settings**: Added "Default Directory" preference to General settings tab.
+- **Settings**: Implemented directory browsing for default directory setting.
+- **Settings**: Updated all file dialogs to use the configured default directory.
+- **Settings**: Set default directory to user's home directory by default.
+
 ## [0.58.6-alpha.0] - 2025-12-01
 
 ### Added

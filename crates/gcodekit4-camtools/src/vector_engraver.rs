@@ -9,6 +9,7 @@ use lyon::path::Path;
 use lyon::math::point;
 use lyon::algorithms::path::iterator::PathIterator;
 use lyon::geom::Arc;
+use image::{Rgb, RgbImage};
 
 /// Vector engraving parameters
 #[derive(Debug, Clone)]
@@ -725,9 +726,162 @@ impl VectorEngraver {
         }
     }
 
+    /// Get the bounds of the vector paths (min_x, min_y, max_x, max_y)
+    pub fn get_bounds(&self) -> (f32, f32, f32, f32) {
+        if self.paths.is_empty() {
+            return (0.0, 0.0, 0.0, 0.0);
+        }
+
+        let mut min_x = f32::MAX;
+        let mut max_x = f32::MIN;
+        let mut min_y = f32::MAX;
+        let mut max_y = f32::MIN;
+
+        for path in &self.paths {
+            for event in path.iter().flattened(0.1) {
+                match event {
+                    lyon::path::Event::Begin { at } => {
+                        min_x = min_x.min(at.x);
+                        max_x = max_x.max(at.x);
+                        min_y = min_y.min(at.y);
+                        max_y = max_y.max(at.y);
+                    }
+                    lyon::path::Event::Line { from, to } => {
+                        min_x = min_x.min(from.x).min(to.x);
+                        max_x = max_x.max(from.x).max(to.x);
+                        min_y = min_y.min(from.y).min(to.y);
+                        max_y = max_y.max(from.y).max(to.y);
+                    }
+                    _ => {}
+                }
+            }
+        }
+        
+        (min_x, min_y, max_x, max_y)
+    }
+
     /// Generate G-code for vector engraving
     pub fn generate_gcode(&self) -> Result<String> {
         self.generate_gcode_with_progress(|_| {})
+    }
+
+    /// Render paths to an image for preview
+    pub fn render_preview(&self, width: u32, height: u32) -> RgbImage {
+        let mut img = RgbImage::new(width, height);
+        
+        // Fill with background color (matches UI gray #808080)
+        for pixel in img.pixels_mut() {
+            *pixel = Rgb([128, 128, 128]);
+        }
+
+        if self.paths.is_empty() {
+            return img;
+        }
+
+        // Calculate bounds
+        let mut min_x = f32::MAX;
+        let mut max_x = f32::MIN;
+        let mut min_y = f32::MAX;
+        let mut max_y = f32::MIN;
+
+        for path in &self.paths {
+            for event in path.iter().flattened(0.1) {
+                match event {
+                    lyon::path::Event::Begin { at } => {
+                        min_x = min_x.min(at.x);
+                        max_x = max_x.max(at.x);
+                        min_y = min_y.min(at.y);
+                        max_y = max_y.max(at.y);
+                    }
+                    lyon::path::Event::Line { from, to } => {
+                        min_x = min_x.min(from.x).min(to.x);
+                        max_x = max_x.max(from.x).max(to.x);
+                        min_y = min_y.min(from.y).min(to.y);
+                        max_y = max_y.max(from.y).max(to.y);
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        let data_width = max_x - min_x;
+        let data_height = max_y - min_y;
+        
+        // Calculate scale to fit in image with padding
+        let padding = 10.0;
+        let avail_width = width as f32 - 2.0 * padding;
+        let avail_height = height as f32 - 2.0 * padding;
+        
+        let scale = if data_width > 0.0 && data_height > 0.0 {
+            let scale_x = avail_width / data_width;
+            let scale_y = avail_height / data_height;
+            scale_x.min(scale_y)
+        } else {
+            1.0
+        };
+
+        // Center the content
+        // Note: Y axis in image is down, but Y axis in vector might be up or down.
+        // Usually we want to preserve the coordinate system orientation relative to each other,
+        // but fit it on screen.
+        // Let's just map min_x, min_y to top-left (plus padding/centering).
+        
+        let offset_x = padding + (avail_width - data_width * scale) / 2.0 - min_x * scale;
+        // For Y, if we want to flip it (standard Cartesian vs Image), we'd do:
+        // y_screen = height - (y_world * scale + offset_y)
+        // But let's stick to simple translation for now, assuming SVG/DXF coordinates are somewhat compatible or we just want to see the shape.
+        // SVG usually has Y down. DXF usually has Y up.
+        // VectorEngraver::parse_svg mirrors Y (lines 228-232).
+        // So paths should be in a consistent orientation (Y up?).
+        // If Y is up, we need to flip for image (Y down).
+        
+        // Let's assume we map min_y to max_y on screen (bottom to top) if we want Y up.
+        // Or just map min_y to top if we treat it as image coords.
+        // Let's map min_y to top (standard image coords) for simplicity, 
+        // but if it looks upside down for DXF we might need to adjust.
+        // Since parse_svg flips Y, it might be "Y up" internally.
+        // Let's try standard mapping first.
+        
+        let offset_y = padding + (avail_height - data_height * scale) / 2.0 - min_y * scale;
+
+        // Draw paths
+        let color = Rgb([255, 255, 255]); // White lines
+
+        for path in &self.paths {
+            let mut start_point = point(0.0, 0.0);
+            let mut current_point = point(0.0, 0.0);
+            
+            for event in path.iter().flattened(0.5) {
+                match event {
+                    lyon::path::Event::Begin { at } => {
+                        start_point = at;
+                        current_point = at;
+                    }
+                    lyon::path::Event::Line { to, .. } => {
+                        let x0 = (current_point.x * scale + offset_x) as i32;
+                        let y0 = (current_point.y * scale + offset_y) as i32;
+                        let x1 = (to.x * scale + offset_x) as i32;
+                        let y1 = (to.y * scale + offset_y) as i32;
+                        
+                        draw_line_segment(&mut img, x0, y0, x1, y1, color);
+                        current_point = to;
+                    }
+                    lyon::path::Event::End { close, .. } => {
+                        if close {
+                            let x0 = (current_point.x * scale + offset_x) as i32;
+                            let y0 = (current_point.y * scale + offset_y) as i32;
+                            let x1 = (start_point.x * scale + offset_x) as i32;
+                            let y1 = (start_point.y * scale + offset_y) as i32;
+                            
+                            draw_line_segment(&mut img, x0, y0, x1, y1, color);
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+        
+        img
     }
 
     /// Generate G-code for vector engraving with progress callback
@@ -982,6 +1136,33 @@ impl VectorEngraver {
         progress_callback(1.0);
 
         Ok(gcode)
+    }
+}
+
+fn draw_line_segment(img: &mut RgbImage, x0: i32, y0: i32, x1: i32, y1: i32, color: Rgb<u8>) {
+    let dx = (x1 - x0).abs();
+    let dy = -(y1 - y0).abs();
+    let sx = if x0 < x1 { 1 } else { -1 };
+    let sy = if y0 < y1 { 1 } else { -1 };
+    let mut err = dx + dy;
+
+    let mut x = x0;
+    let mut y = y0;
+
+    loop {
+        if x >= 0 && x < img.width() as i32 && y >= 0 && y < img.height() as i32 {
+            img.put_pixel(x as u32, y as u32, color);
+        }
+        if x == x1 && y == y1 { break; }
+        let e2 = 2 * err;
+        if e2 >= dy {
+            err += dy;
+            x += sx;
+        }
+        if e2 <= dx {
+            err += dx;
+            y += sy;
+        }
     }
 }
 

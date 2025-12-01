@@ -270,16 +270,17 @@ fn main() -> anyhow::Result<()> {
         update_designer_ui(&main_window, &mut state);
     }
 
+    // Shared state for settings persistence
+    let settings_persistence = Rc::new(RefCell::new(SettingsPersistence::new()));
+
     // Setup designer callbacks
     app::callbacks::designer::setup_designer_callbacks(
         &main_window,
         designer_mgr.clone(),
         editor_bridge.clone(),
         shift_pressed.clone(),
+        settings_persistence.clone(),
     );
-
-    // Shared state for settings persistence
-    let settings_persistence = Rc::new(RefCell::new(SettingsPersistence::new()));
 
     // Shared state for firmware settings integration
     let firmware_integration = Rc::new(RefCell::new(FirmwareSettingsIntegration::new(
@@ -524,6 +525,7 @@ fn main() -> anyhow::Result<()> {
         materials_backend.clone(),
         tools_backend.clone(),
         device_manager.clone(),
+        settings_persistence.clone(),
     );
 
 

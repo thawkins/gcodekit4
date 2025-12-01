@@ -45,6 +45,8 @@ impl KeyboardShortcut {
 pub enum SettingsCategory {
     /// Controller connection settings
     Controller,
+    /// General application settings
+    General,
     /// UI appearance and behavior
     UserInterface,
     /// File processing options
@@ -59,6 +61,7 @@ impl std::fmt::Display for SettingsCategory {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Controller => write!(f, "Controller"),
+            Self::General => write!(f, "General"),
             Self::UserInterface => write!(f, "User Interface"),
             Self::FileProcessing => write!(f, "File Processing"),
             Self::KeyboardShortcuts => write!(f, "Keyboard Shortcuts"),
@@ -78,6 +81,8 @@ pub enum SettingValue {
     Float(f64),
     /// Boolean value
     Boolean(bool),
+    /// File system path
+    Path(String),
     /// Enumeration with options
     Enum(String, Vec<String>),
 }
@@ -90,6 +95,7 @@ impl SettingValue {
             Self::Integer(i) => i.to_string(),
             Self::Float(f) => f.to_string(),
             Self::Boolean(b) => b.to_string(),
+            Self::Path(p) => p.clone(),
             Self::Enum(s, _) => s.clone(),
         }
     }
@@ -150,6 +156,7 @@ impl Setting {
             (SettingValue::Integer(a), SettingValue::Integer(b)) => a != b,
             (SettingValue::Float(a), SettingValue::Float(b)) => (a - b).abs() > f64::EPSILON,
             (SettingValue::Boolean(a), SettingValue::Boolean(b)) => a != b,
+            (SettingValue::Path(a), SettingValue::Path(b)) => a != b,
             (SettingValue::Enum(a, _), SettingValue::Enum(b, _)) => a != b,
             _ => false,
         }
@@ -279,6 +286,7 @@ impl SettingsDialog {
                     SettingValue::Boolean(_) => {
                         SettingValue::Boolean(value.parse().unwrap_or(false))
                     }
+                    SettingValue::Path(_) => SettingValue::Path(value),
                     SettingValue::Enum(_, ref options) => {
                         if options.contains(&value) {
                             SettingValue::Enum(value, options.clone())

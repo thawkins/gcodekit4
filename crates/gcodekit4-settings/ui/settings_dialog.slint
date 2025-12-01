@@ -19,6 +19,7 @@ export struct SettingItem {
 component SettingRow inherits Rectangle {
     in property <SettingItem> setting;
     callback update-setting(string, string);
+    callback browse-path(string);
     
     height: 40px;
     background: transparent;
@@ -50,7 +51,23 @@ component SettingRow inherits Rectangle {
             selected => { root.update-setting(root.setting.id, self.current-value); }
         }
         
-        if root.setting.value-type != "Boolean" && root.setting.value-type != "Enum" : LineEdit {
+        if root.setting.value-type == "Path" : HorizontalBox {
+            spacing: 5px;
+            LineEdit {
+                text: root.setting.value;
+                width: 200px;
+                height: 30px;
+                edited => { root.update-setting(root.setting.id, self.text); }
+            }
+            Button {
+                text: "...";
+                width: 30px;
+                height: 30px;
+                clicked => { root.browse-path(root.setting.id); }
+            }
+        }
+
+        if root.setting.value-type != "Boolean" && root.setting.value-type != "Enum" && root.setting.value-type != "Path" : LineEdit {
             text: root.setting.value;
             width: 200px;
             height: 30px;
@@ -104,6 +121,7 @@ export component SettingsDialog inherits Rectangle {
     callback menu-settings-restore-defaults();
     callback update-setting(string, string);
     callback category-selected(string);
+    callback browse-path(string);
     
     x: 0;
     y: 0;
@@ -158,8 +176,18 @@ export component SettingsDialog inherits Rectangle {
                         padding-top: 10px;
                         
                         CategoryItem {
-                            id: "controller";
+                            id: "general";
                             name: "General";
+                            selected: root.settings-category == "general";
+                            clicked => { 
+                                root.settings-category = "general";
+                                root.category-selected("general");
+                            }
+                        }
+                        
+                        CategoryItem {
+                            id: "controller";
+                            name: "Controller";
                             selected: root.settings-category == "controller";
                             clicked => { 
                                 root.settings-category = "controller";
@@ -217,7 +245,8 @@ export component SettingsDialog inherits Rectangle {
                         spacing: 15px;
                         
                         Text {
-                            text: root.settings-category == "controller" ? "General Settings" :
+                            text: root.settings-category == "general" ? "General Settings" :
+                                  root.settings-category == "controller" ? "Controller Settings" :
                                   root.settings-category == "ui" ? "User Interface" :
                                   root.settings-category == "file" ? "File Processing" :
                                   root.settings-category == "shortcuts" ? "Keyboard Shortcuts" :
@@ -245,6 +274,9 @@ export component SettingsDialog inherits Rectangle {
                                 setting: setting;
                                 update-setting(id, val) => {
                                     root.update-setting(id, val);
+                                }
+                                browse-path(id) => {
+                                    root.browse-path(id);
                                 }
                             }
                         }

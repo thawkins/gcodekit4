@@ -59,6 +59,16 @@ Common UI elements are defined in `shared.slint` to ensure consistency:
         - Array (Linear, Circular, Grid)
         - Delete
 
+## File Dialogs and Callbacks
+- **Pattern**: Slint cannot open native file dialogs directly.
+- **Implementation**:
+    1.  Define a callback in the Slint component (e.g., `callback browse-path(string)`).
+    2.  Invoke the callback from the UI (e.g., on button click).
+    3.  Implement the callback in Rust (`main_window.on_browse_path(...)`).
+    4.  Use `rfd` crate in Rust to open the native dialog.
+    5.  Update the Slint property with the result (e.g., `controller.update_setting(...)`).
+    6.  Refresh the UI if necessary.
+
 ## Troubleshooting
 - **Layout Issues**: Check `horizontal-stretch` and `vertical-stretch` properties.
 - **Focus**: Ensure `FocusScope` is used correctly for keyboard input.

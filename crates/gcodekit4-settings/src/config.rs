@@ -135,7 +135,7 @@ impl Default for FileProcessingSettings {
             arc_segment_length: 0.5,
             max_line_length: 256,
             preserve_comments: false,
-            output_directory: PathBuf::from("."),
+            output_directory: dirs::home_dir().unwrap_or_else(|| PathBuf::from(".")),
             recent_files_count: 10,
             line_numbers_enabled: false,
         }

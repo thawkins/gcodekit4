@@ -440,6 +440,7 @@ export component MainWindow inherits Window {
     callback config-save-edited-setting(int, string);
     callback config-filter-changed();
     callback update-setting(string, string);
+    callback browse-path(string);
     callback console-clear-clicked();
     callback console-copy-clicked();
     callback send-command(string);
@@ -1781,6 +1782,7 @@ export component MainWindow inherits Window {
         menu-settings-restore-defaults => { root.menu-settings-restore-defaults(); }
         update-setting(id, value) => { root.update-setting(id, value); }
         category-selected(category) => { root.settings-category-selected(category); }
+        browse-path(id) => { root.browse-path(id); }
     }
     
     }  // Close root FocusScope (startup-focus)
