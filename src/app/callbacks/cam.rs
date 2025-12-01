@@ -392,6 +392,7 @@ pub fn register_callbacks(
     // Set up generate-laser-engraving callback
     let window_weak = main_window.as_weak();
     let editor_bridge_laser = editor_bridge.clone();
+    let settings_persistence_laser = settings_persistence.clone();
     main_window.on_generate_laser_engraving(move || {
         if let Some(main_win) = window_weak.upgrade() {
             let dialog = LaserEngraverDialog::new().unwrap();
@@ -512,7 +513,7 @@ pub fn register_callbacks(
 
             // Load image callback
             let dialog_weak_load = dialog.as_weak();
-            let settings_persistence_load = settings_persistence.clone();
+            let settings_persistence_load = settings_persistence_laser.clone();
             dialog.on_load_image(move || {
                 if let Some(dlg) = dialog_weak_load.upgrade() {
                     // Get default directory
@@ -836,6 +837,7 @@ pub fn register_callbacks(
     // Vector Image Engraver
     let window_weak = main_window.as_weak();
     let editor_bridge_vector = editor_bridge.clone();
+    let settings_persistence_vector = settings_persistence.clone();
     main_window.on_generate_vector_engraving(move || {
         if let Some(main_win) = window_weak.upgrade() {
             let dialog = VectorEngraverDialog::new().unwrap();
@@ -1012,7 +1014,7 @@ pub fn register_callbacks(
 
             // Load vector file callback
             let dialog_weak_load = dialog.as_weak();
-            let settings_persistence_load = settings_persistence.clone();
+            let settings_persistence_load = settings_persistence_vector.clone();
             dialog.on_load_vector_file(move || {
                 if let Some(dlg) = dialog_weak_load.upgrade() {
                     // Get default directory
