@@ -1,4 +1,4 @@
-## [0.58.7-alpha.0] - 2025-12-01
+## [0.59.0-alpha.0] - 2025-12-01
 
 ### Added
 - **Settings**: Added "Default Directory" preference to General settings tab.
@@ -7,6 +7,8 @@
 - **Settings**: Set default directory to user's home directory by default.
 - **CAM Tools**: Implemented load/save functionality for Tabbed Box Maker and Jigsaw Puzzle Maker.
 - **CAM Tools**: Updated all CAM tool load/save dialogs to use the default directory setting.
+- **Vector Engraver**: Added "No Vector File Selected" message to preview area when no file is loaded.
+- **Vector Engraver**: Fixed issue where preview would not display when loading parameters from file.
 
 ## [0.58.6-alpha.0] - 2025-12-01
 
