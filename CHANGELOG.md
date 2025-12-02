@@ -1,3 +1,8 @@
+## [0.62.0-alpha.0] - 2025-12-02
+
+### Changed
+- **CI/CD**: Updated Release workflow to use `RELEASE` secret for changelog builder to ensure access to PR details.
+
 ## [0.61.0-alpha.0] - 2025-12-02
 
 ### Changed
