@@ -410,7 +410,8 @@ fn main() -> anyhow::Result<()> {
                         // Find the index of the new profile
                         let profiles = controller.get_ui_profiles();
                         if let Some(index) = profiles.iter().position(|p| p.id == new_id) {
-                            window.set_selected_device_index(-1);
+                            // Don't set to -1 first, just transition to the new index
+                            // window.set_selected_device_index(-1);
                             let window_weak_2 = window_weak.clone();
                             let _ = slint::invoke_from_event_loop(move || {
                                 if let Some(window) = window_weak_2.upgrade() {
@@ -434,6 +435,16 @@ fn main() -> anyhow::Result<()> {
         let controller = device_ui_controller.clone();
         let window_weak = main_window.as_weak();
         main_window.on_save_device_profile(move |profile| {
+            if profile.id.is_empty() {
+                warn!("Attempted to save profile with empty ID");
+                return;
+            }
+            
+            if profile.name.is_empty() {
+                warn!("Attempted to save profile with empty name (ID: {})", profile.id);
+                // Don't return, as user might want to clear the name, but log it.
+            }
+
             let db_profile = DbDeviceProfile {
                 id: profile.id.into(),
                 name: profile.name.into(),

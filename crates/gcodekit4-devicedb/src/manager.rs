@@ -4,13 +4,14 @@ use anyhow::{Context, Result};
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, RwLock, Mutex};
 
 #[derive(Debug, Clone)]
 pub struct DeviceManager {
     profiles: Arc<RwLock<HashMap<String, DeviceProfile>>>,
     active_profile_id: Arc<RwLock<Option<String>>>,
     config_path: PathBuf,
+    file_lock: Arc<Mutex<()>>,
 }
 
 impl DeviceManager {
@@ -19,6 +20,7 @@ impl DeviceManager {
             profiles: Arc::new(RwLock::new(HashMap::new())),
             active_profile_id: Arc::new(RwLock::new(None)),
             config_path,
+            file_lock: Arc::new(Mutex::new(())),
         }
     }
 
@@ -60,6 +62,9 @@ impl DeviceManager {
     }
 
     pub fn save(&self) -> Result<()> {
+        // Acquire file lock to prevent concurrent writes
+        let _file_guard = self.file_lock.lock().unwrap();
+
         let profiles_lock = self.profiles.read().unwrap();
         let active_lock = self.active_profile_id.read().unwrap();
 
