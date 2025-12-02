@@ -4,7 +4,7 @@ A modern, cross-platform G-Code sender and CNC machine controller written in Rus
 
 [![Build Status](https://github.com/thawkins/gcodekit4/workflows/Build%20and%20Release/badge.svg)](https://github.com/thawkins/gcodekit4/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-0.59.0--alpha-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-0.63.0--alpha.0-brightgreen.svg)](CHANGELOG.md)
 
 ## Overview
 
@@ -546,9 +546,25 @@ You may choose either license for your use of this software.
 
 ## Project Status
 
-**Current Version**: 0.50.0-alpha
+**Current Version**: 0.63.0-alpha.0
 **Status**: Active Development
 **Stability**: Alpha (breaking changes may occur)
+
+### Recent Updates (v0.63.0)
+- **Device Manager**: Fixed critical data loss bugs in device profile management (resetting data, wrong selection, empty names).
+- **Device Manager**: Added file locking and improved logging.
+
+### Recent Updates (v0.62.0)
+- **Settings**: Added Metric/Imperial measurement system preference.
+- **CAM Tools**: Updated Spoilboard Surfacing for Imperial units.
+
+### Recent Updates (v0.60.0)
+- **CAM Tools**: Implemented singleton dialogs and success alerts.
+- **UI**: Fixed Windows fullscreen and Linux window ordering issues.
+
+### Recent Updates (v0.59.0)
+- **Settings**: Added Default Directory preference.
+- **CAM Tools**: Added Load/Save for Tabbed Box and Jigsaw Puzzle.
 
 ### Recent Updates (v0.56.0)
 - **Maintenance**: Version bump for next development iteration.
