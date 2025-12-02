@@ -93,6 +93,19 @@ impl SettingsPersistence {
     /// Add General settings to dialog
     fn add_general_settings(&self, dialog: &mut SettingsDialog) {
         let file = &self.config.file_processing;
+        let ui = &self.config.ui;
+
+        // Measurement System
+        let systems = vec!["Metric".to_string(), "Imperial".to_string()];
+        dialog.add_setting(
+            Setting::new(
+                "measurement_system",
+                "Measurement System",
+                SettingValue::Enum(ui.measurement_system.clone(), systems),
+            )
+            .with_description("Units for display and input (Metric/mm or Imperial/inch)")
+            .with_category(SettingsCategory::General),
+        );
 
         // Default Directory
         dialog.add_setting(
@@ -247,6 +260,10 @@ impl SettingsPersistence {
 
     /// Update General settings in config from dialog
     fn update_general_settings(&mut self, dialog: &SettingsDialog) -> Result<()> {
+        if let Some(setting) = dialog.get_setting("measurement_system") {
+            self.config.ui.measurement_system = setting.value.as_str();
+        }
+
         if let Some(setting) = dialog.get_setting("default_directory") {
             let path_str = setting.value.as_str();
             if !path_str.is_empty() {

@@ -49,8 +49,6 @@ gcodekit4-devicedb = { path = "crates/gcodekit4-devicedb" }
 gcodekit4-ui = { path = "crates/gcodekit4-ui" }
 
 slint = { version = "1.14.1", features = ["backend-winit", "image-default-formats"] }
-i-slint-backend-winit = "1.14.1"
-winit = "0.30"
 tokio = { version = "1.35", features = ["full"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json"] }

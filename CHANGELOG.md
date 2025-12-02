@@ -1,5 +1,12 @@
 ## [0.62.0-alpha.0] - 2025-12-02
 
+### Added
+- **Settings**: Added "Measurement System" preference (Metric/Imperial) to General settings.
+- **Core**: Added unit conversion utilities for Metric/Imperial support.
+- **CAM Tools**: Updated Spoilboard Surfacing tool to support Imperial units (inches) based on user preference.
+- **UI**: Changed default settings tab to "General".
+- **UI**: Updated Imperial unit label from `"` to `in`.
+
 ### Changed
 - **CI/CD**: Updated Release workflow to use `RELEASE` secret for changelog builder to ensure access to PR details.
 

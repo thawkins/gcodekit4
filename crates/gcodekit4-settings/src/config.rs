@@ -84,6 +84,8 @@ pub struct UiSettings {
     pub language: String,
     /// Show keyboard shortcuts in menus
     pub show_menu_shortcuts: bool,
+    /// Measurement system (Metric or Imperial)
+    pub measurement_system: String,
 }
 
 impl Default for UiSettings {
@@ -102,6 +104,7 @@ impl Default for UiSettings {
             font_size: 12,
             language: "en".to_string(),
             show_menu_shortcuts: true,
+            measurement_system: "Metric".to_string(),
         }
     }
 }

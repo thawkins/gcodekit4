@@ -340,7 +340,8 @@ fn render_shape_trait(
     viewport: &crate::viewport::Viewport,
 ) -> String {
     // Get shape type and bounding box
-    let (x1, y1, x2, y2) = shape.bounding_box();
+    // Use local_bounding_box to find the pivot point (center of unrotated shape)
+    let (x1, y1, x2, y2) = shape.local_bounding_box();
     let center_x = (x1 + x2) / 2.0;
     let center_y = (y1 + y2) / 2.0;
     let rotation = shape.rotation();

@@ -182,7 +182,7 @@ impl SettingsDialog {
         Self {
             settings: HashMap::new(),
             shortcuts: HashMap::new(),
-            selected_category: SettingsCategory::Controller,
+            selected_category: SettingsCategory::General,
             has_unsaved_changes: false,
         }
     }

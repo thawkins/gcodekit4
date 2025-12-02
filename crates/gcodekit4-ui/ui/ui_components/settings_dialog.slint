@@ -16,7 +16,7 @@ export struct SettingItem {
 
 export component SettingsDialog inherits Rectangle {
     in-out property<bool> dialog-visible;
-    in-out property<string> settings-category: "controller";
+    in-out property<string> settings-category: "general";
     in property<[SettingItem]> all-settings;
     
     callback menu-settings-save();

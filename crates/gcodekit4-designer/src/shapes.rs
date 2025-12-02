@@ -88,6 +88,17 @@ impl Shape {
         }
     }
 
+    pub fn local_bounding_box(&self) -> (f64, f64, f64, f64) {
+        match self {
+            Shape::Rectangle(s) => s.local_bounding_box(),
+            Shape::Circle(s) => s.local_bounding_box(),
+            Shape::Line(s) => s.local_bounding_box(),
+            Shape::Ellipse(s) => s.local_bounding_box(),
+            Shape::Path(s) => s.local_bounding_box(),
+            Shape::Text(s) => s.local_bounding_box(),
+        }
+    }
+
     pub fn contains_point(&self, point: &Point) -> bool {
         match self {
             Shape::Rectangle(s) => s.contains_point(point),
@@ -257,6 +268,10 @@ impl Rectangle {
         (min_x, min_y, max_x, max_y)
     }
 
+    pub fn local_bounding_box(&self) -> (f64, f64, f64, f64) {
+        (self.x, self.y, self.x + self.width, self.y + self.height)
+    }
+
     pub fn contains_point(&self, point: &Point) -> bool {
         let center = Point::new(self.x + self.width / 2.0, self.y + self.height / 2.0);
         let p = rotate_point(*point, center, -self.rotation);
@@ -367,6 +382,10 @@ impl Circle {
         )
     }
 
+    pub fn local_bounding_box(&self) -> (f64, f64, f64, f64) {
+        self.bounding_box()
+    }
+
     pub fn contains_point(&self, point: &Point) -> bool {
         self.center.distance_to(point) <= self.radius
     }
@@ -436,6 +455,32 @@ impl Line {
     }
 
     pub fn bounding_box(&self) -> (f64, f64, f64, f64) {
+        if self.rotation.abs() < 1e-6 {
+            return (
+                self.start.x.min(self.end.x),
+                self.start.y.min(self.end.y),
+                self.start.x.max(self.end.x),
+                self.start.y.max(self.end.y),
+            );
+        }
+        
+        let center = Point::new(
+            (self.start.x + self.end.x) / 2.0,
+            (self.start.y + self.end.y) / 2.0,
+        );
+        
+        let p1 = rotate_point(self.start, center, self.rotation);
+        let p2 = rotate_point(self.end, center, self.rotation);
+        
+        (
+            p1.x.min(p2.x),
+            p1.y.min(p2.y),
+            p1.x.max(p2.x),
+            p1.y.max(p2.y),
+        )
+    }
+
+    pub fn local_bounding_box(&self) -> (f64, f64, f64, f64) {
         (
             self.start.x.min(self.end.x),
             self.start.y.min(self.end.y),
@@ -508,6 +553,56 @@ impl Ellipse {
     }
 
     pub fn bounding_box(&self) -> (f64, f64, f64, f64) {
+        if self.rotation.abs() < 1e-6 {
+            return (
+                self.center.x - self.rx,
+                self.center.y - self.ry,
+                self.center.x + self.rx,
+                self.center.y + self.ry,
+            );
+        }
+        
+        // For rotated ellipse, we calculate the bounding box of the rotated shape
+        // Parametric equation:
+        // x = cx + rx*cos(t)*cos(rot) - ry*sin(t)*sin(rot)
+        // y = cy + rx*cos(t)*sin(rot) + ry*sin(t)*cos(rot)
+        // To find min/max x/y, we differentiate and solve for t.
+        // Or we can just rotate the 4 extreme points? No, extreme points change.
+        // But we can approximate by rotating the unrotated bounding box corners? No, that's loose.
+        
+        // Exact solution:
+        // Max x occurs when dx/dt = 0.
+        // tan(t) = -(ry*sin(rot)) / (rx*cos(rot)) = - (ry/rx) * tan(rot)
+        // This is getting complicated.
+        // Let's use the 4 corners of the unrotated bounding box and rotate them.
+        // This gives the bounding box of the rotated bounding box, which is a loose bound but safe.
+        // Actually, for Group Center calculation, we want the center to be stable.
+        // The center of the rotated bounding box of an ellipse IS the center of the ellipse.
+        // So (cx, cy) is invariant!
+        // But the EXTENTS change.
+        // If we use loose bounds, the center is still (cx, cy).
+        // So for Ellipse, the center is stable regardless of rotation.
+        // But for consistency with other shapes (like Rectangle), we should return the rotated bounds.
+        
+        let rot_rad = self.rotation.to_radians();
+        let cos_r = rot_rad.cos();
+        let sin_r = rot_rad.sin();
+        
+        let ux = (self.rx * cos_r).powi(2) + (self.ry * sin_r).powi(2);
+        let uy = (self.rx * sin_r).powi(2) + (self.ry * cos_r).powi(2);
+        
+        let w_half = ux.sqrt();
+        let h_half = uy.sqrt();
+        
+        (
+            self.center.x - w_half,
+            self.center.y - h_half,
+            self.center.x + w_half,
+            self.center.y + h_half,
+        )
+    }
+
+    pub fn local_bounding_box(&self) -> (f64, f64, f64, f64) {
         (
             self.center.x - self.rx,
             self.center.y - self.ry,
@@ -601,6 +696,62 @@ impl PathShape {
     }
 
     pub fn bounding_box(&self) -> (f64, f64, f64, f64) {
+        let aabb = bounding_box(self.path.iter());
+        let (x1, y1, x2, y2) = (aabb.min.x as f64, aabb.min.y as f64, aabb.max.x as f64, aabb.max.y as f64);
+        
+        if self.rotation.abs() < 1e-6 {
+            return (x1, y1, x2, y2);
+        }
+        
+        let center_x = (x1 + x2) / 2.0;
+        let center_y = (y1 + y2) / 2.0;
+        let center = Point::new(center_x, center_y);
+        
+        let mut min_x = f64::INFINITY;
+        let mut min_y = f64::INFINITY;
+        let mut max_x = f64::NEG_INFINITY;
+        let mut max_y = f64::NEG_INFINITY;
+        
+        for event in self.path.iter() {
+            match event {
+                lyon::path::Event::Begin { at } => {
+                    let p = rotate_point(Point::new(at.x as f64, at.y as f64), center, self.rotation);
+                    min_x = min_x.min(p.x); min_y = min_y.min(p.y);
+                    max_x = max_x.max(p.x); max_y = max_y.max(p.y);
+                }
+                lyon::path::Event::Line { to, .. } => {
+                    let p = rotate_point(Point::new(to.x as f64, to.y as f64), center, self.rotation);
+                    min_x = min_x.min(p.x); min_y = min_y.min(p.y);
+                    max_x = max_x.max(p.x); max_y = max_y.max(p.y);
+                }
+                lyon::path::Event::Quadratic { ctrl, to, .. } => {
+                    let p1 = rotate_point(Point::new(ctrl.x as f64, ctrl.y as f64), center, self.rotation);
+                    let p2 = rotate_point(Point::new(to.x as f64, to.y as f64), center, self.rotation);
+                    min_x = min_x.min(p1.x).min(p2.x); min_y = min_y.min(p1.y).min(p2.y);
+                    max_x = max_x.max(p1.x).max(p2.x); max_y = max_y.max(p1.y).max(p2.y);
+                }
+                lyon::path::Event::Cubic { ctrl1, ctrl2, to, .. } => {
+                    let p1 = rotate_point(Point::new(ctrl1.x as f64, ctrl1.y as f64), center, self.rotation);
+                    let p2 = rotate_point(Point::new(ctrl2.x as f64, ctrl2.y as f64), center, self.rotation);
+                    let p3 = rotate_point(Point::new(to.x as f64, to.y as f64), center, self.rotation);
+                    min_x = min_x.min(p1.x).min(p2.x).min(p3.x); 
+                    min_y = min_y.min(p1.y).min(p2.y).min(p3.y);
+                    max_x = max_x.max(p1.x).max(p2.x).max(p3.x); 
+                    max_y = max_y.max(p1.y).max(p2.y).max(p3.y);
+                }
+                _ => {}
+            }
+        }
+        
+        // If path is empty or invalid, return unrotated box
+        if min_x == f64::INFINITY {
+            return (x1, y1, x2, y2);
+        }
+        
+        (min_x, min_y, max_x, max_y)
+    }
+
+    pub fn local_bounding_box(&self) -> (f64, f64, f64, f64) {
         let aabb = bounding_box(self.path.iter());
         (aabb.min.x as f64, aabb.min.y as f64, aabb.max.x as f64, aabb.max.y as f64)
     }
@@ -1102,6 +1253,45 @@ impl TextShape {
             r_max_y = r_max_y.max(p.y);
         }
         (r_min_x, r_min_y, r_max_x, r_max_y)
+    }
+
+    pub fn local_bounding_box(&self) -> (f64, f64, f64, f64) {
+        let font = font_manager::get_font();
+        let scale = Scale::uniform(self.font_size as f32);
+        let v_metrics = font.v_metrics(scale);
+        
+        let start = rt_point(self.x as f32, self.y as f32 + v_metrics.ascent);
+        
+        let glyphs: Vec<_> = font.layout(&self.text, scale, start).collect();
+        
+        if glyphs.is_empty() {
+              return (self.x, self.y, self.x, self.y + self.font_size);
+        }
+        
+        let mut min_x = f32::MAX;
+        let mut min_y = f32::MAX;
+        let mut max_x = f32::MIN;
+        let mut max_y = f32::MIN;
+        
+        let mut has_bounds = false;
+
+        for glyph in &glyphs {
+            if let Some(bb) = glyph.unpositioned().exact_bounding_box() {
+                let pos = glyph.position();
+                min_x = min_x.min(pos.x + bb.min.x);
+                min_y = min_y.min(pos.y + bb.min.y);
+                max_x = max_x.max(pos.x + bb.max.x);
+                max_y = max_y.max(pos.y + bb.max.y);
+                has_bounds = true;
+            }
+        }
+        
+        if !has_bounds {
+             let width = self.text.len() as f64 * self.font_size * 0.6;
+             (self.x, self.y, self.x + width, self.y + self.font_size)
+        } else {
+            (min_x as f64, min_y as f64, max_x as f64, max_y as f64)
+        }
     }
 
     pub fn contains_point(&self, point: &Point) -> bool {

@@ -20,9 +20,9 @@ use gcodekit4::{
 };
 use gcodekit4::ui::{MaterialsManagerBackend, ToolsManagerBackend};
 use gcodekit4_devicedb::DeviceManager;
+use gcodekit4_core::units::{MeasurementSystem, to_display_string, parse_from_string, get_unit_label};
 use tracing::warn;
-use winit::window::WindowLevel;
-use i_slint_backend_winit::WinitWindowAccessor;
+use std::str::FromStr;
 
 pub fn register_callbacks(
     main_window: &MainWindow,
@@ -324,16 +324,6 @@ pub fn register_callbacks(
             });
 
             dialog.show().ok();
-            // Ensure dialog stays on top using winit (delayed to ensure window is mapped)
-            let dialog_weak_level = dialog.as_weak();
-            slint::Timer::single_shot(std::time::Duration::from_millis(100), move || {
-                if let Some(d) = dialog_weak_level.upgrade() {
-                    d.window().with_winit_window(|winit_window| {
-                        winit_window.set_window_level(WindowLevel::AlwaysOnTop);
-                        winit_window.focus_window();
-                    });
-                }
-            });
         }
     });
 
@@ -549,16 +539,6 @@ pub fn register_callbacks(
             });
 
             dialog.show().ok();
-            // Ensure dialog stays on top using winit (delayed to ensure window is mapped)
-            let dialog_weak_level = dialog.as_weak();
-            slint::Timer::single_shot(std::time::Duration::from_millis(100), move || {
-                if let Some(d) = dialog_weak_level.upgrade() {
-                    d.window().with_winit_window(|winit_window| {
-                        winit_window.set_window_level(WindowLevel::AlwaysOnTop);
-                        winit_window.focus_window();
-                    });
-                }
-            });
         }
     });
 
@@ -568,6 +548,8 @@ pub fn register_callbacks(
     let console_manager_clone = console_manager.clone();
     let editor_bridge_clone = editor_bridge.clone();
     let dialog_weak_ref = spoilboard_surfacing_dialog_weak.clone();
+    let settings_persistence_spoilboard = settings_persistence.clone();
+    
     main_window.on_generate_spoilboard_surfacing(move || {
         if let Some(window) = window_weak.upgrade() {
             // Check if dialog exists
@@ -581,6 +563,26 @@ pub fn register_callbacks(
             let dialog_weak = dialog.as_weak();
             let dialog_weak_generate = dialog_weak.clone();
 
+            // Get measurement system
+            let system = {
+                let persistence = settings_persistence_spoilboard.borrow();
+                let sys_str = &persistence.config().ui.measurement_system;
+                MeasurementSystem::from_str(sys_str).unwrap_or(MeasurementSystem::Metric)
+            };
+
+            // Set unit label
+            dialog.set_unit_label(get_unit_label(system).into());
+
+            // Initialize dialog with default values (converted)
+            // Defaults in mm: Width 300, Height 180, Tool 25.4, Feed 1000, SafeZ 5.0, CutDepth 0.5
+            dialog.set_width_mm(to_display_string(300.0, system).into());
+            dialog.set_height_mm(to_display_string(180.0, system).into());
+            dialog.set_tool_diameter(to_display_string(25.4, system).into());
+            dialog.set_feed_rate(to_display_string(1000.0, system).into()); // Feed rate is usually mm/min or in/min
+            dialog.set_safe_z(to_display_string(5.0, system).into());
+            dialog.set_cut_depth(to_display_string(0.5, system).into());
+            // Spindle speed and stepover are unitless/RPM/%
+
             // Set up dialog callbacks
             let gcode_editor_dialog = gcode_editor_clone.clone();
             let console_manager_dialog = console_manager_clone.clone();
@@ -589,25 +591,32 @@ pub fn register_callbacks(
 
             dialog.on_generate_gcode(move || {
                 if let Some(d) = dialog_weak_generate.upgrade() {
-                    // Get parameters from dialog
-                    let width = d.get_width_mm().parse::<f64>().unwrap_or(300.0);
-                    let height = d.get_height_mm().parse::<f64>().unwrap_or(180.0);
-                    let tool_diameter = d.get_tool_diameter().parse::<f64>().unwrap_or(25.4);
+                    // Get parameters from dialog and parse
+                    let width = parse_from_string(&d.get_width_mm(), system).unwrap_or(300.0);
+                    let height = parse_from_string(&d.get_height_mm(), system).unwrap_or(180.0);
+                    let tool_diameter = parse_from_string(&d.get_tool_diameter(), system).unwrap_or(25.4);
                     let overlap = d.get_stepover().parse::<f64>().unwrap_or(40.0);
-                    let feed_rate = d.get_feed_rate().parse::<f64>().unwrap_or(1000.0);
+                    
+                    // Feed rate needs special handling if we want to support in/min vs mm/min conversion
+                    // The generator expects mm/min.
+                    // parse_from_string converts input (in current units) to mm.
+                    // If input is 100 in/min, parse_from_string("100", Imperial) returns 2540 mm/min.
+                    // This is correct for the generator if it expects mm/min.
+                    let feed_rate = parse_from_string(&d.get_feed_rate(), system).unwrap_or(1000.0);
+                    
                     let spindle_speed = d.get_spindle_speed().parse::<f64>().unwrap_or(12000.0);
-                    let safe_z = d.get_safe_z().parse::<f64>().unwrap_or(5.0);
-                    let cut_depth = d.get_cut_depth().parse::<f64>().unwrap_or(0.5);
+                    let safe_z = parse_from_string(&d.get_safe_z(), system).unwrap_or(5.0);
+                    let cut_depth = parse_from_string(&d.get_cut_depth(), system).unwrap_or(0.5);
 
                     let params = SpoilboardSurfacingParameters {
-                        width,
-                        height,
-                        tool_diameter,
+                        width: width as f64,
+                        height: height as f64,
+                        tool_diameter: tool_diameter as f64,
                         stepover_percent: overlap,
-                        feed_rate,
+                        feed_rate: feed_rate as f64,
                         spindle_speed,
-                        safe_z,
-                        cut_depth,
+                        safe_z: safe_z as f64,
+                        cut_depth: cut_depth as f64,
                     };
 
                     // Generate G-code
@@ -669,16 +678,6 @@ pub fn register_callbacks(
             });
 
             dialog.show().ok();
-            // Ensure dialog stays on top using winit (delayed to ensure window is mapped)
-            let dialog_weak_level = dialog.as_weak();
-            slint::Timer::single_shot(std::time::Duration::from_millis(100), move || {
-                if let Some(d) = dialog_weak_level.upgrade() {
-                    d.window().with_winit_window(|winit_window| {
-                        winit_window.set_window_level(WindowLevel::AlwaysOnTop);
-                        winit_window.focus_window();
-                    });
-                }
-            });
         }
     });
 
@@ -785,16 +784,6 @@ pub fn register_callbacks(
             });
 
             dialog.show().ok();
-            // Ensure dialog stays on top using winit (delayed to ensure window is mapped)
-            let dialog_weak_level = dialog.as_weak();
-            slint::Timer::single_shot(std::time::Duration::from_millis(100), move || {
-                if let Some(d) = dialog_weak_level.upgrade() {
-                    d.window().with_winit_window(|winit_window| {
-                        winit_window.set_window_level(WindowLevel::AlwaysOnTop);
-                        winit_window.focus_window();
-                    });
-                }
-            });
         }
     });
 
@@ -1264,16 +1253,6 @@ pub fn register_callbacks(
             });
 
             dialog.show().unwrap();
-            // Ensure dialog stays on top using winit (delayed to ensure window is mapped)
-            let dialog_weak_level = dialog.as_weak();
-            slint::Timer::single_shot(std::time::Duration::from_millis(100), move || {
-                if let Some(d) = dialog_weak_level.upgrade() {
-                    d.window().with_winit_window(|winit_window| {
-                        winit_window.set_window_level(WindowLevel::AlwaysOnTop);
-                        winit_window.focus_window();
-                    });
-                }
-            });
         }
     });
 
@@ -1834,16 +1813,6 @@ pub fn register_callbacks(
             });
 
             dialog.show().unwrap();
-            // Ensure dialog stays on top using winit (delayed to ensure window is mapped)
-            let dialog_weak_level = dialog.as_weak();
-            slint::Timer::single_shot(std::time::Duration::from_millis(100), move || {
-                if let Some(d) = dialog_weak_level.upgrade() {
-                    d.window().with_winit_window(|winit_window| {
-                        winit_window.set_window_level(WindowLevel::AlwaysOnTop);
-                        winit_window.focus_window();
-                    });
-                }
-            });
         }
     });
 

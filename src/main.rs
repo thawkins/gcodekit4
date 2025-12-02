@@ -3008,8 +3008,16 @@ fn main() -> anyhow::Result<()> {
         .map_err(|e| anyhow::anyhow!("UI Show Error: {}", e))?;
 
     // On Windows, ensure window is maximized after showing to fix initial size issue
+    // Use a timer to allow the window to be fully mapped by the OS before maximizing
     #[cfg(target_os = "windows")]
-    main_window.window().set_maximized(true);
+    {
+        let window_weak = main_window.as_weak();
+        slint::Timer::single_shot(std::time::Duration::from_millis(250), move || {
+            if let Some(window) = window_weak.upgrade() {
+                window.window().set_maximized(true);
+            }
+        });
+    }
 
     main_window
         .run()

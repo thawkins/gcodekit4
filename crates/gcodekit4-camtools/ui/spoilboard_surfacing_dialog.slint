@@ -17,6 +17,8 @@ export component SpoilboardSurfacingDialog inherits Window {
     in-out property <int> selected-category-index: -1;
     in-out property <int> selected-tool-index: -1;
     
+    in property <string> unit-label: "mm";
+
     in-out property <string> width-mm: "300.0";
     in-out property <string> height-mm: "180.0";
     in-out property <string> tool-diameter: "25.4";
@@ -86,26 +88,26 @@ export component SpoilboardSurfacingDialog inherits Window {
                 
                 // Dimensions
                 GroupBox {
-                    title: "Surfacing Area (mm)";
+                    title: "Surfacing Area (" + root.unit-label + ")";
                     
                     GridBox {
                         spacing: 10px;
                         
                         Row {
-                            Text { text: "Width (X):"; }
+                            Text { text: "Width (X) [" + root.unit-label + "]:"; }
                             LineEdit { 
                                 text <=> width-mm;
                                 placeholder-text: "300.0";
-                                input-type: decimal;
+                                input-type: text;
                             }
                         }
                         
                         Row {
-                            Text { text: "Height (Y):"; }
+                            Text { text: "Height (Y) [" + root.unit-label + "]:"; }
                             LineEdit { 
                                 text <=> height-mm;
                                 placeholder-text: "180.0";
-                                input-type: decimal;
+                                input-type: text;
                             }
                         }
                     }
@@ -119,11 +121,11 @@ export component SpoilboardSurfacingDialog inherits Window {
                         spacing: 10px;
                         
                         Row {
-                            Text { text: "Tool Diameter (mm):"; }
+                            Text { text: "Tool Diameter [" + root.unit-label + "]:"; }
                             LineEdit { 
                                 text <=> tool-diameter;
                                 placeholder-text: "25.4";
-                                input-type: decimal;
+                                input-type: text;
                             }
                         }
                         
@@ -146,11 +148,11 @@ export component SpoilboardSurfacingDialog inherits Window {
                         spacing: 10px;
                         
                         Row {
-                            Text { text: "Feed Rate (mm/min):"; }
+                            Text { text: "Feed Rate (" + root.unit-label + "/min):"; }
                             LineEdit { 
                                 text <=> feed-rate;
                                 placeholder-text: "1000";
-                                input-type: number;
+                                input-type: text;
                             }
                         }
                         
@@ -164,20 +166,20 @@ export component SpoilboardSurfacingDialog inherits Window {
                         }
                         
                         Row {
-                            Text { text: "Cut Depth (mm):"; }
+                            Text { text: "Cut Depth [" + root.unit-label + "]:"; }
                             LineEdit { 
                                 text <=> cut-depth;
                                 placeholder-text: "0.5";
-                                input-type: decimal;
+                                input-type: text;
                             }
                         }
                         
                         Row {
-                            Text { text: "Safe Z (mm):"; }
+                            Text { text: "Safe Z [" + root.unit-label + "]:"; }
                             LineEdit { 
                                 text <=> safe-z;
                                 placeholder-text: "5.0";
-                                input-type: decimal;
+                                input-type: text;
                             }
                         }
                     }

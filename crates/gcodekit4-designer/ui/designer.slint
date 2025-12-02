@@ -2177,7 +2177,7 @@ export component DesignerPanel inherits Rectangle {
                                     CompactSpinBox { 
                                         value: root.selected_shape_rotation;
                                         minimum: -360.0; maximum: 360.0; step: 1.0;
-                                        enabled: root.selected_count == 1;
+                                        enabled: root.selected_count > 0;
                                         value-changed(v) => { root.update_shape_property(11, v); }
                                     }
                                 }

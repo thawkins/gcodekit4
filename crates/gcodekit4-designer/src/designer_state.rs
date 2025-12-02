@@ -1086,36 +1086,124 @@ impl DesignerState {
     }
 
     pub fn set_selected_rotation(&mut self, rotation: f64) {
-        let mut commands = Vec::new();
-        for obj in self.canvas.shapes_mut() {
-            if obj.selected {
-                let mut new_obj = obj.clone();
-                match &mut new_obj.shape {
-                    crate::shapes::Shape::Rectangle(s) => s.rotation = rotation,
-                    crate::shapes::Shape::Circle(s) => s.rotation = rotation,
-                    crate::shapes::Shape::Line(s) => s.rotation = rotation,
-                    crate::shapes::Shape::Ellipse(s) => s.rotation = rotation,
-                    crate::shapes::Shape::Path(s) => s.rotation = rotation,
-                    crate::shapes::Shape::Text(s) => s.rotation = rotation,
-                }
-                
-                if (obj.shape.rotation() - rotation).abs() > f64::EPSILON {
-                     commands.push(DesignerCommand::ChangeProperty(ChangeProperty {
+        let selected_count = self.selected_count();
+        
+        if selected_count > 1 {
+            // Multiple selection: Rotate around group center
+            // 'rotation' is treated as a delta because UI resets to 0
+            let angle_delta = rotation;
+            
+            // Calculate group center using local bounding boxes (unrotated) to ensure stability
+            let mut min_x = f64::INFINITY;
+            let mut min_y = f64::INFINITY;
+            let mut max_x = f64::NEG_INFINITY;
+            let mut max_y = f64::NEG_INFINITY;
+            let mut has_selection = false;
+            
+            for obj in self.canvas.shapes().filter(|s| s.selected) {
+                let (x1, y1, x2, y2) = obj.shape.local_bounding_box();
+                min_x = min_x.min(x1);
+                min_y = min_y.min(y1);
+                max_x = max_x.max(x2);
+                max_y = max_y.max(y2);
+                has_selection = true;
+            }
+            
+            if !has_selection { return; }
+            
+            let center_x = (min_x + max_x) / 2.0;
+            let center_y = (min_y + max_y) / 2.0;
+            
+            let mut commands = Vec::new();
+            
+            // We need to collect updates first to avoid borrowing issues if we were doing complex things,
+            // but here we iterate mutably which is fine.
+            for obj in self.canvas.shapes_mut() {
+                if obj.selected {
+                    let mut new_obj = obj.clone();
+                    
+                    // Calculate shape center using local bounding box (pivot point)
+                    let (sx1, sy1, sx2, sy2) = obj.shape.local_bounding_box();
+                    let shape_center_x = (sx1 + sx2) / 2.0;
+                    let shape_center_y = (sy1 + sy2) / 2.0;
+                    
+                    // Calculate distance and angle from group center
+                    let dx = shape_center_x - center_x;
+                    let dy = shape_center_y - center_y;
+                    let distance = (dx * dx + dy * dy).sqrt();
+                    let current_angle = dy.atan2(dx);
+                    
+                    // Calculate new angle
+                    let angle_delta_rad = angle_delta.to_radians();
+                    let new_angle = current_angle + angle_delta_rad;
+                    
+                    // Calculate new position
+                    let new_center_x = center_x + distance * new_angle.cos();
+                    let new_center_y = center_y + distance * new_angle.sin();
+                    
+                    // Translate shape to new position
+                    let trans_x = new_center_x - shape_center_x;
+                    let trans_y = new_center_y - shape_center_y;
+                    new_obj.shape.translate(trans_x, trans_y);
+                    
+                    // Update shape rotation
+                    match &mut new_obj.shape {
+                        crate::shapes::Shape::Rectangle(s) => s.rotation += angle_delta,
+                        crate::shapes::Shape::Circle(s) => s.rotation += angle_delta,
+                        crate::shapes::Shape::Line(s) => s.rotation += angle_delta,
+                        crate::shapes::Shape::Ellipse(s) => s.rotation += angle_delta,
+                        crate::shapes::Shape::Path(s) => s.rotation += angle_delta,
+                        crate::shapes::Shape::Text(s) => s.rotation += angle_delta,
+                    }
+                    
+                    commands.push(DesignerCommand::ChangeProperty(ChangeProperty {
                         id: obj.id,
                         old_state: obj.clone(),
-                        new_state: new_obj.clone(),
+                        new_state: new_obj,
                     }));
-                    *obj = new_obj;
                 }
             }
-        }
-        
-        if !commands.is_empty() {
-            let cmd = DesignerCommand::CompositeCommand(CompositeCommand {
-                commands,
-                name: "Change Rotation".to_string(),
-            });
-            self.push_command(cmd);
+            
+            if !commands.is_empty() {
+                let cmd = DesignerCommand::CompositeCommand(CompositeCommand {
+                    commands,
+                    name: "Rotate Selection".to_string(),
+                });
+                self.push_command(cmd);
+            }
+            
+        } else {
+            let mut commands = Vec::new();
+            for obj in self.canvas.shapes_mut() {
+                if obj.selected {
+                    let mut new_obj = obj.clone();
+                    match &mut new_obj.shape {
+                        crate::shapes::Shape::Rectangle(s) => s.rotation = rotation,
+                        crate::shapes::Shape::Circle(s) => s.rotation = rotation,
+                        crate::shapes::Shape::Line(s) => s.rotation = rotation,
+                        crate::shapes::Shape::Ellipse(s) => s.rotation = rotation,
+                        crate::shapes::Shape::Path(s) => s.rotation = rotation,
+                        crate::shapes::Shape::Text(s) => s.rotation = rotation,
+                    }
+                    
+                    if (obj.shape.rotation() - rotation).abs() > f64::EPSILON {
+                         commands.push(DesignerCommand::ChangeProperty(ChangeProperty {
+                            id: obj.id,
+                            old_state: obj.clone(),
+                            new_state: new_obj.clone(),
+                        }));
+                        *obj = new_obj;
+                    }
+                }
+            }
+            
+            if !commands.is_empty() {
+                let cmd = DesignerCommand::CompositeCommand(CompositeCommand {
+                    commands,
+                    name: "Change Rotation".to_string(),
+                });
+                self.push_command(cmd);
+            }
         }
     }
 
