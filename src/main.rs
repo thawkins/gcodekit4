@@ -441,9 +441,10 @@ fn main() -> anyhow::Result<()> {
             }
             
             if profile.name.is_empty() {
-                warn!("Attempted to save profile with empty name (ID: {})", profile.id);
-                // Don't return, as user might want to clear the name, but log it.
+                return;
             }
+
+            let saved_id = profile.id.clone();
 
             let db_profile = DbDeviceProfile {
                 id: profile.id.into(),
@@ -475,9 +476,20 @@ fn main() -> anyhow::Result<()> {
                 warn!("Failed to save profile: {}", e);
             }
 
-            // Reload profiles to update UI
+            // Reload profiles to update UI and maintain selection
             if let Some(window) = window_weak.upgrade() {
                 window.invoke_load_device_profiles();
+                
+                // Find the new index of the saved profile to maintain selection
+                let profiles = controller.get_ui_profiles();
+                if let Some(index) = profiles.iter().position(|p| p.id == saved_id.as_str()) {
+                    let window_weak_2 = window_weak.clone();
+                    let _ = slint::invoke_from_event_loop(move || {
+                        if let Some(window) = window_weak_2.upgrade() {
+                            window.set_selected_device_index(index as i32);
+                        }
+                    });
+                }
             }
         });
     }
