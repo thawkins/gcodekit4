@@ -94,11 +94,27 @@ jobs:
           *.flatpak
         if-no-files-found: warn
 
-    - name: Release
+    - name: Build Changelog
+      id: build_changelog
+      if: matrix.platform.os_name == 'Linux-x86_64' && startsWith(github.ref, 'refs/tags/')
+      uses: mikepenz/release-changelog-builder-action@v5
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Release (Linux)
+      if: matrix.platform.os_name == 'Linux-x86_64' && startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v2
-      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        token: ${{ secrets.RELEASE }}
+        body: ${{ steps.build_changelog.outputs.changelog }}
+        files: |
+          ${{ matrix.platform.name }}
+          *.flatpak
+
+    - name: Release (Other)
+      if: matrix.platform.os_name != 'Linux-x86_64' && startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v2
       with:
         token: ${{ secrets.RELEASE }}
         files: |
           ${{ matrix.platform.name }}
-          *.flatpak
