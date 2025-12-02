@@ -1,10 +1,11 @@
 use std::rc::Rc;
 use std::sync::Arc;
 use std::cell::RefCell;
-use slint::{ComponentHandle, VecModel};
+use slint::{ComponentHandle, VecModel, Weak};
 use crate::slint_generatedMainWindow::{
     MainWindow, TabbedBoxDialog, JigsawPuzzleDialog, SpoilboardSurfacingDialog,
-    LaserEngraverDialog, VectorEngraverDialog, ErrorDialog,
+    LaserEngraverDialog, VectorEngraverDialog, ErrorDialog, SuccessDialog,
+    SpoilboardGridDialog,
 };
 use gcodekit4_ui::GcodeEditor;
 use gcodekit4::{DeviceConsoleManager as ConsoleManager, DeviceMessageType};
@@ -15,10 +16,13 @@ use gcodekit4::{
     BoxParameters, BoxType, FingerJointSettings, FingerStyle,
     PuzzleParameters, SpoilboardSurfacingParameters,
     SpeedsFeedsCalculator, SettingsPersistence,
+    SpoilboardGridGenerator, SpoilboardGridParameters,
 };
 use gcodekit4::ui::{MaterialsManagerBackend, ToolsManagerBackend};
 use gcodekit4_devicedb::DeviceManager;
 use tracing::warn;
+use winit::window::WindowLevel;
+use i_slint_backend_winit::WinitWindowAccessor;
 
 pub fn register_callbacks(
     main_window: &MainWindow,
@@ -30,15 +34,31 @@ pub fn register_callbacks(
     device_manager: Arc<DeviceManager>,
     settings_persistence: Rc<RefCell<SettingsPersistence>>,
 ) {
+    // State for singleton dialogs
+    let tabbed_box_dialog_weak = Rc::new(RefCell::new(None::<Weak<TabbedBoxDialog>>));
+    let jigsaw_puzzle_dialog_weak = Rc::new(RefCell::new(None::<Weak<JigsawPuzzleDialog>>));
+    let spoilboard_surfacing_dialog_weak = Rc::new(RefCell::new(None::<Weak<SpoilboardSurfacingDialog>>));
+    let spoilboard_grid_dialog_weak = Rc::new(RefCell::new(None::<Weak<SpoilboardGridDialog>>));
+    let laser_engraver_dialog_weak = Rc::new(RefCell::new(None::<Weak<LaserEngraverDialog>>));
+    let vector_engraver_dialog_weak = Rc::new(RefCell::new(None::<Weak<VectorEngraverDialog>>));
+
     // Set up generate-tabbed-box callback
     let window_weak = main_window.as_weak();
     let gcode_editor_clone = gcode_editor.clone();
     let console_manager_clone = console_manager.clone();
     let editor_bridge_clone = editor_bridge.clone();
     let settings_persistence_tabbed_box = settings_persistence.clone();
+    let dialog_weak_ref = tabbed_box_dialog_weak.clone();
     main_window.on_generate_tabbed_box(move || {
         if let Some(window) = window_weak.upgrade() {
+            // Check if dialog exists
+            if let Some(existing) = dialog_weak_ref.borrow().as_ref().and_then(|w| w.upgrade()) {
+                existing.show().unwrap();
+                return;
+            }
+
             let dialog = TabbedBoxDialog::new().unwrap();
+            *dialog_weak_ref.borrow_mut() = Some(dialog.as_weak());
             let dialog_weak = dialog.as_weak();
             let dialog_weak_generate = dialog_weak.clone();
 
@@ -267,6 +287,21 @@ pub fn register_callbacks(
                                     DeviceMessageType::Success,
                                     "Generated tabbed box G-code".to_string(),
                                 );
+
+                                // Show success dialog
+                                let success_dialog = SuccessDialog::new().unwrap();
+                                success_dialog.set_message(
+                                    slint::SharedString::from("Tabbed box G-code has been generated and loaded into the editor."),
+                                );
+
+                                let success_dialog_weak = success_dialog.as_weak();
+                                success_dialog.on_close_dialog(move || {
+                                    if let Some(dlg) = success_dialog_weak.upgrade() {
+                                        dlg.hide().ok();
+                                    }
+                                });
+
+                                success_dialog.show().ok();
                             }
                             d.hide().ok();
                         }
@@ -289,6 +324,16 @@ pub fn register_callbacks(
             });
 
             dialog.show().ok();
+            // Ensure dialog stays on top using winit (delayed to ensure window is mapped)
+            let dialog_weak_level = dialog.as_weak();
+            slint::Timer::single_shot(std::time::Duration::from_millis(100), move || {
+                if let Some(d) = dialog_weak_level.upgrade() {
+                    d.window().with_winit_window(|winit_window| {
+                        winit_window.set_window_level(WindowLevel::AlwaysOnTop);
+                        winit_window.focus_window();
+                    });
+                }
+            });
         }
     });
 
@@ -298,9 +343,17 @@ pub fn register_callbacks(
     let console_manager_clone = console_manager.clone();
     let editor_bridge_clone = editor_bridge.clone();
     let settings_persistence_puzzle = settings_persistence.clone();
+    let dialog_weak_ref = jigsaw_puzzle_dialog_weak.clone();
     main_window.on_generate_jigsaw_puzzle(move || {
         if let Some(window) = window_weak.upgrade() {
+            // Check if dialog exists
+            if let Some(existing) = dialog_weak_ref.borrow().as_ref().and_then(|w| w.upgrade()) {
+                existing.show().unwrap();
+                return;
+            }
+
             let dialog = JigsawPuzzleDialog::new().unwrap();
+            *dialog_weak_ref.borrow_mut() = Some(dialog.as_weak());
             let dialog_weak = dialog.as_weak();
             let dialog_weak_generate = dialog_weak.clone();
 
@@ -459,6 +512,21 @@ pub fn register_callbacks(
                                     DeviceMessageType::Success,
                                     "Generated jigsaw puzzle G-code".to_string(),
                                 );
+
+                                // Show success dialog
+                                let success_dialog = SuccessDialog::new().unwrap();
+                                success_dialog.set_message(
+                                    slint::SharedString::from("Jigsaw puzzle G-code has been generated and loaded into the editor."),
+                                );
+
+                                let success_dialog_weak = success_dialog.as_weak();
+                                success_dialog.on_close_dialog(move || {
+                                    if let Some(dlg) = success_dialog_weak.upgrade() {
+                                        dlg.hide().ok();
+                                    }
+                                });
+
+                                success_dialog.show().ok();
                             }
                             d.hide().ok();
                         }
@@ -481,6 +549,16 @@ pub fn register_callbacks(
             });
 
             dialog.show().ok();
+            // Ensure dialog stays on top using winit (delayed to ensure window is mapped)
+            let dialog_weak_level = dialog.as_weak();
+            slint::Timer::single_shot(std::time::Duration::from_millis(100), move || {
+                if let Some(d) = dialog_weak_level.upgrade() {
+                    d.window().with_winit_window(|winit_window| {
+                        winit_window.set_window_level(WindowLevel::AlwaysOnTop);
+                        winit_window.focus_window();
+                    });
+                }
+            });
         }
     });
 
@@ -489,9 +567,17 @@ pub fn register_callbacks(
     let gcode_editor_clone = gcode_editor.clone();
     let console_manager_clone = console_manager.clone();
     let editor_bridge_clone = editor_bridge.clone();
+    let dialog_weak_ref = spoilboard_surfacing_dialog_weak.clone();
     main_window.on_generate_spoilboard_surfacing(move || {
         if let Some(window) = window_weak.upgrade() {
+            // Check if dialog exists
+            if let Some(existing) = dialog_weak_ref.borrow().as_ref().and_then(|w| w.upgrade()) {
+                existing.show().unwrap();
+                return;
+            }
+
             let dialog = SpoilboardSurfacingDialog::new().unwrap();
+            *dialog_weak_ref.borrow_mut() = Some(dialog.as_weak());
             let dialog_weak = dialog.as_weak();
             let dialog_weak_generate = dialog_weak.clone();
 
@@ -546,6 +632,21 @@ pub fn register_callbacks(
                                     DeviceMessageType::Success,
                                     "Generated spoilboard surfacing G-code".to_string(),
                                 );
+
+                                // Show success dialog
+                                let success_dialog = SuccessDialog::new().unwrap();
+                                success_dialog.set_message(
+                                    slint::SharedString::from("Spoilboard surfacing G-code has been generated and loaded into the editor."),
+                                );
+
+                                let success_dialog_weak = success_dialog.as_weak();
+                                success_dialog.on_close_dialog(move || {
+                                    if let Some(dlg) = success_dialog_weak.upgrade() {
+                                        dlg.hide().ok();
+                                    }
+                                });
+
+                                success_dialog.show().ok();
                             }
                             d.hide().ok();
                         }
@@ -568,6 +669,132 @@ pub fn register_callbacks(
             });
 
             dialog.show().ok();
+            // Ensure dialog stays on top using winit (delayed to ensure window is mapped)
+            let dialog_weak_level = dialog.as_weak();
+            slint::Timer::single_shot(std::time::Duration::from_millis(100), move || {
+                if let Some(d) = dialog_weak_level.upgrade() {
+                    d.window().with_winit_window(|winit_window| {
+                        winit_window.set_window_level(WindowLevel::AlwaysOnTop);
+                        winit_window.focus_window();
+                    });
+                }
+            });
+        }
+    });
+
+    // Set up generate-spoilboard-grid callback
+    let window_weak = main_window.as_weak();
+    let gcode_editor_clone = gcode_editor.clone();
+    let console_manager_clone = console_manager.clone();
+    let editor_bridge_clone = editor_bridge.clone();
+    let dialog_weak_ref = spoilboard_grid_dialog_weak.clone();
+    main_window.on_generate_spoilboard_grid(move || {
+        if let Some(window) = window_weak.upgrade() {
+            // Check if dialog exists
+            if let Some(existing) = dialog_weak_ref.borrow().as_ref().and_then(|w| w.upgrade()) {
+                existing.show().unwrap();
+                return;
+            }
+
+            let dialog = SpoilboardGridDialog::new().unwrap();
+            *dialog_weak_ref.borrow_mut() = Some(dialog.as_weak());
+            let dialog_weak = dialog.as_weak();
+            let dialog_weak_generate = dialog_weak.clone();
+
+            // Set up dialog callbacks
+            let gcode_editor_dialog = gcode_editor_clone.clone();
+            let console_manager_dialog = console_manager_clone.clone();
+            let editor_bridge_dialog = editor_bridge_clone.clone();
+            let window_handle = window.as_weak();
+
+            dialog.on_generate_gcode(move || {
+                if let Some(d) = dialog_weak_generate.upgrade() {
+                    // Get parameters from dialog
+                    let width = d.get_width_mm().parse::<f64>().unwrap_or(300.0);
+                    let height = d.get_height_mm().parse::<f64>().unwrap_or(180.0);
+                    let grid_spacing = d.get_grid_spacing().parse::<f64>().unwrap_or(10.0);
+                    let feed_rate = d.get_feed_rate().parse::<f64>().unwrap_or(1000.0);
+                    let laser_power = d.get_laser_power().parse::<f64>().unwrap_or(255.0);
+                    let laser_mode = d.get_laser_mode().to_string();
+
+                    let params = SpoilboardGridParameters {
+                        width,
+                        height,
+                        grid_spacing,
+                        feed_rate,
+                        laser_power,
+                        laser_mode,
+                    };
+
+                    // Generate G-code
+                    let generator = SpoilboardGridGenerator::new(params);
+                    match generator.generate() {
+                        Ok(gcode) => {
+                            // Load into editor
+                            gcode_editor_dialog.load_content(&gcode).ok();
+                            editor_bridge_dialog.load_text(&gcode);
+
+                            if let Some(w) = window_handle.upgrade() {
+                                w.set_gcode_content(slint::SharedString::from(gcode.clone()));
+                                w.set_gcode_filename(slint::SharedString::from("spoilboard_grid.gcode"));
+                                w.set_current_view(slint::SharedString::from("gcode-editor"));
+                                
+                                // Update editor state
+                                let line_count = editor_bridge_dialog.line_count();
+                                w.set_total_lines(line_count as i32);
+                                super::super::helpers::update_visible_lines(&w, &editor_bridge_dialog);
+                                
+                                console_manager_dialog.add_message(
+                                    DeviceMessageType::Success,
+                                    "Generated spoilboard grid G-code".to_string(),
+                                );
+
+                                // Show success dialog
+                                let success_dialog = SuccessDialog::new().unwrap();
+                                success_dialog.set_message(
+                                    slint::SharedString::from("Spoilboard grid G-code has been generated and loaded into the editor."),
+                                );
+
+                                let success_dialog_weak = success_dialog.as_weak();
+                                success_dialog.on_close_dialog(move || {
+                                    if let Some(dlg) = success_dialog_weak.upgrade() {
+                                        dlg.hide().ok();
+                                    }
+                                });
+
+                                success_dialog.show().ok();
+                            }
+                            d.hide().ok();
+                        }
+                        Err(e) => {
+                            warn!("Failed to generate grid: {}", e);
+                            console_manager_dialog.add_message(
+                                DeviceMessageType::Error,
+                                format!("Failed to generate grid: {}", e),
+                            );
+                        }
+                    }
+                }
+            });
+
+            let dialog_weak_cancel = dialog_weak.clone();
+            dialog.on_cancel_dialog(move || {
+                if let Some(d) = dialog_weak_cancel.upgrade() {
+                    d.hide().ok();
+                }
+            });
+
+            dialog.show().ok();
+            // Ensure dialog stays on top using winit (delayed to ensure window is mapped)
+            let dialog_weak_level = dialog.as_weak();
+            slint::Timer::single_shot(std::time::Duration::from_millis(100), move || {
+                if let Some(d) = dialog_weak_level.upgrade() {
+                    d.window().with_winit_window(|winit_window| {
+                        winit_window.set_window_level(WindowLevel::AlwaysOnTop);
+                        winit_window.focus_window();
+                    });
+                }
+            });
         }
     });
 
@@ -575,9 +802,17 @@ pub fn register_callbacks(
     let window_weak = main_window.as_weak();
     let editor_bridge_laser = editor_bridge.clone();
     let settings_persistence_laser = settings_persistence.clone();
+    let dialog_weak_ref = laser_engraver_dialog_weak.clone();
     main_window.on_generate_laser_engraving(move || {
         if let Some(main_win) = window_weak.upgrade() {
+            // Check if dialog exists
+            if let Some(existing) = dialog_weak_ref.borrow().as_ref().and_then(|w| w.upgrade()) {
+                existing.show().unwrap();
+                return;
+            }
+
             let dialog = LaserEngraverDialog::new().unwrap();
+            *dialog_weak_ref.borrow_mut() = Some(dialog.as_weak());
 
             // Initialize dialog with default values
             dialog.set_width_mm(100.0);
@@ -953,8 +1188,8 @@ pub fn register_callbacks(
                                             win.set_progress_value(100.0); // 100%
 
                                             // Show success dialog
-                                            let success_dialog = ErrorDialog::new().unwrap();
-                                            success_dialog.set_error_message(
+                                            let success_dialog = SuccessDialog::new().unwrap();
+                                            success_dialog.set_message(
                                                 slint::SharedString::from("Laser engraving G-code has been generated and loaded into the editor."),
                                             );
 
@@ -1029,6 +1264,16 @@ pub fn register_callbacks(
             });
 
             dialog.show().unwrap();
+            // Ensure dialog stays on top using winit (delayed to ensure window is mapped)
+            let dialog_weak_level = dialog.as_weak();
+            slint::Timer::single_shot(std::time::Duration::from_millis(100), move || {
+                if let Some(d) = dialog_weak_level.upgrade() {
+                    d.window().with_winit_window(|winit_window| {
+                        winit_window.set_window_level(WindowLevel::AlwaysOnTop);
+                        winit_window.focus_window();
+                    });
+                }
+            });
         }
     });
 
@@ -1036,9 +1281,17 @@ pub fn register_callbacks(
     let window_weak = main_window.as_weak();
     let editor_bridge_vector = editor_bridge.clone();
     let settings_persistence_vector = settings_persistence.clone();
+    let dialog_weak_ref = vector_engraver_dialog_weak.clone();
     main_window.on_generate_vector_engraving(move || {
         if let Some(main_win) = window_weak.upgrade() {
+            // Check if dialog exists
+            if let Some(existing) = dialog_weak_ref.borrow().as_ref().and_then(|w| w.upgrade()) {
+                existing.show().unwrap();
+                return;
+            }
+
             let dialog = VectorEngraverDialog::new().unwrap();
+            *dialog_weak_ref.borrow_mut() = Some(dialog.as_weak());
 
             // Initialize dialog with default values
             dialog.set_feed_rate(600.0);
@@ -1505,8 +1758,8 @@ pub fn register_callbacks(
                                             );
 
                                             // Show success dialog
-                                            let success_dialog = ErrorDialog::new().unwrap();
-                                            success_dialog.set_error_message(
+                                            let success_dialog = SuccessDialog::new().unwrap();
+                                            success_dialog.set_message(
                                                 slint::SharedString::from("Vector engraving G-code has been generated and loaded into the editor."),
                                             );
 
@@ -1581,6 +1834,16 @@ pub fn register_callbacks(
             });
 
             dialog.show().unwrap();
+            // Ensure dialog stays on top using winit (delayed to ensure window is mapped)
+            let dialog_weak_level = dialog.as_weak();
+            slint::Timer::single_shot(std::time::Duration::from_millis(100), move || {
+                if let Some(d) = dialog_weak_level.upgrade() {
+                    d.window().with_winit_window(|winit_window| {
+                        winit_window.set_window_level(WindowLevel::AlwaysOnTop);
+                        winit_window.focus_window();
+                    });
+                }
+            });
         }
     });
 

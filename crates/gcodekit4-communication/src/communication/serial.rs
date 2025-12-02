@@ -254,7 +254,7 @@ impl RealSerialPort {
                 port: Box::new(port),
             }),
             Err(e) => {
-                tracing::error!("Failed to open serial port {}: {}", params.port, e);
+                tracing::warn!("Failed to open serial port {}: {}", params.port, e);
                 Err(Error::other(format!(
                     "Failed to open port {}: {}",
                     params.port, e

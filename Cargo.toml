@@ -13,7 +13,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.59.0-alpha.0"
+version = "0.60.0-alpha.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 authors = ["GCodeKit Contributors"]
@@ -49,6 +49,8 @@ gcodekit4-devicedb = { path = "crates/gcodekit4-devicedb" }
 gcodekit4-ui = { path = "crates/gcodekit4-ui" }
 
 slint = { version = "1.14.1", features = ["backend-winit", "image-default-formats"] }
+i-slint-backend-winit = "1.14.1"
+winit = "0.30"
 tokio = { version = "1.35", features = ["full"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json"] }

@@ -1,3 +1,13 @@
+## [0.60.0-alpha.0] - 2025-12-02
+
+### Added
+- **CAM Tools**: Implemented singleton behavior for all parameter dialogs (Tabbed Box, Jigsaw Puzzle, Spoilboard Surfacing, Spoilboard Grid, Laser Engraver, Vector Engraver). Opening a tool that is already open now brings the existing dialog to the front instead of creating a duplicate.
+- **CAM Tools**: Added Success Alerts for G-code generation in Tabbed Box, Jigsaw Puzzle, Spoilboard Surfacing, and Spoilboard Grid tools, matching the behavior of other tools.
+
+### Fixed
+- **UI**: Fixed issue where CAM tool dialogs would fall behind the main window on Linux/X11/Wayland. Implemented robust "Always On Top" behavior using `winit` backend with delayed window level application to ensure proper window mapping.
+- **UI**: Fixed Windows fullscreen initialization issue where the application would not start in fullscreen mode on Windows.
+
 ## [0.59.0-alpha.0] - 2025-12-01
 
 ### Added

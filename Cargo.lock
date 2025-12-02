@@ -1997,6 +1997,7 @@ dependencies = [
  "gcodekit4-settings",
  "gcodekit4-ui",
  "gcodekit4-visualizer",
+ "i-slint-backend-winit",
  "image 0.25.8",
  "rfd",
  "serde",
@@ -2007,6 +2008,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "winit",
 ]
 
 [[package]]

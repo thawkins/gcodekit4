@@ -28,11 +28,12 @@ import { JigsawPuzzleDialog } from "../gcodekit4-camtools/ui/jigsaw_puzzle_dialo
 import { LaserEngraverDialog } from "../gcodekit4-camtools/ui/laser_engraver_dialog.slint";
 import { VectorEngraverDialog } from "../gcodekit4-camtools/ui/vector_engraver_dialog.slint";
 import { ErrorDialog } from "ui_panels/error_dialog.slint";
+import { SuccessDialog } from "ui_panels/success_dialog.slint";
 
 export { 
     TabbedBoxDialog, SpoilboardSurfacingDialog, SpoilboardGridDialog, 
     SpeedsFeedsDialog, JigsawPuzzleDialog, LaserEngraverDialog, 
-    VectorEngraverDialog, ErrorDialog 
+    VectorEngraverDialog, ErrorDialog, SuccessDialog
 }
 
 import { Theme } from "ui/theme.slint";
@@ -998,6 +999,8 @@ export component MainWindow inherits Window {
                         visualization-rapid-moves-data: root.visualization-rapid-moves-data;
                         visualization-grid-data: root.visualization-grid-data;
                         visualization-origin-data: root.visualization-origin-data;
+                        machine-x-float: root.position-x;
+                        machine-y-float: root.position-y;
                         machine-x: Math.round(root.position-x * 1000) / 1000 + "";
                         machine-y: Math.round(root.position-y * 1000) / 1000 + "";
                         machine-z: Math.round(root.position-z * 1000) / 1000 + "";

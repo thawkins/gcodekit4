@@ -35,6 +35,8 @@ Common UI elements are defined in `shared.slint` to ensure consistency:
 - **StandardCheckBox**: Toggle controls.
 - **StandardSpinBox** / **StandardFloatSpinBox**: Numeric inputs.
 - **StandardSidebar**: Layout container for left-side navigation panels (fixed 250px width).
+- **ErrorDialog**: Modal dialog for error messages.
+- **SuccessDialog**: Modal dialog for success messages.
 
 ## Best Practices
 1.  **Import Theme**: Always import `Theme` from `../ui/theme.slint` instead of hardcoding colors.
@@ -79,3 +81,32 @@ Common UI elements are defined in `shared.slint` to ensure consistency:
 - **Brace Balance**: Slint files must have balanced braces. Removing or adding braces breaks compilation.
 - **Brace Debugging**: When fixing layout issues caused by misplaced braces, MOVE braces rather than adding/removing them. Use `awk` to count braces in sections to find misplaced ones.
 - **Blank Lines**: Blank lines have NO effect on Slint syntax - focus only on braces, not whitespace.
+
+## Window Management
+- **Maximization on Windows**: Calling `window.set_maximized(true)` immediately after window creation (before `show()`) may not work reliably on Windows. It is recommended to call it *after* `window.show()` for Windows targets to ensure the window is correctly maximized.
+  ```rust
+  main_window.show()?;
+  #[cfg(target_os = "windows")]
+  main_window.window().set_maximized(true);
+  ```
+
+- **Always On Top**: To ensure a window stays on top, especially for dialogs:
+  1. Inherit from `Window` instead of `Dialog` in `.slint` files.
+  2. Set `always-on-top: true` in `.slint` (declarative).
+  3. For robust behavior (especially on Linux), use `winit` backend directly in Rust:
+     ```rust
+     use winit::window::WindowLevel;
+     use i_slint_backend_winit::WinitWindowAccessor;
+     
+     // ... after dialog.show() ...
+     let dialog_weak = dialog.as_weak();
+     slint::Timer::single_shot(std::time::Duration::from_millis(100), move || {
+         if let Some(d) = dialog_weak.upgrade() {
+             d.window().with_winit_window(|winit_window| {
+                 winit_window.set_window_level(WindowLevel::AlwaysOnTop);
+                 winit_window.focus_window();
+             });
+         }
+     });
+     ```
+  4. **Crucial**: Call `set_window_level` *after* `dialog.show()` and preferably inside a `Timer` to ensure the window is fully mapped by the window manager before applying the property. This is especially important on Linux/Wayland.

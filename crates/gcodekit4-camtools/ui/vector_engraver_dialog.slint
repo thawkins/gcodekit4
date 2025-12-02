@@ -20,7 +20,7 @@ export struct VectorEngravingParams {
     hatch-tolerance: float,
 }
 
-export component VectorEngraverDialog inherits Dialog {
+export component VectorEngraverDialog inherits Window {
     in-out property <string> vector-path: "";
     in property <string> file-info: "No file selected";
     in property <image> preview-image;
@@ -59,6 +59,7 @@ export component VectorEngraverDialog inherits Dialog {
     title: "Laser Vector Image Engraver";
     preferred-width: 800px;
     preferred-height: 600px;
+    always-on-top: true;
     
     VerticalBox {
         padding: 10px;

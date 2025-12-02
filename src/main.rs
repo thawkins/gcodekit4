@@ -3007,6 +3007,10 @@ fn main() -> anyhow::Result<()> {
         .show()
         .map_err(|e| anyhow::anyhow!("UI Show Error: {}", e))?;
 
+    // On Windows, ensure window is maximized after showing to fix initial size issue
+    #[cfg(target_os = "windows")]
+    main_window.window().set_maximized(true);
+
     main_window
         .run()
         .map_err(|e| anyhow::anyhow!("UI Runtime Error: {}", e))?;

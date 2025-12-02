@@ -21,7 +21,7 @@ export struct EngravingParams {
     halftone-threshold: int,
 }
 
-export component LaserEngraverDialog inherits Dialog {
+export component LaserEngraverDialog inherits Window {
     in-out property <string> image-path: "";
     in property <image> preview-image;
     in property <string> estimated-time: "0:00";
@@ -58,6 +58,7 @@ export component LaserEngraverDialog inherits Dialog {
     title: "Laser Image Engraving";
     preferred-width: 800px;
     preferred-height: 600px;
+    always-on-top: true;
     
     VerticalBox {
         padding: 10px;
