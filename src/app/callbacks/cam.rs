@@ -21,6 +21,7 @@ use gcodekit4::{
 use gcodekit4::ui::{MaterialsManagerBackend, ToolsManagerBackend};
 use gcodekit4_devicedb::DeviceManager;
 use gcodekit4_core::units::{MeasurementSystem, to_display_string, parse_from_string, get_unit_label};
+use gcodekit4_core::data::tools::{ToolType, Tool};
 use tracing::warn;
 use std::str::FromStr;
 
@@ -549,6 +550,11 @@ pub fn register_callbacks(
     let editor_bridge_clone = editor_bridge.clone();
     let dialog_weak_ref = spoilboard_surfacing_dialog_weak.clone();
     let settings_persistence_spoilboard = settings_persistence.clone();
+    let device_manager_spoilboard = device_manager.clone();
+    let tools_backend_spoilboard = tools_backend.clone();
+    
+    // State to hold filtered tools for selection
+    let current_filtered_tools = Rc::new(RefCell::new(Vec::<Tool>::new()));
     
     main_window.on_generate_spoilboard_surfacing(move || {
         if let Some(window) = window_weak.upgrade() {
@@ -582,6 +588,102 @@ pub fn register_callbacks(
             dialog.set_safe_z(to_display_string(5.0, system).into());
             dialog.set_cut_depth(to_display_string(0.5, system).into());
             // Spindle speed and stepover are unitless/RPM/%
+
+            // Populate Devices
+            let profiles = device_manager_spoilboard.get_all_profiles();
+            let device_names: Vec<slint::SharedString> = profiles.iter()
+                .map(|p| slint::SharedString::from(p.name.clone()))
+                .collect();
+            dialog.set_devices(slint::ModelRc::new(VecModel::from(device_names)));
+
+            // Populate Tool Categories
+            let categories = ToolType::all();
+            let category_names: Vec<slint::SharedString> = categories.iter()
+                .map(|c| slint::SharedString::from(c.to_string()))
+                .collect();
+            dialog.set_tool_categories(slint::ModelRc::new(VecModel::from(category_names)));
+
+            // Callback: Device Selected
+            let dialog_weak_device = dialog.as_weak();
+            let profiles_device = profiles.clone();
+            let settings_persistence_device = settings_persistence_spoilboard.clone();
+            dialog.on_device_selected(move |index| {
+                if let Some(dlg) = dialog_weak_device.upgrade() {
+                    if index >= 0 && (index as usize) < profiles_device.len() {
+                        let profile = &profiles_device[index as usize];
+                        // Get system for conversion
+                        let system = {
+                            let persistence = settings_persistence_device.borrow();
+                            let sys_str = &persistence.config().ui.measurement_system;
+                            MeasurementSystem::from_str(sys_str).unwrap_or(MeasurementSystem::Metric)
+                        };
+                        
+                        // Update dimensions
+                        let width = profile.x_axis.max - profile.x_axis.min;
+                        let height = profile.y_axis.max - profile.y_axis.min;
+                        dlg.set_width_mm(to_display_string(width as f32, system).into());
+                        dlg.set_height_mm(to_display_string(height as f32, system).into());
+                    }
+                }
+            });
+
+            // Callback: Category Selected
+            let dialog_weak_category = dialog.as_weak();
+            let tools_backend_category = tools_backend_spoilboard.clone();
+            let current_filtered_tools_category = current_filtered_tools.clone();
+            dialog.on_category_selected(move |index| {
+                if let Some(dlg) = dialog_weak_category.upgrade() {
+                    if index >= 0 {
+                        let categories = ToolType::all();
+                        if (index as usize) < categories.len() {
+                            let category = categories[index as usize];
+                            let backend = tools_backend_category.borrow();
+                            let all_tools = backend.get_all_tools();
+                            
+                            // Filter tools
+                            let filtered: Vec<Tool> = all_tools.into_iter()
+                                .filter(|t| t.tool_type == category)
+                                .cloned()
+                                .collect();
+                            
+                            // Update dropdown
+                            let tool_names: Vec<slint::SharedString> = filtered.iter()
+                                .map(|t| slint::SharedString::from(t.name.clone()))
+                                .collect();
+                            dlg.set_tools(slint::ModelRc::new(VecModel::from(tool_names)));
+                            
+                            // Update state
+                            *current_filtered_tools_category.borrow_mut() = filtered;
+                            
+                            // Reset selection
+                            dlg.set_selected_tool_index(-1);
+                        }
+                    }
+                }
+            });
+
+            // Callback: Tool Selected
+            let dialog_weak_tool = dialog.as_weak();
+            let current_filtered_tools_tool = current_filtered_tools.clone();
+            let settings_persistence_tool = settings_persistence_spoilboard.clone();
+            dialog.on_tool_selected(move |index| {
+                if let Some(dlg) = dialog_weak_tool.upgrade() {
+                    let tools = current_filtered_tools_tool.borrow();
+                    if index >= 0 && (index as usize) < tools.len() {
+                        let tool = &tools[index as usize];
+                        
+                        // Get system for conversion
+                        let system = {
+                            let persistence = settings_persistence_tool.borrow();
+                            let sys_str = &persistence.config().ui.measurement_system;
+                            MeasurementSystem::from_str(sys_str).unwrap_or(MeasurementSystem::Metric)
+                        };
+                        
+                        // Update diameter
+                        dlg.set_tool_diameter(to_display_string(tool.diameter, system).into());
+                    }
+                }
+            });
 
             // Set up dialog callbacks
             let gcode_editor_dialog = gcode_editor_clone.clone();
