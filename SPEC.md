@@ -1,10 +1,66 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.58.5-alpha.0
-**Last Updated**: 2025-12-01
+**Version**: 0.66.0-alpha.0
+**Last Updated**: 2025-12-03
 **Status**: Feature Release
 
-### Latest Release (v0.58.5-alpha.0) - Designer Array Tools
+### Latest Release (v0.66.0-alpha.0) - Window Management Fixes
+- ✅ **Window Management**
+  - Fixed issue where file dialogs on Windows would open in full-screen mode or underneath the main window.
+  - Application window now correctly maximizes on startup on Windows.
+
+### Previous Release (v0.65.0-alpha.0) - Maintenance
+- ✅ **Maintenance**
+  - Next development iteration.
+
+### Previous Release (v0.63.0-alpha.0) - Device Manager Fixes
+- ✅ **Device Manager**
+  - Added file locking mechanism to prevent race conditions during concurrent profile saves.
+  - Added logging for profile save operations to aid debugging.
+  - Fixed critical bug where adding a new device could reset existing device data due to UI state synchronization issues.
+  - Fixed issue where editing a device name caused the selection to jump to the wrong device (often the previous one), leading to accidental data overwrites.
+  - Fixed issue where saving a profile with an empty name was possible, now explicitly rejected with a warning.
+  - Updated AGENTS.md with strict rules regarding pushing to remote repositories.
+
+### Previous Release (v0.62.0-alpha.0) - Measurement System
+- ✅ **Settings**
+  - Added "Measurement System" preference (Metric/Imperial) to General settings.
+- ✅ **Core**
+  - Added unit conversion utilities for Metric/Imperial support.
+- ✅ **CAM Tools**
+  - Updated Spoilboard Surfacing tool to support Imperial units (inches) based on user preference.
+- ✅ **UI**
+  - Changed default settings tab to "General".
+  - Updated Imperial unit label from `"` to `in`.
+- ✅ **CI/CD**
+  - Updated Release workflow to use `RELEASE` secret for changelog builder to ensure access to PR details.
+
+### Previous Release (v0.61.0-alpha.0) - CI/CD
+- ✅ **CI/CD**
+  - Updated Release workflow to use "Release Changelog Builder" for automated release notes generation.
+
+### Previous Release (v0.60.0-alpha.0) - CAM Tools & UI Fixes
+- ✅ **CAM Tools**
+  - Implemented singleton behavior for all parameter dialogs (Tabbed Box, Jigsaw Puzzle, Spoilboard Surfacing, Spoilboard Grid, Laser Engraver, Vector Engraver). Opening a tool that is already open now brings the existing dialog to the front instead of creating a duplicate.
+  - Added Success Alerts for G-code generation in Tabbed Box, Jigsaw Puzzle, Spoilboard Surfacing, and Spoilboard Grid tools, matching the behavior of other tools.
+- ✅ **UI**
+  - Fixed issue where CAM tool dialogs would fall behind the main window on Linux/X11/Wayland. Implemented robust "Always On Top" behavior using `winit` backend with delayed window level application to ensure proper window mapping.
+  - Fixed Windows fullscreen initialization issue where the application would not start in fullscreen mode on Windows.
+
+### Previous Release (v0.59.0-alpha.0) - Default Directory
+- ✅ **Settings**
+  - Added "Default Directory" preference to General settings tab.
+  - Implemented directory browsing for default directory setting.
+  - Updated all file dialogs to use the configured default directory.
+  - Set default directory to user's home directory by default.
+- ✅ **CAM Tools**
+  - Implemented load/save functionality for Tabbed Box Maker and Jigsaw Puzzle Maker.
+  - Updated all CAM tool load/save dialogs to use the default directory setting.
+- ✅ **Vector Engraver**
+  - Added "No Vector File Selected" message to preview area when no file is loaded.
+  - Fixed issue where preview would not display when loading parameters from file.
+
+### Previous Release (v0.58.5-alpha.0) - Designer Array Tools
 - ✅ **Designer Array Tools**
   - Added Linear, Circular, and Grid array generation tools.
   - Implemented automatic grouping of array results.

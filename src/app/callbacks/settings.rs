@@ -228,12 +228,12 @@ pub fn register_callbacks(
     let controller_clone = settings_controller.clone();
     main_window.on_browse_path(move |id| {
         use rfd::FileDialog;
-        if let Some(path) = FileDialog::new().pick_folder() {
-            let path_str = path.to_string_lossy().to_string();
-            controller_clone.update_setting(&id, &path_str);
-            
-            // Refresh UI
-            if let Some(window) = window_weak.upgrade() {
+        if let Some(window) = window_weak.upgrade() {
+            if let Some(path) = crate::platform::pick_folder_with_parent(FileDialog::new(), window.window()) {
+                let path_str = path.to_string_lossy().to_string();
+                controller_clone.update_setting(&id, &path_str);
+                
+                // Refresh UI
                 window.invoke_config_retrieve_settings();
             }
         }

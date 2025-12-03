@@ -13,7 +13,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.65.0-alpha.0"
+version = "0.66.0-alpha.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 authors = ["GCodeKit Contributors"]
@@ -48,7 +48,7 @@ gcodekit4-settings = { path = "crates/gcodekit4-settings" }
 gcodekit4-devicedb = { path = "crates/gcodekit4-devicedb" }
 gcodekit4-ui = { path = "crates/gcodekit4-ui" }
 
-slint = { version = "1.14.1", features = ["backend-winit", "image-default-formats"] }
+slint = { version = "1.14.1", features = ["backend-winit", "image-default-formats", "raw-window-handle-06"] }
 tokio = { version = "1.35", features = ["full"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json"] }
@@ -59,6 +59,8 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 image = "0.25"
 chrono = { version = "0.4", features = ["serde"] }
+windows-sys = { version = "0.48.0", features = ["Win32_UI_WindowsAndMessaging", "Win32_Foundation"] }
+raw-window-handle = "0.6"
 
 # Build dependencies
 [build-dependencies]

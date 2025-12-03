@@ -18,6 +18,8 @@ gcodekit4-settings = { path = "../gcodekit4-settings" }
 gcodekit4-devicedb = { path = "../gcodekit4-devicedb" }
 slint = { version = "1.14.1", features = ["backend-winit", "image-default-formats"] }
 rfd = "0.15.4"
+windows-sys = { version = "0.48.0", features = ["Win32_UI_WindowsAndMessaging"] }
+raw-window-handle = "0.6"
 config = "0.15.18"
 toml = "0.9.8"
 serde = { version = "1.0", features = ["derive"] }

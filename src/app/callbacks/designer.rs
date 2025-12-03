@@ -326,13 +326,15 @@ pub fn setup_designer_callbacks(
             persistence.config().file_processing.output_directory.clone()
         };
 
-        if let Some(path) = FileDialog::new()
-            .set_directory(&default_dir)
-            .add_filter("DXF Files", &["dxf"])
-            .set_title("Import DXF File")
-            .pick_file()
-        {
-            if let Some(window) = window_weak.upgrade() {
+        if let Some(window) = window_weak.upgrade() {
+            if let Some(path) = crate::platform::pick_file_with_parent(
+                FileDialog::new()
+                    .set_directory(&default_dir)
+                    .add_filter("DXF Files", &["dxf"])
+                    .set_title("Import DXF File"),
+                window.window()
+            )
+            {
                 match std::fs::read_to_string(&path) {
                     Ok(content) => match DxfParser::parse(&content) {
                         Ok(dxf_file) => {
@@ -410,13 +412,15 @@ pub fn setup_designer_callbacks(
             persistence.config().file_processing.output_directory.clone()
         };
 
-        if let Some(path) = FileDialog::new()
-            .set_directory(&default_dir)
-            .add_filter("SVG Files", &["svg"])
-            .set_title("Import SVG File")
-            .pick_file()
-        {
-            if let Some(window) = window_weak.upgrade() {
+        if let Some(window) = window_weak.upgrade() {
+            if let Some(path) = crate::platform::pick_file_with_parent(
+                FileDialog::new()
+                    .set_directory(&default_dir)
+                    .add_filter("SVG Files", &["svg"])
+                    .set_title("Import SVG File"),
+                window.window()
+            )
+            {
                 match std::fs::read_to_string(&path) {
                     Ok(content) => {
                         let importer = SvgImporter::new(1.0, 0.0, 0.0);
@@ -486,13 +490,15 @@ pub fn setup_designer_callbacks(
             persistence.config().file_processing.output_directory.clone()
         };
 
-        if let Some(path) = FileDialog::new()
-            .set_directory(&default_dir)
-            .add_filter("DXF Files", &["dxf"])
-            .set_title("Add DXF File")
-            .pick_file()
-        {
-            if let Some(window) = window_weak.upgrade() {
+        if let Some(window) = window_weak.upgrade() {
+            if let Some(path) = crate::platform::pick_file_with_parent(
+                FileDialog::new()
+                    .set_directory(&default_dir)
+                    .add_filter("DXF Files", &["dxf"])
+                    .set_title("Add DXF File"),
+                window.window()
+            )
+            {
                 match std::fs::read_to_string(&path) {
                     Ok(content) => match DxfParser::parse(&content) {
                         Ok(dxf_file) => {
@@ -573,13 +579,15 @@ pub fn setup_designer_callbacks(
             persistence.config().file_processing.output_directory.clone()
         };
 
-        if let Some(path) = FileDialog::new()
-            .set_directory(&default_dir)
-            .add_filter("SVG Files", &["svg"])
-            .set_title("Add SVG File")
-            .pick_file()
-        {
-            if let Some(window) = window_weak.upgrade() {
+        if let Some(window) = window_weak.upgrade() {
+            if let Some(path) = crate::platform::pick_file_with_parent(
+                FileDialog::new()
+                    .set_directory(&default_dir)
+                    .add_filter("SVG Files", &["svg"])
+                    .set_title("Add SVG File"),
+                window.window()
+            )
+            {
                 match std::fs::read_to_string(&path) {
                     Ok(content) => {
                         let importer = SvgImporter::new(1.0, 0.0, 0.0);
@@ -684,24 +692,24 @@ pub fn setup_designer_callbacks(
             persistence.config().file_processing.output_directory.clone()
         };
 
-        if let Some(path) = rfd::FileDialog::new()
-            .set_directory(&default_dir)
-            .add_filter("GCodeKit4 Design", &["gck4", "json"])
-            .pick_file()
-        {
-            let mut state = designer_mgr_clone.borrow_mut();
-            match state.load_from_file(&path) {
-                Ok(()) => {
-                    if let Some(window) = window_weak.upgrade() {
+        if let Some(window) = window_weak.upgrade() {
+            if let Some(path) = crate::platform::pick_file_with_parent(
+                rfd::FileDialog::new()
+                    .set_directory(&default_dir)
+                    .add_filter("GCodeKit4 Design", &["gck4", "json"]),
+                window.window()
+            )
+            {
+                let mut state = designer_mgr_clone.borrow_mut();
+                match state.load_from_file(&path) {
+                    Ok(()) => {
                         update_designer_ui(&window, &mut state);
                         window.set_connection_status(slint::SharedString::from(format!(
                             "Opened: {}",
                             path.display()
                         )));
                     }
-                }
-                Err(e) => {
-                    if let Some(window) = window_weak.upgrade() {
+                    Err(e) => {
                         window.set_connection_status(slint::SharedString::from(format!(
                             "Error opening file: {}",
                             e
@@ -767,15 +775,21 @@ pub fn setup_designer_callbacks(
                 persistence.config().file_processing.output_directory.clone()
             };
 
-            if let Some(new_path) = rfd::FileDialog::new()
-                .set_directory(&default_dir)
-                .add_filter("GCodeKit4 Design", &["gck4"])
-                .set_file_name("design.gck4")
-                .save_file()
-            {
-                new_path
+            if let Some(window) = window_weak.upgrade() {
+                if let Some(new_path) = crate::platform::save_file_with_parent(
+                    rfd::FileDialog::new()
+                        .set_directory(&default_dir)
+                        .add_filter("GCodeKit4 Design", &["gck4"])
+                        .set_file_name("design.gck4"),
+                    window.window()
+                )
+                {
+                    new_path
+                } else {
+                    return; // User cancelled
+                }
             } else {
-                return; // User cancelled
+                return;
             }
         };
 
@@ -809,24 +823,24 @@ pub fn setup_designer_callbacks(
             persistence.config().file_processing.output_directory.clone()
         };
 
-        if let Some(path) = rfd::FileDialog::new()
-            .set_directory(&default_dir)
-            .add_filter("GCodeKit4 Design", &["gck4"])
-            .set_file_name("design.gck4")
-            .save_file()
-        {
-            let mut state = designer_mgr_clone.borrow_mut();
-            match state.save_to_file(&path) {
-                Ok(()) => {
-                    if let Some(window) = window_weak.upgrade() {
+        if let Some(window) = window_weak.upgrade() {
+            if let Some(path) = crate::platform::save_file_with_parent(
+                rfd::FileDialog::new()
+                    .set_directory(&default_dir)
+                    .add_filter("GCodeKit4 Design", &["gck4"])
+                    .set_file_name("design.gck4"),
+                window.window()
+            )
+            {
+                let mut state = designer_mgr_clone.borrow_mut();
+                match state.save_to_file(&path) {
+                    Ok(()) => {
                         window.set_connection_status(slint::SharedString::from(format!(
                             "Saved as: {}",
                             path.display()
                         )));
                     }
-                }
-                Err(e) => {
-                    if let Some(window) = window_weak.upgrade() {
+                    Err(e) => {
                         window.set_connection_status(slint::SharedString::from(format!(
                             "Error saving file: {}",
                             e

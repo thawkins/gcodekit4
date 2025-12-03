@@ -1,3 +1,9 @@
+## [0.66.0-alpha.0] - 2025-12-03
+
+### Fixed
+- **Window Management**: Fixed issue where file dialogs on Windows would open in full-screen mode or underneath the main window.
+- **Window Management**: Application window now correctly maximizes on startup on Windows.
+
 ## [0.65.0-alpha.0] - 2025-12-02
 
 ### Started

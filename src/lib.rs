@@ -28,6 +28,8 @@
 
 #![allow(dead_code)]
 
+pub mod platform;
+
 // Re-export modules for main.rs
 pub use gcodekit4_communication::firmware;
 pub use gcodekit4_core::data;

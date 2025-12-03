@@ -489,7 +489,7 @@ impl GcodeEditor {
             .add_filter("Text files", &["txt"])
             .add_filter("All files", &["*"])
             .pick_file()
-            .ok_or_else(|| anyhow::anyhow!("File dialog cancelled"))?;
+        .ok_or_else(|| anyhow::anyhow!("File dialog cancelled"))?;
 
         Ok(file)
     }
@@ -544,7 +544,7 @@ impl GcodeEditor {
             .add_filter("All files", &["*"])
             .set_file_name("untitled.gcode")
             .save_file()
-            .ok_or_else(|| anyhow::anyhow!("Save dialog cancelled"))?;
+        .ok_or_else(|| anyhow::anyhow!("Save dialog cancelled"))?;
 
         Ok(file)
     }

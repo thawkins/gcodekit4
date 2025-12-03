@@ -83,18 +83,15 @@ Common UI elements are defined in `shared.slint` to ensure consistency:
 - **Blank Lines**: Blank lines have NO effect on Slint syntax - focus only on braces, not whitespace.
 
 ## Window Management
-- **Maximization on Windows**: Calling `window.set_maximized(true)` immediately after window creation (before `show()`) may not work reliably on Windows. It is recommended to call it *after* `window.show()` for Windows targets. Additionally, using a `slint::Timer` to delay the call slightly (e.g., 100-250ms) ensures the window is fully mapped by the OS before the maximization command is processed.
+- **Maximization on Windows**: Use `ShowWindow(hwnd, SW_MAXIMIZE)` via `windows-sys` crate in a platform-specific initialization function. This ensures the window opens maximized correctly.
   ```rust
-  main_window.show()?;
-  
-  #[cfg(target_os = "windows")]
-  {
-      let window_weak = main_window.as_weak();
-      slint::Timer::single_shot(std::time::Duration::from_millis(250), move || {
-          if let Some(window) = window_weak.upgrade() {
-              window.window().set_maximized(true);
-          }
-      });
-  }
+  // In platform.rs
+  ShowWindow(hwnd, SW_MAXIMIZE);
   ```
+
+## File Dialogs on Windows
+- **Z-Order Issue**: Native file dialogs (`rfd`) may appear behind the main window on Windows if the parent window is not set.
+- **Full Screen Issue**: Passing the `slint::Window` handle directly to `rfd` can cause dialogs to open in full-screen mode on some systems.
+- **Solution**: Use `crate::platform::pick_file_with_parent` wrappers which manually extract the HWND and wrap it in a clean `Win32ParentHandle`. This ensures the dialog has a parent (fixing Z-order) without inheriting problematic window styles (fixing full-screen).
+- **Implementation**: Uses `raw-window-handle` to extract the HWND and creates a custom `HasWindowHandle` implementation.
 

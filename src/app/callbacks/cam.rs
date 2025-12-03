@@ -74,6 +74,8 @@ pub fn register_callbacks(
             let settings_persistence_load_params = settings_persistence_tabbed_box.clone();
             dialog.on_load_params(move || {
                 if let Some(dlg) = dialog_weak_load_params.upgrade() {
+                    let _ = dlg.hide();
+                    let _ = dlg.hide();
                     // Get default directory
                     let default_dir = {
                         let persistence = settings_persistence_load_params.borrow();
@@ -81,10 +83,12 @@ pub fn register_callbacks(
                     };
 
                     use rfd::FileDialog;
-                    if let Some(path) = FileDialog::new()
-                        .set_directory(&default_dir)
-                        .add_filter("JSON Files", &["json"])
-                        .pick_file()
+                    if let Some(path) = crate::platform::pick_file_with_parent(
+                        FileDialog::new()
+                            .set_directory(&default_dir)
+                            .add_filter("JSON Files", &["json"]),
+                        dlg.window()
+                    )
                     {
                         if let Ok(content) = std::fs::read_to_string(&path) {
                             if let Ok(params) = serde_json::from_str::<TabbedBoxParams>(&content) {
@@ -115,6 +119,7 @@ pub fn register_callbacks(
                             }
                         }
                     }
+                    let _ = dlg.show();
                 }
             });
 
@@ -123,6 +128,10 @@ pub fn register_callbacks(
             let settings_persistence_save_params = settings_persistence_tabbed_box.clone();
             dialog.on_save_params(move || {
                 if let Some(dlg) = dialog_weak_save_params.upgrade() {
+                    let _ = dlg.hide();
+                    let _ = dlg.hide();
+                    let _ = dlg.hide();
+                    let _ = dlg.hide();
                     // Get default directory
                     let default_dir = {
                         let persistence = settings_persistence_save_params.borrow();
@@ -130,10 +139,12 @@ pub fn register_callbacks(
                     };
 
                     use rfd::FileDialog;
-                    if let Some(path) = FileDialog::new()
-                        .set_directory(&default_dir)
-                        .add_filter("JSON Files", &["json"])
-                        .save_file()
+                    if let Some(path) = crate::platform::save_file_with_parent(
+                        FileDialog::new()
+                            .set_directory(&default_dir)
+                            .add_filter("JSON Files", &["json"]),
+                        dlg.window()
+                    )
                     {
                         let params = TabbedBoxParams {
                             box_x: dlg.get_box_x().to_string(),
@@ -166,6 +177,7 @@ pub fn register_callbacks(
                             let _ = std::fs::write(path, content);
                         }
                     }
+                    let _ = dlg.show();
                 }
             });
 
@@ -314,6 +326,7 @@ pub fn register_callbacks(
                             );
                         }
                     }
+                    let _ = d.show();
                 }
             });
 
@@ -366,10 +379,12 @@ pub fn register_callbacks(
                     };
 
                     use rfd::FileDialog;
-                    if let Some(path) = FileDialog::new()
-                        .set_directory(&default_dir)
-                        .add_filter("JSON Files", &["json"])
-                        .pick_file()
+                    if let Some(path) = crate::platform::pick_file_with_parent(
+                        FileDialog::new()
+                            .set_directory(&default_dir)
+                            .add_filter("JSON Files", &["json"]),
+                        dlg.window()
+                    )
                     {
                         if let Ok(content) = std::fs::read_to_string(&path) {
                             if let Ok(params) = serde_json::from_str::<JigsawPuzzleParams>(&content) {
@@ -390,6 +405,7 @@ pub fn register_callbacks(
                             }
                         }
                     }
+                    let _ = dlg.show();
                 }
             });
 
@@ -405,10 +421,12 @@ pub fn register_callbacks(
                     };
 
                     use rfd::FileDialog;
-                    if let Some(path) = FileDialog::new()
-                        .set_directory(&default_dir)
-                        .add_filter("JSON Files", &["json"])
-                        .save_file()
+                    if let Some(path) = crate::platform::save_file_with_parent(
+                        FileDialog::new()
+                            .set_directory(&default_dir)
+                            .add_filter("JSON Files", &["json"]),
+                        dlg.window()
+                    )
                     {
                         let params = JigsawPuzzleParams {
                             puzzle_width: dlg.get_puzzle_width().to_string(),
@@ -431,6 +449,7 @@ pub fn register_callbacks(
                             let _ = std::fs::write(path, content);
                         }
                     }
+                    let _ = dlg.show();
                 }
             });
 
@@ -529,6 +548,7 @@ pub fn register_callbacks(
                             );
                         }
                     }
+                    let _ = d.show();
                 }
             });
 
@@ -930,10 +950,12 @@ pub fn register_callbacks(
                     };
 
                     use rfd::FileDialog;
-                    if let Some(path) = FileDialog::new()
-                        .set_directory(&default_dir)
-                        .add_filter("JSON Files", &["json"])
-                        .pick_file()
+                    if let Some(path) = crate::platform::pick_file_with_parent(
+                        FileDialog::new()
+                            .set_directory(&default_dir)
+                            .add_filter("JSON Files", &["json"]),
+                        dlg.window()
+                    )
                     {
                         if let Ok(content) = std::fs::read_to_string(&path) {
                             if let Ok(params) = serde_json::from_str::<BitmapEngravingParams>(&content) {
@@ -1000,10 +1022,12 @@ pub fn register_callbacks(
                     };
 
                     use rfd::FileDialog;
-                    if let Some(path) = FileDialog::new()
-                        .set_directory(&default_dir)
-                        .add_filter("JSON Files", &["json"])
-                        .save_file()
+                    if let Some(path) = crate::platform::save_file_with_parent(
+                        FileDialog::new()
+                            .set_directory(&default_dir)
+                            .add_filter("JSON Files", &["json"]),
+                        dlg.window()
+                    )
                     {
                         let params = BitmapEngravingParams {
                             width_mm: dlg.get_width_mm(),
@@ -1048,10 +1072,12 @@ pub fn register_callbacks(
 
                     // Open file dialog to select image
                     use rfd::FileDialog;
-                    if let Some(path) = FileDialog::new()
-                        .set_directory(&default_dir)
-                        .add_filter("Image Files", &["png", "jpg", "jpeg", "bmp", "gif", "tiff"])
-                        .pick_file()
+                    if let Some(path) = crate::platform::pick_file_with_parent(
+                        FileDialog::new()
+                            .set_directory(&default_dir)
+                            .add_filter("Image Files", &["png", "jpg", "jpeg", "bmp", "gif", "tiff"]),
+                        dlg.window()
+                    )
                     {
                         dlg.set_image_path(path.display().to_string().into());
 
@@ -1397,10 +1423,12 @@ pub fn register_callbacks(
                     };
 
                     use rfd::FileDialog;
-                    if let Some(path) = FileDialog::new()
-                        .set_directory(&default_dir)
-                        .add_filter("JSON Files", &["json"])
-                        .pick_file()
+                    if let Some(path) = crate::platform::pick_file_with_parent(
+                        FileDialog::new()
+                            .set_directory(&default_dir)
+                            .add_filter("JSON Files", &["json"]),
+                        dlg.window()
+                    )
                     {
                         if let Ok(content) = std::fs::read_to_string(&path) {
                             if let Ok(params) = serde_json::from_str::<VectorEngravingParams>(&content) {
@@ -1525,10 +1553,12 @@ pub fn register_callbacks(
                     };
 
                     use rfd::FileDialog;
-                    if let Some(path) = FileDialog::new()
-                        .set_directory(&default_dir)
-                        .add_filter("JSON Files", &["json"])
-                        .save_file()
+                    if let Some(path) = crate::platform::save_file_with_parent(
+                        FileDialog::new()
+                            .set_directory(&default_dir)
+                            .add_filter("JSON Files", &["json"]),
+                        dlg.window()
+                    )
                     {
                         let params = VectorEngravingParams {
                             feed_rate: dlg.get_feed_rate(),
@@ -1573,10 +1603,12 @@ pub fn register_callbacks(
 
                     // Open file dialog to select vector file
                     use rfd::FileDialog;
-                    if let Some(path) = FileDialog::new()
-                        .set_directory(&default_dir)
-                        .add_filter("Vector Files", &["svg", "dxf"])
-                        .pick_file()
+                    if let Some(path) = crate::platform::pick_file_with_parent(
+                        FileDialog::new()
+                            .set_directory(&default_dir)
+                            .add_filter("Vector Files", &["svg", "dxf"]),
+                        dlg.window()
+                    )
                     {
                         dlg.set_vector_path(path.display().to_string().into());
 

@@ -26,6 +26,7 @@ use std::path::PathBuf;
 use std::rc::Rc;
 use tracing::warn;
 
+mod platform;
 mod app;
 use app::helpers::*;
 use crate::app::designer::update_designer_ui;
@@ -62,10 +63,6 @@ fn main() -> anyhow::Result<()> {
     init_logging()?;
 
     let main_window = MainWindow::new().map_err(|e| anyhow::anyhow!("UI Error: {}", e))?;
-
-    // Set window to maximized state
-    let window = main_window.window();
-    window.set_maximized(true);
 
     // Initialize about dialog properties
     main_window.set_app_version(slint::SharedString::from(VERSION));
@@ -1607,10 +1604,12 @@ fn main() -> anyhow::Result<()> {
             }
 
             // Open file dialog
-            if let Some(path) = rfd::FileDialog::new()
-                .set_file_name("grbl_config.json")
-                .add_filter("JSON", &["json"])
-                .save_file()
+            if let Some(path) = crate::platform::save_file_with_parent(
+                rfd::FileDialog::new()
+                    .set_file_name("grbl_config.json")
+                    .add_filter("JSON", &["json"]),
+                window.window()
+            )
             {
                 // Build JSON structure
                 let settings_model = window.get_config_settings();
@@ -1662,9 +1661,11 @@ fn main() -> anyhow::Result<()> {
     main_window.on_config_load_from_file(move || {
         if let Some(window) = window_weak.upgrade() {
             // Open file dialog
-            if let Some(path) = rfd::FileDialog::new()
-                .add_filter("JSON", &["json"])
-                .pick_file()
+            if let Some(path) = crate::platform::pick_file_with_parent(
+                rfd::FileDialog::new()
+                    .add_filter("JSON", &["json"]),
+                window.window()
+            )
             {
                 // Read and parse JSON file
                 match std::fs::read_to_string(&path) {
@@ -2867,12 +2868,14 @@ fn main() -> anyhow::Result<()> {
     main_window.on_import_gtc_package(move |_file_path| {
         if let Some(window) = window_weak.upgrade() {
             // Open file dialog for GTC package or JSON
-            let file_result = rfd::FileDialog::new()
-                .add_filter("GTC Package", &["zip"])
-                .add_filter("GTC JSON", &["json"])
-                .add_filter("All Files", &["*"])
-                .set_title("Import GTC Tool Catalog")
-                .pick_file();
+            let file_result = crate::platform::pick_file_with_parent(
+                rfd::FileDialog::new()
+                    .add_filter("GTC Package", &["zip"])
+                    .add_filter("GTC JSON", &["json"])
+                    .add_filter("All Files", &["*"])
+                    .set_title("Import GTC Tool Catalog"),
+                window.window()
+            );
 
             if let Some(file_path) = file_result {
                 let mut backend = tools_backend_clone.borrow_mut();
@@ -3030,17 +3033,8 @@ fn main() -> anyhow::Result<()> {
         .show()
         .map_err(|e| anyhow::anyhow!("UI Show Error: {}", e))?;
 
-    // On Windows, ensure window is maximized after showing to fix initial size issue
-    // Use a timer to allow the window to be fully mapped by the OS before maximizing
-    #[cfg(target_os = "windows")]
-    {
-        let window_weak = main_window.as_weak();
-        slint::Timer::single_shot(std::time::Duration::from_millis(250), move || {
-            if let Some(window) = window_weak.upgrade() {
-                window.window().set_maximized(true);
-            }
-        });
-    }
+    // Initialize window (maximize and focus)
+    crate::platform::initialize_window(main_window.window());
 
     main_window
         .run()
