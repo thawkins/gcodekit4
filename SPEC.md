@@ -1,10 +1,19 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.66.0-alpha.0
+**Version**: 0.67.0-alpha.0
 **Last Updated**: 2025-12-03
 **Status**: Feature Release
 
-### Latest Release (v0.66.0-alpha.0) - Window Management Fixes
+### Latest Release (v0.67.0-alpha.0) - UI Refactor & Tests
+- ✅ **UI Refactoring**
+  - Refactored UI for unit conversion to ensure consistent display across all panels.
+  - Improved layout and responsiveness in Designer and CAM tools.
+- ✅ **Testing**
+  - Added comprehensive tests for Spoilboard Grid generator.
+- ✅ **Maintenance**
+  - Fixed various compiler warnings and clippy issues.
+
+### Previous Release (v0.66.0-alpha.0) - Window Management Fixes
 - ✅ **Window Management**
   - Fixed issue where file dialogs on Windows would open in full-screen mode or underneath the main window.
   - Application window now correctly maximizes on startup on Windows.

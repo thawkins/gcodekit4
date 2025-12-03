@@ -4,7 +4,7 @@ A modern, cross-platform G-Code sender and CNC machine controller written in Rus
 
 [![Build Status](https://github.com/thawkins/gcodekit4/workflows/Build%20and%20Release/badge.svg)](https://github.com/thawkins/gcodekit4/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-0.65.0--alpha.0-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-0.67.0--alpha.0-brightgreen.svg)](CHANGELOG.md)
 
 ## Overview
 
@@ -546,9 +546,13 @@ You may choose either license for your use of this software.
 
 ## Project Status
 
-**Current Version**: 0.66.0-alpha.0
+**Current Version**: 0.67.0-alpha.0
 **Status**: Active Development
 **Stability**: Alpha (breaking changes may occur)
+
+### Recent Updates (v0.67.0)
+- **UI**: Refactored UI for unit conversion.
+- **Tests**: Added Spoilboard Grid generator tests.
 
 ### Recent Updates (v0.63.0)
 - **Device Manager**: Fixed critical data loss bugs in device profile management (resetting data, wrong selection, empty names).

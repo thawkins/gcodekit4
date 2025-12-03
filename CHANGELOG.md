@@ -1,3 +1,13 @@
+## [0.67.0-alpha.0] - 2025-12-03
+
+### Added
+- **UI**: Refactored UI for unit conversion to ensure consistent display across all panels.
+- **Tests**: Added comprehensive tests for Spoilboard Grid generator.
+
+### Fixed
+- **Cleanup**: Fixed various compiler warnings and clippy issues.
+- **UI**: Improved layout and responsiveness in Designer and CAM tools.
+
 ## [0.66.0-alpha.0] - 2025-12-03
 
 ### Fixed
