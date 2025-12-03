@@ -25,6 +25,7 @@ export component SpeedsFeedsDialog inherits Window {
     in property <string> result-chip-load: "---";
     in property <string> result-source: "";
     in property <string> result-warnings: "";
+    in property <string> unit-label: "mm";
     
     callback calculate();
     callback close-dialog();
@@ -102,7 +103,7 @@ export component SpeedsFeedsDialog inherits Window {
                         }
                         
                         Row {
-                            Text { text: "Feed Rate (mm/min):"; font-weight: 700; }
+                            Text { text: "Feed Rate (" + root.unit-label + "/min):"; font-weight: 700; }
                             HorizontalBox {
                                 spacing: 5px;
                                 Text { text: result-feed; font-size: 16px; color: #2980b9; }
@@ -125,12 +126,12 @@ export component SpeedsFeedsDialog inherits Window {
                         
                         Row {
                             Text { text: "Surface Speed:"; }
-                            Text { text: result-surface-speed + " m/min"; }
+                            Text { text: result-surface-speed; }
                         }
                         
                         Row {
                             Text { text: "Chip Load:"; }
-                            Text { text: result-chip-load + " mm/tooth"; }
+                            Text { text: result-chip-load; }
                         }
                         
                         Row {

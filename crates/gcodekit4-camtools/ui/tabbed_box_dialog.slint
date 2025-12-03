@@ -33,6 +33,7 @@ export component TabbedBoxDialog inherits Window {
     in-out property <string> dividers-y: "0";
     in-out property <bool> optimize-layout: false;
     in-out property <int> key-divider-type: 0;
+    in property <string> unit-label: "mm";
     
     callback generate-box();
     callback cancel-dialog();
@@ -51,7 +52,7 @@ export component TabbedBoxDialog inherits Window {
                 
                 // Box Dimensions
                 GroupBox {
-                    title: "Box Dimensions (mm)";
+                    title: "Box Dimensions (" + root.unit-label + ")";
                     
                     GridBox {
                         spacing: 10px;
@@ -61,7 +62,7 @@ export component TabbedBoxDialog inherits Window {
                             LineEdit { 
                                 text <=> box-x;
                                 placeholder-text: "100.0";
-                                input-type: decimal;
+                                input-type: text;
                             }
                         }
                         
@@ -70,7 +71,7 @@ export component TabbedBoxDialog inherits Window {
                             LineEdit { 
                                 text <=> box-y;
                                 placeholder-text: "100.0";
-                                input-type: decimal;
+                                input-type: text;
                             }
                         }
                         
@@ -79,7 +80,7 @@ export component TabbedBoxDialog inherits Window {
                             LineEdit { 
                                 text <=> box-h;
                                 placeholder-text: "100.0";
-                                input-type: decimal;
+                                input-type: text;
                             }
                         }
                         
@@ -100,18 +101,20 @@ export component TabbedBoxDialog inherits Window {
                         spacing: 10px;
                         
                         Row {
-                            Text { text: "Thickness:"; }
+                            Text { text: "Thickness (" + root.unit-label + "):"; }
                             LineEdit { 
                                 text <=> material-thickness;
                                 placeholder-text: "3.0";
+                                input-type: text;
                             }
                         }
                         
                         Row {
-                            Text { text: "Burn / Tool Dia:"; }
+                            Text { text: "Burn / Tool Dia (" + root.unit-label + "):"; }
                             LineEdit { 
                                 text <=> burn;
                                 placeholder-text: "0.1";
+                                input-type: text;
                             }
                         }
                     }
@@ -275,7 +278,7 @@ export component TabbedBoxDialog inherits Window {
                 
                 // Work Origin Offsets
                 GroupBox {
-                    title: "Work Origin Offsets (mm)";
+                    title: "Work Origin Offsets (" + root.unit-label + ")";
                     
                     GridBox {
                         spacing: 10px;
@@ -285,7 +288,7 @@ export component TabbedBoxDialog inherits Window {
                             LineEdit { 
                                 text <=> offset-x;
                                 placeholder-text: "10.0";
-                                input-type: decimal;
+                                input-type: text;
                             }
                         }
                         
@@ -294,7 +297,7 @@ export component TabbedBoxDialog inherits Window {
                             LineEdit { 
                                 text <=> offset-y;
                                 placeholder-text: "10.0";
-                                input-type: decimal;
+                                input-type: text;
                             }
                         }
                     }

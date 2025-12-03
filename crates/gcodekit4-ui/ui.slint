@@ -251,10 +251,10 @@ export component MainWindow inherits Window {
         pan_y: 0.0,
         selected_id: -1,
     };
-    in-out property <float> designer-feed-rate: 120.0;
-    in-out property <float> designer-spindle-speed: 3000.0;
-    in-out property <float> designer-tool-diameter: 3.175;
-    in-out property <float> designer-cut-depth: -5.0;
+    in-out property <string> designer-feed-rate: "120.0";
+    in-out property <string> designer-spindle-speed: "3000.0";
+    in-out property <string> designer-tool-diameter: "3.175";
+    in-out property <string> designer-cut-depth: "-5.0";
     in property <float> designer-safe-z: 10.0;
     in property <string> designer-generated-gcode: "";
     in property <bool> designer-gcode-generated: false;
@@ -269,27 +269,28 @@ export component MainWindow inherits Window {
     in property <string> designer-canvas-selected-shapes-data: "";
     in property <string> designer-canvas-handles-data: "";
     in property <int> designer-selected-count: 0;
-    in property <float> designer-selected-shape-x: 0.0;
-    in property <float> designer-selected-shape-y: 0.0;
-    in property <float> designer-selected-shape-w: 0.0;
-    in property <float> designer-selected-shape-h: 0.0;
+    in property <string> designer-selected-shape-x: "0.0";
+    in property <string> designer-selected-shape-y: "0.0";
+    in property <string> designer-selected-shape-w: "0.0";
+    in property <string> designer-selected-shape-h: "0.0";
     in property <int> designer-selected-shape-type: 0;
-    in property <float> designer-selected-shape-radius: 5.0;
+    in property <string> designer-selected-shape-radius: "5.0";
     in property <bool> designer-selected-shape-is-pocket: false;
-    in property <float> designer-selected-shape-pocket-depth: 0.0;
-    in property <float> designer-selected-shape-step-down: 0.0;
-    in property <float> designer-selected-shape-step-in: 0.0;
+    in property <string> designer-selected-shape-pocket-depth: "0.0";
+    in property <string> designer-selected-shape-step-down: "0.0";
+    in property <string> designer-selected-shape-step-in: "0.0";
     in property <int> designer-selected-shape-pocket-strategy: 1;
-    in property <float> designer-selected-shape-raster-angle: 0.0;
+    in property <string> designer-selected-shape-raster-angle: "0.0";
     in property <bool> designer-selected-shape-bidirectional: true;
     in property <bool> designer-selected-shape-use-custom-values: false;
     in property <string> designer-selected-shape-text-content: "";
-    in property <float> designer-selected-shape-font-size: 12.0;
+    in property <string> designer-selected-shape-font-size: "12.0";
     in property <string> designer-selected-shape-name: "";
-    in property <float> designer-selected-shape-corner-radius: 0.0;
+    in property <string> designer-selected-shape-corner-radius: "0.0";
     in property <bool> designer-selected-shape-is-slot: false;
-    in property <float> designer-selected-shape-rotation: 0.0;
+    in property <string> designer-selected-shape-rotation: "0.0";
     in-out property <bool> designer-is-editing-defaults: false;
+    in property <string> designer-unit-label: "mm";
     
     // Materials Manager properties
     in-out property <[MaterialData]> materials: [];
@@ -360,6 +361,7 @@ export component MainWindow inherits Window {
     in property <string> sf-result-chip-load: "---";
     in property <string> sf-result-source: "";
     in property <string> sf-result-warnings: "";
+    in property <string> sf-unit-label: "mm";
     
     callback refresh-ports();
     callback connect(string, int);
@@ -482,7 +484,7 @@ export component MainWindow inherits Window {
     callback designer-select-shape(int, bool);
     callback designer-set-shift-pressed(bool);              // Shift key state
     callback designer-save-shape-properties();              // Save all properties
-    callback designer-update-shape-property(int, float);    // property_id, value
+    callback designer-update-shape-property(int, string);    // property_id, value
     callback designer-update-shape-property-bool(int, bool); // property_id, value
     callback designer-update-shape-property-string(int, string); // property_id, value
     callback designer-select-next-shape();
@@ -498,11 +500,11 @@ export component MainWindow inherits Window {
     callback designer-undo();
     callback designer-redo();
     callback designer-interaction-start();
-    callback designer-update-feed-rate(float);
-    callback designer-update-spindle-speed(float);
-    callback designer-update-tool-diameter(float);
-    callback designer-update-cut-depth(float);
-    callback designer-update-step-in(float);
+    callback designer-update-feed-rate(string);
+    callback designer-update-spindle-speed(string);
+    callback designer-update-tool-diameter(string);
+    callback designer-update-cut-depth(string);
+    callback designer-update-step-in(string);
     callback designer-file-new();
     callback designer-file-open();
     callback designer-file-save();
@@ -513,9 +515,9 @@ export component MainWindow inherits Window {
     callback show-delete-confirmation(int);
     callback designer-confirm-delete();
     callback designer-confirm-convert(string);
-    callback designer-create-linear-array(int, int, float, float);
-    callback designer-create-circular-array(int, float, float, float, float, bool);
-    callback designer-create-grid-array(int, int, float, float);
+    callback designer-create-linear-array(int, int, string, string);
+    callback designer-create-circular-array(int, string, string, string, string, bool);
+    callback designer-create-grid-array(int, int, string, string);
     
      // CAM Tool callbacks
     callback generate-tabbed-box();
@@ -1129,7 +1131,7 @@ export component MainWindow inherits Window {
                         selected_shape_h: root.designer-selected-shape-h;
                         selected_shape_type: root.designer-selected-shape-type;
                         selected_shape_radius: root.designer-selected-shape-radius;
-                        selected_shape_is_pocket: root.designer-selected-shape-is-pocket;
+                        selected_shape_is_pocket: root.designer-selected-shape-is_pocket;
                         selected_shape_pocket_depth: root.designer-selected-shape-pocket-depth;
                         selected_shape_step_down: root.designer-selected-shape-step-down;
                         selected_shape_step_in: root.designer-selected-shape-step-in;
@@ -1141,9 +1143,10 @@ export component MainWindow inherits Window {
                         selected_shape_font_size: root.designer-selected-shape-font-size;
                         selected_shape_name: root.designer-selected-shape-name;
                         selected_shape_corner_radius: root.designer-selected-shape-corner-radius;
-                        selected_shape_is_slot: root.designer-selected-shape-is-slot;
+                        selected_shape_is_slot: root.designer-selected-shape-is_slot;
                         selected_shape_rotation: root.designer-selected-shape-rotation;
                         is_editing_defaults <=> root.designer-is-editing-defaults;
+                        unit-label: root.designer-unit-label;
                         
                         set_mode(m) => {
                             root.designer-set-mode(m);
@@ -1431,6 +1434,7 @@ export component MainWindow inherits Window {
                             result-chip-load: root.sf-result-chip-load;
                             result-source: root.sf-result-source;
                             result-warnings: root.sf-result-warnings;
+                            unit-label: root.sf-unit-label;
                             
                             calculate => { root.calculate-speeds-feeds(); }
                             close-dialog => { speeds-feeds-dialog-visible = false; }

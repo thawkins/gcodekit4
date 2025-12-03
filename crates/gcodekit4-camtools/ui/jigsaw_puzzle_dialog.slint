@@ -23,6 +23,7 @@ export component JigsawPuzzleDialog inherits Window {
     in-out property <string> corner-radius: "2.0";
     in-out property <string> offset-x: "10.0";
     in-out property <string> offset-y: "10.0";
+    in property <string> unit-label: "mm";
     
     callback generate-puzzle();
     callback cancel-dialog();
@@ -41,7 +42,7 @@ export component JigsawPuzzleDialog inherits Window {
                 
                 // Puzzle Dimensions
             GroupBox {
-                title: "Puzzle Dimensions (mm)";
+                title: "Puzzle Dimensions (" + root.unit-label + ")";
                 
                 GridBox {
                     spacing: 10px;
@@ -51,7 +52,7 @@ export component JigsawPuzzleDialog inherits Window {
                         LineEdit { 
                             text <=> puzzle-width;
                             placeholder-text: "200.0";
-                            input-type: decimal;
+                            input-type: text;
                         }
                     }
                     
@@ -60,7 +61,7 @@ export component JigsawPuzzleDialog inherits Window {
                         LineEdit { 
                             text <=> puzzle-height;
                             placeholder-text: "150.0";
-                            input-type: decimal;
+                            input-type: text;
                         }
                     }
                 }
@@ -113,20 +114,20 @@ export component JigsawPuzzleDialog inherits Window {
                     spacing: 10px;
                     
                     Row {
-                        Text { text: "Kerf:"; }
+                        Text { text: "Kerf (" + root.unit-label + "):"; }
                         LineEdit { 
                             text <=> kerf;
                             placeholder-text: "0.5";
-                            input-type: decimal;
+                            input-type: text;
                         }
                     }
                     
                     Row {
-                        Text { text: "Corner Radius:"; }
+                        Text { text: "Corner Radius (" + root.unit-label + "):"; }
                         LineEdit { 
                             text <=> corner-radius;
                             placeholder-text: "2.0";
-                            input-type: decimal;
+                            input-type: text;
                         }
                     }
                 }
@@ -206,7 +207,7 @@ export component JigsawPuzzleDialog inherits Window {
             
             // Work Origin Offsets
             GroupBox {
-                title: "Work Origin Offsets (mm)";
+                title: "Work Origin Offsets (" + root.unit-label + ")";
                 
                 GridBox {
                     spacing: 10px;
@@ -216,7 +217,7 @@ export component JigsawPuzzleDialog inherits Window {
                         LineEdit { 
                             text <=> offset-x;
                             placeholder-text: "10.0";
-                            input-type: decimal;
+                            input-type: text;
                         }
                     }
                     
@@ -225,7 +226,7 @@ export component JigsawPuzzleDialog inherits Window {
                         LineEdit { 
                             text <=> offset-y;
                             placeholder-text: "10.0";
-                            input-type: decimal;
+                            input-type: text;
                         }
                     }
                 }

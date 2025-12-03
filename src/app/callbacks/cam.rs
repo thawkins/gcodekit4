@@ -63,6 +63,37 @@ pub fn register_callbacks(
             let dialog_weak = dialog.as_weak();
             let dialog_weak_generate = dialog_weak.clone();
 
+            // Get measurement system
+            let system = {
+                let persistence = settings_persistence_tabbed_box.borrow();
+                let sys_str = &persistence.config().ui.measurement_system;
+                MeasurementSystem::from_str(sys_str).unwrap_or(MeasurementSystem::Metric)
+            };
+
+            // Set unit label
+            dialog.set_unit_label(get_unit_label(system).into());
+
+            // Initialize dialog with default values
+            dialog.set_box_x(to_display_string(100.0, system).into());
+            dialog.set_box_y(to_display_string(100.0, system).into());
+            dialog.set_box_h(to_display_string(100.0, system).into());
+            dialog.set_material_thickness(to_display_string(3.0, system).into());
+            dialog.set_burn(to_display_string(0.1, system).into());
+            dialog.set_finger_width(to_display_string(2.0, system).into());
+            dialog.set_space_width(to_display_string(2.0, system).into());
+            dialog.set_surrounding_spaces(to_display_string(2.0, system).into());
+            dialog.set_play(to_display_string(0.0, system).into());
+            dialog.set_extra_length(to_display_string(0.0, system).into());
+            dialog.set_dimple_height(to_display_string(0.0, system).into());
+            dialog.set_dimple_length(to_display_string(0.0, system).into());
+            dialog.set_feed_rate(to_display_string(500.0, system).into());
+            dialog.set_offset_x(to_display_string(10.0, system).into());
+            dialog.set_offset_y(to_display_string(10.0, system).into());
+            dialog.set_laser_passes("3".into());
+            dialog.set_laser_power("1000".into());
+            dialog.set_dividers_x("0".into());
+            dialog.set_dividers_y("0".into());
+
             // Set up dialog callbacks
             let gcode_editor_dialog = gcode_editor_clone.clone();
             let console_manager_dialog = console_manager_clone.clone();
@@ -184,23 +215,23 @@ pub fn register_callbacks(
             dialog.on_generate_box(move || {
                 if let Some(d) = dialog_weak_generate.upgrade() {
                     // Get parameters from dialog
-                    let width = d.get_box_x().parse::<f64>().unwrap_or(100.0);
-                    let height = d.get_box_y().parse::<f64>().unwrap_or(100.0);
-                    let depth = d.get_box_h().parse::<f64>().unwrap_or(100.0);
-                    let thickness = d.get_material_thickness().parse::<f64>().unwrap_or(3.0);
-                    let finger_width = d.get_finger_width().parse::<f64>().unwrap_or(2.0);
-                    let space_width = d.get_space_width().parse::<f64>().unwrap_or(2.0);
-                    let surrounding_spaces = d.get_surrounding_spaces().parse::<f64>().unwrap_or(2.0);
-                    let play = d.get_play().parse::<f64>().unwrap_or(0.0);
-                    let extra_length = d.get_extra_length().parse::<f64>().unwrap_or(0.0);
-                    let dimple_height = d.get_dimple_height().parse::<f64>().unwrap_or(0.0);
-                    let dimple_length = d.get_dimple_length().parse::<f64>().unwrap_or(0.0);
-                    let kerf = d.get_burn().parse::<f64>().unwrap_or(0.1);
-                    let cut_feed = d.get_feed_rate().parse::<f64>().unwrap_or(500.0);
+                    let width = parse_from_string(&d.get_box_x(), system).unwrap_or(100.0);
+                    let height = parse_from_string(&d.get_box_y(), system).unwrap_or(100.0);
+                    let depth = parse_from_string(&d.get_box_h(), system).unwrap_or(100.0);
+                    let thickness = parse_from_string(&d.get_material_thickness(), system).unwrap_or(3.0);
+                    let finger_width = parse_from_string(&d.get_finger_width(), system).unwrap_or(2.0);
+                    let space_width = parse_from_string(&d.get_space_width(), system).unwrap_or(2.0);
+                    let surrounding_spaces = parse_from_string(&d.get_surrounding_spaces(), system).unwrap_or(2.0);
+                    let play = parse_from_string(&d.get_play(), system).unwrap_or(0.0);
+                    let extra_length = parse_from_string(&d.get_extra_length(), system).unwrap_or(0.0);
+                    let dimple_height = parse_from_string(&d.get_dimple_height(), system).unwrap_or(0.0);
+                    let dimple_length = parse_from_string(&d.get_dimple_length(), system).unwrap_or(0.0);
+                    let kerf = parse_from_string(&d.get_burn(), system).unwrap_or(0.1);
+                    let cut_feed = parse_from_string(&d.get_feed_rate(), system).unwrap_or(500.0);
                     let laser_passes = d.get_laser_passes().parse::<i32>().unwrap_or(3);
                     let laser_power = d.get_laser_power().parse::<i32>().unwrap_or(1000);
-                    let offset_x = d.get_offset_x().parse::<f32>().unwrap_or(10.0);
-                    let offset_y = d.get_offset_y().parse::<f32>().unwrap_or(10.0);
+                    let offset_x = parse_from_string(&d.get_offset_x(), system).unwrap_or(10.0) as f32;
+                    let offset_y = parse_from_string(&d.get_offset_y(), system).unwrap_or(10.0) as f32;
                     let dividers_x = d.get_dividers_x().parse::<u32>().unwrap_or(0);
                     let dividers_y = d.get_dividers_y().parse::<u32>().unwrap_or(0);
                     
@@ -361,6 +392,33 @@ pub fn register_callbacks(
             let dialog_weak = dialog.as_weak();
             let dialog_weak_generate = dialog_weak.clone();
 
+            // Get measurement system
+            let system = {
+                let persistence = settings_persistence_puzzle.borrow();
+                let sys_str = &persistence.config().ui.measurement_system;
+                MeasurementSystem::from_str(sys_str).unwrap_or(MeasurementSystem::Metric)
+            };
+
+            // Set unit label
+            dialog.set_unit_label(get_unit_label(system).into());
+
+            // Initialize dialog with default values (converted)
+            dialog.set_puzzle_width(to_display_string(200.0, system).into());
+            dialog.set_puzzle_height(to_display_string(150.0, system).into());
+            dialog.set_kerf(to_display_string(0.5, system).into());
+            dialog.set_corner_radius(to_display_string(2.0, system).into());
+            dialog.set_offset_x(to_display_string(10.0, system).into());
+            dialog.set_offset_y(to_display_string(10.0, system).into());
+            // These are unitless or percentages, so just set defaults as strings
+            dialog.set_pieces_across("4".into());
+            dialog.set_pieces_down("3".into());
+            dialog.set_laser_passes("3".into());
+            dialog.set_laser_power("1000".into());
+            dialog.set_feed_rate(to_display_string(500.0, system).into());
+            dialog.set_seed("42".into());
+            dialog.set_tab_size("20.0".into());
+            dialog.set_jitter("4.0".into());
+
             // Set up dialog callbacks
             let gcode_editor_dialog = gcode_editor_clone.clone();
             let console_manager_dialog = console_manager_clone.clone();
@@ -456,18 +514,18 @@ pub fn register_callbacks(
             dialog.on_generate_puzzle(move || {
                 if let Some(d) = dialog_weak_generate.upgrade() {
                     // Get parameters from dialog
-                    let width = d.get_puzzle_width().parse::<f64>().unwrap_or(200.0);
-                    let height = d.get_puzzle_height().parse::<f64>().unwrap_or(150.0);
+                    let width = parse_from_string(&d.get_puzzle_width(), system).unwrap_or(200.0);
+                    let height = parse_from_string(&d.get_puzzle_height(), system).unwrap_or(150.0);
                     let rows = d.get_pieces_down().parse::<i32>().unwrap_or(3);
                     let cols = d.get_pieces_across().parse::<i32>().unwrap_or(4);
                     let tab_size = d.get_tab_size().parse::<f64>().unwrap_or(20.0);
                     let jitter = d.get_jitter().parse::<f64>().unwrap_or(4.0);
-                    let kerf = d.get_kerf().parse::<f64>().unwrap_or(0.5);
-                    let cut_feed = d.get_feed_rate().parse::<f64>().unwrap_or(500.0);
+                    let kerf = parse_from_string(&d.get_kerf(), system).unwrap_or(0.5);
+                    let cut_feed = parse_from_string(&d.get_feed_rate(), system).unwrap_or(500.0);
                     let seed = d.get_seed().parse::<u32>().unwrap_or(42);
-                    let corner_radius = d.get_corner_radius().parse::<f64>().unwrap_or(2.0);
-                    let offset_x = d.get_offset_x().parse::<f32>().unwrap_or(10.0);
-                    let offset_y = d.get_offset_y().parse::<f32>().unwrap_or(10.0);
+                    let corner_radius = parse_from_string(&d.get_corner_radius(), system).unwrap_or(2.0);
+                    let offset_x = parse_from_string(&d.get_offset_x(), system).unwrap_or(10.0) as f32;
+                    let offset_y = parse_from_string(&d.get_offset_y(), system).unwrap_or(10.0) as f32;
                     let laser_passes = d.get_laser_passes().parse::<i32>().unwrap_or(3);
                     let laser_power = d.get_laser_power().parse::<i32>().unwrap_or(1000);
 
@@ -809,6 +867,7 @@ pub fn register_callbacks(
     let console_manager_clone = console_manager.clone();
     let editor_bridge_clone = editor_bridge.clone();
     let dialog_weak_ref = spoilboard_grid_dialog_weak.clone();
+    let settings_persistence_grid = settings_persistence.clone();
     main_window.on_generate_spoilboard_grid(move || {
         if let Some(window) = window_weak.upgrade() {
             // Check if dialog exists
@@ -822,6 +881,23 @@ pub fn register_callbacks(
             let dialog_weak = dialog.as_weak();
             let dialog_weak_generate = dialog_weak.clone();
 
+            // Get measurement system
+            let system = {
+                let persistence = settings_persistence_grid.borrow();
+                let sys_str = &persistence.config().ui.measurement_system;
+                MeasurementSystem::from_str(sys_str).unwrap_or(MeasurementSystem::Metric)
+            };
+
+            // Set unit label
+            dialog.set_unit_label(get_unit_label(system).into());
+
+            // Initialize dialog with default values
+            dialog.set_width_mm(to_display_string(300.0, system).into());
+            dialog.set_height_mm(to_display_string(180.0, system).into());
+            dialog.set_grid_spacing(to_display_string(10.0, system).into());
+            dialog.set_feed_rate(to_display_string(1000.0, system).into());
+            dialog.set_laser_power("255".into());
+
             // Set up dialog callbacks
             let gcode_editor_dialog = gcode_editor_clone.clone();
             let console_manager_dialog = console_manager_clone.clone();
@@ -831,18 +907,18 @@ pub fn register_callbacks(
             dialog.on_generate_gcode(move || {
                 if let Some(d) = dialog_weak_generate.upgrade() {
                     // Get parameters from dialog
-                    let width = d.get_width_mm().parse::<f64>().unwrap_or(300.0);
-                    let height = d.get_height_mm().parse::<f64>().unwrap_or(180.0);
-                    let grid_spacing = d.get_grid_spacing().parse::<f64>().unwrap_or(10.0);
-                    let feed_rate = d.get_feed_rate().parse::<f64>().unwrap_or(1000.0);
+                    let width = parse_from_string(&d.get_width_mm(), system).unwrap_or(300.0);
+                    let height = parse_from_string(&d.get_height_mm(), system).unwrap_or(180.0);
+                    let grid_spacing = parse_from_string(&d.get_grid_spacing(), system).unwrap_or(10.0);
+                    let feed_rate = parse_from_string(&d.get_feed_rate(), system).unwrap_or(1000.0);
                     let laser_power = d.get_laser_power().parse::<f64>().unwrap_or(255.0);
                     let laser_mode = d.get_laser_mode().to_string();
 
                     let params = SpoilboardGridParameters {
-                        width,
-                        height,
-                        grid_spacing,
-                        feed_rate,
+                        width: width.into(),
+                        height: height.into(),
+                        grid_spacing: grid_spacing.into(),
+                        feed_rate: feed_rate.into(),
                         laser_power,
                         laser_mode,
                     };
@@ -925,18 +1001,28 @@ pub fn register_callbacks(
             let dialog = LaserEngraverDialog::new().unwrap();
             *dialog_weak_ref.borrow_mut() = Some(dialog.as_weak());
 
+            // Get measurement system
+            let system = {
+                let persistence = settings_persistence_laser.borrow();
+                let sys_str = &persistence.config().ui.measurement_system;
+                MeasurementSystem::from_str(sys_str).unwrap_or(MeasurementSystem::Metric)
+            };
+
+            // Set unit label
+            dialog.set_unit_label(get_unit_label(system).into());
+
             // Initialize dialog with default values
-            dialog.set_width_mm(100.0);
-            dialog.set_feed_rate(1000.0);
-            dialog.set_travel_rate(3000.0);
+            dialog.set_width_mm(to_display_string(100.0, system).into());
+            dialog.set_feed_rate(to_display_string(1000.0, system).into());
+            dialog.set_travel_rate(to_display_string(3000.0, system).into());
             dialog.set_min_power(0.0);
             dialog.set_max_power(100.0);
-            dialog.set_pixels_per_mm(10.0);
+            dialog.set_pixels_per_mm(to_display_string(10.0, system).into());
             dialog.set_scan_direction("Horizontal".into());
             dialog.set_bidirectional(true);
             dialog.set_invert(false);
-            dialog.set_line_spacing(1.0);
-            dialog.set_power_scale(1000.0);
+            dialog.set_line_spacing(to_display_string(1.0, system).into());
+            dialog.set_power_scale("1000.0".into());
 
             // Load params callback
             let dialog_weak_load_params = dialog.as_weak();
@@ -959,17 +1045,17 @@ pub fn register_callbacks(
                     {
                         if let Ok(content) = std::fs::read_to_string(&path) {
                             if let Ok(params) = serde_json::from_str::<BitmapEngravingParams>(&content) {
-                                dlg.set_width_mm(params.width_mm);
-                                dlg.set_feed_rate(params.feed_rate);
-                                dlg.set_travel_rate(params.travel_rate);
+                                dlg.set_width_mm(params.width_mm.to_string().into());
+                                dlg.set_feed_rate(params.feed_rate.to_string().into());
+                                dlg.set_travel_rate(params.travel_rate.to_string().into());
                                 dlg.set_min_power(params.min_power);
                                 dlg.set_max_power(params.max_power);
-                                dlg.set_pixels_per_mm(params.pixels_per_mm);
+                                dlg.set_pixels_per_mm(params.pixels_per_mm.to_string().into());
                                 dlg.set_scan_direction(params.scan_direction.into());
                                 dlg.set_bidirectional(params.bidirectional);
                                 dlg.set_invert(params.invert);
-                                dlg.set_line_spacing(params.line_spacing);
-                                dlg.set_power_scale(params.power_scale);
+                                dlg.set_line_spacing(params.line_spacing.to_string().into());
+                                dlg.set_power_scale(params.power_scale.to_string().into());
                                 dlg.set_mirror_x(params.mirror_x);
                                 dlg.set_mirror_y(params.mirror_y);
                                 dlg.set_rotation(params.rotation.into());
@@ -1030,17 +1116,17 @@ pub fn register_callbacks(
                     )
                     {
                         let params = BitmapEngravingParams {
-                            width_mm: dlg.get_width_mm(),
-                            feed_rate: dlg.get_feed_rate(),
-                            travel_rate: dlg.get_travel_rate(),
+                            width_mm: dlg.get_width_mm().parse::<f32>().unwrap_or(100.0),
+                            feed_rate: dlg.get_feed_rate().parse::<f32>().unwrap_or(1000.0),
+                            travel_rate: dlg.get_travel_rate().parse::<f32>().unwrap_or(3000.0),
                             min_power: dlg.get_min_power(),
                             max_power: dlg.get_max_power(),
-                            pixels_per_mm: dlg.get_pixels_per_mm(),
+                            pixels_per_mm: dlg.get_pixels_per_mm().parse::<f32>().unwrap_or(10.0),
                             scan_direction: dlg.get_scan_direction().to_string(),
                             bidirectional: dlg.get_bidirectional(),
                             invert: dlg.get_invert(),
-                            line_spacing: dlg.get_line_spacing(),
-                            power_scale: dlg.get_power_scale(),
+                            line_spacing: dlg.get_line_spacing().parse::<f32>().unwrap_or(1.0),
+                            power_scale: dlg.get_power_scale().parse::<f32>().unwrap_or(1000.0),
                             mirror_x: dlg.get_mirror_x(),
                             mirror_y: dlg.get_mirror_y(),
                             rotation: dlg.get_rotation().to_string(),
@@ -1098,12 +1184,12 @@ pub fn register_callbacks(
                             dlg.set_preview_image(slint::Image::from_rgb8(buffer));
 
                             // Calculate and display output size
-                            let _pixels_per_mm = dlg.get_pixels_per_mm();
-                            let width_mm = dlg.get_width_mm();
+                            let _pixels_per_mm = parse_from_string(&dlg.get_pixels_per_mm(), system).unwrap_or(10.0);
+                            let width_mm = parse_from_string(&dlg.get_width_mm(), system).unwrap_or(100.0);
                             let aspect_ratio = height as f32 / width as f32;
                             let height_mm = width_mm * aspect_ratio;
                             dlg.set_output_size(
-                                format!("{:.1} x {:.1} mm", width_mm, height_mm).into(),
+                                format!("{:.1} x {:.1} {}", width_mm, height_mm, get_unit_label(system)).into(),
                             );
                         }
                     }
@@ -1117,18 +1203,18 @@ pub fn register_callbacks(
                     let image_path = dlg.get_image_path().to_string();
                     if !image_path.is_empty() {
                         if let Ok(img) = image::open(&image_path) {
-                            let width_mm = dlg.get_width_mm();
-                            let pixels_per_mm = dlg.get_pixels_per_mm();
-                            let feed_rate = dlg.get_feed_rate();
-                            let travel_rate = dlg.get_travel_rate();
+                            let width_mm = parse_from_string(&dlg.get_width_mm(), system).unwrap_or(100.0);
+                            let pixels_per_mm = parse_from_string(&dlg.get_pixels_per_mm(), system).unwrap_or(10.0);
+                            let feed_rate = parse_from_string(&dlg.get_feed_rate(), system).unwrap_or(1000.0);
+                            let travel_rate = parse_from_string(&dlg.get_travel_rate(), system).unwrap_or(3000.0);
                             let bidirectional = dlg.get_bidirectional();
-                            let line_spacing = dlg.get_line_spacing();
+                            let line_spacing = parse_from_string(&dlg.get_line_spacing(), system).unwrap_or(1.0);
 
                             // Calculate output dimensions
                             let aspect_ratio = img.height() as f32 / img.width() as f32;
                             let height_mm = width_mm * aspect_ratio;
                             dlg.set_output_size(
-                                format!("{:.1} x {:.1} mm", width_mm, height_mm).into(),
+                                format!("{:.1} x {:.1} {}", width_mm, height_mm, get_unit_label(system)).into(),
                             );
 
                             // Estimate engraving time
@@ -1180,19 +1266,19 @@ pub fn register_callbacks(
                             RotationAngle, HalftoneMethod,
                         };
 
-                        let width_mm = dlg.get_width_mm();
-                        let feed_rate = dlg.get_feed_rate();
-                        let travel_rate = dlg.get_travel_rate();
+                        let width_mm = parse_from_string(&dlg.get_width_mm(), system).unwrap_or(100.0);
+                        let feed_rate = parse_from_string(&dlg.get_feed_rate(), system).unwrap_or(1000.0);
+                        let travel_rate = parse_from_string(&dlg.get_travel_rate(), system).unwrap_or(3000.0);
                         let min_power = dlg.get_min_power();
                         let max_power = dlg.get_max_power();
-                        let pixels_per_mm = dlg.get_pixels_per_mm();
+                        let pixels_per_mm = parse_from_string(&dlg.get_pixels_per_mm(), system).unwrap_or(10.0);
                         let scan_dir = dlg.get_scan_direction().to_string();
                         let bidirectional = dlg.get_bidirectional();
                         let invert = dlg.get_invert();
-                        let line_spacing = dlg.get_line_spacing();
-                        let power_scale = dlg.get_power_scale();
-                        let offset_x = dlg.get_offset_x().parse::<f32>().unwrap_or(10.0);
-                        let offset_y = dlg.get_offset_y().parse::<f32>().unwrap_or(10.0);
+                        let line_spacing = parse_from_string(&dlg.get_line_spacing(), system).unwrap_or(1.0);
+                        let power_scale = dlg.get_power_scale().parse::<f32>().unwrap_or(1000.0);
+                        let offset_x = parse_from_string(&dlg.get_offset_x(), system).unwrap_or(10.0) as f32;
+                        let offset_y = parse_from_string(&dlg.get_offset_y(), system).unwrap_or(10.0) as f32;
                         
                         // Get transformation parameters from dialog
                         let mirror_x = dlg.get_mirror_x();
@@ -1400,16 +1486,30 @@ pub fn register_callbacks(
             let dialog = VectorEngraverDialog::new().unwrap();
             *dialog_weak_ref.borrow_mut() = Some(dialog.as_weak());
 
+            // Get measurement system
+            let system = {
+                let persistence = settings_persistence_vector.borrow();
+                let sys_str = &persistence.config().ui.measurement_system;
+                MeasurementSystem::from_str(sys_str).unwrap_or(MeasurementSystem::Metric)
+            };
+
+            // Set unit label
+            dialog.set_unit_label(get_unit_label(system).into());
+
             // Initialize dialog with default values
-            dialog.set_feed_rate(600.0);
-            dialog.set_travel_rate(3000.0);
+            dialog.set_feed_rate(to_display_string(600.0, system).into());
+            dialog.set_travel_rate(to_display_string(3000.0, system).into());
             dialog.set_cut_power(100.0);
             dialog.set_engrave_power(50.0);
-            dialog.set_power_scale(1000.0);
+            dialog.set_power_scale("1000.0".into());
             dialog.set_multi_pass(false);
             dialog.set_num_passes(1);
-            dialog.set_z_increment(0.5);
+            dialog.set_z_increment(to_display_string(0.5, system).into());
             dialog.set_invert_power(false);
+            dialog.set_desired_width(to_display_string(100.0, system).into());
+            dialog.set_hatch_spacing(to_display_string(1.0, system).into());
+            dialog.set_hatch_tolerance(to_display_string(0.1, system).into());
+            dialog.set_dwell_time("0.1".into());
 
             // Load params callback
             let dialog_weak_load_params = dialog.as_weak();
@@ -1432,25 +1532,25 @@ pub fn register_callbacks(
                     {
                         if let Ok(content) = std::fs::read_to_string(&path) {
                             if let Ok(params) = serde_json::from_str::<VectorEngravingParams>(&content) {
-                                dlg.set_feed_rate(params.feed_rate);
-                                dlg.set_travel_rate(params.travel_rate);
+                                dlg.set_feed_rate(params.feed_rate.to_string().into());
+                                dlg.set_travel_rate(params.travel_rate.to_string().into());
                                 dlg.set_cut_power(params.cut_power);
                                 dlg.set_engrave_power(params.engrave_power);
-                                dlg.set_power_scale(params.power_scale);
+                                dlg.set_power_scale(params.power_scale.to_string().into());
                                 dlg.set_multi_pass(params.multi_pass);
                                 dlg.set_num_passes(params.num_passes);
-                                dlg.set_z_increment(params.z_increment);
+                                dlg.set_z_increment(params.z_increment.to_string().into());
                                 dlg.set_invert_power(params.invert_power);
-                                dlg.set_desired_width(params.desired_width);
+                                dlg.set_desired_width(params.desired_width.to_string().into());
                                 dlg.set_offset_x(params.offset_x.into());
                                 dlg.set_offset_y(params.offset_y.into());
                                 dlg.set_enable_hatch(params.enable_hatch);
                                 dlg.set_hatch_angle(params.hatch_angle);
-                                dlg.set_hatch_spacing(params.hatch_spacing);
-                                dlg.set_hatch_tolerance(params.hatch_tolerance);
+                                dlg.set_hatch_spacing(params.hatch_spacing.to_string().into());
+                                dlg.set_hatch_tolerance(params.hatch_tolerance.to_string().into());
                                 dlg.set_cross_hatch(params.cross_hatch);
                                 dlg.set_enable_dwell(params.enable_dwell);
-                                dlg.set_dwell_time(params.dwell_time);
+                                dlg.set_dwell_time(params.dwell_time.to_string().into());
                                 
                                 // Load vector path and update file info
                                 let vector_path = params.vector_path;
@@ -1480,7 +1580,7 @@ pub fn register_callbacks(
                                                 
                                                 if width > 0.0 {
                                                     let aspect_ratio = height / width;
-                                                    let desired_width = dlg.get_desired_width();
+                                                    let desired_width = parse_from_string(&dlg.get_desired_width(), system).unwrap_or(100.0);
                                                     let output_height = desired_width * aspect_ratio;
                                                     
                                                     dlg.set_output_width(desired_width);
@@ -1515,7 +1615,7 @@ pub fn register_callbacks(
                                                 
                                                 if data_width > 0.0 {
                                                     let aspect_ratio = data_height / data_width;
-                                                    let desired_width = dlg.get_desired_width();
+                                                    let desired_width = parse_from_string(&dlg.get_desired_width(), system).unwrap_or(100.0);
                                                     let output_height = desired_width * aspect_ratio;
                                                     
                                                     dlg.set_output_width(desired_width);
@@ -1561,25 +1661,25 @@ pub fn register_callbacks(
                     )
                     {
                         let params = VectorEngravingParams {
-                            feed_rate: dlg.get_feed_rate(),
-                            travel_rate: dlg.get_travel_rate(),
+                            feed_rate: parse_from_string(&dlg.get_feed_rate(), system).unwrap_or(600.0) as f32,
+                            travel_rate: parse_from_string(&dlg.get_travel_rate(), system).unwrap_or(3000.0) as f32,
                             cut_power: dlg.get_cut_power(),
                             engrave_power: dlg.get_engrave_power(),
-                            power_scale: dlg.get_power_scale(),
+                            power_scale: dlg.get_power_scale().parse::<f32>().unwrap_or(1000.0),
                             multi_pass: dlg.get_multi_pass(),
                             num_passes: dlg.get_num_passes(),
-                            z_increment: dlg.get_z_increment(),
+                            z_increment: parse_from_string(&dlg.get_z_increment(), system).unwrap_or(0.5) as f32,
                             invert_power: dlg.get_invert_power(),
-                            desired_width: dlg.get_desired_width(),
+                            desired_width: parse_from_string(&dlg.get_desired_width(), system).unwrap_or(100.0) as f32,
                             offset_x: dlg.get_offset_x().to_string(),
                             offset_y: dlg.get_offset_y().to_string(),
                             enable_hatch: dlg.get_enable_hatch(),
                             hatch_angle: dlg.get_hatch_angle(),
-                            hatch_spacing: dlg.get_hatch_spacing(),
-                            hatch_tolerance: dlg.get_hatch_tolerance(),
+                            hatch_spacing: parse_from_string(&dlg.get_hatch_spacing(), system).unwrap_or(1.0) as f32,
+                            hatch_tolerance: parse_from_string(&dlg.get_hatch_tolerance(), system).unwrap_or(0.1) as f32,
                             cross_hatch: dlg.get_cross_hatch(),
                             enable_dwell: dlg.get_enable_dwell(),
-                            dwell_time: dlg.get_dwell_time(),
+                            dwell_time: dlg.get_dwell_time().parse::<f32>().unwrap_or(0.1),
                             vector_path: dlg.get_vector_path().to_string(),
                         };
                         
@@ -1635,7 +1735,7 @@ pub fn register_callbacks(
                                     
                                     if width > 0.0 {
                                         let aspect_ratio = height / width;
-                                        let desired_width = dlg.get_desired_width();
+                                        let desired_width = parse_from_string(&dlg.get_desired_width(), system).unwrap_or(100.0);
                                         let output_height = desired_width * aspect_ratio;
                                         
                                         dlg.set_output_width(desired_width);
@@ -1670,7 +1770,7 @@ pub fn register_callbacks(
                                     
                                     if data_width > 0.0 {
                                         let aspect_ratio = data_height / data_width;
-                                        let desired_width = dlg.get_desired_width();
+                                        let desired_width = parse_from_string(&dlg.get_desired_width(), system).unwrap_or(100.0);
                                         let output_height = desired_width * aspect_ratio;
                                         
                                         dlg.set_output_width(desired_width);
@@ -1701,14 +1801,14 @@ pub fn register_callbacks(
                         let size = image.size();
                         if size.width > 0 {
                             let aspect_ratio = size.height as f32 / size.width as f32;
-                            let desired_width = dlg.get_desired_width();
+                            let desired_width = parse_from_string(&dlg.get_desired_width(), system).unwrap_or(100.0);
                             let output_height = desired_width * aspect_ratio;
                             dlg.set_output_width(desired_width);
                             dlg.set_output_height(output_height);
                         }
 
-                        let _feed_rate = dlg.get_feed_rate();
-                        let _travel_rate = dlg.get_travel_rate();
+                        let _feed_rate = parse_from_string(&dlg.get_feed_rate(), system).unwrap_or(600.0);
+                        let _travel_rate = parse_from_string(&dlg.get_travel_rate(), system).unwrap_or(3000.0);
                         let multi_pass = dlg.get_multi_pass();
                         let num_passes = dlg.get_num_passes();
 
@@ -1757,25 +1857,25 @@ pub fn register_callbacks(
                             VectorEngraver, VectorEngravingParameters,
                         };
 
-                        let feed_rate = dlg.get_feed_rate();
-                        let travel_rate = dlg.get_travel_rate();
+                        let feed_rate = parse_from_string(&dlg.get_feed_rate(), system).unwrap_or(600.0);
+                        let travel_rate = parse_from_string(&dlg.get_travel_rate(), system).unwrap_or(3000.0);
                         let cut_power = dlg.get_cut_power();
                         let engrave_power = dlg.get_engrave_power();
-                        let power_scale = dlg.get_power_scale();
+                        let power_scale = dlg.get_power_scale().parse::<f32>().unwrap_or(1000.0);
                         let multi_pass = dlg.get_multi_pass();
                         let num_passes = dlg.get_num_passes() as u32;
-                        let z_increment = dlg.get_z_increment();
+                        let z_increment = parse_from_string(&dlg.get_z_increment(), system).unwrap_or(0.5);
                         let invert_power = dlg.get_invert_power();
-                        let desired_width = dlg.get_desired_width();
-                        let offset_x = dlg.get_offset_x().parse::<f32>().unwrap_or(10.0);
-                        let offset_y = dlg.get_offset_y().parse::<f32>().unwrap_or(10.0);
+                        let desired_width = parse_from_string(&dlg.get_desired_width(), system).unwrap_or(100.0);
+                        let offset_x = parse_from_string(&dlg.get_offset_x(), system).unwrap_or(10.0) as f32;
+                        let offset_y = parse_from_string(&dlg.get_offset_y(), system).unwrap_or(10.0) as f32;
                         let enable_hatch = dlg.get_enable_hatch();
                         let hatch_angle = dlg.get_hatch_angle();
-                        let hatch_spacing = dlg.get_hatch_spacing();
-                        let hatch_tolerance = dlg.get_hatch_tolerance();
+                        let hatch_spacing = parse_from_string(&dlg.get_hatch_spacing(), system).unwrap_or(1.0);
+                        let hatch_tolerance = parse_from_string(&dlg.get_hatch_tolerance(), system).unwrap_or(0.1);
                         let cross_hatch = dlg.get_cross_hatch();
                         let enable_dwell = dlg.get_enable_dwell();
-                        let dwell_time = dlg.get_dwell_time();
+                        let dwell_time = dlg.get_dwell_time().parse::<f32>().unwrap_or(0.1);
 
                         // Show status message and initial progress
                         window.set_connection_status("Generating vector engraving G-code...".into());
@@ -1955,9 +2055,20 @@ pub fn register_callbacks(
     let materials_backend_sf = materials_backend.clone();
     let tools_backend_sf = tools_backend.clone();
     let _device_manager_sf = device_manager.clone();
+    let settings_persistence_sf = settings_persistence.clone();
 
     main_window.on_load_speeds_feeds_data(move || {
         if let Some(window) = window_weak.upgrade() {
+            // Get measurement system
+            let system = {
+                let persistence = settings_persistence_sf.borrow();
+                let sys_str = &persistence.config().ui.measurement_system;
+                MeasurementSystem::from_str(sys_str).unwrap_or(MeasurementSystem::Metric)
+            };
+
+            // Set unit label
+            window.set_sf_unit_label(get_unit_label(system).into());
+
             // Load Materials
             let backend = materials_backend_sf.borrow();
             let materials = backend.get_all_materials();
@@ -1991,6 +2102,7 @@ pub fn register_callbacks(
     let materials_backend_sf = materials_backend.clone();
     let tools_backend_sf = tools_backend.clone();
     let device_manager_sf = device_manager.clone();
+    let settings_persistence_sf_calc = settings_persistence.clone();
 
     main_window.on_calculate_speeds_feeds(move || {
         if let Some(window) = window_weak.upgrade() {
@@ -2010,6 +2122,13 @@ pub fn register_callbacks(
             let tools = tool_backend.get_all_tools();
             let tool = &tools[tool_idx as usize];
 
+            // Get measurement system
+            let system = {
+                let persistence = settings_persistence_sf_calc.borrow();
+                let sys_str = &persistence.config().ui.measurement_system;
+                MeasurementSystem::from_str(sys_str).unwrap_or(MeasurementSystem::Metric)
+            };
+
             // Get machine limits and calculate
             if let Some(profile) = device_manager_sf.get_active_profile() {
                 let result = SpeedsFeedsCalculator::calculate(
@@ -2020,7 +2139,27 @@ pub fn register_callbacks(
 
                 // Update UI
                 window.set_sf_result_rpm(format!("{}", result.rpm).into());
-                window.set_sf_result_feed(format!("{:.0}", result.feed_rate).into());
+                
+                // Convert feed rate if needed (result is in mm/min)
+                let feed_display = to_display_string(result.feed_rate as f32, system);
+                window.set_sf_result_feed(feed_display.into());
+                
+                // Surface speed (m/min or ft/min)
+                // result.surface_speed is in m/min
+                let surface_speed_display = match system {
+                    MeasurementSystem::Metric => format!("{:.1} m/min", result.surface_speed),
+                    MeasurementSystem::Imperial => format!("{:.1} ft/min", result.surface_speed * 3.28084),
+                };
+                window.set_sf_result_surface_speed(surface_speed_display.into());
+                
+                // Chip load (mm/tooth or in/tooth)
+                // result.chip_load is in mm/tooth
+                let chip_load_display = match system {
+                    MeasurementSystem::Metric => format!("{:.3} mm/tooth", result.chip_load),
+                    MeasurementSystem::Imperial => format!("{:.4} in/tooth", result.chip_load / 25.4),
+                };
+                window.set_sf_result_chip_load(chip_load_display.into());
+                
                 // window.set_sf_result_plunge(result.plunge_rate as i32);
                 // window.set_sf_result_depth(result.depth_of_cut as f32);
                 // window.set_sf_result_mrr(result.mrr as f32);

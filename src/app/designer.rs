@@ -1,8 +1,25 @@
 use crate::MainWindow;
+use gcodekit4_core::units::{MeasurementSystem, to_display_string, get_unit_label};
 use std::rc::Rc;
 
 /// Update designer UI with current shapes from state
 pub fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerState) {
+    // Get measurement system from window property (which is set from settings)
+    // Since we don't have direct access to settings here, we'll assume Metric for now
+    // or try to read it from the window if possible.
+    // Better approach: Pass system or settings to this function.
+    // For now, let's default to Metric if we can't get it easily, but we should try to be consistent.
+    // Actually, the window has `unit-label` property which we can read if we exposed it.
+    // But `unit-label` is on the DesignerPanel, not MainWindow directly (it's nested).
+    // Let's assume we can get it from the unit label string if it's "in" or "mm".
+    
+    let unit_label = window.get_designer_unit_label();
+    let system = if unit_label == "in" {
+        MeasurementSystem::Imperial
+    } else {
+        MeasurementSystem::Metric
+    };
+
     // Get canvas dimensions from window
     let canvas_width = window.get_designer_canvas_width().max(100.0) as u32;
     let canvas_height = window.get_designer_canvas_height().max(100.0) as u32;
@@ -61,7 +78,7 @@ pub fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerSt
     window.set_designer_canvas_origin_data(slint::SharedString::from(origin_data));
     window.set_designer_show_grid(state.show_grid);
     if grid_size > 0.0 {
-        window.set_designer_grid_size(slint::SharedString::from(format!("{}mm", grid_size)));
+        window.set_designer_grid_size(slint::SharedString::from(format!("{}{}", to_display_string(grid_size as f32, system), get_unit_label(system))));
     }
     window.set_designer_canvas_shapes_data(slint::SharedString::from(shapes_data));
     window.set_designer_canvas_grouped_shapes_data(slint::SharedString::from(grouped_shapes_data));
@@ -187,29 +204,29 @@ pub fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerSt
         let width = (max_x - min_x).abs();
         let height = (max_y - min_y).abs();
 
-        window.set_designer_selected_shape_x(min_x as f32);
-        window.set_designer_selected_shape_y(min_y as f32);
-        window.set_designer_selected_shape_w(width as f32);
-        window.set_designer_selected_shape_h(height as f32);
+        window.set_designer_selected_shape_x(to_display_string(min_x as f32, system).into());
+        window.set_designer_selected_shape_y(to_display_string(min_y as f32, system).into());
+        window.set_designer_selected_shape_w(to_display_string(width as f32, system).into());
+        window.set_designer_selected_shape_h(to_display_string(height as f32, system).into());
         
         // Set type to mixed (-1) or the common type
         window.set_designer_selected_shape_type(if mixed_types { -1 } else { first_type.unwrap_or(0) });
         
         // Reset specific properties
-        window.set_designer_selected_shape_radius(0.0);
-        window.set_designer_selected_shape_corner_radius(0.0);
+        window.set_designer_selected_shape_radius(to_display_string(0.0, system).into());
+        window.set_designer_selected_shape_corner_radius(to_display_string(0.0, system).into());
         window.set_designer_selected_shape_is_slot(false);
         window.set_designer_selected_shape_name(slint::SharedString::from("Multiple Selection"));
         window.set_designer_selected_shape_text_content(slint::SharedString::from(""));
-        window.set_designer_selected_shape_font_size(0.0);
-        window.set_designer_selected_shape_rotation(0.0);
+        window.set_designer_selected_shape_font_size(to_display_string(0.0, system).into());
+        window.set_designer_selected_shape_rotation(to_display_string(0.0, system).into());
         
         // For CAM properties, we could show common values or defaults
         // For now, just show defaults/mixed
         window.set_designer_selected_shape_is_pocket(false);
-        window.set_designer_selected_shape_pocket_depth(0.0);
-        window.set_designer_selected_shape_step_down(0.0);
-        window.set_designer_selected_shape_step_in(0.0);
+        window.set_designer_selected_shape_pocket_depth(to_display_string(0.0, system).into());
+        window.set_designer_selected_shape_step_down(to_display_string(0.0, system).into());
+        window.set_designer_selected_shape_step_in(to_display_string(0.0, system).into());
         
     } else if let Some(id) = state.canvas.selected_id() {
         if let Some(obj) = state.canvas.shapes().find(|o| o.id == id) {
@@ -235,28 +252,28 @@ pub fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerSt
                 gcodekit4::ShapeType::Text => 6,
             };
 
-            window.set_designer_selected_shape_x(x1 as f32);
-            window.set_designer_selected_shape_y(y1 as f32);
-            window.set_designer_selected_shape_w(width as f32);
-            window.set_designer_selected_shape_h(height as f32);
+            window.set_designer_selected_shape_x(to_display_string(x1 as f32, system).into());
+            window.set_designer_selected_shape_y(to_display_string(y1 as f32, system).into());
+            window.set_designer_selected_shape_w(to_display_string(width as f32, system).into());
+            window.set_designer_selected_shape_h(to_display_string(height as f32, system).into());
             window.set_designer_selected_shape_type(shape_type);
-            window.set_designer_selected_shape_radius(radius as f32);
-            window.set_designer_selected_shape_rotation(obj.shape.rotation() as f32);
+            window.set_designer_selected_shape_radius(to_display_string(radius as f32, system).into());
+            window.set_designer_selected_shape_rotation(to_display_string(obj.shape.rotation() as f32, system).into());
 
             if let gcodekit4::Shape::Rectangle(r) = &obj.shape {
-                window.set_designer_selected_shape_corner_radius(r.corner_radius as f32);
+                window.set_designer_selected_shape_corner_radius(to_display_string(r.corner_radius as f32, system).into());
                 window.set_designer_selected_shape_is_slot(r.is_slot);
             } else {
-                window.set_designer_selected_shape_corner_radius(0.0);
+                window.set_designer_selected_shape_corner_radius(to_display_string(0.0, system).into());
                 window.set_designer_selected_shape_is_slot(false);
             }
 
             let is_pocket =
                 obj.operation_type == gcodekit4::designer::shapes::OperationType::Pocket;
             window.set_designer_selected_shape_is_pocket(is_pocket);
-            window.set_designer_selected_shape_pocket_depth(obj.pocket_depth as f32);
-            window.set_designer_selected_shape_step_down(obj.step_down as f32);
-            window.set_designer_selected_shape_step_in(obj.step_in as f32);
+            window.set_designer_selected_shape_pocket_depth(to_display_string(obj.pocket_depth as f32, system).into());
+            window.set_designer_selected_shape_step_down(to_display_string(obj.step_down as f32, system).into());
+            window.set_designer_selected_shape_step_in(to_display_string(obj.step_in as f32, system).into());
 
             let (strategy_idx, angle, bidir) = match obj.pocket_strategy {
                 gcodekit4::designer::pocket_operations::PocketStrategy::Raster {
@@ -269,7 +286,7 @@ pub fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerSt
                 gcodekit4::designer::pocket_operations::PocketStrategy::Adaptive => (2, 0.0, true),
             };
             window.set_designer_selected_shape_pocket_strategy(strategy_idx);
-            window.set_designer_selected_shape_raster_angle(angle);
+            window.set_designer_selected_shape_raster_angle(to_display_string(angle, system).into());
             window.set_designer_selected_shape_bidirectional(bidir);
 
             if let Some(text) = obj
@@ -280,10 +297,10 @@ pub fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerSt
                 window.set_designer_selected_shape_text_content(slint::SharedString::from(
                     &text.text,
                 ));
-                window.set_designer_selected_shape_font_size(text.font_size as f32);
+                window.set_designer_selected_shape_font_size(to_display_string(text.font_size as f32, system).into());
             } else {
                 window.set_designer_selected_shape_text_content(slint::SharedString::from(""));
-                window.set_designer_selected_shape_font_size(12.0);
+                window.set_designer_selected_shape_font_size(to_display_string(12.0, system).into());
             }
             window.set_designer_selected_shape_name(slint::SharedString::from(obj.name.clone()));
         }
@@ -294,19 +311,19 @@ pub fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerSt
         let obj = &state.default_properties_shape;
         
         // Set dummy values for transform (hidden in UI)
-        window.set_designer_selected_shape_x(0.0);
-        window.set_designer_selected_shape_y(0.0);
-        window.set_designer_selected_shape_w(0.0);
-        window.set_designer_selected_shape_h(0.0);
+        window.set_designer_selected_shape_x(to_display_string(0.0, system).into());
+        window.set_designer_selected_shape_y(to_display_string(0.0, system).into());
+        window.set_designer_selected_shape_w(to_display_string(0.0, system).into());
+        window.set_designer_selected_shape_h(to_display_string(0.0, system).into());
         window.set_designer_selected_shape_type(0);
-        window.set_designer_selected_shape_radius(0.0);
-        window.set_designer_selected_shape_rotation(0.0);
+        window.set_designer_selected_shape_radius(to_display_string(0.0, system).into());
+        window.set_designer_selected_shape_rotation(to_display_string(0.0, system).into());
 
         let is_pocket = obj.operation_type == gcodekit4::designer::shapes::OperationType::Pocket;
         window.set_designer_selected_shape_is_pocket(is_pocket);
-        window.set_designer_selected_shape_pocket_depth(obj.pocket_depth as f32);
-        window.set_designer_selected_shape_step_down(obj.step_down as f32);
-        window.set_designer_selected_shape_step_in(obj.step_in as f32);
+        window.set_designer_selected_shape_pocket_depth(to_display_string(obj.pocket_depth as f32, system).into());
+        window.set_designer_selected_shape_step_down(to_display_string(obj.step_down as f32, system).into());
+        window.set_designer_selected_shape_step_in(to_display_string(obj.step_in as f32, system).into());
 
         let (strategy_idx, angle, bidir) = match obj.pocket_strategy {
             gcodekit4::designer::pocket_operations::PocketStrategy::Raster {
@@ -319,11 +336,11 @@ pub fn update_designer_ui(window: &MainWindow, state: &mut gcodekit4::DesignerSt
             gcodekit4::designer::pocket_operations::PocketStrategy::Adaptive => (2, 0.0, true),
         };
         window.set_designer_selected_shape_pocket_strategy(strategy_idx);
-        window.set_designer_selected_shape_raster_angle(angle);
+        window.set_designer_selected_shape_raster_angle(to_display_string(angle, system).into());
         window.set_designer_selected_shape_bidirectional(bidir);
         
         window.set_designer_selected_shape_text_content(slint::SharedString::from(""));
-        window.set_designer_selected_shape_font_size(12.0);
+        window.set_designer_selected_shape_font_size(to_display_string(12.0, system).into());
     }
 
     // Update selection count for UI features (e.g., alignment menu)

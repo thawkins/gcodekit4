@@ -2,10 +2,12 @@ use crate::app::designer::update_designer_ui;
 use crate::app::helpers::snap_to_mm;
 use crate::MainWindow;
 use gcodekit4::{DesignerState, SettingsPersistence};
+use gcodekit4_core::units::{MeasurementSystem, to_display_string, parse_from_string, get_unit_label};
 use gcodekit4_ui::EditorBridge;
 use slint::ComponentHandle;
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::str::FromStr;
 
 pub fn setup_designer_callbacks(
     main_window: &MainWindow,
@@ -17,10 +19,19 @@ pub fn setup_designer_callbacks(
     // Designer: Set Mode callback
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
+    let settings_persistence_mode = settings_persistence.clone();
     main_window.on_designer_set_mode(move |mode| {
         let mut state = designer_mgr_clone.borrow_mut();
         state.set_mode(mode);
         if let Some(window) = window_weak.upgrade() {
+            // Update unit label
+            let system = {
+                let persistence = settings_persistence_mode.borrow();
+                let sys_str = &persistence.config().ui.measurement_system;
+                MeasurementSystem::from_str(sys_str).unwrap_or(MeasurementSystem::Metric)
+            };
+            window.set_designer_unit_label(get_unit_label(system).into());
+            
             update_designer_ui(&window, &mut state);
             // Create UI state struct from Rust state
             let ui_state = crate::DesignerState {
@@ -723,36 +734,43 @@ pub fn setup_designer_callbacks(
     // Designer: Edit Default Properties callback
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
+    let settings_persistence_edit = settings_persistence.clone();
     main_window.on_designer_edit_default_properties(move || {
         let state = designer_mgr_clone.borrow();
         if let Some(window) = window_weak.upgrade() {
+            let system = {
+                let persistence = settings_persistence_edit.borrow();
+                let sys_str = &persistence.config().ui.measurement_system;
+                MeasurementSystem::from_str(sys_str).unwrap_or(MeasurementSystem::Metric)
+            };
+            
             let defaults = &state.default_properties_shape;
             
             window.set_designer_selected_shape_is_pocket(defaults.operation_type == gcodekit4::designer::shapes::OperationType::Pocket);
-            window.set_designer_selected_shape_pocket_depth(defaults.pocket_depth as f32);
-            window.set_designer_selected_shape_step_down(defaults.step_down);
-            window.set_designer_selected_shape_step_in(defaults.step_in);
+            window.set_designer_selected_shape_pocket_depth(to_display_string(defaults.pocket_depth as f32, system).into());
+            window.set_designer_selected_shape_step_down(to_display_string(defaults.step_down as f32, system).into());
+            window.set_designer_selected_shape_step_in(to_display_string(defaults.step_in as f32, system).into());
             
             match defaults.pocket_strategy {
                 gcodekit4::designer::pocket_operations::PocketStrategy::Raster { angle, bidirectional } => {
                     window.set_designer_selected_shape_pocket_strategy(0); // Raster
-                    window.set_designer_selected_shape_raster_angle(angle as f32);
+                    window.set_designer_selected_shape_raster_angle(to_display_string(angle as f32, system).into());
                     window.set_designer_selected_shape_bidirectional(bidirectional);
                 }
                 gcodekit4::designer::pocket_operations::PocketStrategy::ContourParallel => {
                     window.set_designer_selected_shape_pocket_strategy(1); // Contour
-                    window.set_designer_selected_shape_raster_angle(0.0);
+                    window.set_designer_selected_shape_raster_angle(to_display_string(0.0, system).into());
                     window.set_designer_selected_shape_bidirectional(true);
                 }
                 gcodekit4::designer::pocket_operations::PocketStrategy::Adaptive => {
                     window.set_designer_selected_shape_pocket_strategy(2); // Adaptive
-                    window.set_designer_selected_shape_raster_angle(0.0);
+                    window.set_designer_selected_shape_raster_angle(to_display_string(0.0, system).into());
                     window.set_designer_selected_shape_bidirectional(true);
                 }
             }
             
             window.set_designer_selected_shape_text_content(slint::SharedString::from(""));
-            window.set_designer_selected_shape_font_size(12.0);
+            window.set_designer_selected_shape_font_size(to_display_string(12.0, system).into());
             window.set_designer_selected_shape_use_custom_values(defaults.use_custom_values);
             
             window.set_designer_is_editing_defaults(true);
@@ -1073,9 +1091,17 @@ pub fn setup_designer_callbacks(
     // Designer: Update shape properties immediately
     let designer_mgr_prop = designer_mgr.clone();
     let window_weak_prop = main_window.as_weak();
-    main_window.on_designer_update_shape_property(move |prop_id: i32, value: f32| {
+    let settings_persistence_prop = settings_persistence.clone();
+    main_window.on_designer_update_shape_property(move |prop_id: i32, value_str: slint::SharedString| {
         if let Some(window) = window_weak_prop.upgrade() {
             let mut state = designer_mgr_prop.borrow_mut();
+            let system = {
+                let persistence = settings_persistence_prop.borrow();
+                let sys_str = &persistence.config().ui.measurement_system;
+                MeasurementSystem::from_str(sys_str).unwrap_or(MeasurementSystem::Metric)
+            };
+            
+            let value = parse_from_string(&value_str, system).unwrap_or(0.0);
             
             // Get current values from state (union of all selected)
             let mut min_x = f64::INFINITY;
@@ -1269,36 +1295,65 @@ pub fn setup_designer_callbacks(
 
     // Designer: Update feed rate
     let designer_mgr_clone = designer_mgr.clone();
-    main_window.on_designer_update_feed_rate(move |rate: f32| {
+    let settings_persistence_feed = settings_persistence.clone();
+    main_window.on_designer_update_feed_rate(move |rate_str: slint::SharedString| {
         let mut state = designer_mgr_clone.borrow_mut();
+        let system = {
+            let persistence = settings_persistence_feed.borrow();
+            let sys_str = &persistence.config().ui.measurement_system;
+            MeasurementSystem::from_str(sys_str).unwrap_or(MeasurementSystem::Metric)
+        };
+        let rate = parse_from_string(&rate_str, system).unwrap_or(120.0);
         state.toolpath_generator.set_feed_rate(rate as f64);
     });
 
     // Designer: Update spindle speed
     let designer_mgr_clone = designer_mgr.clone();
-    main_window.on_designer_update_spindle_speed(move |speed: f32| {
+    main_window.on_designer_update_spindle_speed(move |speed_str: slint::SharedString| {
         let mut state = designer_mgr_clone.borrow_mut();
+        let speed = speed_str.parse::<f64>().unwrap_or(3000.0);
         state.toolpath_generator.set_spindle_speed(speed as u32);
     });
 
     // Designer: Update tool diameter
     let designer_mgr_clone = designer_mgr.clone();
-    main_window.on_designer_update_tool_diameter(move |diameter: f32| {
+    let settings_persistence_tool = settings_persistence.clone();
+    main_window.on_designer_update_tool_diameter(move |diameter_str: slint::SharedString| {
         let mut state = designer_mgr_clone.borrow_mut();
+        let system = {
+            let persistence = settings_persistence_tool.borrow();
+            let sys_str = &persistence.config().ui.measurement_system;
+            MeasurementSystem::from_str(sys_str).unwrap_or(MeasurementSystem::Metric)
+        };
+        let diameter = parse_from_string(&diameter_str, system).unwrap_or(3.175);
         state.toolpath_generator.set_tool_diameter(diameter as f64);
     });
 
     // Designer: Update cut depth
     let designer_mgr_clone = designer_mgr.clone();
-    main_window.on_designer_update_cut_depth(move |depth: f32| {
+    let settings_persistence_depth = settings_persistence.clone();
+    main_window.on_designer_update_cut_depth(move |depth_str: slint::SharedString| {
         let mut state = designer_mgr_clone.borrow_mut();
+        let system = {
+            let persistence = settings_persistence_depth.borrow();
+            let sys_str = &persistence.config().ui.measurement_system;
+            MeasurementSystem::from_str(sys_str).unwrap_or(MeasurementSystem::Metric)
+        };
+        let depth = parse_from_string(&depth_str, system).unwrap_or(-5.0);
         state.toolpath_generator.set_cut_depth(depth as f64);
     });
 
     // Designer: Update step in
     let designer_mgr_clone = designer_mgr.clone();
-    main_window.on_designer_update_step_in(move |step_in: f32| {
+    let settings_persistence_step = settings_persistence.clone();
+    main_window.on_designer_update_step_in(move |step_in_str: slint::SharedString| {
         let mut state = designer_mgr_clone.borrow_mut();
+        let system = {
+            let persistence = settings_persistence_step.borrow();
+            let sys_str = &persistence.config().ui.measurement_system;
+            MeasurementSystem::from_str(sys_str).unwrap_or(MeasurementSystem::Metric)
+        };
+        let step_in = parse_from_string(&step_in_str, system).unwrap_or(1.0);
         state.toolpath_generator.set_step_in(step_in as f64);
     });
 
@@ -1446,8 +1501,17 @@ pub fn setup_designer_callbacks(
     // Designer: Create Linear Array
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
-    main_window.on_designer_create_linear_array(move |count_x, count_y, spacing_x, spacing_y| {
+    let settings_persistence_linear = settings_persistence.clone();
+    main_window.on_designer_create_linear_array(move |count_x, count_y, spacing_x_str, spacing_y_str| {
         let mut state = designer_mgr_clone.borrow_mut();
+        let system = {
+            let persistence = settings_persistence_linear.borrow();
+            let sys_str = &persistence.config().ui.measurement_system;
+            MeasurementSystem::from_str(sys_str).unwrap_or(MeasurementSystem::Metric)
+        };
+        let spacing_x = parse_from_string(&spacing_x_str, system).unwrap_or(10.0);
+        let spacing_y = parse_from_string(&spacing_y_str, system).unwrap_or(10.0);
+        
         let params = gcodekit4_designer::LinearArrayParams::new(
             count_x as u32,
             count_y as u32,
@@ -1463,8 +1527,19 @@ pub fn setup_designer_callbacks(
     // Designer: Create Circular Array
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
-    main_window.on_designer_create_circular_array(move |count, center_x, center_y, radius, start_angle, clockwise| {
+    let settings_persistence_circular = settings_persistence.clone();
+    main_window.on_designer_create_circular_array(move |count, center_x_str, center_y_str, radius_str, start_angle_str, clockwise| {
         let mut state = designer_mgr_clone.borrow_mut();
+        let system = {
+            let persistence = settings_persistence_circular.borrow();
+            let sys_str = &persistence.config().ui.measurement_system;
+            MeasurementSystem::from_str(sys_str).unwrap_or(MeasurementSystem::Metric)
+        };
+        let center_x = parse_from_string(&center_x_str, system).unwrap_or(0.0);
+        let center_y = parse_from_string(&center_y_str, system).unwrap_or(0.0);
+        let radius = parse_from_string(&radius_str, system).unwrap_or(50.0);
+        let start_angle = parse_from_string(&start_angle_str, system).unwrap_or(0.0);
+        
         let params = gcodekit4_designer::CircularArrayParams::new(
             count as u32,
             gcodekit4_designer::Point::new(center_x as f64, center_y as f64),
@@ -1481,8 +1556,17 @@ pub fn setup_designer_callbacks(
     // Designer: Create Grid Array
     let designer_mgr_clone = designer_mgr.clone();
     let window_weak = main_window.as_weak();
-    main_window.on_designer_create_grid_array(move |columns, rows, col_spacing, row_spacing| {
+    let settings_persistence_grid = settings_persistence.clone();
+    main_window.on_designer_create_grid_array(move |columns, rows, col_spacing_str, row_spacing_str| {
         let mut state = designer_mgr_clone.borrow_mut();
+        let system = {
+            let persistence = settings_persistence_grid.borrow();
+            let sys_str = &persistence.config().ui.measurement_system;
+            MeasurementSystem::from_str(sys_str).unwrap_or(MeasurementSystem::Metric)
+        };
+        let col_spacing = parse_from_string(&col_spacing_str, system).unwrap_or(10.0);
+        let row_spacing = parse_from_string(&row_spacing_str, system).unwrap_or(10.0);
+        
         let params = gcodekit4_designer::GridArrayParams::new(
             columns as u32,
             rows as u32,

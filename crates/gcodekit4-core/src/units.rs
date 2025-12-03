@@ -142,4 +142,43 @@ mod tests {
         assert_eq!(get_unit_label(MeasurementSystem::Metric), "mm");
         assert_eq!(get_unit_label(MeasurementSystem::Imperial), "in");
     }
+
+    #[test]
+    fn test_negative_values() {
+        assert_eq!(parse_from_string("-10.5", MeasurementSystem::Metric).unwrap(), -10.5);
+        assert_eq!(parse_from_string("-1", MeasurementSystem::Imperial).unwrap(), -25.4);
+        assert_eq!(parse_from_string("-1/2", MeasurementSystem::Imperial).unwrap(), -12.7);
+    }
+
+    #[test]
+    fn test_zero_values() {
+        assert_eq!(parse_from_string("0", MeasurementSystem::Metric).unwrap(), 0.0);
+        assert_eq!(parse_from_string("0", MeasurementSystem::Imperial).unwrap(), 0.0);
+        assert_eq!(parse_from_string("", MeasurementSystem::Metric).unwrap(), 0.0);
+    }
+
+    #[test]
+    fn test_whitespace_handling() {
+        assert_eq!(parse_from_string("  10.5  ", MeasurementSystem::Metric).unwrap(), 10.5);
+        assert_eq!(parse_from_string("  1  1/2  ", MeasurementSystem::Imperial).unwrap(), 38.1);
+    }
+
+    #[test]
+    fn test_invalid_inputs() {
+        assert!(parse_from_string("abc", MeasurementSystem::Metric).is_err());
+        assert!(parse_from_string("1/0", MeasurementSystem::Imperial).is_err()); // Division by zero
+        assert!(parse_from_string("1/2/3", MeasurementSystem::Imperial).is_err()); // Invalid fraction
+    }
+
+    #[test]
+    fn test_rounding_behavior() {
+        // 1/3 inch = 8.4666... mm
+        // Display should round to 3 decimal places
+        let val = 1.0 / 3.0 * 25.4;
+        assert_eq!(to_display_string(val, MeasurementSystem::Imperial), "0.333");
+        
+        // Metric rounding
+        assert_eq!(to_display_string(10.12345, MeasurementSystem::Metric), "10.123");
+        assert_eq!(to_display_string(10.12355, MeasurementSystem::Metric), "10.124");
+    }
 }

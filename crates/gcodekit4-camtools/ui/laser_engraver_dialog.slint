@@ -26,19 +26,20 @@ export component LaserEngraverDialog inherits Window {
     in property <image> preview-image;
     in property <string> estimated-time: "0:00";
     in property <string> output-size: "0 x 0 mm";
+    in property <string> unit-label: "mm";
     
     // Individual parameter properties for two-way binding
-    in-out property <float> width-mm: 100.0;
-    in-out property <float> feed-rate: 1000.0;
-    in-out property <float> travel-rate: 3000.0;
+    in-out property <string> width-mm: "100.0";
+    in-out property <string> feed-rate: "1000.0";
+    in-out property <string> travel-rate: "3000.0";
     in-out property <float> min-power: 0.0;
     in-out property <float> max-power: 100.0;
-    in-out property <float> pixels-per-mm: 10.0;
+    in-out property <string> pixels-per-mm: "10.0";
     in-out property <string> scan-direction: "Horizontal";
     in-out property <bool> bidirectional: true;
     in-out property <bool> invert: false;
-    in-out property <float> line-spacing: 1.0;
-    in-out property <float> power-scale: 1000.0;
+    in-out property <string> line-spacing: "1.0";
+    in-out property <string> power-scale: "1000.0";
     in-out property <bool> mirror-x: false;
     in-out property <bool> mirror-y: false;
     in-out property <string> rotation: "0°";
@@ -144,24 +145,22 @@ export component LaserEngraverDialog inherits Window {
                             spacing: 8px;
                             
                             HorizontalBox {
-                                Text { text: "Width (mm):"; width: 120px; }
+                                Text { text: "Width (" + root.unit-label + "):"; width: 120px; }
                                 LineEdit {
-                                    text: width-mm;
+                                    text <=> width-mm;
                                     horizontal-stretch: 1;
                                     edited => {
-                                        width-mm = self.text.to-float();
                                         update-preview();
                                     }
                                 }
                             }
                             
                             HorizontalBox {
-                                Text { text: "Resolution (px/mm):"; width: 120px; }
+                                Text { text: "Resolution (px/" + root.unit-label + "):"; width: 120px; }
                                 LineEdit {
-                                    text: pixels-per-mm;
+                                    text <=> pixels-per-mm;
                                     horizontal-stretch: 1;
                                     edited => {
-                                        pixels-per-mm = self.text.to-float();
                                         update-preview();
                                     }
                                 }
@@ -194,15 +193,9 @@ export component LaserEngraverDialog inherits Window {
                             
                             HorizontalBox {
                                 Text { text: "Line Spacing:"; width: 120px; }
-                                Slider {
-                                    minimum: 0.5;
-                                    maximum: 2.0;
-                                    value <=> line-spacing;
+                                LineEdit {
+                                    text <=> line-spacing;
                                     horizontal-stretch: 1;
-                                }
-                                Text {
-                                    text: line-spacing;
-                                    width: 40px;
                                 }
                             }
                         }
@@ -246,12 +239,9 @@ export component LaserEngraverDialog inherits Window {
                             HorizontalBox {
                                 Text { text: "Power Scale:"; width: 120px; }
                                 LineEdit {
-                                    text: power-scale;
+                                    text <=> power-scale;
                                     placeholder-text: "1000 for GRBL";
                                     horizontal-stretch: 1;
-                                    edited => {
-                                        power-scale = self.text.to-float();
-                                    }
                                 }
                             }
                         }
@@ -265,25 +255,21 @@ export component LaserEngraverDialog inherits Window {
                             spacing: 8px;
                             
                             HorizontalBox {
-                                Text { text: "Feed Rate (mm/min):"; width: 120px; }
+                                Text { text: "Feed Rate:"; width: 120px; }
                                 LineEdit {
-                                    text: feed-rate;
+                                    text <=> feed-rate;
                                     horizontal-stretch: 1;
                                     edited => {
-                                        feed-rate = self.text.to-float();
                                         update-preview();
                                     }
                                 }
                             }
                             
                             HorizontalBox {
-                                Text { text: "Travel Rate (mm/min):"; width: 120px; }
+                                Text { text: "Travel Rate:"; width: 120px; }
                                 LineEdit {
-                                    text: travel-rate;
+                                    text <=> travel-rate;
                                     horizontal-stretch: 1;
-                                    edited => {
-                                        travel-rate = self.text.to-float();
-                                    }
                                 }
                             }
                         }
@@ -373,7 +359,7 @@ export component LaserEngraverDialog inherits Window {
                     
                     // Work Origin Offsets
                     GroupBox {
-                        title: "Work Origin Offsets (mm)";
+                        title: "Work Origin Offsets (" + root.unit-label + ")";
                         
                         VerticalBox {
                             spacing: 8px;

@@ -140,10 +140,10 @@ fn main() -> anyhow::Result<()> {
     let designer_mgr = Rc::new(RefCell::new(gcodekit4::DesignerState::new()));
 
     // Initialize designer toolpath parameters in UI and backend
-    main_window.set_designer_feed_rate(120.0);
-    main_window.set_designer_spindle_speed(3000.0);
-    main_window.set_designer_tool_diameter(3.175);
-    main_window.set_designer_cut_depth(-5.0);
+    main_window.set_designer_feed_rate(slint::SharedString::from("120.0"));
+    main_window.set_designer_spindle_speed(slint::SharedString::from("3000.0"));
+    main_window.set_designer_tool_diameter(slint::SharedString::from("3.175"));
+    main_window.set_designer_cut_depth(slint::SharedString::from("-5.0"));
 
     // Sync initial values to backend
     {

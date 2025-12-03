@@ -1,8 +1,4 @@
 //! Platform-specific utilities
-use raw_window_handle::{
-    DisplayHandle, HandleError, HasDisplayHandle, HasWindowHandle, RawDisplayHandle,
-    RawWindowHandle, Win32WindowHandle, WindowHandle, WindowsDisplayHandle,
-};
 use std::path::PathBuf;
 
 /// Wrapper for Win32 RawWindowHandle
@@ -28,12 +24,12 @@ impl HasDisplayHandle for Win32ParentHandle {
 }
 
 /// Initialize the window (maximize and focus)
-pub fn initialize_window(window: &slint::Window) {
+pub fn initialize_window(_window: &slint::Window) {
     #[cfg(target_os = "windows")]
     {
         // Ensure HasWindowHandle is in scope for slint::Window
         use raw_window_handle::HasWindowHandle;
-        let handle = window.window_handle();
+        let handle = _window.window_handle();
         if let Ok(raw_handle) = handle.window_handle() {
             if let RawWindowHandle::Win32(win32_handle) = raw_handle.as_raw() {
                 let hwnd = win32_handle.hwnd.get();
@@ -58,13 +54,13 @@ pub fn initialize_window(window: &slint::Window) {
 }
 
 /// Helper to call FileDialog::pick_file with the current foreground window as parent on Windows
-pub fn pick_file_with_parent(dialog: rfd::FileDialog, window: &slint::Window) -> Option<PathBuf> {
+pub fn pick_file_with_parent(dialog: rfd::FileDialog, _window: &slint::Window) -> Option<PathBuf> {
     #[cfg(target_os = "windows")]
     {
         // Extract the HWND from the Slint window and use our wrapper
         // This avoids issues where Slint's handle implementation might cause full-screen dialogs
         use raw_window_handle::HasWindowHandle;
-        if let Ok(handle) = window.window_handle().window_handle() {
+        if let Ok(handle) = _window.window_handle().window_handle() {
             if let RawWindowHandle::Win32(win32_handle) = handle.as_raw() {
                 if let Some(hwnd) = std::num::NonZeroIsize::new(win32_handle.hwnd.get()) {
                     let parent = Win32ParentHandle(hwnd);
@@ -80,11 +76,11 @@ pub fn pick_file_with_parent(dialog: rfd::FileDialog, window: &slint::Window) ->
 }
 
 /// Helper to call FileDialog::save_file with the current foreground window as parent on Windows
-pub fn save_file_with_parent(dialog: rfd::FileDialog, window: &slint::Window) -> Option<PathBuf> {
+pub fn save_file_with_parent(dialog: rfd::FileDialog, _window: &slint::Window) -> Option<PathBuf> {
     #[cfg(target_os = "windows")]
     {
         use raw_window_handle::HasWindowHandle;
-        if let Ok(handle) = window.window_handle().window_handle() {
+        if let Ok(handle) = _window.window_handle().window_handle() {
             if let RawWindowHandle::Win32(win32_handle) = handle.as_raw() {
                 if let Some(hwnd) = std::num::NonZeroIsize::new(win32_handle.hwnd.get()) {
                     let parent = Win32ParentHandle(hwnd);
@@ -99,11 +95,11 @@ pub fn save_file_with_parent(dialog: rfd::FileDialog, window: &slint::Window) ->
 }
 
 /// Helper for folder picking with the foreground window as parent on Windows
-pub fn pick_folder_with_parent(dialog: rfd::FileDialog, window: &slint::Window) -> Option<PathBuf> {
+pub fn pick_folder_with_parent(dialog: rfd::FileDialog, _window: &slint::Window) -> Option<PathBuf> {
     #[cfg(target_os = "windows")]
     {
         use raw_window_handle::HasWindowHandle;
-        if let Ok(handle) = window.window_handle().window_handle() {
+        if let Ok(handle) = _window.window_handle().window_handle() {
             if let RawWindowHandle::Win32(win32_handle) = handle.as_raw() {
                 if let Some(hwnd) = std::num::NonZeroIsize::new(win32_handle.hwnd.get()) {
                     let parent = Win32ParentHandle(hwnd);

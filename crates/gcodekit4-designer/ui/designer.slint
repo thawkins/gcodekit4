@@ -40,13 +40,11 @@ component DarkCheckBox inherits HorizontalLayout {
 }
 
 component CompactSpinBox inherits Rectangle {
-    in-out property <float> value;
-    in property <float> minimum: 0;
-    in property <float> maximum: 100;
-    in property <float> step: 1.0;
+    in-out property <string> value;
     in property <bool> enabled: true;
+    in property <string> placeholder: "";
     
-    callback value-changed(float);
+    callback value-changed(string);
     
     background: enabled ? #34495e : #2c3e50;
     border-width: 1px;
@@ -61,7 +59,7 @@ component CompactSpinBox inherits Rectangle {
             horizontal-stretch: 1;
             
             text-input := TextInput {
-                text: Math.round(value * 100.0) / 100.0;
+                text: value;
                 horizontal-alignment: center;
                 vertical-alignment: center;
                 font-size: 13px;
@@ -69,66 +67,8 @@ component CompactSpinBox inherits Rectangle {
                 color: root.enabled ? #ecf0f1 : #7f8c8d;
                 
                 edited => {
-                    if (self.text != "") {
-                        value = max(minimum, min(maximum, self.text.to-float()));
-                        value-changed(value);
-                    }
-                }
-            }
-        }
-        
-        VerticalLayout {
-            padding: 0px;
-            spacing: 0px;
-            width: 15px;
-            
-            Rectangle {
-                height: 11px;
-                background: up-touch.has-hover && root.enabled ? #465c71 : #2c3e50;
-                border-width: 1px;
-                border-color: #555;
-                
-                Text {
-                    text: "▲";
-                    font-size: 8px;
-                    horizontal-alignment: center;
-                    vertical-alignment: center;
-                    color: root.enabled ? #bdc3c7 : #555;
-                }
-                
-                up-touch := TouchArea {
-                    enabled: root.enabled;
-                    clicked => {
-                        if (value < maximum) {
-                            value = min(maximum, value + step);
-                            value-changed(value);
-                        }
-                    }
-                }
-            }
-            
-            Rectangle {
-                height: 11px;
-                background: down-touch.has-hover && root.enabled ? #465c71 : #2c3e50;
-                border-width: 1px;
-                border-color: #555;
-                
-                Text {
-                    text: "▼";
-                    font-size: 8px;
-                    horizontal-alignment: center;
-                    vertical-alignment: center;
-                    color: root.enabled ? #bdc3c7 : #555;
-                }
-                
-                down-touch := TouchArea {
-                    enabled: root.enabled;
-                    clicked => {
-                        if (value > minimum) {
-                            value = max(minimum, value - step);
-                            value-changed(value);
-                        }
-                    }
+                    value = self.text;
+                    value-changed(value);
                 }
             }
         }
@@ -302,9 +242,10 @@ component ConvertConfirmationDialog inherits Dialog {
 component ArrayLinearDialog inherits Dialog {
     in-out property <int> count_x: 2;
     in-out property <int> count_y: 1;
-    in-out property <float> spacing_x: 10.0;
-    in-out property <float> spacing_y: 10.0;
-    callback confirm(int, int, float, float);
+    in-out property <string> spacing_x: "10.0";
+    in-out property <string> spacing_y: "10.0";
+    in property <string> unit-label: "mm";
+    callback confirm(int, int, string, string);
     callback cancel();
     
     width: 300px;
@@ -326,19 +267,19 @@ component ArrayLinearDialog inherits Dialog {
         
         HorizontalBox {
             Text { text: "Count X:"; vertical-alignment: center; width: 80px; color: #bdc3c7; }
-            CompactSpinBox { value: root.count_x; minimum: 1; maximum: 100; step: 1; value-changed(v) => { root.count_x = Math.round(v); } }
+            CompactSpinBox { value: root.count_x; value-changed(v) => { root.count_x = Math.round(v.to-float()); } }
         }
         HorizontalBox {
             Text { text: "Count Y:"; vertical-alignment: center; width: 80px; color: #bdc3c7; }
-            CompactSpinBox { value: root.count_y; minimum: 1; maximum: 100; step: 1; value-changed(v) => { root.count_y = Math.round(v); } }
+            CompactSpinBox { value: root.count_y; value-changed(v) => { root.count_y = Math.round(v.to-float()); } }
         }
         HorizontalBox {
-            Text { text: "Spacing X:"; vertical-alignment: center; width: 80px; color: #bdc3c7; }
-            CompactSpinBox { value: root.spacing_x; minimum: -1000.0; maximum: 1000.0; step: 1.0; value-changed(v) => { root.spacing_x = v; } }
+            Text { text: "Spacing X (" + root.unit-label + "):"; vertical-alignment: center; width: 100px; color: #bdc3c7; }
+            CompactSpinBox { value: root.spacing_x; value-changed(v) => { root.spacing_x = v; } }
         }
         HorizontalBox {
-            Text { text: "Spacing Y:"; vertical-alignment: center; width: 80px; color: #bdc3c7; }
-            CompactSpinBox { value: root.spacing_y; minimum: -1000.0; maximum: 1000.0; step: 1.0; value-changed(v) => { root.spacing_y = v; } }
+            Text { text: "Spacing Y (" + root.unit-label + "):"; vertical-alignment: center; width: 100px; color: #bdc3c7; }
+            CompactSpinBox { value: root.spacing_y; value-changed(v) => { root.spacing_y = v; } }
         }
         
         HorizontalBox {
@@ -352,12 +293,13 @@ component ArrayLinearDialog inherits Dialog {
 
 component ArrayCircularDialog inherits Dialog {
     in-out property <int> count: 4;
-    in-out property <float> center_x: 0.0;
-    in-out property <float> center_y: 0.0;
-    in-out property <float> radius: 50.0;
-    in-out property <float> start_angle: 0.0;
+    in-out property <string> center_x: "0.0";
+    in-out property <string> center_y: "0.0";
+    in-out property <string> radius: "50.0";
+    in-out property <string> start_angle: "0.0";
     in-out property <bool> clockwise: true;
-    callback confirm(int, float, float, float, float, bool);
+    in property <string> unit-label: "mm";
+    callback confirm(int, string, string, string, string, bool);
     callback cancel();
     
     width: 300px;
@@ -379,23 +321,23 @@ component ArrayCircularDialog inherits Dialog {
         
         HorizontalBox {
             Text { text: "Count:"; vertical-alignment: center; width: 80px; color: #bdc3c7; }
-            CompactSpinBox { value: root.count; minimum: 1; maximum: 100; step: 1; value-changed(v) => { root.count = Math.round(v); } }
+            CompactSpinBox { value: root.count; value-changed(v) => { root.count = Math.round(v.to-float()); } }
         }
         HorizontalBox {
-            Text { text: "Center X:"; vertical-alignment: center; width: 80px; color: #bdc3c7; }
-            CompactSpinBox { value: root.center_x; minimum: -1000.0; maximum: 1000.0; step: 1.0; value-changed(v) => { root.center_x = v; } }
+            Text { text: "Center X (" + root.unit-label + "):"; vertical-alignment: center; width: 100px; color: #bdc3c7; }
+            CompactSpinBox { value: root.center_x; value-changed(v) => { root.center_x = v; } }
         }
         HorizontalBox {
-            Text { text: "Center Y:"; vertical-alignment: center; width: 80px; color: #bdc3c7; }
-            CompactSpinBox { value: root.center_y; minimum: -1000.0; maximum: 1000.0; step: 1.0; value-changed(v) => { root.center_y = v; } }
+            Text { text: "Center Y (" + root.unit-label + "):"; vertical-alignment: center; width: 100px; color: #bdc3c7; }
+            CompactSpinBox { value: root.center_y; value-changed(v) => { root.center_y = v; } }
         }
         HorizontalBox {
-            Text { text: "Radius:"; vertical-alignment: center; width: 80px; color: #bdc3c7; }
-            CompactSpinBox { value: root.radius; minimum: 0.0; maximum: 1000.0; step: 1.0; value-changed(v) => { root.radius = v; } }
+            Text { text: "Radius (" + root.unit-label + "):"; vertical-alignment: center; width: 100px; color: #bdc3c7; }
+            CompactSpinBox { value: root.radius; value-changed(v) => { root.radius = v; } }
         }
         HorizontalBox {
-            Text { text: "Start Angle:"; vertical-alignment: center; width: 80px; color: #bdc3c7; }
-            CompactSpinBox { value: root.start_angle; minimum: -360.0; maximum: 360.0; step: 15.0; value-changed(v) => { root.start_angle = v; } }
+            Text { text: "Start Angle (°):"; vertical-alignment: center; width: 100px; color: #bdc3c7; }
+            CompactSpinBox { value: root.start_angle; value-changed(v) => { root.start_angle = v; } }
         }
         DarkCheckBox { text: "Clockwise"; checked <=> root.clockwise; }
         
@@ -411,9 +353,10 @@ component ArrayCircularDialog inherits Dialog {
 component ArrayGridDialog inherits Dialog {
     in-out property <int> columns: 2;
     in-out property <int> rows: 2;
-    in-out property <float> col_spacing: 10.0;
-    in-out property <float> row_spacing: 10.0;
-    callback confirm(int, int, float, float);
+    in-out property <string> col_spacing: "10.0";
+    in-out property <string> row_spacing: "10.0";
+    in property <string> unit-label: "mm";
+    callback confirm(int, int, string, string);
     callback cancel();
     
     width: 300px;
@@ -435,19 +378,19 @@ component ArrayGridDialog inherits Dialog {
         
         HorizontalBox {
             Text { text: "Columns:"; vertical-alignment: center; width: 80px; color: #bdc3c7; }
-            CompactSpinBox { value: root.columns; minimum: 1; maximum: 100; step: 1; value-changed(v) => { root.columns = Math.round(v); } }
+            CompactSpinBox { value: root.columns; value-changed(v) => { root.columns = Math.round(v.to-float()); } }
         }
         HorizontalBox {
             Text { text: "Rows:"; vertical-alignment: center; width: 80px; color: #bdc3c7; }
-            CompactSpinBox { value: root.rows; minimum: 1; maximum: 100; step: 1; value-changed(v) => { root.rows = Math.round(v); } }
+            CompactSpinBox { value: root.rows; value-changed(v) => { root.rows = Math.round(v.to-float()); } }
         }
         HorizontalBox {
-            Text { text: "Col Spacing:"; vertical-alignment: center; width: 80px; color: #bdc3c7; }
-            CompactSpinBox { value: root.col_spacing; minimum: -1000.0; maximum: 1000.0; step: 1.0; value-changed(v) => { root.col_spacing = v; } }
+            Text { text: "Col Spacing (" + root.unit-label + "):"; vertical-alignment: center; width: 100px; color: #bdc3c7; }
+            CompactSpinBox { value: root.col_spacing; value-changed(v) => { root.col_spacing = v; } }
         }
         HorizontalBox {
-            Text { text: "Row Spacing:"; vertical-alignment: center; width: 80px; color: #bdc3c7; }
-            CompactSpinBox { value: root.row_spacing; minimum: -1000.0; maximum: 1000.0; step: 1.0; value-changed(v) => { root.row_spacing = v; } }
+            Text { text: "Row Spacing (" + root.unit-label + "):"; vertical-alignment: center; width: 100px; color: #bdc3c7; }
+            CompactSpinBox { value: root.row_spacing; value-changed(v) => { root.row_spacing = v; } }
         }
         
         HorizontalBox {
@@ -1140,11 +1083,12 @@ export component DesignerPanel inherits Rectangle {
     
     in property <[DesignerShape]> shapes: [];
     in property <DesignerState> designer_state;
-    in-out property <float> feed_rate;
-    in-out property <float> spindle_speed;
-    in-out property <float> tool_diameter;
-    in-out property <float> cut_depth;
-    in-out property <float> step_in;
+    in-out property <string> feed_rate: "120.0";
+    in-out property <string> spindle_speed: "3000.0";
+    in-out property <string> tool_diameter: "3.175";
+    in-out property <string> cut_depth: "-5.0";
+    in-out property <string> step_in: "1.0";
+    in property <string> unit-label: "mm";
     in property <string> generated_gcode: "";
     in property <bool> gcode_generated: false;
     in property <float> zoom_scale: 1.0;
@@ -1163,26 +1107,26 @@ export component DesignerPanel inherits Rectangle {
     in property <int> selected_count: 0;
     out property <float> canvas-width: canvas-rect.width / 1px;
     out property <float> canvas-height: canvas-rect.height / 1px;
-    in property <float> selected_shape_x: 0.0;
-    in property <float> selected_shape_y: 0.0;
-    in property <float> selected_shape_w: 0.0;
-    in property <float> selected_shape_h: 0.0;
+    in property <string> selected_shape_x: "0.0";
+    in property <string> selected_shape_y: "0.0";
+    in property <string> selected_shape_w: "0.0";
+    in property <string> selected_shape_h: "0.0";
     in property <int> selected_shape_type: 0;
-    in property <float> selected_shape_radius: 5.0;
+    in property <string> selected_shape_radius: "5.0";
     in property <bool> selected_shape_is_pocket: false;
-    in property <float> selected_shape_pocket_depth: 0.0;
-    in property <float> selected_shape_step_down: 0.0;
-    in property <float> selected_shape_step_in: 0.0;
+    in property <string> selected_shape_pocket_depth: "0.0";
+    in property <string> selected_shape_step_down: "0.0";
+    in property <string> selected_shape_step_in: "0.0";
     in property <int> selected_shape_pocket_strategy: 1;
-    in property <float> selected_shape_raster_angle: 0.0;
+    in property <string> selected_shape_raster_angle: "0.0";
     in property <bool> selected_shape_bidirectional: true;
     in property <bool> selected_shape_use_custom_values: false;
     in property <string> selected_shape_text_content: "";
-    in property <float> selected_shape_font_size: 12.0;
+    in property <string> selected_shape_font_size: "12.0";
     in property <string> selected_shape_name: "";
-    in property <float> selected_shape_corner_radius: 0.0;
+    in property <string> selected_shape_corner_radius: "0.0";
     in property <bool> selected_shape_is_slot: false;
-    in property <float> selected_shape_rotation: 0.0;
+    in property <string> selected_shape_rotation: "0.0";
     in property <int> delete_confirmation_trigger: 0;
     in property <int> delete_confirmation_count: 0;
     
@@ -1190,8 +1134,8 @@ export component DesignerPanel inherits Rectangle {
     in-out property <bool> is_editing_defaults: false;
     
     // Array dialog initial values
-    property <float> array_center_x: 0.0;
-    property <float> array_center_y: 0.0;
+    property <string> array_center_x: "0.0";
+    property <string> array_center_y: "0.0";
 
     private property <float> original_shape_x: 0.0;
     private property <float> original_shape_y: 0.0;
@@ -1228,11 +1172,11 @@ export component DesignerPanel inherits Rectangle {
     callback ungroup_selected();
     callback clear_canvas();
     callback generate_toolpath();
-    callback update_feed_rate(float);
-    callback update_spindle_speed(float);
-    callback update_tool_diameter(float);
-    callback update_cut_depth(float);
-    callback update_step_in(float);
+    callback update_feed_rate(string);
+    callback update_spindle_speed(string);
+    callback update_tool_diameter(string);
+    callback update_cut_depth(string);
+    callback update_step_in(string);
     callback import_dxf();
     callback import_svg();
     callback export_design();
@@ -1245,7 +1189,7 @@ export component DesignerPanel inherits Rectangle {
     callback set_shift_pressed(bool);              // Notify backend of Shift key state
     callback show_context_menu(float, float);      // x, y - show context menu
     callback save_shape_properties();              // Save all properties from current dialog values
-    callback update_shape_property(int, float);    // property_id, value (0=x, 1=y, 2=w, 3=h, 4=radius, 5=pocket_depth, 6=font_size, 7=step_down)
+    callback update_shape_property(int, string);    // property_id, value (0=x, 1=y, 2=w, 3=h, 4=radius, 5=pocket_depth, 6=font_size, 7=step_down)
     callback update_shape_property_bool(int, bool); // property_id, value (0=is_pocket, 1=bidirectional, 2=use_custom_values, 3=is_slot)
     callback update_shape_property_string(int, string); // property_id, value (0=text_content, 1=name)
     callback select_next_shape();
@@ -1268,9 +1212,9 @@ export component DesignerPanel inherits Rectangle {
     callback convert_to_rectangle();
     callback convert_to_path();
     callback confirm_convert(string); // "Rectangle" or "Path"
-    callback create_linear_array(int, int, float, float);
-    callback create_circular_array(int, float, float, float, float, bool);
-    callback create_grid_array(int, int, float, float);
+    callback create_linear_array(int, int, string, string);
+    callback create_circular_array(int, string, string, string, string, bool);
+    callback create_grid_array(int, int, string, string);
     
     // File operation callbacks
     callback file_new();
@@ -1502,16 +1446,13 @@ export component DesignerPanel inherits Rectangle {
                 HorizontalLayout {
                     spacing: 2px;
                     Text { 
-                        text: "Feed:"; 
-                        width: 40px;
+                        text: "Feed (" + root.unit-label + "/min):"; 
+                        width: 100px;
                         vertical-alignment: center;
                         color: #bdc3c7;
                     }
                     CompactSpinBox { 
                         value: root.feed_rate; 
-                        minimum: 0;
-                        maximum: 10000;
-                        step: 10;
                         horizontal-stretch: 1;
                         value-changed(v) => {
                             root.feed_rate = v;
@@ -1523,16 +1464,13 @@ export component DesignerPanel inherits Rectangle {
                 HorizontalLayout {
                     spacing: 2px;
                     Text { 
-                        text: "Speed:"; 
-                        width: 40px;
+                        text: "Speed (RPM):"; 
+                        width: 100px;
                         vertical-alignment: center;
                         color: #bdc3c7;
                     }
                     CompactSpinBox { 
                         value: root.spindle_speed;
-                        minimum: 0;
-                        maximum: 30000;
-                        step: 100;
                         horizontal-stretch: 1;
                         value-changed(v) => {
                             root.spindle_speed = v;
@@ -1544,16 +1482,13 @@ export component DesignerPanel inherits Rectangle {
                 HorizontalLayout {
                     spacing: 2px;
                     Text { 
-                        text: "Tool:"; 
-                        width: 40px;
+                        text: "Tool (" + root.unit-label + "):"; 
+                        width: 100px;
                         vertical-alignment: center;
                         color: #bdc3c7;
                     }
                     CompactSpinBox { 
                         value: root.tool_diameter;
-                        minimum: 0.1;
-                        maximum: 50;
-                        step: 0.1;
                         horizontal-stretch: 1;
                         value-changed(v) => {
                             root.tool_diameter = v;
@@ -1565,16 +1500,13 @@ export component DesignerPanel inherits Rectangle {
                 HorizontalLayout {
                     spacing: 2px;
                     Text { 
-                        text: "Depth:"; 
-                        width: 40px;
+                        text: "Depth (" + root.unit-label + "):"; 
+                        width: 100px;
                         vertical-alignment: center;
                         color: #bdc3c7;
                     }
                     CompactSpinBox { 
                         value: root.cut_depth;
-                        minimum: -50;
-                        maximum: 0;
-                        step: 0.1;
                         horizontal-stretch: 1;
                         value-changed(v) => {
                             root.cut_depth = v;
@@ -1586,16 +1518,13 @@ export component DesignerPanel inherits Rectangle {
                 HorizontalLayout {
                     spacing: 2px;
                     Text { 
-                        text: "Step:"; 
-                        width: 40px;
+                        text: "Step (" + root.unit-label + "):"; 
+                        width: 100px;
                         vertical-alignment: center;
                         color: #bdc3c7;
                     }
                     CompactSpinBox { 
                         value: root.step_in;
-                        minimum: 0.1;
-                        maximum: 50;
-                        step: 0.1;
                         horizontal-stretch: 1;
                         value-changed(v) => {
                             root.step_in = v;
@@ -2141,42 +2070,37 @@ export component DesignerPanel inherits Rectangle {
                                 
                                 HorizontalBox {
                                     spacing: 5px;
-                                    Text { text: "X:"; vertical-alignment: center; width: 20px; color: #bdc3c7; }
+                                    Text { text: "X (" + root.unit-label + "):"; vertical-alignment: center; width: 60px; color: #bdc3c7; }
                                     CompactSpinBox { 
                                         value: root.selected_shape_x;
-                                        minimum: -100000.0; maximum: 100000.0; step: 0.1;
                                         value-changed(v) => { root.update_shape_property(0, v); }
                                     }
-                                    Text { text: "Y:"; vertical-alignment: center; width: 20px; color: #bdc3c7; }
+                                    Text { text: "Y (" + root.unit-label + "):"; vertical-alignment: center; width: 60px; color: #bdc3c7; }
                                     CompactSpinBox { 
                                         value: root.selected_shape_y;
-                                        minimum: -100000.0; maximum: 100000.0; step: 0.1;
                                         value-changed(v) => { root.update_shape_property(1, v); }
                                     }
                                 }
                                 
                                 HorizontalBox {
                                     spacing: 5px;
-                                    Text { text: "W:"; vertical-alignment: center; width: 20px; color: #bdc3c7; }
+                                    Text { text: "W (" + root.unit-label + "):"; vertical-alignment: center; width: 60px; color: #bdc3c7; }
                                     CompactSpinBox { 
                                         value: root.selected_shape_w;
-                                        minimum: 0.1; maximum: 100000.0; step: 0.1;
                                         value-changed(v) => { root.update_shape_property(2, v); }
                                     }
-                                    Text { text: "H:"; vertical-alignment: center; width: 20px; color: #bdc3c7; }
+                                    Text { text: "H (" + root.unit-label + "):"; vertical-alignment: center; width: 60px; color: #bdc3c7; }
                                     CompactSpinBox { 
                                         value: root.selected_shape_h;
-                                        minimum: 0.1; maximum: 100000.0; step: 0.1;
                                         value-changed(v) => { root.update_shape_property(3, v); }
                                     }
                                 }
                                 
                                 HorizontalBox {
                                     spacing: 5px;
-                                    Text { text: "Rot:"; vertical-alignment: center; width: 20px; color: #bdc3c7; }
+                                    Text { text: "Rot (°):"; vertical-alignment: center; width: 60px; color: #bdc3c7; }
                                     CompactSpinBox { 
                                         value: root.selected_shape_rotation;
-                                        minimum: -360.0; maximum: 360.0; step: 1.0;
                                         enabled: root.selected_count > 0;
                                         value-changed(v) => { root.update_shape_property(11, v); }
                                     }
@@ -2189,12 +2113,9 @@ export component DesignerPanel inherits Rectangle {
                                     
                                     HorizontalBox {
                                         spacing: 5px;
-                                        Text { text: "Radius:"; vertical-alignment: center; width: 45px; color: #bdc3c7; }
+                                        Text { text: "Radius (" + root.unit-label + "):"; vertical-alignment: center; width: 80px; color: #bdc3c7; }
                                         CompactSpinBox { 
                                             value: root.selected_shape_corner_radius;
-                                            minimum: 0.0; 
-                                            maximum: min(root.selected_shape_w, root.selected_shape_h) / 2.0;
-                                            step: 0.5;
                                             enabled: !root.selected_shape_is_slot;
                                             value-changed(v) => { root.update_shape_property(4, v); }
                                         }
@@ -2228,10 +2149,9 @@ export component DesignerPanel inherits Rectangle {
                                     
                                     HorizontalBox {
                                         spacing: 5px;
-                                        Text { text: "Size:"; vertical-alignment: center; color: #bdc3c7; }
+                                        Text { text: "Size (" + root.unit-label + "):"; vertical-alignment: center; color: #bdc3c7; }
                                         CompactSpinBox { 
                                             value: root.selected_shape_font_size;
-                                            minimum: 1.0; maximum: 1000.0;
                                             value-changed(v) => { root.update_shape_property(6, v); }
                                         }
                                     }
@@ -2257,50 +2177,46 @@ export component DesignerPanel inherits Rectangle {
                                     spacing: 5px;
                                     
                                     HorizontalBox {
-                                        Text { text: "Depth:"; vertical-alignment: center; width: 60px; color: #bdc3c7; }
+                                        Text { text: "Depth (" + root.unit-label + "):"; vertical-alignment: center; width: 100px; color: #bdc3c7; }
                                         CompactSpinBox { 
                                             value: root.selected_shape_pocket_depth;
-                                            minimum: -100.0; maximum: 100.0;
                                             value-changed(v) => { root.update_shape_property(5, v); }
                                         }
                                     }
                                     
                                     HorizontalBox {
-                                        Text { text: "Step Down:"; vertical-alignment: center; width: 60px; color: #bdc3c7; }
+                                        Text { text: "Step Down (" + root.unit-label + "):"; vertical-alignment: center; width: 100px; color: #bdc3c7; }
                                         CompactSpinBox { 
                                             value: root.selected_shape_step_down;
-                                            minimum: 0.1; maximum: 100.0;
                                             value-changed(v) => { root.update_shape_property(7, v); }
                                         }
                                     }
                                     
                                     HorizontalBox {
-                                        Text { text: "Step In:"; vertical-alignment: center; width: 60px; color: #bdc3c7; }
+                                        Text { text: "Step In (" + root.unit-label + "):"; vertical-alignment: center; width: 100px; color: #bdc3c7; }
                                         CompactSpinBox { 
                                             value: root.selected_shape_step_in;
-                                            minimum: 0.1; maximum: 100.0;
                                             value-changed(v) => { root.update_shape_property(8, v); }
                                         }
                                     }
                                     
                                     HorizontalBox {
-                                        Text { text: "Strategy:"; vertical-alignment: center; width: 60px; color: #bdc3c7; }
+                                        Text { text: "Strategy:"; vertical-alignment: center; width: 100px; color: #bdc3c7; }
                                         ComboBox {
                                             model: ["Raster", "Contour", "Adaptive"];
                                             current-index: root.selected_shape_pocket_strategy;
                                             selected(val) => { 
-                                                if (val == "Raster") { root.update_shape_property(9, 0.0); }
-                                                if (val == "Contour") { root.update_shape_property(9, 1.0); }
-                                                if (val == "Adaptive") { root.update_shape_property(9, 2.0); }
+                                                if (val == "Raster") { root.update_shape_property(9, "0.0"); }
+                                                if (val == "Contour") { root.update_shape_property(9, "1.0"); }
+                                                if (val == "Adaptive") { root.update_shape_property(9, "2.0"); }
                                             }
                                         }
                                     }
                                     
                                     HorizontalBox {
-                                        Text { text: "Angle:"; vertical-alignment: center; width: 60px; color: #bdc3c7; }
+                                        Text { text: "Angle (°):"; vertical-alignment: center; width: 100px; color: #bdc3c7; }
                                         CompactSpinBox { 
                                             value: root.selected_shape_raster_angle;
-                                            minimum: -360.0; maximum: 360.0;
                                             value-changed(v) => { root.update_shape_property(10, v); }
                                         }
                                     }
@@ -2506,8 +2422,8 @@ export component DesignerPanel inherits Rectangle {
         }
         
         create_circular_array => {
-            root.array_center_x = root.selected_shape_x + root.selected_shape_w / 2.0;
-            root.array_center_y = root.selected_shape_y + root.selected_shape_h / 2.0;
+            root.array_center_x = root.selected_shape_x;
+            root.array_center_y = root.selected_shape_y;
             root.array_circular_visible = true;
         }
         
@@ -2574,6 +2490,7 @@ export component DesignerPanel inherits Rectangle {
         TouchArea { clicked => { root.array_linear_visible = false; } }
         
         ArrayLinearDialog {
+            unit-label: root.unit-label;
             confirm(cx, cy, sx, sy) => {
                 root.array_linear_visible = false;
                 root.create_linear_array(cx, cy, sx, sy);
@@ -2591,6 +2508,7 @@ export component DesignerPanel inherits Rectangle {
         TouchArea { clicked => { root.array_circular_visible = false; } }
         
         ArrayCircularDialog {
+            unit-label: root.unit-label;
             center_x: root.array_center_x;
             center_y: root.array_center_y;
             confirm(c, cx, cy, r, sa, cw) => {
@@ -2610,6 +2528,7 @@ export component DesignerPanel inherits Rectangle {
         TouchArea { clicked => { root.array_grid_visible = false; } }
         
         ArrayGridDialog {
+            unit-label: root.unit-label;
             confirm(c, r, cs, rs) => {
                 root.array_grid_visible = false;
                 root.create_grid_array(c, r, cs, rs);

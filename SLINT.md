@@ -95,3 +95,11 @@ Common UI elements are defined in `shared.slint` to ensure consistency:
 - **Solution**: Use `crate::platform::pick_file_with_parent` wrappers which manually extract the HWND and wrap it in a clean `Win32ParentHandle`. This ensures the dialog has a parent (fixing Z-order) without inheriting problematic window styles (fixing full-screen).
 - **Implementation**: Uses `raw-window-handle` to extract the HWND and creates a custom `HasWindowHandle` implementation.
 
+## Numeric Inputs and Unit Conversion
+When dealing with numeric inputs that require unit conversion (e.g., switching between mm and inches) or specific formatting (e.g., keeping trailing zeros), it is often better to bind the UI property to a `string` rather than a `float`.
+- **Problem**: Binding a `LineEdit` text directly to a `float` property can cause issues with formatting (e.g., precision loss, unwanted rounding) and makes it difficult to handle unit labels or fractional inputs (like "1 1/2").
+- **Solution**: Use `string` properties in the `.slint` file for the display value. Perform parsing and validation in the Rust backend.
+    - In Slint: `property <string> my-value: "0.0";`
+    - In Rust: Use `slint::SharedString` to pass values. Parse the string using a helper (like `units::parse_from_string`) that handles the current unit system.
+    - This allows the UI to display exactly what the user types or a formatted representation (e.g., "10.000") without fighting the automatic float-to-string conversion.
+

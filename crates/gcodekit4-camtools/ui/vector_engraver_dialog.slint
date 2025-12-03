@@ -25,29 +25,30 @@ export component VectorEngraverDialog inherits Window {
     in property <string> file-info: "No file selected";
     in property <image> preview-image;
     in property <string> estimated-time: "0:00";
+    in property <string> unit-label: "mm";
     
     // Individual parameter properties for two-way binding
-    in-out property <float> feed-rate: 600.0;
-    in-out property <float> travel-rate: 3000.0;
+    in-out property <string> feed-rate: "600.0";
+    in-out property <string> travel-rate: "3000.0";
     in-out property <float> cut-power: 100.0;
     in-out property <float> engrave-power: 50.0;
-    in-out property <float> power-scale: 1000.0;
+    in-out property <string> power-scale: "1000.0";
     in-out property <bool> multi-pass: false;
     in-out property <int> num-passes: 1;
-    in-out property <float> z-increment: 0.5;
+    in-out property <string> z-increment: "0.5";
     in-out property <bool> invert-power: false;
-    in-out property <float> desired-width: 100.0;
+    in-out property <string> desired-width: "100.0";
     in property <float> output-width: 0.0;
     in property <float> output-height: 0.0;
     in-out property <string> offset-x: "10.0";
     in-out property <string> offset-y: "10.0";
     in-out property <bool> enable-hatch: false;
     in-out property <float> hatch-angle: 45.0;
-    in-out property <float> hatch-spacing: 1.0;
-    in-out property <float> hatch-tolerance: 0.1;
+    in-out property <string> hatch-spacing: "1.0";
+    in-out property <string> hatch-tolerance: "0.1";
     in-out property <bool> cross-hatch: false;
     in-out property <bool> enable-dwell: false;
-    in-out property <float> dwell-time: 0.1;
+    in-out property <string> dwell-time: "0.1";
     
     callback load-vector-file();
     callback generate-gcode();
@@ -189,25 +190,21 @@ export component VectorEngraverDialog inherits Window {
                             spacing: 8px;
                             
                             HorizontalBox {
-                                Text { text: "Feed Rate (mm/min):"; width: 140px; }
+                                Text { text: "Feed Rate (" + root.unit-label + "/min):"; width: 140px; }
                                 LineEdit {
-                                    text: feed-rate;
+                                    text <=> feed-rate;
                                     horizontal-stretch: 1;
                                     edited => {
-                                        feed-rate = self.text.to-float();
                                         update-preview();
                                     }
                                 }
                             }
                             
                             HorizontalBox {
-                                Text { text: "Travel Rate (mm/min):"; width: 140px; }
+                                Text { text: "Travel Rate (" + root.unit-label + "/min):"; width: 140px; }
                                 LineEdit {
-                                    text: travel-rate;
+                                    text <=> travel-rate;
                                     horizontal-stretch: 1;
-                                    edited => {
-                                        travel-rate = self.text.to-float();
-                                    }
                                 }
                             }
                         }
@@ -249,13 +246,10 @@ export component VectorEngraverDialog inherits Window {
                             }
                             
                             if multi-pass: HorizontalBox {
-                                Text { text: "Z Increment (mm):"; width: 140px; }
+                                Text { text: "Z Increment (" + root.unit-label + "):"; width: 140px; }
                                 LineEdit {
-                                    text: z-increment;
+                                    text <=> z-increment;
                                     horizontal-stretch: 1;
-                                    edited => {
-                                        z-increment = self.text.to-float();
-                                    }
                                 }
                             }
                         }
@@ -269,20 +263,19 @@ export component VectorEngraverDialog inherits Window {
                             spacing: 8px;
                             
                             HorizontalBox {
-                                Text { text: "Desired Width (mm):"; width: 140px; }
+                                Text { text: "Desired Width (" + root.unit-label + "):"; width: 140px; }
                                 LineEdit {
-                                    text: desired-width;
+                                    text <=> desired-width;
                                     placeholder-text: "100";
                                     horizontal-stretch: 1;
                                     edited => {
-                                        desired-width = self.text.to-float();
                                         update-preview();
                                     }
                                 }
                             }
                             
                             HorizontalBox {
-                                Text { text: "Output Size (mm):"; width: 140px; }
+                                Text { text: "Output Size (" + root.unit-label + "):"; width: 140px; }
                                 Text {
                                     text: output-width > 0 ? root.output-width.round() + " × " + root.output-height.round() : "—";
                                     color: #4a9eff;
@@ -294,12 +287,9 @@ export component VectorEngraverDialog inherits Window {
                             HorizontalBox {
                                 Text { text: "Power Scale:"; width: 140px; }
                                 LineEdit {
-                                    text: power-scale;
+                                    text <=> power-scale;
                                     placeholder-text: "1000 for GRBL";
                                     horizontal-stretch: 1;
-                                    edited => {
-                                        power-scale = self.text.to-float();
-                                    }
                                 }
                             }
     
@@ -313,11 +303,8 @@ export component VectorEngraverDialog inherits Window {
                             if enable-dwell: HorizontalBox {
                                 Text { text: "Dwell Time (s):"; width: 140px; }
                                 LineEdit {
-                                    text: dwell-time;
+                                    text <=> dwell-time;
                                     horizontal-stretch: 1;
-                                    edited => {
-                                        dwell-time = self.text.to-float();
-                                    }
                                 }
                             }
                         }
@@ -325,7 +312,7 @@ export component VectorEngraverDialog inherits Window {
                     
                     // Work Origin Offsets
                     GroupBox {
-                        title: "Work Origin Offsets (mm)";
+                        title: "Work Origin Offsets (" + root.unit-label + ")";
                         
                         VerticalBox {
                             spacing: 8px;
@@ -387,24 +374,22 @@ export component VectorEngraverDialog inherits Window {
                                 }
                                 
                                 HorizontalBox {
-                                    Text { text: "Spacing (mm):"; width: 140px; }
+                                    Text { text: "Spacing (" + root.unit-label + "):"; width: 140px; }
                                     LineEdit {
-                                        text: hatch-spacing;
+                                        text <=> hatch-spacing;
                                         horizontal-stretch: 1;
                                         edited => {
-                                            hatch-spacing = self.text.to-float();
                                             update-preview();
                                         }
                                     }
                                 }
                                 
                                 HorizontalBox {
-                                    Text { text: "Tolerance (mm):"; width: 140px; }
+                                    Text { text: "Tolerance (" + root.unit-label + "):"; width: 140px; }
                                     LineEdit {
-                                        text: hatch-tolerance;
+                                        text <=> hatch-tolerance;
                                         horizontal-stretch: 1;
                                         edited => {
-                                            hatch-tolerance = self.text.to-float();
                                             update-preview();
                                         }
                                     }
