@@ -4,7 +4,13 @@
 **Last Updated**: 2025-12-03
 **Status**: Feature Release
 
-### Latest Release (v0.67.0-alpha.0) - UI Refactor & Tests
+### Latest Release (v0.68.1-alpha.0) - Build Fixes
+- ✅ **Build**
+  - Fixed build failure caused by duplicate `MachineControlPanel` definition.
+- ✅ **Assets**
+  - Updated `eStop.png` asset with improved design and text layout.
+
+### Previous Release (v0.68.0-alpha.0) - UI Refactor & Tests
 - ✅ **UI Refactoring**
   - Refactored UI for unit conversion to ensure consistent display across all panels.
   - Improved layout and responsiveness in Designer and CAM tools.

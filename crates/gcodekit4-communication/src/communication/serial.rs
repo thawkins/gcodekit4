@@ -13,6 +13,7 @@
 use crate::{ConnectionDriver, ConnectionParams, SerialParity};
 use gcodekit4_core::{Error, Result};
 use std::io::{self, Read, Write};
+use std::sync::Mutex;
 use std::time::Duration;
 
 /// Result type for serial operations
@@ -203,12 +204,12 @@ pub trait SerialPort: Send + Sync {
 }
 
 /// Trait for serial port I/O operations
-pub trait ReadWrite: std::io::Read + std::io::Write + Send + Sync {}
-impl<T: std::io::Read + std::io::Write + Send + Sync> ReadWrite for T {}
+pub trait ReadWrite: std::io::Read + std::io::Write + Send {}
+impl<T: std::io::Read + std::io::Write + Send> ReadWrite for T {}
 
 /// Real serial port implementation using serialport crate
 pub struct RealSerialPort {
-    port: Box<dyn ReadWrite>,
+    port: Mutex<Box<dyn ReadWrite>>,
 }
 
 impl RealSerialPort {
@@ -251,7 +252,7 @@ impl RealSerialPort {
 
         match builder.open_native() {
             Ok(port) => Ok(RealSerialPort {
-                port: Box::new(port),
+                port: Mutex::new(Box::new(port)),
             }),
             Err(e) => {
                 tracing::warn!("Failed to open serial port {}: {}", params.port, e);
@@ -266,11 +267,17 @@ impl RealSerialPort {
 
 impl SerialPort for RealSerialPort {
     fn write(&mut self, data: &[u8]) -> io::Result<usize> {
-        self.port.write(data)
+        match self.port.lock() {
+            Ok(mut port) => port.write(data),
+            Err(e) => Err(io::Error::new(io::ErrorKind::Other, e.to_string())),
+        }
     }
 
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.port.read(buf)
+        match self.port.lock() {
+            Ok(mut port) => port.read(buf),
+            Err(e) => Err(io::Error::new(io::ErrorKind::Other, e.to_string())),
+        }
     }
 
     fn name(&self) -> String {

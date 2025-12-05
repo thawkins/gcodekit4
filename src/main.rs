@@ -7,7 +7,7 @@
 use std::sync::{Arc, Mutex};
 use gcodekit4::{
     init_logging, list_ports, CapabilityManager, Communicator,
-    ConsoleListener, DeviceConsoleManager, DeviceMessageType,
+    ConsoleEvent, ConsoleListener, DeviceConsoleManager, DeviceMessageType,
     FirmwareSettingsIntegration, SerialCommunicator,
     SettingsController, SettingsDialog, SettingsManager, SettingsPersistence,
     SettingsCategory,
@@ -112,6 +112,7 @@ fn main() -> anyhow::Result<()> {
         lines: std::collections::VecDeque::new(),
         pending_bytes: 0,
         line_lengths: std::collections::VecDeque::new(),
+        sent_lines: std::collections::VecDeque::new(),
         total_sent: 0,
         total_lines: 0,
         start_time: None,
@@ -120,6 +121,23 @@ fn main() -> anyhow::Result<()> {
     // Initialize device console manager early to register listeners
     // Use Arc since communicator listeners need Arc for thread-safe sharing
     let console_manager = std::sync::Arc::new(DeviceConsoleManager::new());
+
+    // Set up console event listener to update UI
+    let window_weak = main_window.as_weak();
+    let console_manager_clone = console_manager.clone();
+    console_manager.on_event(move |event| {
+        match event {
+            ConsoleEvent::MessageReceived { .. } | ConsoleEvent::Cleared | ConsoleEvent::SettingsChanged => {
+                let output = console_manager_clone.get_output();
+                let window_weak = window_weak.clone();
+                slint::invoke_from_event_loop(move || {
+                    if let Some(window) = window_weak.upgrade() {
+                        window.set_console_output(slint::SharedString::from(output));
+                    }
+                }).ok();
+            }
+        }
+    });
 
     // Shared state for detected firmware (thread-safe)
     let detected_firmware = std::sync::Arc::new(std::sync::Mutex::new(
@@ -644,6 +662,7 @@ fn main() -> anyhow::Result<()> {
                 gstate.total_sent = 0;
                 gstate.pending_bytes = 0;
                 gstate.line_lengths.clear();
+                gstate.sent_lines.clear();
                 gstate.start_time = Some(std::time::Instant::now());
             }
 
@@ -684,6 +703,7 @@ fn main() -> anyhow::Result<()> {
                 gstate.total_sent = 0;
                 gstate.pending_bytes = 0;
                 gstate.line_lengths.clear();
+                gstate.sent_lines.clear();
             }
 
             console_manager_stop

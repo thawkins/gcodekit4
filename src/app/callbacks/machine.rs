@@ -23,9 +23,18 @@ pub fn register_callbacks(
 ) {
     // Set up refresh-ports callback
     let ports_model_clone = ports_model.clone();
+    let window_weak = main_window.as_weak();
     main_window.on_refresh_ports(move || {
         if let Ok(ports) = get_available_ports() {
-            ports_model_clone.set_vec(ports);
+            ports_model_clone.set_vec(ports.clone());
+            
+            if let Some(window) = window_weak.upgrade() {
+                let current_selection = window.get_selected_port();
+                // If no port is selected or the placeholder is selected, select the first available port
+                if !ports.is_empty() && (current_selection.is_empty() || current_selection == "No ports available") {
+                    window.set_selected_port(ports[0].clone());
+                }
+            }
         }
     });
 
@@ -184,7 +193,18 @@ pub fn register_callbacks(
                                             if let Some(len) = gstate.line_lengths.pop_front() {
                                                 gstate.pending_bytes = gstate.pending_bytes.saturating_sub(len);
                                             }
-                                            drop(gstate);
+
+                                            if let Some(sent_cmd) = gstate.sent_lines.pop_front() {
+                                                let log_msg = format!("{} => {}", sent_cmd, line);
+                                                // Release lock before logging to avoid potential deadlocks (though unlikely here)
+                                                drop(gstate);
+                                                console_manager_poll.add_message(
+                                                    DeviceMessageType::Output,
+                                                    log_msg
+                                                );
+                                            } else {
+                                                drop(gstate);
+                                            }
                                         }
 
                                         // Check for errors and handle them
@@ -257,6 +277,23 @@ pub fn register_callbacks(
                                                         }
                                                     }
 
+                                                    // Update work position
+                                                    if let Some(wpos) = full_status.wpos {
+                                                        window.set_work_position_x(wpos.x as f32);
+                                                        window.set_work_position_y(wpos.y as f32);
+                                                        window.set_work_position_z(wpos.z as f32);
+                                                    } else if let (Some(mpos), Some(wco)) = (full_status.mpos, full_status.wco) {
+                                                        // Calculate WPos if not provided directly
+                                                        window.set_work_position_x((mpos.x - wco.x) as f32);
+                                                        window.set_work_position_y((mpos.y - wco.y) as f32);
+                                                        window.set_work_position_z((mpos.z - wco.z) as f32);
+                                                    } else if let Some(mpos) = full_status.mpos {
+                                                        // Fallback to MPos if WPos/WCO not available (e.g. no offset)
+                                                        window.set_work_position_x(mpos.x as f32);
+                                                        window.set_work_position_y(mpos.y as f32);
+                                                        window.set_work_position_z(mpos.z as f32);
+                                                    }
+
                                                     // Update machine state
                                                     if let Some(state) = full_status.machine_state {
                                                         window.set_machine_state(slint::SharedString::from(state));
@@ -309,6 +346,7 @@ pub fn register_callbacks(
                                                 gstate.lines.pop_front();
                                                 gstate.pending_bytes += line_len;
                                                 gstate.line_lengths.push_back(line_len);
+                                                gstate.sent_lines.push_back(trimmed.to_string());
                                                 gstate.total_sent += 1;
                                                 lines_sent_this_cycle += 1;
 
@@ -540,10 +578,88 @@ pub fn register_callbacks(
         }
     });
 
+    // Set up machine-zero-all callback
+    let window_weak = main_window.as_weak();
+    let communicator_clone = communicator.clone();
+    let console_manager_clone = console_manager.clone();
+    main_window.on_machine_zero_all(move || {
+        if let Some(window) = window_weak.upgrade() {
+            let mut comm = communicator_clone.lock().unwrap();
+            if !comm.is_connected() {
+                warn!("Zero All failed: Device not connected");
+                console_manager_clone
+                    .add_message(DeviceMessageType::Error, "✗ Device not connected.");
+            } else {
+                console_manager_clone.add_message(
+                    DeviceMessageType::Output,
+                    "Zeroing all axes (G92 X0 Y0 Z0)...",
+                );
+
+                match comm.send_command("G92 X0 Y0 Z0") {
+                    Ok(_) => {
+                         console_manager_clone.add_message(
+                            DeviceMessageType::Success,
+                            "✓ Zero All command sent",
+                        );
+                    }
+                    Err(e) => {
+                        warn!("Failed to send Zero All command: {}", e);
+                        console_manager_clone.add_message(
+                            DeviceMessageType::Error,
+                            format!("✗ Zero All failed: {}", e),
+                        );
+                    }
+                }
+            }
+            let console_output = console_manager_clone.get_output();
+            window.set_console_output(slint::SharedString::from(console_output));
+        }
+    });
+
+    // Set up machine-emergency-stop callback
+    let window_weak = main_window.as_weak();
+    let communicator_clone = communicator.clone();
+    let console_manager_clone = console_manager.clone();
+    main_window.on_machine_emergency_stop(move || {
+        if let Some(window) = window_weak.upgrade() {
+            let mut comm = communicator_clone.lock().unwrap();
+            if !comm.is_connected() {
+                warn!("Emergency Stop failed: Device not connected");
+                console_manager_clone
+                    .add_message(DeviceMessageType::Error, "✗ Device not connected.");
+            } else {
+                console_manager_clone.add_message(
+                    DeviceMessageType::Error,
+                    "!!! EMERGENCY STOP TRIGGERED !!!",
+                );
+                
+                // Send Soft Reset (Ctrl-X / 0x18)
+                match comm.send(&[0x18]) {
+                    Ok(_) => {
+                         console_manager_clone.add_message(
+                            DeviceMessageType::Success,
+                            "✓ Soft Reset sent",
+                        );
+                    }
+                    Err(e) => {
+                        warn!("Failed to send Emergency Stop: {}", e);
+                        console_manager_clone.add_message(
+                            DeviceMessageType::Error,
+                            format!("✗ Emergency Stop failed: {}", e),
+                        );
+                    }
+                }
+            }
+            let console_output = console_manager_clone.get_output();
+            window.set_console_output(slint::SharedString::from(console_output));
+        }
+    });
+
     // Set up machine-jog-home callback
     let window_weak = main_window.as_weak();
     let communicator_clone = communicator.clone();
     let console_manager_clone = console_manager.clone();
+    let gcode_send_state_home = gcode_send_state.clone();
     main_window.on_machine_jog_home(move || {
         if let Some(window) = window_weak.upgrade() {
             // Check if device is connected
@@ -564,6 +680,11 @@ pub fn register_callbacks(
 
                 match comm.send_command("$H") {
                     Ok(_) => {
+                        // Add to sent_lines for logging
+                        if let Ok(mut gstate) = gcode_send_state_home.lock() {
+                            gstate.sent_lines.push_back("$H".to_string());
+                        }
+                        
                         console_manager_clone.add_message(
                             DeviceMessageType::Success,
                             "✓ Home command sent to device",
@@ -593,6 +714,7 @@ pub fn register_callbacks(
     let window_weak = main_window.as_weak();
     let communicator_clone = communicator.clone();
     let console_manager_clone = console_manager.clone();
+    let gcode_send_state_xp = gcode_send_state.clone();
     main_window.on_machine_jog_x_positive(move |step_size: f32| {
         if let Some(window) = window_weak.upgrade() {
             let mut comm = communicator_clone.lock().unwrap();
@@ -609,7 +731,12 @@ pub fn register_callbacks(
                 );
 
                 match comm.send(format!("{}\n", jog_cmd).as_bytes()) {
-                    Ok(_) => {}
+                    Ok(_) => {
+                        // Add to sent_lines for logging
+                        if let Ok(mut gstate) = gcode_send_state_xp.lock() {
+                            gstate.sent_lines.push_back(jog_cmd);
+                        }
+                    }
                     Err(e) => {
                         warn!("Failed to send Jog X+ command: {}", e);
                         console_manager_clone.add_message(
@@ -629,6 +756,7 @@ pub fn register_callbacks(
     let window_weak = main_window.as_weak();
     let communicator_clone = communicator.clone();
     let console_manager_clone = console_manager.clone();
+    let gcode_send_state_xn = gcode_send_state.clone();
     main_window.on_machine_jog_x_negative(move |step_size: f32| {
         if let Some(window) = window_weak.upgrade() {
             let mut comm = communicator_clone.lock().unwrap();
@@ -645,7 +773,12 @@ pub fn register_callbacks(
                 );
 
                 match comm.send(format!("{}\n", jog_cmd).as_bytes()) {
-                    Ok(_) => {}
+                    Ok(_) => {
+                        // Add to sent_lines for logging
+                        if let Ok(mut gstate) = gcode_send_state_xn.lock() {
+                            gstate.sent_lines.push_back(jog_cmd);
+                        }
+                    }
                     Err(e) => {
                         warn!("Failed to send Jog X- command: {}", e);
                         console_manager_clone.add_message(
@@ -665,6 +798,7 @@ pub fn register_callbacks(
     let window_weak = main_window.as_weak();
     let communicator_clone = communicator.clone();
     let console_manager_clone = console_manager.clone();
+    let gcode_send_state_yp = gcode_send_state.clone();
     main_window.on_machine_jog_y_positive(move |step_size: f32| {
         if let Some(window) = window_weak.upgrade() {
             let mut comm = communicator_clone.lock().unwrap();
@@ -681,7 +815,12 @@ pub fn register_callbacks(
                 );
 
                 match comm.send(format!("{}\n", jog_cmd).as_bytes()) {
-                    Ok(_) => {}
+                    Ok(_) => {
+                        // Add to sent_lines for logging
+                        if let Ok(mut gstate) = gcode_send_state_yp.lock() {
+                            gstate.sent_lines.push_back(jog_cmd);
+                        }
+                    }
                     Err(e) => {
                         warn!("Failed to send Jog Y+ command: {}", e);
                         console_manager_clone.add_message(
@@ -701,6 +840,7 @@ pub fn register_callbacks(
     let window_weak = main_window.as_weak();
     let communicator_clone = communicator.clone();
     let console_manager_clone = console_manager.clone();
+    let gcode_send_state_yn = gcode_send_state.clone();
     main_window.on_machine_jog_y_negative(move |step_size: f32| {
         if let Some(window) = window_weak.upgrade() {
             let mut comm = communicator_clone.lock().unwrap();
@@ -717,7 +857,12 @@ pub fn register_callbacks(
                 );
 
                 match comm.send(format!("{}\n", jog_cmd).as_bytes()) {
-                    Ok(_) => {}
+                    Ok(_) => {
+                        // Add to sent_lines for logging
+                        if let Ok(mut gstate) = gcode_send_state_yn.lock() {
+                            gstate.sent_lines.push_back(jog_cmd);
+                        }
+                    }
                     Err(e) => {
                         warn!("Failed to send Jog Y- command: {}", e);
                         console_manager_clone.add_message(
@@ -737,6 +882,7 @@ pub fn register_callbacks(
     let window_weak = main_window.as_weak();
     let communicator_clone = communicator.clone();
     let console_manager_clone = console_manager.clone();
+    let gcode_send_state_zp = gcode_send_state.clone();
     main_window.on_machine_jog_z_positive(move |step_size: f32| {
         if let Some(window) = window_weak.upgrade() {
             let mut comm = communicator_clone.lock().unwrap();
@@ -753,7 +899,12 @@ pub fn register_callbacks(
                 );
 
                 match comm.send(format!("{}\n", jog_cmd).as_bytes()) {
-                    Ok(_) => {}
+                    Ok(_) => {
+                        // Add to sent_lines for logging
+                        if let Ok(mut gstate) = gcode_send_state_zp.lock() {
+                            gstate.sent_lines.push_back(jog_cmd);
+                        }
+                    }
                     Err(e) => {
                         warn!("Failed to send Jog Z+ command: {}", e);
                         console_manager_clone.add_message(
@@ -773,6 +924,7 @@ pub fn register_callbacks(
     let window_weak = main_window.as_weak();
     let communicator_clone = communicator.clone();
     let console_manager_clone = console_manager.clone();
+    let gcode_send_state_zn = gcode_send_state.clone();
     main_window.on_machine_jog_z_negative(move |step_size: f32| {
         if let Some(window) = window_weak.upgrade() {
             let mut comm = communicator_clone.lock().unwrap();
@@ -789,7 +941,12 @@ pub fn register_callbacks(
                 );
 
                 match comm.send(format!("{}\n", jog_cmd).as_bytes()) {
-                    Ok(_) => {}
+                    Ok(_) => {
+                        // Add to sent_lines for logging
+                        if let Ok(mut gstate) = gcode_send_state_zn.lock() {
+                            gstate.sent_lines.push_back(jog_cmd);
+                        }
+                    }
                     Err(e) => {
                         warn!("Failed to send Jog Z- command: {}", e);
                         console_manager_clone.add_message(

@@ -1,0 +1,256 @@
+[06:45:05] [OK] GCodeKit4 initialized
+[06:45:05] [INFO] Ready for operation
+[06:45:16] [INFO] Connecting to /dev/ttyACM0 at 115200 baud
+[06:45:16] [OK] Device connected
+[06:45:16] [OK] Successfully connected to /dev/ttyACM0 at 115200 baud
+[06:45:16] [INFO] Starting status polling...
+[06:45:17] [INFO] ]
+[OPT:VMZHI,199,511]
+ok
+[06:45:41] [INFO] Jogging Y+ (1 mm)...
+[06:45:42] [INFO] ok
+[06:45:42] [INFO] Jogging Y+ (1 mm)...
+[06:45:42] [INFO] ok
+[06:45:42] [INFO] Jogging Y+ (1 mm)...
+[06:45:42] [INFO] ok
+[06:45:43] [INFO] Jogging Y+ (1 mm)...
+[06:45:43] [INFO] Jogging Y+ (1 mm)...
+[06:45:43] [INFO] ok
+[06:45:43] [INFO] Jogging Y+ (1 mm)...
+[06:45:43] [INFO] Jogging Y+ (1 mm)...
+[06:45:43] [INFO] ok
+[06:46:21] [INFO] Sending Home command...
+[06:46:21] [OK] ✓ Home command sent to device
+[06:46:22] [INFO] 000|Bf:199,512|FS:1493,0|Pn:XY|WCO:0.000,0.000,5.000>
+[06:46:23] [INFO] ok
+[06:46:35] [INFO] Sending G-Code to device (305854 bytes) using GRBL protocol...
+[06:46:35] [INFO] ok
+ok
+ok
+[06:46:35] [INFO] G21 ; Set units to millimeters => ok
+[06:46:35] [INFO] G90 ; Absolute positioning => ok
+[06:46:35] [INFO] G17 ; XY plane selection => ok
+[06:46:35] [INFO] me|MPos:0.000,0.000,0.000|Bf:199,436|FS:849,0>
+[06:46:36] [INFO] ok
+[06:46:36] [INFO] $H ; Home all axes (bottom-left corner) => ok
+[06:46:36] [INFO] ok
+ok
+ok
+[06:46:36] [INFO] G10 L2 P1 X0 Y0 Z0 ; Clear G54 offset => ok
+[06:46:36] [INFO] G54 ; Select work coordinate system 1 => ok
+[06:46:36] [INFO] G0 X0.0 Y0.0 ; Move to work origin => ok
+[06:46:36] [INFO] ok
+ok
+ok
+ok
+[06:46:36] [INFO] G10 L20 P1 X0 Y0 Z0 ; Set current position as work zero => ok
+[06:46:36] [INFO] G0 Z5.00 F3000 ; Move to safe height => ok
+[06:46:36] [INFO] M5 ; Laser off => ok
+[06:46:36] [INFO] M5 ; Laser off => ok
+[06:46:36] [INFO] ok
+[06:46:36] [INFO] G0 X43.173 Y21.569 ; Move to hatch start => ok
+[06:46:39] [INFO] ok
+[06:46:39] [INFO] G1 X45.928 Y24.325 F600 M3 S255 => ok
+[06:46:39] [INFO] ok
+ok
+[06:46:39] [INFO] M5 ; Laser off => ok
+[06:46:39] [INFO] G0 X42.335 Y21.862 ; Move to hatch start => ok
+[06:46:39] [INFO] ok
+[06:46:39] [INFO] G1 X46.436 Y25.964 F600 M3 S255 => ok
+[06:46:40] [INFO] ok
+ok
+[06:46:40] [INFO] M5 ; Laser off => ok
+[06:46:40] [INFO] G0 X42.218 Y22.877 ; Move to hatch start => ok
+[06:46:40] [INFO] G1 X44.109 Y24.768 F600 M3 S255 => ok
+[06:46:41] [INFO] ok
+ok
+[06:46:41] [INFO] M5 ; Laser off => ok
+[06:46:41] [INFO] G0 X45.055 Y25.714 ; Move to hatch start => ok
+[06:46:41] [INFO] ok
+[06:46:41] [INFO] G1 X46.672 Y27.331 F600 M3 S255 => ok
+[06:46:41] [INFO] ok
+ok
+[06:46:41] [INFO] M5 ; Laser off => ok
+[06:46:41] [INFO] G0 X42.806 Y24.597 ; Move to hatch start => ok
+[06:46:41] [INFO] G1 X43.484 Y25.275 F600 M3 S255 => ok
+[06:46:41] [INFO] ok
+ok
+[06:46:41] [INFO] M5 ; Laser off => ok
+[06:46:41] [INFO] G0 X45.063 Y26.853 ; Move to hatch start => ok
+[06:46:42] [INFO] ok
+[06:46:42] [INFO] G1 X46.763 Y28.554 F600 M3 S255 => ok
+[06:46:42] [INFO] ok
+[06:46:42] [INFO] M5 ; Laser off => ok
+[06:46:42] [INFO] ok
+[06:46:42] [INFO] G0 X44.970 Y27.892 ; Move to hatch start => ok
+[06:46:42] [INFO] ok
+[06:46:42] [INFO] G1 X46.757 Y29.680 F600 M3 S255 => ok
+[06:46:42] [INFO] ok
+ok
+[06:46:42] [INFO] M5 ; Laser off => ok
+[06:46:42] [INFO] G0 X44.819 Y28.872 ; Move to hatch start => ok
+[06:46:43] [INFO] ok
+[06:46:43] [INFO] G1 X46.677 Y30.730 F600 M3 S255 => ok
+[06:46:43] [INFO] ok
+ok
+[06:46:43] [INFO] M5 ; Laser off => ok
+[06:46:43] [INFO] G0 X44.632 Y29.817 ; Move to hatch start => ok
+[06:46:43] [INFO] ok
+[06:46:43] [INFO] G1 X46.531 Y31.716 F600 M3 S255 => ok
+[06:46:44] [INFO] ok
+ok
+[06:46:44] [INFO] M5 ; Laser off => ok
+[06:46:44] [INFO] G0 X44.424 Y30.741 ; Move to hatch start => ok
+[06:46:44] [INFO] ok
+[06:46:44] [INFO] G1 X46.326 Y32.642 F600 M3 S255 => ok
+[06:46:44] [INFO] ok
+ok
+[06:46:44] [INFO] M5 ; Laser off => ok
+[06:46:44] [INFO] G0 X44.197 Y31.644 ; Move to hatch start => ok
+[06:46:44] [INFO] ok
+[06:46:44] [INFO] G1 X46.012 Y33.459 F600 M3 S255 => ok
+[06:46:45] [INFO] ok
+[06:46:45] [INFO] M5 ; Laser off => ok
+[06:46:45] [INFO] ok
+[06:46:45] [INFO] G0 X46.287 Y33.734 ; Move to hatch start => ok
+[06:46:45] [INFO] ok
+[06:46:45] [INFO] G1 X46.930 Y34.377 F600 M3 S255 => ok
+[06:46:45] [INFO] ok
+ok
+[06:46:45] [INFO] M5 ; Laser off => ok
+[06:46:45] [INFO] G0 X43.936 Y32.515 ; Move to hatch start => ok
+[06:46:45] [INFO] ok
+[06:46:45] [INFO] G1 X46.731 Y35.310 F600 M3 S255 => ok
+[06:46:45] [INFO] ok
+ok
+[06:46:45] [INFO] M5 ; Laser off => ok
+[06:46:45] [INFO] G0 X43.649 Y33.359 ; Move to hatch start => ok
+[06:46:46] [INFO] ok
+[06:46:46] [INFO] G1 X44.789 Y34.499 F600 M3 S255 => ok
+[06:46:46] [INFO] ok
+ok
+[06:46:46] [INFO] M5 ; Laser off => ok
+[06:46:46] [INFO] G0 X45.114 Y34.825 ; Move to hatch start => ok
+[06:46:46] [INFO] ok
+[06:46:46] [INFO] G1 X46.486 Y36.196 F600 M3 S255 => ok
+[06:46:46] [INFO] ok
+ok
+[06:46:46] [INFO] M5 ; Laser off => ok
+[06:46:46] [INFO] G0 X43.336 Y34.178 ; Move to hatch start => ok
+[06:46:47] [INFO] ok
+[06:46:47] [INFO] G1 X43.851 Y34.693 F600 M3 S255 => ok
+[06:46:47] [INFO] ok
+ok
+[06:46:47] [INFO] M5 ; Laser off => ok
+[06:46:47] [INFO] G0 X44.742 Y35.584 ; Move to hatch start => ok
+[06:46:47] [INFO] ok
+[06:46:47] [INFO] G1 X46.199 Y37.041 F600 M3 S255 => ok
+[06:46:47] [INFO] ok
+ok
+[06:46:47] [INFO] M5 ; Laser off => ok
+[06:46:47] [INFO] G0 X44.362 Y36.335 ; Move to hatch start => ok
+[06:46:47] [INFO] ok
+[06:46:47] [INFO] G1 X45.868 Y37.841 F600 M3 S255 => ok
+[06:46:48] [INFO] ok
+ok
+[06:46:48] [INFO] M5 ; Laser off => ok
+[06:46:48] [INFO] G0 X43.975 Y37.079 ; Move to hatch start => ok
+[06:46:48] [INFO] ok
+[06:46:48] [INFO] G1 X45.504 Y38.608 F600 M3 S255 => ok
+[06:46:48] [INFO] ok
+ok
+[06:46:48] [INFO] M5 ; Laser off => ok
+[06:46:48] [INFO] G0 X43.572 Y37.807 ; Move to hatch start => ok
+[06:46:48] [INFO] ok
+[06:46:48] [INFO] G1 X45.109 Y39.345 F600 M3 S255 => ok
+[06:46:49] [INFO] ok
+[06:46:49] [INFO] M5 ; Laser off => ok
+[06:46:49] [INFO] ok
+[06:46:49] [INFO] G0 X43.151 Y38.518 ; Move to hatch start => ok
+[06:46:49] [INFO] ok
+[06:46:49] [INFO] G1 X44.686 Y40.054 F600 M3 S255 => ok
+[06:46:49] [INFO] ok
+ok
+[06:46:49] [INFO] M5 ; Laser off => ok
+[06:46:49] [INFO] G0 X42.713 Y39.211 ; Move to hatch start => ok
+[06:46:49] [INFO] ok
+[06:46:49] [INFO] G1 X44.245 Y40.743 F600 M3 S255 => ok
+[06:46:49] [INFO] ok
+[06:46:49] [INFO] M5 ; Laser off => ok
+[06:46:50] [INFO] ok
+[06:46:50] [INFO] G0 X44.762 Y41.261 ; Move to hatch start => ok
+[06:46:50] [INFO] ok
+[06:46:50] [INFO] G1 X44.927 Y41.426 F600 M3 S255 => ok
+[06:46:50] [INFO] ok
+ok
+[06:46:50] [INFO] M5 ; Laser off => ok
+[06:46:50] [INFO] G0 X42.265 Y39.895 ; Move to hatch start => ok
+[06:46:50] [INFO] ok
+[06:46:50] [INFO] G1 X44.485 Y42.114 F600 M3 S255 => ok
+[06:46:50] [INFO] ok
+ok
+[06:46:50] [INFO] M5 ; Laser off => ok
+[06:46:50] [INFO] G0 X41.818 Y40.580 ; Move to hatch start => ok
+[06:46:51] [INFO] ok
+[06:46:51] [INFO] G1 X43.997 Y42.758 F600 M3 S255 => ok
+[06:46:51] [INFO] ok
+ok
+[06:46:51] [INFO] M5 ; Laser off => ok
+[06:46:51] [INFO] G0 X41.382 Y41.274 ; Move to hatch start => ok
+[06:46:51] [INFO] ok
+[06:46:51] [INFO] G1 X43.491 Y43.384 F600 M3 S255 => ok
+[06:46:51] [INFO] ok
+[06:46:51] [INFO] M5 ; Laser off => ok
+[06:46:51] [INFO] ok
+[06:46:51] [INFO] G0 X41.419 Y42.443 ; Move to hatch start => ok
+[06:46:52] [INFO] ok
+[06:46:52] [INFO] G1 X42.961 Y43.985 F600 M3 S255 => ok
+[06:46:52] [INFO] ok
+ok
+[06:46:52] [INFO] M5 ; Laser off => ok
+[06:46:52] [INFO] G0 X40.936 Y43.092 ; Move to hatch start => ok
+[06:46:52] [INFO] ok
+[06:46:52] [INFO] G1 X42.415 Y44.571 F600 M3 S255 => ok
+[06:46:52] [INFO] ok
+ok
+[06:46:52] [INFO] M5 ; Laser off => ok
+[06:46:52] [INFO] G0 X40.446 Y43.732 ; Move to hatch start => ok
+[06:46:53] [INFO] ok
+[06:46:53] [INFO] G1 X41.858 Y45.144 F600 M3 S255 => ok
+[06:46:53] [INFO] ok
+ok
+[06:46:53] [INFO] M5 ; Laser off => ok
+[06:46:53] [INFO] G0 X39.950 Y44.368 ; Move to hatch start => ok
+[06:46:53] [INFO] ok
+[06:46:53] [INFO] G1 X41.304 Y45.722 F600 M3 S255 => ok
+[06:46:53] [INFO] ok
+ok
+[06:46:53] [INFO] M5 ; Laser off => ok
+[06:46:53] [INFO] G0 X39.451 Y45.000 ; Move to hatch start => ok
+[06:46:54] [INFO] ok
+[06:46:54] [INFO] G1 X40.815 Y46.365 F600 M3 S255 => ok
+[06:46:54] [INFO] M5 ; Laser off => ok
+[06:46:54] [INFO] ok
+[06:46:54] [INFO] G0 X38.960 Y45.641 ; Move to hatch start => ok
+[06:46:54] [INFO] G1 X40.861 Y47.542 F600 M3 S255 => ok
+[06:46:54] [INFO] M5 ; Laser off => ok
+[06:46:54] [INFO] G0 X38.488 Y46.301 ; Move to hatch start => ok
+[06:46:55] [INFO] ok
+[06:46:55] [INFO] G1 X45.392 Y53.204 F600 M3 S255 => ok
+[06:46:56] [INFO] ok
+ok
+[06:46:56] [INFO] M5 ; Laser off => ok
+[06:46:56] [INFO] G0 X38.031 Y46.974 ; Move to hatch start => ok
+[06:46:56] [INFO] G1 X38.617 Y47.560 F600 M3 S255 => ok
+[06:46:56] [INFO] ok
+ok
+[06:46:56] [INFO] M5 ; Laser off => ok
+[06:46:56] [INFO] G0 X38.880 Y47.824 ; Move to hatch start => ok
+[06:46:56] [INFO] ok
+[06:46:56] [INFO] G1 X45.526 Y54.470 F600 M3 S255 => ok
+[06:46:57] [INFO] ok
+ok
+[06:46:57] [INFO] M5 ; Laser off => ok
+[06:46:57] [INFO] G0 X38.516 Y48.591 ; Move to hatch start => ok
+[06:46:58] [INFO] ok
+[06:46:58] [INFO] G1 X45.477 Y55.552 F600 M3 S255 => ok

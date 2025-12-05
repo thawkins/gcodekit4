@@ -78,11 +78,13 @@ impl DeviceConsoleManager {
             return;
         }
 
-        let mut console = self.console.lock().unwrap();
-        if msg_type == DeviceMessageType::Command {
-            console.add_command(&content);
-        } else {
-            console.add_message(level, &content);
+        {
+            let mut console = self.console.lock().unwrap();
+            if msg_type == DeviceMessageType::Command {
+                console.add_command(&content);
+            } else {
+                console.add_message(level, &content);
+            }
         }
 
         self.emit_event(ConsoleEvent::MessageReceived { msg_type, content });
@@ -93,6 +95,14 @@ impl DeviceConsoleManager {
         let command = command.into();
         let mut console = self.console.lock().unwrap();
         console.add_to_history(&command);
+    }
+
+    /// Get console output as model
+    pub fn get_model(&self) -> slint::ModelRc<slint::SharedString> {
+        let console = self.console.lock().unwrap();
+        let messages = console.get_displayed_strings(1000);
+        let shared_messages: Vec<slint::SharedString> = messages.into_iter().map(|s| s.into()).collect();
+        slint::ModelRc::new(slint::VecModel::from(shared_messages))
     }
 
     /// Get console output as string
@@ -110,14 +120,18 @@ impl DeviceConsoleManager {
 
     /// Clear console
     pub fn clear(&self) {
-        let mut console = self.console.lock().unwrap();
-        console.clear();
+        {
+            let mut console = self.console.lock().unwrap();
+            console.clear();
+        }
         self.emit_event(ConsoleEvent::Cleared);
     }
 
     /// Set verbose output enabled
     pub fn set_verbose_enabled(&self, enabled: bool) {
-        *self.verbose_enabled.lock().unwrap() = enabled;
+        {
+            *self.verbose_enabled.lock().unwrap() = enabled;
+        }
         self.emit_event(ConsoleEvent::SettingsChanged);
     }
 
@@ -128,9 +142,11 @@ impl DeviceConsoleManager {
 
     /// Set auto-scroll enabled
     pub fn set_auto_scroll_enabled(&self, enabled: bool) {
-        let mut console = self.console.lock().unwrap();
-        console.auto_scroll = enabled;
-        *self.auto_scroll_enabled.lock().unwrap() = enabled;
+        {
+            let mut console = self.console.lock().unwrap();
+            console.auto_scroll = enabled;
+            *self.auto_scroll_enabled.lock().unwrap() = enabled;
+        }
         self.emit_event(ConsoleEvent::SettingsChanged);
     }
 
@@ -358,6 +374,12 @@ impl CommunicatorListener for ConsoleListener {
                 }
             }
 
+            // Suppress raw "ok" messages as they are now handled by the machine callback
+            // which pairs them with the sent command.
+            if trimmed == "ok" || trimmed == "ok\nok" || trimmed == "ok\nok\nok" || trimmed == "ok\n\nok" || trimmed == "ok\n\nok\n\nok" || trimmed == "ok\n\nok\n\nok\n\nok" {
+                return;
+            }
+
             if !trimmed.is_empty() {
                 self.console_manager
                     .add_message(DeviceMessageType::Output, trimmed);
@@ -373,10 +395,54 @@ impl CommunicatorListener for ConsoleListener {
                 // Status query - don't log to console
                 return;
             }
+            
+            // Suppress streamed G-code commands here as they are logged by the machine callback
+            // when the response is received (Command => Result format).
+            // We only want to log manual commands or commands not tracked by the send state.
+            // However, since we can't easily distinguish here, we'll rely on the fact that
+            // the machine callback logs the "Command => Result" pair.
+            // But wait, if we suppress here, manual commands might not show up until acknowledged?
+            // Actually, manual commands (via buttons) are also sent via the same mechanism now.
+            // The issue is that `on_data_sent` logs immediately, while `machine.rs` logs on ack.
+            // If we want to avoid duplicates for streamed commands, we should suppress here if it's part of a stream.
+            // But `ConsoleListener` doesn't know about `GcodeSendState`.
+            
+            // For now, let's just suppress all sent data logging here, and rely on:
+            // 1. `machine.rs` logging `Command => Result` for everything sent via `send_command` or the stream.
+            // 2. `main.rs` logging `>>> Command` for manual commands sent via the console input.
+            
+            // Actually, `machine.rs` only logs if it finds the command in `sent_lines`.
+            // Manual commands sent via `send_command` in `main.rs` are NOT added to `sent_lines` currently?
+            // Let's check `main.rs`.
+            
+            // In `main.rs`:
+            // main_window.on_send_command(move |command: slint::SharedString| {
+            //     ...
+            //     console_manager_clone.add_message(DeviceMessageType::Command, format!(">>> {}", cmd));
+            //     ...
+            // });
+            
+            // So manual console commands are logged with `>>>`.
+            
+            // Jog commands in `machine.rs` are now added to `sent_lines`.
+            
+            // Streamed commands in `machine.rs` are added to `sent_lines`.
+            
+            // So `on_data_sent` here is likely redundant and causing double logging or noise.
+            // Let's disable it or make it very selective.
+            
+            // If we disable it, we lose logging for anything sent that ISN'T tracked elsewhere.
+            // But most things are tracked.
+            
+            // Let's just return for now to reduce noise as requested.
+            return;
+
+            /*
             if !trimmed.is_empty() {
                 self.console_manager
                     .add_message(DeviceMessageType::Command, trimmed);
             }
+            */
         }
     }
 

@@ -83,7 +83,7 @@ pub use gcodekit4_communication::{
 };
 
 pub use gcodekit4_ui::{
-    Config, ConnectionSettings, ConnectionType, ConsoleListener, DeviceConsoleManager,
+    Config, ConnectionSettings, ConnectionType, ConsoleEvent, ConsoleListener, DeviceConsoleManager,
     DeviceMessageType, FileProcessingSettings, FirmwareSettings, FirmwareSettingsIntegration,
     GcodeEditor, GcodeLine, KeyboardShortcut, MachineSettings, Setting, SettingUiModel,
     SettingValue, SettingsCategory, SettingsController, SettingsDialog, SettingsManager,

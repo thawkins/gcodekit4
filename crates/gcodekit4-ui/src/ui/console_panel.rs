@@ -297,6 +297,7 @@ impl ConsolePanel {
     pub fn get_displayed_strings(&self, limit: usize) -> Vec<String> {
         self.get_displayed_messages(limit)
             .iter()
+            .rev()
             .map(|m| {
                 if self.show_timestamps {
                     m.formatted_with_time()

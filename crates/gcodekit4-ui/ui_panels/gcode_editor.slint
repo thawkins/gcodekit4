@@ -38,12 +38,6 @@ export component GcodeEditorPanel inherits Rectangle {
         editor-focus.focus();
     }
     
-    
-    callback menu-send-to-device();
-    callback menu-stop-transmission();
-    callback menu-pause-transmission();
-    callback menu-resume-transmission();
-    
     // Custom editor callbacks
     callback undo_requested();
     callback redo_requested();
@@ -80,43 +74,6 @@ export component GcodeEditorPanel inherits Rectangle {
                 }
 
                 Rectangle { height: 10px; }
-
-                Text {
-                    text: "Transmission";
-                    font-weight: 700;
-                    font-size: 12px;
-                    color: Theme.text-secondary;
-                }
-
-                HorizontalLayout {
-                    spacing: 5px;
-                    StandardButton {
-                        icon: "▶";
-                        tooltip: "Send";
-                        width: 40px;
-                        enabled: root.gcode-content != "";
-                        clicked => { root.menu-send-to-device(); }
-                    }
-                    StandardButton {
-                        icon: "⏸";
-                        tooltip: "Pause";
-                        width: 40px;
-                        clicked => { root.menu-pause-transmission(); }
-                    }
-                    StandardButton {
-                        icon: "▶"; // Resume icon same as play usually, or maybe ⏯
-                        text: "R"; // Fallback if icon font issue
-                        tooltip: "Resume";
-                        width: 40px;
-                        clicked => { root.menu-resume-transmission(); }
-                    }
-                    StandardButton {
-                        icon: "⏹";
-                        tooltip: "Stop";
-                        width: 40px;
-                        clicked => { root.menu-stop-transmission(); }
-                    }
-                }
             }
         }
 

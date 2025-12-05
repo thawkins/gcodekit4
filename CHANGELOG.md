@@ -1,3 +1,9 @@
+## [0.68.1-alpha.0] - 2025-12-05
+
+### Fixed
+- **Build**: Fixed build failure caused by duplicate `MachineControlPanel` definition in `crates/gcodekit4-ui/src/ui_panels/machine_control.slint`.
+- **Assets**: Updated `eStop.png` asset with improved design and text layout.
+
 ## [0.68.0-alpha.0] - 2025-12-05
 
 ### Changed

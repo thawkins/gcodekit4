@@ -7,7 +7,7 @@ pub mod testing;
 pub mod ui;
 
 pub use ui::{
-    ConsoleListener, DeviceConsoleManager, DeviceMessageType, FirmwareSettingsIntegration,
+    ConsoleEvent, ConsoleListener, DeviceConsoleManager, DeviceMessageType, FirmwareSettingsIntegration,
     GcodeEditor, GcodeLine, KeyboardShortcut, Setting, SettingUiModel, SettingValue,
     SettingsCategory, SettingsController, SettingsDialog, SettingsPersistence, Token, TokenType,
 };

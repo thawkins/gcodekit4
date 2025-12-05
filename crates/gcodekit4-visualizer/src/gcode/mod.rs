@@ -11,7 +11,6 @@
 
 pub mod stream;
 
-use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -1032,10 +1031,9 @@ impl GcodeParser {
 
     /// Remove comments from a G-Code line
     fn remove_comments(&self, line: &str) -> String {
-        lazy_static! {
-            static ref COMMENT_REGEX: Regex = Regex::new(r"[;(].*").unwrap();
-        }
-        COMMENT_REGEX.replace(line, "").to_string()
+        static COMMENT_REGEX: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
+        let regex = COMMENT_REGEX.get_or_init(|| Regex::new(r"[;(].*").unwrap());
+        regex.replace(line, "").to_string()
     }
 
     /// Get current modal state (for backward compatibility)
