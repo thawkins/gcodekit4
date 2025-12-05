@@ -1,7 +1,10 @@
 [package]
 name = "gcodekit4-devicedb"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
 description = "Device profile management for GCodeKit4"
 
 [dependencies]

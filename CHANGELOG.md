@@ -1,6 +1,15 @@
+## [0.68.3-alpha.0] - 2025-12-05
+
+### Fixed
+- **CAM Tools**: Fixed issue where Tabbed Box Generator dialog would re-open immediately after generating G-code.
+- **CAM Tools**: Standardized G-code loading behavior across all CAM tools (Tabbed Box, Jigsaw Puzzle, Spoilboard Surfacing, Spoilboard Grid). All tools now correctly load G-code into the editor, reset the view, and close the dialog upon success.
+- **Code Quality**: Removed unused variables and redundant clones in CAM tool callbacks.
+- **Visualizer**: Added automatic "Fit to View" when switching to the Visualizer tab to ensure the toolpath is immediately visible and centered.
+
 ## [0.68.2-alpha.0] - 2025-12-05
 
 ### Fixed
+- **Tabbed Box Generator**: Fixed critical bug where divider slots were missing from wall panels when "Optimize Layout" was enabled. The packing algorithm now correctly groups slots with their parent panels to ensure they move together.
 - **Build**: Fixed Windows build failure by adding missing `raw_window_handle` imports in `src/platform.rs`.
 
 ## [0.68.1-alpha.0] - 2025-12-05

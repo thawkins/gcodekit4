@@ -27,7 +27,7 @@ use std::str::FromStr;
 
 pub fn register_callbacks(
     main_window: &MainWindow,
-    gcode_editor: Rc<GcodeEditor>,
+    _gcode_editor: Rc<GcodeEditor>,
     console_manager: Arc<ConsoleManager>,
     editor_bridge: Rc<EditorBridge>,
     materials_backend: Rc<RefCell<MaterialsManagerBackend>>,
@@ -45,9 +45,7 @@ pub fn register_callbacks(
 
     // Set up generate-tabbed-box callback
     let window_weak = main_window.as_weak();
-    let gcode_editor_clone = gcode_editor.clone();
     let console_manager_clone = console_manager.clone();
-    let editor_bridge_clone = editor_bridge.clone();
     let settings_persistence_tabbed_box = settings_persistence.clone();
     let dialog_weak_ref = tabbed_box_dialog_weak.clone();
     main_window.on_generate_tabbed_box(move || {
@@ -95,9 +93,7 @@ pub fn register_callbacks(
             dialog.set_dividers_y("0".into());
 
             // Set up dialog callbacks
-            let gcode_editor_dialog = gcode_editor_clone.clone();
             let console_manager_dialog = console_manager_clone.clone();
-            let editor_bridge_dialog = editor_bridge_clone.clone();
             let window_handle = window.as_weak();
 
             // Load params callback
@@ -313,19 +309,14 @@ pub fn register_callbacks(
                     match maker.generate() {
                         Ok(_) => {
                             let gcode = maker.to_gcode();
-                            // Load into editor
-                            gcode_editor_dialog.load_content(&gcode).ok();
-                            editor_bridge_dialog.load_text(&gcode);
-
+                            
                             if let Some(w) = window_handle.upgrade() {
-                                w.set_gcode_content(slint::SharedString::from(gcode.clone()));
+                                // Use the centralized loader which handles editor state, undo/redo, and scrolling
+                                w.invoke_load_editor_text(slint::SharedString::from(gcode.clone()));
+                                
                                 w.set_gcode_filename(slint::SharedString::from("tabbed_box.gcode"));
                                 w.set_current_view(slint::SharedString::from("gcode-editor"));
-                                
-                                // Update editor state
-                                let line_count = editor_bridge_dialog.line_count();
-                                w.set_total_lines(line_count as i32);
-                                super::super::helpers::update_visible_lines(&w, &editor_bridge_dialog);
+                                w.set_gcode_focus_trigger(w.get_gcode_focus_trigger() + 1);
                                 
                                 console_manager_dialog.add_message(
                                     DeviceMessageType::Success,
@@ -357,7 +348,6 @@ pub fn register_callbacks(
                             );
                         }
                     }
-                    let _ = d.show();
                 }
             });
 
@@ -374,9 +364,7 @@ pub fn register_callbacks(
 
     // Set up generate-jigsaw-puzzle callback
     let window_weak = main_window.as_weak();
-    let gcode_editor_clone = gcode_editor.clone();
     let console_manager_clone = console_manager.clone();
-    let editor_bridge_clone = editor_bridge.clone();
     let settings_persistence_puzzle = settings_persistence.clone();
     let dialog_weak_ref = jigsaw_puzzle_dialog_weak.clone();
     main_window.on_generate_jigsaw_puzzle(move || {
@@ -420,9 +408,7 @@ pub fn register_callbacks(
             dialog.set_jitter("4.0".into());
 
             // Set up dialog callbacks
-            let gcode_editor_dialog = gcode_editor_clone.clone();
             let console_manager_dialog = console_manager_clone.clone();
-            let editor_bridge_dialog = editor_bridge_clone.clone();
             let window_handle = window.as_weak();
 
             // Load params callback
@@ -562,19 +548,14 @@ pub fn register_callbacks(
                     match maker.generate() {
                         Ok(_) => {
                             let gcode = maker.to_gcode(100.0, 0.0); // Default plunge and depth
-                            // Load into editor
-                            gcode_editor_dialog.load_content(&gcode).ok();
-                            editor_bridge_dialog.load_text(&gcode);
-
+                            
                             if let Some(w) = window_handle.upgrade() {
-                                w.set_gcode_content(slint::SharedString::from(gcode.clone()));
+                                // Use the centralized loader which handles editor state, undo/redo, and scrolling
+                                w.invoke_load_editor_text(slint::SharedString::from(gcode.clone()));
+                                
                                 w.set_gcode_filename(slint::SharedString::from("jigsaw_puzzle.gcode"));
                                 w.set_current_view(slint::SharedString::from("gcode-editor"));
-                                
-                                // Update editor state
-                                let line_count = editor_bridge_dialog.line_count();
-                                w.set_total_lines(line_count as i32);
-                                super::super::helpers::update_visible_lines(&w, &editor_bridge_dialog);
+                                w.set_gcode_focus_trigger(w.get_gcode_focus_trigger() + 1);
                                 
                                 console_manager_dialog.add_message(
                                     DeviceMessageType::Success,
@@ -606,7 +587,6 @@ pub fn register_callbacks(
                             );
                         }
                     }
-                    let _ = d.show();
                 }
             });
 
@@ -623,9 +603,7 @@ pub fn register_callbacks(
 
     // Set up generate-spoilboard-surfacing callback
     let window_weak = main_window.as_weak();
-    let gcode_editor_clone = gcode_editor.clone();
     let console_manager_clone = console_manager.clone();
-    let editor_bridge_clone = editor_bridge.clone();
     let dialog_weak_ref = spoilboard_surfacing_dialog_weak.clone();
     let settings_persistence_spoilboard = settings_persistence.clone();
     let device_manager_spoilboard = device_manager.clone();
@@ -764,9 +742,7 @@ pub fn register_callbacks(
             });
 
             // Set up dialog callbacks
-            let gcode_editor_dialog = gcode_editor_clone.clone();
             let console_manager_dialog = console_manager_clone.clone();
-            let editor_bridge_dialog = editor_bridge_clone.clone();
             let window_handle = window.as_weak();
 
             dialog.on_generate_gcode(move || {
@@ -803,19 +779,13 @@ pub fn register_callbacks(
                     let generator = SpoilboardSurfacingGenerator::new(params);
                     match generator.generate() {
                         Ok(gcode) => {
-                            // Load into editor
-                            gcode_editor_dialog.load_content(&gcode).ok();
-                            editor_bridge_dialog.load_text(&gcode);
-
                             if let Some(w) = window_handle.upgrade() {
-                                w.set_gcode_content(slint::SharedString::from(gcode.clone()));
+                                // Use the centralized loader which handles editor state, undo/redo, and scrolling
+                                w.invoke_load_editor_text(slint::SharedString::from(gcode.clone()));
+                                
                                 w.set_gcode_filename(slint::SharedString::from("spoilboard_surfacing.gcode"));
                                 w.set_current_view(slint::SharedString::from("gcode-editor"));
-                                
-                                // Update editor state
-                                let line_count = editor_bridge_dialog.line_count();
-                                w.set_total_lines(line_count as i32);
-                                super::super::helpers::update_visible_lines(&w, &editor_bridge_dialog);
+                                w.set_gcode_focus_trigger(w.get_gcode_focus_trigger() + 1);
                                 
                                 console_manager_dialog.add_message(
                                     DeviceMessageType::Success,
@@ -863,9 +833,7 @@ pub fn register_callbacks(
 
     // Set up generate-spoilboard-grid callback
     let window_weak = main_window.as_weak();
-    let gcode_editor_clone = gcode_editor.clone();
     let console_manager_clone = console_manager.clone();
-    let editor_bridge_clone = editor_bridge.clone();
     let dialog_weak_ref = spoilboard_grid_dialog_weak.clone();
     let settings_persistence_grid = settings_persistence.clone();
     main_window.on_generate_spoilboard_grid(move || {
@@ -899,9 +867,7 @@ pub fn register_callbacks(
             dialog.set_laser_power("255".into());
 
             // Set up dialog callbacks
-            let gcode_editor_dialog = gcode_editor_clone.clone();
             let console_manager_dialog = console_manager_clone.clone();
-            let editor_bridge_dialog = editor_bridge_clone.clone();
             let window_handle = window.as_weak();
 
             dialog.on_generate_gcode(move || {
@@ -927,19 +893,13 @@ pub fn register_callbacks(
                     let generator = SpoilboardGridGenerator::new(params);
                     match generator.generate() {
                         Ok(gcode) => {
-                            // Load into editor
-                            gcode_editor_dialog.load_content(&gcode).ok();
-                            editor_bridge_dialog.load_text(&gcode);
-
                             if let Some(w) = window_handle.upgrade() {
-                                w.set_gcode_content(slint::SharedString::from(gcode.clone()));
+                                // Use the centralized loader which handles editor state, undo/redo, and scrolling
+                                w.invoke_load_editor_text(slint::SharedString::from(gcode.clone()));
+                                
                                 w.set_gcode_filename(slint::SharedString::from("spoilboard_grid.gcode"));
                                 w.set_current_view(slint::SharedString::from("gcode-editor"));
-                                
-                                // Update editor state
-                                let line_count = editor_bridge_dialog.line_count();
-                                w.set_total_lines(line_count as i32);
-                                super::super::helpers::update_visible_lines(&w, &editor_bridge_dialog);
+                                w.set_gcode_focus_trigger(w.get_gcode_focus_trigger() + 1);
                                 
                                 console_manager_dialog.add_message(
                                     DeviceMessageType::Success,

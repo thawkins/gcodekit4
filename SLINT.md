@@ -103,6 +103,27 @@ When dealing with numeric inputs that require unit conversion (e.g., switching b
     - In Rust: Use `slint::SharedString` to pass values. Parse the string using a helper (like `units::parse_from_string`) that handles the current unit system.
     - This allows the UI to display exactly what the user types or a formatted representation (e.g., "10.000") without fighting the automatic float-to-string conversion.
 
+## Tabbed Box Generator
+- **Path Grouping**: When implementing layout optimization (packing), paths must be grouped (e.g., a wall and its internal slots) to ensure they move together. The `TabbedBoxMaker` uses a `path_groups` structure to maintain these relationships during packing.
+- **Slots**: Divider slots are generated as separate paths (holes) inside the wall panels. Without grouping, the packing algorithm treats them as separate items and moves them away from the wall.
+
+## CAM Tool Pattern
+When implementing CAM tools that generate G-code:
+1.  Use `invoke_load_editor_text` to load G-code into the editor. This handles:
+    *   Loading text into `EditorBridge`.
+    *   Resetting cursor and scroll position.
+    *   Updating UI properties (`gcode_content`, `can_undo`, etc.).
+    *   Updating visible lines.
+2.  Set the filename and switch view:
+    ```rust
+    w.set_gcode_filename(slint::SharedString::from("filename.gcode"));
+    w.set_current_view(slint::SharedString::from("gcode-editor"));
+    w.set_gcode_focus_trigger(w.get_gcode_focus_trigger() + 1);
+    ```
+3.  Show a success dialog.
+4.  Close the tool dialog using `d.hide().ok()` inside the success block.
+5.  Do NOT put `d.show()` at the end of the callback, as it will re-open the dialog immediately.
+
 ## Release v0.68.2-alpha.0 (December 2025)
 - **Build Fix**: Fixed Windows build failure by adding missing `raw_window_handle` imports in `src/platform.rs`.
 

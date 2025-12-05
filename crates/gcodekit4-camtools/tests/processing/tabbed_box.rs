@@ -158,3 +158,70 @@ fn test_finger_calculation() {
     assert!(fingers >= 7 && fingers <= 10);
     assert!(leftover > 0.0);
 }
+
+#[test]
+fn test_slots_containment_with_optimization() {
+    let params = BoxParameters {
+        x: 100.0,
+        y: 100.0,
+        h: 100.0,
+        thickness: 3.0,
+        outside: false,
+        box_type: BoxType::FullBox,
+        finger_joint: FingerJointSettings::default(),
+        burn: 0.0,
+        laser_passes: 1,
+        laser_power: 1000,
+        feed_rate: 500.0,
+        offset_x: 0.0,
+        offset_y: 0.0,
+        dividers_x: 1, // One divider
+        dividers_y: 0,
+        optimize_layout: true, // Enable optimization
+        key_divider_type: KeyDividerType::WallsAndFloor,
+    };
+
+    let mut maker = TabbedBoxMaker::new(params).expect("Failed to create TabbedBoxMaker");
+    maker.generate().expect("Failed to generate box");
+
+    let paths = maker.get_paths();
+    
+    // Identify paths
+    let mut walls = Vec::new();
+    let mut slots = Vec::new();
+    
+    for path in &paths {
+        let min_x = path.iter().map(|p| p.0).fold(f32::INFINITY, f32::min);
+        let max_x = path.iter().map(|p| p.0).fold(f32::NEG_INFINITY, f32::max);
+        let min_y = path.iter().map(|p| p.1).fold(f32::INFINITY, f32::min);
+        let max_y = path.iter().map(|p| p.1).fold(f32::NEG_INFINITY, f32::max);
+        
+        let width = max_x - min_x;
+        let height = max_y - min_y;
+        let area = width * height;
+        
+        if area > 1000.0 {
+            walls.push((min_x, max_x, min_y, max_y));
+        } else if area > 0.0 && area < 100.0 {
+            slots.push((min_x, max_x, min_y, max_y));
+        }
+    }
+    
+    // We expect at least one slot to be inside a wall
+    let mut contained_slots = 0;
+    for slot in &slots {
+        let (sx1, sx2, sy1, sy2) = slot;
+        let sx_center = (sx1 + sx2) / 2.0;
+        let sy_center = (sy1 + sy2) / 2.0;
+        
+        for wall in &walls {
+            let (wx1, wx2, wy1, wy2) = wall;
+            if sx_center > *wx1 && sx_center < *wx2 && sy_center > *wy1 && sy_center < *wy2 {
+                contained_slots += 1;
+                break;
+            }
+        }
+    }
+    
+    assert!(contained_slots > 0, "No slots found inside walls! Optimization likely moved them.");
+}

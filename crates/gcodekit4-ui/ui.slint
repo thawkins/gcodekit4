@@ -1002,10 +1002,6 @@ export component MainWindow inherits Window {
                     background: transparent;
 
                     visualizer-panel := GcodeVisualizerPanel {
-                        init => {
-                            // Trigger fit-to-view after a short delay to allow layout to settle
-                            fit-timer.running = true;
-                        }
                         width: 100%;
                         height: 100%;
                         gcode-filename <=> root.gcode-filename;
@@ -1080,16 +1076,6 @@ export component MainWindow inherits Window {
                         
                         pan-by-mouse(dx, dy) => {
                             root.pan-by-mouse(dx, dy);
-                        }
-                    }
-
-                    // Timer to trigger fit-to-view on show
-                    fit-timer := Timer {
-                        interval: 50ms;
-                        running: false;
-                        triggered => {
-                            root.fit-to-view(visualizer-panel.canvas-width, visualizer-panel.canvas-height);
-                            self.running = false;
                         }
                     }
 

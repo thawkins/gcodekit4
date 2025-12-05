@@ -160,6 +160,43 @@ impl Point {
     }
 }
 
+fn push_unique_point(path: &mut Vec<Point>, point: Point) {
+    if let Some(last) = path.last() {
+        if (point.x - last.x).abs() < 0.01 && (point.y - last.y).abs() < 0.01 {
+            return;
+        }
+    }
+    path.push(point);
+}
+
+#[derive(Clone, Copy, Debug)]
+struct LayoutCursor {
+    x: f32,
+    y: f32,
+    spacing: f32,
+}
+
+impl LayoutCursor {
+    fn new(spacing: f32) -> Self {
+        Self {
+            x: 0.0,
+            y: 0.0,
+            spacing,
+        }
+    }
+
+    fn place(&mut self, width: f32) -> (f32, f32) {
+        let position = (self.x, self.y);
+        self.x += width + self.spacing;
+        position
+    }
+
+    fn next_row(&mut self, height: f32) {
+        self.y += height + self.spacing;
+        self.x = 0.0;
+    }
+}
+
 pub struct TabbedBoxMaker {
     params: BoxParameters,
     x: f32,
@@ -167,6 +204,7 @@ pub struct TabbedBoxMaker {
     h: f32,
     t: f32,
     paths: Vec<Vec<Point>>,
+    path_groups: Vec<Vec<usize>>,
 }
 
 impl TabbedBoxMaker {
@@ -192,6 +230,7 @@ impl TabbedBoxMaker {
             h,
             t,
             paths: Vec::new(),
+            path_groups: Vec::new(),
         })
     }
 
@@ -456,83 +495,115 @@ impl TabbedBoxMaker {
         let kerf = self.params.burn;
         let half_kerf = kerf / 2.0;
 
-        // Helper to add point with offset check
-        fn add_point_to(path: &mut Vec<Point>, p: Point) {
-             if let Some(last) = path.last() {
-                if (p.x - last.x).abs() < 0.01 && (p.y - last.y).abs() < 0.01 {
-                    return;
-                }
-            }
-            path.push(p);
-        }
-
         // Bottom edge: left to right (0,0) → (width,0)
         if let Some(&c) = edge_chars.get(0) {
             if c == 'f' || c == 'F' {
                 let base_path = self.draw_finger_edge(width, c == 'f');
                 for p in &base_path {
-                    add_point_to(&mut path, Point::new(start_x + p.x, start_y + p.y));
+                    push_unique_point(&mut path, Point::new(start_x + p.x, start_y + p.y));
                 }
             } else {
                 // Plain edge. Offset outwards (down)
-                add_point_to(&mut path, Point::new(start_x - half_kerf, start_y - half_kerf));
-                add_point_to(&mut path, Point::new(start_x + width + half_kerf, start_y - half_kerf));
+                push_unique_point(&mut path, Point::new(start_x - half_kerf, start_y - half_kerf));
+                push_unique_point(
+                    &mut path,
+                    Point::new(start_x + width + half_kerf, start_y - half_kerf),
+                );
             }
         }
         // Ensure corner 1 is closed
-        add_point_to(&mut path, Point::new(start_x + width + half_kerf, start_y - half_kerf));
+        push_unique_point(
+            &mut path,
+            Point::new(start_x + width + half_kerf, start_y - half_kerf),
+        );
 
         // Right edge: bottom to top (width,0) → (width,height)
         if let Some(&c) = edge_chars.get(1) {
             if c == 'f' || c == 'F' {
                 let base_path = self.draw_finger_edge(height, c == 'f');
                 for p in &base_path {
-                    add_point_to(&mut path, Point::new(start_x + width - p.y, start_y + p.x));
+                    push_unique_point(
+                        &mut path,
+                        Point::new(start_x + width - p.y, start_y + p.x),
+                    );
                 }
             } else {
                 // Plain edge. Offset outwards (right)
-                add_point_to(&mut path, Point::new(start_x + width + half_kerf, start_y - half_kerf));
-                add_point_to(&mut path, Point::new(start_x + width + half_kerf, start_y + height + half_kerf));
+                push_unique_point(
+                    &mut path,
+                    Point::new(start_x + width + half_kerf, start_y - half_kerf),
+                );
+                push_unique_point(
+                    &mut path,
+                    Point::new(start_x + width + half_kerf, start_y + height + half_kerf),
+                );
             }
         }
         // Ensure corner 2 is closed
-        add_point_to(&mut path, Point::new(start_x + width + half_kerf, start_y + height + half_kerf));
+        push_unique_point(
+            &mut path,
+            Point::new(start_x + width + half_kerf, start_y + height + half_kerf),
+        );
 
         // Top edge: right to left (width,height) → (0,height)
         if let Some(&c) = edge_chars.get(2) {
             if c == 'F' || c == 'f' {
                 let base_path = self.draw_finger_edge(width, c == 'f');
                 for p in &base_path {
-                    add_point_to(&mut path, Point::new(start_x + width - p.x, start_y + height - p.y));
+                    push_unique_point(
+                        &mut path,
+                        Point::new(start_x + width - p.x, start_y + height - p.y),
+                    );
                 }
             } else {
                 // Plain edge. Offset outwards (up)
-                add_point_to(&mut path, Point::new(start_x + width + half_kerf, start_y + height + half_kerf));
-                add_point_to(&mut path, Point::new(start_x - half_kerf, start_y + height + half_kerf));
+                push_unique_point(
+                    &mut path,
+                    Point::new(start_x + width + half_kerf, start_y + height + half_kerf),
+                );
+                push_unique_point(
+                    &mut path,
+                    Point::new(start_x - half_kerf, start_y + height + half_kerf),
+                );
             }
         }
         // Ensure corner 3 is closed
-        add_point_to(&mut path, Point::new(start_x - half_kerf, start_y + height + half_kerf));
+        push_unique_point(
+            &mut path,
+            Point::new(start_x - half_kerf, start_y + height + half_kerf),
+        );
 
         // Left edge: top to bottom (0,height) → (0,0)
         if let Some(&c) = edge_chars.get(3) {
             if c == 'f' || c == 'F' {
                 let base_path = self.draw_finger_edge(height, c == 'f');
                 for p in &base_path {
-                    add_point_to(&mut path, Point::new(start_x + p.y, start_y + height - p.x));
+                    push_unique_point(
+                        &mut path,
+                        Point::new(start_x + p.y, start_y + height - p.x),
+                    );
                 }
             } else {
                  // Plain edge. Offset outwards (left)
-                add_point_to(&mut path, Point::new(start_x - half_kerf, start_y + height + half_kerf));
-                add_point_to(&mut path, Point::new(start_x - half_kerf, start_y - half_kerf));
+                push_unique_point(
+                    &mut path,
+                    Point::new(start_x - half_kerf, start_y + height + half_kerf),
+                );
+                push_unique_point(
+                    &mut path,
+                    Point::new(start_x - half_kerf, start_y - half_kerf),
+                );
             }
         }
         // Ensure corner 4 is closed (back to start)
-        add_point_to(&mut path, Point::new(start_x - half_kerf, start_y - half_kerf));
+        push_unique_point(
+            &mut path,
+            Point::new(start_x - half_kerf, start_y - half_kerf),
+        );
 
         // Ensure closed loop by connecting back to the very first point
         if let Some(first) = path.first().cloned() {
-            add_point_to(&mut path, first);
+            push_unique_point(&mut path, first);
         }
 
         path
@@ -544,7 +615,7 @@ impl TabbedBoxMaker {
         }
 
         struct Item {
-            path_index: usize,
+            group_index: usize,
             width: f32,
             height: f32,
             original_min_x: f32,
@@ -554,15 +625,41 @@ impl TabbedBoxMaker {
         let mut items = Vec::new();
         let spacing = 5.0; // Gap between parts
 
-        for (i, path) in self.paths.iter().enumerate() {
-            if path.is_empty() { continue; }
-            let min_x = path.iter().map(|p| p.x).fold(f32::INFINITY, f32::min);
-            let max_x = path.iter().map(|p| p.x).fold(f32::NEG_INFINITY, f32::max);
-            let min_y = path.iter().map(|p| p.y).fold(f32::INFINITY, f32::min);
-            let max_y = path.iter().map(|p| p.y).fold(f32::NEG_INFINITY, f32::max);
+        // If path_groups is empty (legacy or bug), treat each path as a group
+        if self.path_groups.is_empty() {
+             for i in 0..self.paths.len() {
+                 self.path_groups.push(vec![i]);
+             }
+        }
+
+        for (i, group) in self.path_groups.iter().enumerate() {
+            if group.is_empty() { continue; }
             
+            let mut min_x = f32::INFINITY;
+            let mut max_x = f32::NEG_INFINITY;
+            let mut min_y = f32::INFINITY;
+            let mut max_y = f32::NEG_INFINITY;
+
+            for &path_idx in group {
+                if path_idx >= self.paths.len() { continue; }
+                let path = &self.paths[path_idx];
+                if path.is_empty() { continue; }
+                
+                let p_min_x = path.iter().map(|p| p.x).fold(f32::INFINITY, f32::min);
+                let p_max_x = path.iter().map(|p| p.x).fold(f32::NEG_INFINITY, f32::max);
+                let p_min_y = path.iter().map(|p| p.y).fold(f32::INFINITY, f32::min);
+                let p_max_y = path.iter().map(|p| p.y).fold(f32::NEG_INFINITY, f32::max);
+                
+                min_x = min_x.min(p_min_x);
+                max_x = max_x.max(p_max_x);
+                min_y = min_y.min(p_min_y);
+                max_y = max_y.max(p_max_y);
+            }
+            
+            if min_x == f32::INFINITY { continue; }
+
             items.push(Item {
-                path_index: i,
+                group_index: i,
                 width: max_x - min_x,
                 height: max_y - min_y,
                 original_min_x: min_x,
@@ -583,8 +680,8 @@ impl TabbedBoxMaker {
         let mut current_y = 0.0;
         let mut row_height: f32 = 0.0;
         
-        // Store new positions: index -> (x, y)
-        let mut new_positions = vec![(0.0, 0.0); self.paths.len()];
+        // Store new positions: group_index -> (x, y)
+        let mut new_positions = vec![(0.0, 0.0); self.path_groups.len()];
 
         for item in &items {
             if current_x > 0.0 && current_x + item.width > target_width {
@@ -594,7 +691,7 @@ impl TabbedBoxMaker {
                 row_height = 0.0;
             }
 
-            new_positions[item.path_index] = (current_x, current_y);
+            new_positions[item.group_index] = (current_x, current_y);
             
             row_height = row_height.max(item.height);
             current_x += item.width + spacing;
@@ -602,13 +699,18 @@ impl TabbedBoxMaker {
 
         // Apply new positions
         for item in items {
-            let (new_x, new_y) = new_positions[item.path_index];
+            let (new_x, new_y) = new_positions[item.group_index];
             let dx = new_x - item.original_min_x;
             let dy = new_y - item.original_min_y;
             
-            for p in &mut self.paths[item.path_index] {
-                p.x += dx;
-                p.y += dy;
+            let group = &self.path_groups[item.group_index];
+            for &path_idx in group {
+                if path_idx < self.paths.len() {
+                    for p in &mut self.paths[path_idx] {
+                        p.x += dx;
+                        p.y += dy;
+                    }
+                }
             }
         }
     }
@@ -762,16 +864,6 @@ impl TabbedBoxMaker {
         // So if we want hole T, we draw T-kerf.
         // Yes.
 
-        // Helper to add point with offset check
-        fn add_point_to(path: &mut Vec<Point>, p: Point) {
-             if let Some(last) = path.last() {
-                if (p.x - last.x).abs() < 0.01 && (p.y - last.y).abs() < 0.01 {
-                    return;
-                }
-            }
-            path.push(p);
-        }
-
         // Bottom edge (0)
         if let Some(&c) = edge_chars.get(0) {
             let mut base_path = if c == 'f' || c == 'F' {
@@ -785,10 +877,13 @@ impl TabbedBoxMaker {
             }
             
             for p in &base_path {
-                add_point_to(&mut path, Point::new(start_x + p.x, start_y + p.y));
+                push_unique_point(&mut path, Point::new(start_x + p.x, start_y + p.y));
             }
         }
-        add_point_to(&mut path, Point::new(start_x + width + half_kerf, start_y - half_kerf));
+        push_unique_point(
+            &mut path,
+            Point::new(start_x + width + half_kerf, start_y - half_kerf),
+        );
 
         // Right edge (1)
         if let Some(&c) = edge_chars.get(1) {
@@ -798,10 +893,16 @@ impl TabbedBoxMaker {
                 vec![Point::new(0.0, -half_kerf), Point::new(height, -half_kerf)]
             };
             for p in &base_path {
-                add_point_to(&mut path, Point::new(start_x + width - p.y, start_y + p.x));
+                push_unique_point(
+                    &mut path,
+                    Point::new(start_x + width - p.y, start_y + p.x),
+                );
             }
         }
-        add_point_to(&mut path, Point::new(start_x + width + half_kerf, start_y + height + half_kerf));
+        push_unique_point(
+            &mut path,
+            Point::new(start_x + width + half_kerf, start_y + height + half_kerf),
+        );
 
         // Top edge (2)
         if let Some(&c) = edge_chars.get(2) {
@@ -818,10 +919,16 @@ impl TabbedBoxMaker {
             }
 
             for p in &base_path {
-                add_point_to(&mut path, Point::new(start_x + width - p.x, start_y + height - p.y));
+                push_unique_point(
+                    &mut path,
+                    Point::new(start_x + width - p.x, start_y + height - p.y),
+                );
             }
         }
-        add_point_to(&mut path, Point::new(start_x - half_kerf, start_y + height + half_kerf));
+        push_unique_point(
+            &mut path,
+            Point::new(start_x - half_kerf, start_y + height + half_kerf),
+        );
 
         // Left edge (3)
         if let Some(&c) = edge_chars.get(3) {
@@ -831,13 +938,19 @@ impl TabbedBoxMaker {
                 vec![Point::new(0.0, -half_kerf), Point::new(height, -half_kerf)]
             };
             for p in &base_path {
-                add_point_to(&mut path, Point::new(start_x + p.y, start_y + height - p.x));
+                push_unique_point(
+                    &mut path,
+                    Point::new(start_x + p.y, start_y + height - p.x),
+                );
             }
         }
-        add_point_to(&mut path, Point::new(start_x - half_kerf, start_y - half_kerf));
+        push_unique_point(
+            &mut path,
+            Point::new(start_x - half_kerf, start_y - half_kerf),
+        );
 
         if let Some(first) = path.first().cloned() {
-            add_point_to(&mut path, first);
+            push_unique_point(&mut path, first);
         }
 
         path
@@ -878,23 +991,66 @@ impl TabbedBoxMaker {
             path.push(Point::new(x, y + h));
             path.push(Point::new(x, y));
             
-            self.paths.push(path);
+            self.add_path(path);
             
             pos += slot_w + kerf + space + kerf;
         }
     }
 
+    fn add_divider_slots(
+        &mut self,
+        count: u32,
+        total_length: f32,
+        start_x: f32,
+        start_y: f32,
+        slot_depth: f32,
+        vertical: bool,
+    ) {
+        if count == 0 {
+            return;
+        }
+
+        let spacing = total_length / (count as f32 + 1.0);
+        for idx in 1..=count {
+            let offset = spacing * idx as f32;
+            if vertical {
+                self.draw_divider_slots(start_x + offset, start_y, slot_depth, self.t, true);
+            } else {
+                self.draw_divider_slots(start_x, start_y + offset, slot_depth, self.t, false);
+            }
+        }
+    }
+
+    pub fn get_paths(&self) -> Vec<Vec<(f32, f32)>> {
+        self.paths.iter().map(|path| path.iter().map(|p| (p.x, p.y)).collect()).collect()
+    }
+
+    fn start_new_group(&mut self) {
+        self.path_groups.push(Vec::new());
+    }
+
+    fn add_path(&mut self, path: Vec<Point>) {
+        let idx = self.paths.len();
+        self.paths.push(path);
+        if let Some(group) = self.path_groups.last_mut() {
+            group.push(idx);
+        } else {
+            // If no group exists, create one (fallback)
+            self.path_groups.push(vec![idx]);
+        }
+    }
+
     pub fn generate(&mut self) -> Result<(), String> {
         self.paths.clear();
+        self.path_groups.clear();
 
         let x = self.x;
         let y = self.y;
         let h = self.h;
         let _t = self.t;
 
-        let mut x_offset = 0.0;
-        let mut y_offset = 0.0;
         let spacing = 5.0;
+        let mut layout = LayoutCursor::new(spacing);
 
         let (has_top, has_bottom, has_front, has_back, has_left, has_right) = match self.params.box_type {
             BoxType::FullBox => (true, true, true, true, true, true),
@@ -927,92 +1083,115 @@ impl TabbedBoxMaker {
 
         // Wall 1: Front (x × h)
         if has_front {
+            self.start_new_group();
             let e = edges(has_bottom, has_right, has_top, has_left);
-            self.paths.push(self.draw_rectangular_wall(x, h, &e, x_offset, y_offset));
-            
-            if self.params.dividers_x > 0 && key_walls {
-                let spacing_x = x / (self.params.dividers_x as f32 + 1.0);
-                for i in 1..=self.params.dividers_x {
-                    self.draw_divider_slots(x_offset + i as f32 * spacing_x, y_offset, h, self.t, true);
-                }
+            let (start_x, start_y) = layout.place(x);
+            self.add_path(self.draw_rectangular_wall(x, h, &e, start_x, start_y));
+
+            if key_walls {
+                self.add_divider_slots(
+                    self.params.dividers_x,
+                    x,
+                    start_x,
+                    start_y,
+                    h,
+                    true,
+                );
             }
-            
-            x_offset += x + spacing;
         }
 
         // Wall 2: Right (y × h)
         if has_right {
+            self.start_new_group();
             let e = edges_side(has_bottom, has_back, has_top, has_front);
-            self.paths.push(self.draw_rectangular_wall(y, h, &e, x_offset, y_offset));
-            
-            if self.params.dividers_y > 0 && key_walls {
-                let spacing_y = y / (self.params.dividers_y as f32 + 1.0);
-                for i in 1..=self.params.dividers_y {
-                    self.draw_divider_slots(x_offset + i as f32 * spacing_y, y_offset, h, self.t, true);
-                }
+            let (start_x, start_y) = layout.place(y);
+            self.add_path(self.draw_rectangular_wall(y, h, &e, start_x, start_y));
+
+            if key_walls {
+                self.add_divider_slots(
+                    self.params.dividers_y,
+                    y,
+                    start_x,
+                    start_y,
+                    h,
+                    true,
+                );
             }
 
-            y_offset += h + spacing;
-            x_offset = 0.0;
+            layout.next_row(h);
         }
 
         // Wall 4: Left (y × h)
         if has_left {
+            self.start_new_group();
             let e = edges_side(has_bottom, has_front, has_top, has_back);
-            self.paths.push(self.draw_rectangular_wall(y, h, &e, x_offset, y_offset));
-            
-            if self.params.dividers_y > 0 && key_walls {
-                let spacing_y = y / (self.params.dividers_y as f32 + 1.0);
-                for i in 1..=self.params.dividers_y {
-                    self.draw_divider_slots(x_offset + i as f32 * spacing_y, y_offset, h, self.t, true);
-                }
-            }
+            let (start_x, start_y) = layout.place(y);
+            self.add_path(self.draw_rectangular_wall(y, h, &e, start_x, start_y));
 
-            x_offset += y + spacing;
+            if key_walls {
+                self.add_divider_slots(
+                    self.params.dividers_y,
+                    y,
+                    start_x,
+                    start_y,
+                    h,
+                    true,
+                );
+            }
         }
 
         // Wall 3: Back (x × h)
         if has_back {
+            self.start_new_group();
             let e = edges(has_bottom, has_left, has_top, has_right);
-            self.paths.push(self.draw_rectangular_wall(x, h, &e, x_offset, y_offset));
-            
-            if self.params.dividers_x > 0 && key_walls {
-                let spacing_x = x / (self.params.dividers_x as f32 + 1.0);
-                for i in 1..=self.params.dividers_x {
-                    self.draw_divider_slots(x_offset + i as f32 * spacing_x, y_offset, h, self.t, true);
-                }
-            }
+            let (start_x, start_y) = layout.place(x);
+            self.add_path(self.draw_rectangular_wall(x, h, &e, start_x, start_y));
 
-            x_offset += x + spacing;
+            if key_walls {
+                self.add_divider_slots(
+                    self.params.dividers_x,
+                    x,
+                    start_x,
+                    start_y,
+                    h,
+                    true,
+                );
+            }
         }
 
         // Top: x × y
         if has_top {
+            self.start_new_group();
             let e = edges_tb(has_front, has_right, has_back, has_left);
-            self.paths.push(self.draw_rectangular_wall(x, y, &e, x_offset, y_offset));
-            x_offset += x + spacing;
+            let (start_x, start_y) = layout.place(x);
+            self.add_path(self.draw_rectangular_wall(x, y, &e, start_x, start_y));
         }
 
         // Bottom: x × y
         if has_bottom {
+            self.start_new_group();
             let e = edges_tb(has_front, has_right, has_back, has_left);
-            self.paths.push(self.draw_rectangular_wall(x, y, &e, x_offset, y_offset));
-            
+            let (start_x, start_y) = layout.place(x);
+            self.add_path(self.draw_rectangular_wall(x, y, &e, start_x, start_y));
+
             if key_floor {
-                if self.params.dividers_x > 0 {
-                    let spacing_x = x / (self.params.dividers_x as f32 + 1.0);
-                    for i in 1..=self.params.dividers_x {
-                        self.draw_divider_slots(x_offset + i as f32 * spacing_x, y_offset, y, self.t, true);
-                    }
-                }
-                if self.params.dividers_y > 0 {
-                    let spacing_y = y / (self.params.dividers_y as f32 + 1.0);
-                    for i in 1..=self.params.dividers_y {
-                        self.draw_divider_slots(x_offset, y_offset + i as f32 * spacing_y, x, self.t, false);
-                    }
-                }
+                self.add_divider_slots(
+                    self.params.dividers_x,
+                    x,
+                    start_x,
+                    start_y,
+                    y,
+                    true,
+                );
+                self.add_divider_slots(
+                    self.params.dividers_y,
+                    y,
+                    start_x,
+                    start_y,
+                    x,
+                    false,
+                );
             }
-            x_offset += x + spacing;
         }
 
         // Dividers
@@ -1042,19 +1221,21 @@ impl TabbedBoxMaker {
 
         if self.params.dividers_x > 0 {
             for _ in 0..self.params.dividers_x {
-                 // X-divider (Width=Y). Slots at Y-positions (slots_y).
-                 // Slots from Top (Plain edge).
-                 self.paths.push(self.draw_divider(y, h, div_edges_x, x_offset, y_offset, &slots_y, true));
-                 x_offset += y + spacing;
+                  // X-divider (Width=Y). Slots at Y-positions (slots_y).
+                  // Slots from Top (Plain edge).
+                  self.start_new_group();
+                  let (start_x, start_y) = layout.place(y);
+                  self.add_path(self.draw_divider(y, h, div_edges_x, start_x, start_y, &slots_y, true));
             }
         }
 
         if self.params.dividers_y > 0 {
             for _ in 0..self.params.dividers_y {
-                 // Y-divider (Width=X). Slots at X-positions (slots_x).
-                 // Slots from Bottom (Connecting edge).
-                 self.paths.push(self.draw_divider(x, h, div_edges_x, x_offset, y_offset, &slots_x, false));
-                 x_offset += x + spacing;
+                  // Y-divider (Width=X). Slots at X-positions (slots_x).
+                  // Slots from Bottom (Connecting edge).
+                  self.start_new_group();
+                  let (start_x, start_y) = layout.place(x);
+                  self.add_path(self.draw_divider(x, h, div_edges_x, start_x, start_y, &slots_x, false));
             }
         }
 
@@ -1180,5 +1361,3 @@ impl TabbedBoxMaker {
         gcode
     }
 }
-
-

@@ -2016,13 +2016,15 @@ fn main() -> anyhow::Result<()> {
                                     let canvas_width = window.get_visualizer_canvas_width();
                                     let canvas_height = window.get_visualizer_canvas_height();
                                     let max_intensity = window.get_visualizer_max_intensity();
-                                    window
-                                        .invoke_refresh_visualization(canvas_width, canvas_height, max_intensity);
+                                    window.invoke_refresh_visualization(canvas_width, canvas_height, max_intensity);
+                                    window.invoke_fit_to_view(canvas_width, canvas_height);
                                 }
                             },
                         );
                     } else {
-                        let max_intensity = window.get_visualizer_max_intensity(); window.invoke_refresh_visualization(canvas_width, canvas_height, max_intensity);
+                        let max_intensity = window.get_visualizer_max_intensity();
+                        window.invoke_refresh_visualization(canvas_width, canvas_height, max_intensity);
+                        window.invoke_fit_to_view(canvas_width, canvas_height);
                     }
                 }
             });

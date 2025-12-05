@@ -4,7 +4,16 @@
 **Last Updated**: 2025-12-03
 **Status**: Feature Release
 
-### Latest Release (v0.68.2-alpha.0) - Windows Build Fix
+### Latest Release (v0.68.3-alpha.0) - CAM Tools & Visualizer Fixes
+- ✅ **CAM Tools**
+  - Fixed issue where Tabbed Box Generator dialog would re-open immediately after generating G-code.
+  - Standardized G-code loading behavior across all CAM tools (Tabbed Box, Jigsaw Puzzle, Spoilboard Surfacing, Spoilboard Grid).
+- ✅ **Visualizer**
+  - Added automatic "Fit to View" when switching to the Visualizer tab to ensure the toolpath is immediately visible and centered.
+- ✅ **Code Quality**
+  - Removed unused variables and redundant clones in CAM tool callbacks.
+
+### Previous Release (v0.68.2-alpha.0) - Windows Build Fix
 - ✅ **Build**
   - Fixed Windows build failure by adding missing `raw_window_handle` imports in `src/platform.rs`.
 

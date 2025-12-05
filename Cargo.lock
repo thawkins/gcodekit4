@@ -2070,7 +2070,7 @@ dependencies = [
 
 [[package]]
 name = "gcodekit4-devicedb"
-version = "0.1.0"
+version = "0.68.2-alpha.0"
 dependencies = [
  "anyhow",
  "serde",
