@@ -1,3 +1,8 @@
+## [0.68.2-alpha.0] - 2025-12-05
+
+### Fixed
+- **Build**: Fixed Windows build failure by adding missing `raw_window_handle` imports in `src/platform.rs`.
+
 ## [0.68.1-alpha.0] - 2025-12-05
 
 ### Fixed

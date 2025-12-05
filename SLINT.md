@@ -103,6 +103,9 @@ When dealing with numeric inputs that require unit conversion (e.g., switching b
     - In Rust: Use `slint::SharedString` to pass values. Parse the string using a helper (like `units::parse_from_string`) that handles the current unit system.
     - This allows the UI to display exactly what the user types or a formatted representation (e.g., "10.000") without fighting the automatic float-to-string conversion.
 
+## Release v0.68.2-alpha.0 (December 2025)
+- **Build Fix**: Fixed Windows build failure by adding missing `raw_window_handle` imports in `src/platform.rs`.
+
 ## Release v0.68.1-alpha.0 (December 2025)
 - **Build Fix**: Resolved duplicate `MachineControlPanel` definition issue by removing the deprecated `src/ui_panels` directory.
 - **Assets**: Updated `eStop.png` with improved design and text layout.

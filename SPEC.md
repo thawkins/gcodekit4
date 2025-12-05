@@ -4,7 +4,11 @@
 **Last Updated**: 2025-12-03
 **Status**: Feature Release
 
-### Latest Release (v0.68.1-alpha.0) - Build Fixes
+### Latest Release (v0.68.2-alpha.0) - Windows Build Fix
+- ✅ **Build**
+  - Fixed Windows build failure by adding missing `raw_window_handle` imports in `src/platform.rs`.
+
+### Previous Release (v0.68.1-alpha.0) - Build Fixes
 - ✅ **Build**
   - Fixed build failure caused by duplicate `MachineControlPanel` definition.
 - ✅ **Assets**
