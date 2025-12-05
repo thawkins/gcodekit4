@@ -1,3 +1,10 @@
+## [0.68.0-alpha.0] - 2025-12-05
+
+### Changed
+- **UI**: Reordered main tabs to prioritize Machine Control, Device Console, and G-Code Editor.
+- **UI**: Set "Machine Control" as the default tab on application startup.
+- **UI**: Updated "View" menu items to match the new tab order.
+
 ## [0.67.0-alpha.0] - 2025-12-03
 
 ### Added

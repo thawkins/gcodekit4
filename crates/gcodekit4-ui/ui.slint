@@ -160,6 +160,9 @@ export component MainWindow inherits Window {
     in property <float> position-x: 0.0;
     in property <float> position-y: 0.0;
     in property <float> position-z: 0.0;
+    in property <float> work-position-x: 0.0;
+    in property <float> work-position-y: 0.0;
+    in property <float> work-position-z: 0.0;
     in property <float> position-a: 0.0;
     in property <float> position-b: 0.0;
     in property <float> position-c: 0.0;
@@ -172,7 +175,7 @@ export component MainWindow inherits Window {
     in property <string> app-description: "A Rust-based G-Code Sender for CNC and laser machines with support for GRBL and other controllers";
     in property <string> console-output: "[INFO] GCodeKit4 initialized\n[INFO] Ready for operation\n";
     in-out property <string> gcode-content: "";
-    in-out property <string> current-view: "gcode-editor";
+    in-out property <string> current-view: "machine";
     in-out property <string> gcode-filename: "untitled.gcode";
     in property <int> console-scroll-trigger: 0;
     
@@ -391,6 +394,8 @@ export component MainWindow inherits Window {
     callback machine-jog-b-positive(float);
     callback machine-jog-b-negative(float);
     callback machine-unlock();
+    callback machine-zero-all();
+    callback machine-emergency-stop();
     callback menu-edit-preferences();
     callback menu-settings-save();
     callback menu-settings-cancel();
@@ -607,16 +612,6 @@ export component MainWindow inherits Window {
                         alignment: start;
                         
                         TabItem {
-                            text: "G-Code Editor";
-                            selected: current-view == "gcode-editor";
-                            clicked => {
-                                current-view = "gcode-editor";
-                                root.gcode-focus-trigger += 1;
-                                root.menu-view-gcode-editor();
-                            }
-                        }
-                        
-                        TabItem {
                             text: "Machine Control";
                             selected: current-view == "machine";
                             clicked => {
@@ -635,30 +630,12 @@ export component MainWindow inherits Window {
                         }
                         
                         TabItem {
-                            text: "📱 Device Info";
-                            selected: current-view == "device-info";
-                            width: 110px;
+                            text: "G-Code Editor";
+                            selected: current-view == "gcode-editor";
                             clicked => {
-                                current-view = "device-info";
-                            }
-                        }
-
-                        TabItem {
-                            text: "🖥️ Device Manager";
-                            selected: current-view == "device-manager";
-                            width: 140px;
-                            clicked => {
-                                current-view = "device-manager";
-                                root.load-device-profiles();
-                            }
-                        }
-                        
-                        TabItem {
-                            text: "⚙️ Device Config";
-                            selected: current-view == "config-settings";
-                            width: 130px;
-                            clicked => {
-                                current-view = "config-settings";
+                                current-view = "gcode-editor";
+                                root.gcode-focus-trigger += 1;
+                                root.menu-view-gcode-editor();
                             }
                         }
                         
@@ -673,6 +650,15 @@ export component MainWindow inherits Window {
                         }
 
                         TabItem {
+                            text: "🔧 CAM Tools";
+                            selected: current-view == "cam-tools";
+                            width: 120px;
+                            clicked => {
+                                current-view = "cam-tools";
+                            }
+                        }
+
+                        TabItem {
                             text: "Designer";
                             selected: current-view == "designer";
                             width: 100px;
@@ -683,21 +669,30 @@ export component MainWindow inherits Window {
                         }
                         
                         TabItem {
-                            text: "🔧 CAM Tools";
-                            selected: current-view == "cam-tools";
-                            width: 120px;
+                            text: "📱 Device Info";
+                            selected: current-view == "device-info";
+                            width: 110px;
                             clicked => {
-                                current-view = "cam-tools";
+                                current-view = "device-info";
+                            }
+                        }
+
+                        TabItem {
+                            text: "⚙️ Device Config";
+                            selected: current-view == "config-settings";
+                            width: 130px;
+                            clicked => {
+                                current-view = "config-settings";
                             }
                         }
                         
                         TabItem {
-                            text: "📦 Materials";
-                            selected: current-view == "materials";
-                            width: 110px;
+                            text: "🖥️ Device Manager";
+                            selected: current-view == "device-manager";
+                            width: 140px;
                             clicked => {
-                                current-view = "materials";
-                                root.menu-view-materials();
+                                current-view = "device-manager";
+                                root.load-device-profiles();
                             }
                         }
                         
@@ -708,6 +703,16 @@ export component MainWindow inherits Window {
                             clicked => {
                                 current-view = "cnc-tools";
                                 root.load_tools();
+                            }
+                        }
+                        
+                        TabItem {
+                            text: "📦 Materials";
+                            selected: current-view == "materials";
+                            width: 110px;
+                            clicked => {
+                                current-view = "materials";
+                                root.menu-view-materials();
                             }
                         }
                     }
@@ -754,18 +759,6 @@ export component MainWindow inherits Window {
                     total-lines <=> root.total-lines;
                     visible-start-line <=> root.visible-start-line;
                     cursor-blink-visible: root.cursor-blink-visible;
-                    menu-send-to-device => {
-                        root.menu-send-to-device();
-                    }
-                    menu-stop-transmission => {
-                        root.menu-stop-transmission();
-                    }
-                    menu-pause-transmission => {
-                        root.menu-pause-transmission();
-                    }
-                    menu-resume-transmission => {
-                        root.menu-resume-transmission();
-                    }
                     undo-requested => {
                         root.undo_requested();
                     }
@@ -841,12 +834,16 @@ export component MainWindow inherits Window {
                     position-x: root.position-x;
                     position-y: root.position-y;
                     position-z: root.position-z;
+                    work-position-x: root.work-position-x;
+                    work-position-y: root.work-position-y;
+                    work-position-z: root.work-position-z;
                     position-a: root.position-a;
                     position-b: root.position-b;
                     position-c: root.position-c;
                     feed-rate: root.feed-rate;
                     spindle-speed: root.spindle-speed;
                     machine-state: root.machine-state;
+                    raw-status-response: root.raw-status-response;
                     port-selected(port) => {
                         root.selected-port = port;
                     }
@@ -895,8 +892,26 @@ export component MainWindow inherits Window {
                     unlock-clicked => {
                         root.machine-unlock();
                     }
+                    zero-all-clicked => {
+                        root.machine-zero-all();
+                    }
+                    emergency-stop-clicked => {
+                        root.machine-emergency-stop();
+                    }
                     send-command(cmd) => {
                         root.send-command(cmd);
+                    }
+                    command-send => {
+                        root.menu-send-to-device();
+                    }
+                    command-pause => {
+                        root.menu-pause-transmission();
+                    }
+                    command-resume => {
+                        root.menu-resume-transmission();
+                    }
+                    command-stop => {
+                        root.menu-stop-transmission();
                     }
                 }
                 
@@ -1513,6 +1528,34 @@ export component MainWindow inherits Window {
                 spacing: 0px;
                 alignment: start;
                 
+                // Emergency Stop Button
+                Rectangle {
+                    width: 50px;
+                    height: 20px;
+                    background: #e74c3c;
+                    border-radius: 3px;
+                    
+                    Text {
+                        text: "eStop";
+                        color: white;
+                        font-size: 11px;
+                        font-weight: 700;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                    
+                    TouchArea {
+                        clicked => { root.machine-emergency-stop(); }
+                    }
+                }
+                
+                // Separator
+                Text {
+                    text: " \u{2003} ";
+                    color: white;
+                    font-size: 13.2px;
+                }
+                
                 // Connection Status Indicator (colored square)
                 Rectangle {
                     width: 16px;
@@ -1995,32 +2038,11 @@ export component MainWindow inherits Window {
                 enabled: false;
             }
             MenuItem {
-                title: current-view == "gcode-editor" ? @tr("✓ G-Code Editor") : @tr("G-Code Editor");
-                activated => {
-                    if (current-view != "gcode-editor") {
-                        current-view = "gcode-editor";
-                        root.gcode-focus-trigger += 1;
-                        root.menu-view-gcode-editor();
-                    } else {
-                        root.menu-view-gcode-editor();
-                        root.gcode-focus-trigger += 1;
-                    }
-                }
-            }
-            MenuItem {
                 title: current-view == "machine" ? @tr("✓ Machine Control") : @tr("Machine Control");
                 activated => {
                     if (current-view != "machine") {
                         current-view = "machine";
                         root.menu-view-machine();
-                    }
-                }
-            }
-            MenuItem {
-                title: current-view == "device-info" ? @tr("✓ Machine Info") : @tr("Machine Info");
-                activated => {
-                    if (current-view != "device-info") {
-                        current-view = "device-info";
                     }
                 }
             }
@@ -2034,28 +2056,32 @@ export component MainWindow inherits Window {
                 }
             }
             MenuItem {
-                title: current-view == "device-manager" ? @tr("✓ Device Manager") : @tr("Device Manager");
+                title: current-view == "gcode-editor" ? @tr("✓ G-Code Editor") : @tr("G-Code Editor");
                 activated => {
-                    if (current-view != "device-manager") {
-                        current-view = "device-manager";
-                        root.load-device-profiles();
+                    if (current-view != "gcode-editor") {
+                        current-view = "gcode-editor";
+                        root.gcode-focus-trigger += 1;
+                        root.menu-view-gcode-editor();
+                    } else {
+                        root.menu-view-gcode-editor();
+                        root.gcode-focus-trigger += 1;
                     }
                 }
             }
-
-            MenuItem {
-                title: current-view == "config-settings" ? @tr("✓ Device Config") : @tr("Device Config");
-                activated => {
-                    current-view = "config-settings";
-                }
-            }
-
             MenuItem {
                 title: current-view == "gcode-visualizer" ? @tr("✓ Visualizer") : @tr("Visualizer");
                 activated => {
                     if (current-view != "gcode-visualizer") {
                         current-view = "gcode-visualizer";
                         root.menu-view-gcode-visualizer();
+                    }
+                }
+            }
+            MenuItem {
+                title: current-view == "cam-tools" ? @tr("✓ CAMTools") : @tr("CAMTools");
+                activated => {
+                    if (current-view != "cam-tools") {
+                        current-view = "cam-tools";
                     }
                 }
             }
@@ -2069,19 +2095,25 @@ export component MainWindow inherits Window {
                 }
             }
             MenuItem {
-                title: current-view == "cam-tools" ? @tr("✓ CAMTools") : @tr("CAMTools");
+                title: current-view == "device-info" ? @tr("✓ Machine Info") : @tr("Machine Info");
                 activated => {
-                    if (current-view != "cam-tools") {
-                        current-view = "cam-tools";
+                    if (current-view != "device-info") {
+                        current-view = "device-info";
                     }
                 }
             }
             MenuItem {
-                title: current-view == "materials" ? @tr("✓ Materials") : @tr("Materials");
+                title: current-view == "config-settings" ? @tr("✓ Device Config") : @tr("Device Config");
                 activated => {
-                    if (current-view != "materials") {
-                        current-view = "materials";
-                        root.menu-view-materials();
+                    current-view = "config-settings";
+                }
+            }
+            MenuItem {
+                title: current-view == "device-manager" ? @tr("✓ Device Manager") : @tr("Device Manager");
+                activated => {
+                    if (current-view != "device-manager") {
+                        current-view = "device-manager";
+                        root.load-device-profiles();
                     }
                 }
             }
@@ -2091,6 +2123,15 @@ export component MainWindow inherits Window {
                     if (current-view != "cnc-tools") {
                         current-view = "cnc-tools";
                         root.load_tools();
+                    }
+                }
+            }
+            MenuItem {
+                title: current-view == "materials" ? @tr("✓ Materials") : @tr("Materials");
+                activated => {
+                    if (current-view != "materials") {
+                        current-view = "materials";
+                        root.menu-view-materials();
                     }
                 }
             }

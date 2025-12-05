@@ -13,11 +13,29 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.67.0-alpha.0"
+version = "0.68.0-alpha.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 authors = ["GCodeKit Contributors"]
 repository = "https://github.com/thawkins/gcodekit4"
+
+[workspace.dependencies]
+slint = { version = "1.14.1", features = ["backend-winit", "image-default-formats", "raw-window-handle-06"] }
+tokio = { version = "1.35", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json"] }
+anyhow = "1.0"
+thiserror = "2.0.17"
+rfd = "0.15.4"
+arboard = "3.4"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+uuid = { version = "1.6", features = ["v4", "serde"] }
+image = "0.25"
+chrono = { version = "0.4", features = ["serde"] }
+windows-sys = { version = "0.48.0", features = ["Win32_UI_WindowsAndMessaging", "Win32_Foundation"] }
+raw-window-handle = "0.6"
+tempfile = "3.8"
 
 [package]
 name = "gcodekit4"
