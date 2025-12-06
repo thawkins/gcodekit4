@@ -61,6 +61,7 @@ jobs:
       run: |
         cargo build --release --target ${{ matrix.platform.target }}
         cp target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }} ${{ env.ASSET_NAME }}
+        cp target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }} gcodekit4-linux-x86_64
         
         # Build Flatpak
         flatpak-builder --user --install-deps-from=flathub --force-clean build-dir flatpak/com.github.thawkins.gcodekit4.yml --repo=repo
