@@ -1,3 +1,9 @@
+## [0.69.1-alpha.0] - 2025-12-06
+
+### Fixed
+- **Build**: Fixed macOS Arm64 (Apple Silicon) build failure by removing `pepecore` dependency which relied on x86 AVX2 instructions.
+- **CAM Tools**: Replaced `pepecore` halftoning with native Rust implementation using `image` crate. Note: Some specialized halftoning patterns (Circle, Cross, Ellipse, Line) are temporarily unavailable.
+
 ## [0.69.0-alpha.0] - 2025-12-06
 
 ### Changed
