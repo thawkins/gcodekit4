@@ -1,12 +1,12 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.69.0-alpha.0
-**Last Updated**: 2025-12-03
+**Version**: 0.70.0-alpha.0
+**Last Updated**: 2025-12-06
 **Status**: Feature Release
 
-### Latest Release (v0.69.0-alpha.0) - Minor Version Bump
+### Latest Release (v0.70.0-alpha.0) - Minor Version Bump
 - ✅ **Version**
-  - Bumped version to 0.69.0-alpha.0.
+  - Bumped version to 0.70.0-alpha.0.
 
 ### Previous Release (v0.68.3-alpha.0) - CAM Tools & Visualizer Fixes
 - ✅ **CAM Tools**
