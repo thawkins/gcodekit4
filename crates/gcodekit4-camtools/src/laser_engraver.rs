@@ -35,16 +35,6 @@ pub enum HalftoneMethod {
     FloydSteinberg,
     /// Error diffusion (Atkinson)
     Atkinson,
-    /// Circle dot halftoning (pepecore)
-    Circle,
-    /// Cross dot halftoning (pepecore)
-    Cross,
-    /// Ellipse dot halftoning (pepecore)
-    Ellipse,
-    /// Line dot halftoning (pepecore)
-    Line,
-    /// Inverted line halftoning (pepecore)
-    InvertedLine,
 }
 
 /// Scan direction for laser engraving
@@ -225,11 +215,6 @@ impl BitmapImageEngraver {
             HalftoneMethod::FloydSteinberg => Self::apply_floyd_steinberg_image(image),
             HalftoneMethod::Atkinson => Self::apply_atkinson_image(image),
             HalftoneMethod::None => Ok(()),
-            _ => {
-                // pepecore methods are not supported anymore
-                tracing::warn!("Halftone method {:?} is not supported on this platform (pepecore removed). Falling back to None.", method);
-                Ok(())
-            }
         }
     }
 

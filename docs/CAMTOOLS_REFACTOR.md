@@ -143,7 +143,6 @@ gcodekit4/
 | regex | 1.10 | Pattern matching | G-Code parsing (stats) |
 | svg | 0.18 | SVG parsing | vector_engraver |
 | dxf | 0.4 | DXF file parsing | vector_engraver |
-| pepecore | 0.1.3 | Image operations | laser_engraver |
 | lazy_static | 1.4 | Static initialization | Configuration |
 
 ---
