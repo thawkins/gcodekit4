@@ -1,10 +1,14 @@
 # GCodeKit4 - Specification Document
 
-**Version**: 0.67.0-alpha.0
+**Version**: 0.69.0-alpha.0
 **Last Updated**: 2025-12-03
 **Status**: Feature Release
 
-### Latest Release (v0.68.3-alpha.0) - CAM Tools & Visualizer Fixes
+### Latest Release (v0.69.0-alpha.0) - Minor Version Bump
+- ✅ **Version**
+  - Bumped version to 0.69.0-alpha.0.
+
+### Previous Release (v0.68.3-alpha.0) - CAM Tools & Visualizer Fixes
 - ✅ **CAM Tools**
   - Fixed issue where Tabbed Box Generator dialog would re-open immediately after generating G-code.
   - Standardized G-code loading behavior across all CAM tools (Tabbed Box, Jigsaw Puzzle, Spoilboard Surfacing, Spoilboard Grid).
