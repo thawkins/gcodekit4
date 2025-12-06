@@ -10,6 +10,9 @@
   - Standardized G-code loading behavior across all CAM tools (Tabbed Box, Jigsaw Puzzle, Spoilboard Surfacing, Spoilboard Grid).
 - ✅ **Visualizer**
   - Added automatic "Fit to View" when switching to the Visualizer tab to ensure the toolpath is immediately visible and centered.
+- ✅ **CI/CD**
+  - Updated release workflow to include version number in artifact names (e.g., `gcodekit4-v0.68.3-alpha.0-linux-x86_64`).
+  - Added macOS ARM64 (Apple Silicon) build support producing `.dmg` packages.
 - ✅ **Code Quality**
   - Removed unused variables and redundant clones in CAM tool callbacks.
 
