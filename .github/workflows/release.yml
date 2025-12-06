@@ -31,7 +31,7 @@ jobs:
             bin: gcodekit4
             name_suffix: macos-x86_64.dmg
           - os_name: macOS-arm64
-            os: macos-14
+            os: macos-15
             target: aarch64-apple-darwin
             bin: gcodekit4
             name_suffix: macos-arm64.dmg
