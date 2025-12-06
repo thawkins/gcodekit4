@@ -5,6 +5,7 @@
 - **CAM Tools**: Standardized G-code loading behavior across all CAM tools (Tabbed Box, Jigsaw Puzzle, Spoilboard Surfacing, Spoilboard Grid). All tools now correctly load G-code into the editor, reset the view, and close the dialog upon success.
 - **Code Quality**: Removed unused variables and redundant clones in CAM tool callbacks.
 - **Visualizer**: Added automatic "Fit to View" when switching to the Visualizer tab to ensure the toolpath is immediately visible and centered.
+- **CI/CD**: Updated release workflow to include version number in artifact names and added macOS ARM64 (Apple Silicon) build support.
 
 ## [0.68.2-alpha.0] - 2025-12-05
 

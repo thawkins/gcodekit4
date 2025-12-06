@@ -19,20 +19,29 @@ jobs:
             os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             bin: gcodekit4
-            name: gcodekit4-linux-x86_64
+            name_suffix: linux-x86_64
           - os_name: Windows-x86_64
             os: windows-latest
             target: x86_64-pc-windows-msvc
             bin: gcodekit4.exe
-            name: gcodekit4-windows-x86_64.msi
+            name_suffix: windows-x86_64.msi
           - os_name: macOS-x86_64
             os: macos-13
             target: x86_64-apple-darwin
             bin: gcodekit4
-            name: gcodekit4-macos-x86_64.dmg
+            name_suffix: macos-x86_64.dmg
+          - os_name: macOS-arm64
+            os: macos-14
+            target: aarch64-apple-darwin
+            bin: gcodekit4
+            name_suffix: macos-arm64.dmg
 
     steps:
     - uses: actions/checkout@v4
+
+    - name: Set Asset Name
+      shell: bash
+      run: echo "ASSET_NAME=gcodekit4-${{ github.ref_name }}-${{ matrix.platform.name_suffix }}" >> $GITHUB_ENV
 
     - name: Install Linux Dependencies
       if: matrix.platform.os == 'ubuntu-latest'
@@ -51,21 +60,21 @@ jobs:
       if: matrix.platform.os_name == 'Linux-x86_64'
       run: |
         cargo build --release --target ${{ matrix.platform.target }}
-        cp target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }} ${{ matrix.platform.name }}
+        cp target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }} ${{ env.ASSET_NAME }}
         
         # Build Flatpak
         flatpak-builder --user --install-deps-from=flathub --force-clean build-dir flatpak/com.github.thawkins.gcodekit4.yml --repo=repo
-        flatpak build-bundle repo gcodekit4-linux-x86_64.flatpak com.github.thawkins.gcodekit4
+        flatpak build-bundle repo gcodekit4-${{ github.ref_name }}-linux-x86_64.flatpak com.github.thawkins.gcodekit4
 
     - name: Build (macOS)
-      if: matrix.platform.os_name == 'macOS-x86_64'
+      if: contains(matrix.platform.os_name, 'macOS')
       run: |
         cargo install cargo-bundle
         # Add bundle metadata to Cargo.toml
         echo '[package.metadata.bundle]' >> Cargo.toml
         echo 'identifier = "com.github.thawkins.gcodekit4"' >> Cargo.toml
         cargo bundle --package gcodekit4 --release --target ${{ matrix.platform.target }} --format osx
-        hdiutil create -volname "GCodeKit4" -srcfolder "target/${{ matrix.platform.target }}/release/bundle/osx/gcodekit4.app" -ov -format UDZO "${{ matrix.platform.name }}"
+        hdiutil create -volname "GCodeKit4" -srcfolder "target/${{ matrix.platform.target }}/release/bundle/osx/gcodekit4.app" -ov -format UDZO "${{ env.ASSET_NAME }}"
 
     - name: Build (Windows)
       if: matrix.platform.os_name == 'Windows-x86_64'
@@ -83,14 +92,14 @@ jobs:
         
         # Run WiX without building
         cargo wix --no-build --package gcodekit4 --nocapture
-        mv target/wix/*.msi ${{ matrix.platform.name }}
+        mv target/wix/*.msi ${{ env.ASSET_NAME }}
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ matrix.platform.name }}
+        name: ${{ env.ASSET_NAME }}
         path: |
-          ${{ matrix.platform.name }}
+          ${{ env.ASSET_NAME }}
           *.flatpak
         if-no-files-found: warn
 
@@ -108,7 +117,7 @@ jobs:
         token: ${{ secrets.RELEASE }}
         body: ${{ steps.build_changelog.outputs.changelog }}
         files: |
-          ${{ matrix.platform.name }}
+          ${{ env.ASSET_NAME }}
           *.flatpak
 
     - name: Release (Other)
@@ -117,4 +126,4 @@ jobs:
       with:
         token: ${{ secrets.RELEASE }}
         files: |
-          ${{ matrix.platform.name }}
+          ${{ env.ASSET_NAME }}
